@@ -55,7 +55,8 @@ def get_esafile(auxiliary_code_path, det, grat, filt, esa_files_path, quad, row,
     # read in ESA data
     # the ESA direcoty names use/follow their name conventions
     ESA_dir_name = CV3filename.split("_")[0].replace("NRS", "")+"_"+NID+"_JLAB88"
-    esafile_directory = esa_files_path+ESA_dir_name+"/"+ESA_dir_name+"_trace_MOS"
+    esa_directory = os.path.join(esa_files_path, ESA_dir_name)
+    esafile_directory = os.path.join(esa_directory, ESA_dir_name+"_trace_MOS")
     # add a 0 if necessary for convention purposes
     if col < 99:
         col = "0"+str(col[0])
@@ -307,15 +308,16 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
     #cwc_fname = infile_name.replace(".fits", "_world_coordinates.fits")
     # to rename file within the working directory
     #cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates_James.fits")   # FOR TESTING THE CODE
-    cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates_b7.fits")
-    #cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
+    #cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates_b7.fits")
+    cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
     #print ("*** cwc_fname = ", cwc_fname)
-    os.system("mv "+wcoordfile+" "+cwc_fname)
+    cwc_fname = infile_name.replace(basenameinfile_name, cwc_fname)
+    #os.system("mv "+wcoordfile+" "+cwc_fname)
 
     # get info from the extract_2d file header
     #extract_2d_file = cwc_fname.replace("_world_coordinates_James", "")
-    extract_2d_file = cwc_fname.replace("_world_coordinates_b7", "")
-    #extract_2d_file = cwc_fname.replace("_world_coordinates", "")
+    #extract_2d_file = cwc_fname.replace("_world_coordinates_b7", "")
+    extract_2d_file = cwc_fname.replace("_world_coordinates", "")
     print('extract_2d_file=', extract_2d_file)
     det_extract_2d_file = fits.getval(extract_2d_file, "DETECTOR", 0)
     lamp_extract_2d_file = fits.getval(extract_2d_file, "LAMP", 0)
@@ -494,9 +496,14 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
                 median_diff = True
 
         # PLOTS
-        if len(delwave) != 0:
+        #if len(delwave) != 0:
+        make_plots = False
+        if make_plots:
+            print ("Making WCS plots...")
             if plot_names is not None:
                 hist_name, deltas_name, msacolormap_name = plot_names
+            else:
+                hist_name, deltas_name, msacolormap_name = None, None, None
 
             # HISTOGRAM
             if filt == "OPAQUE":

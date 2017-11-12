@@ -53,6 +53,7 @@ def output_hdul(set_inandout_filenames, config):
     stp = Extract2dStep()
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
+    msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
@@ -66,7 +67,7 @@ def output_hdul(set_inandout_filenames, config):
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul, step_output_file, esa_files_path, wcs_threshold_diff, save_wcs_plots
+                return hdul, step_output_file, msa_conf_root, esa_files_path, wcs_threshold_diff, save_wcs_plots
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
                 pytest.skip("Skiping "+step+" because the input file does not exist.")
@@ -84,13 +85,14 @@ def validate_wcs_extract2d(output_hdul):
     # get the input information for the wcs routine
     hdu = output_hdul[0]
     infile_name = output_hdul[1]
-    esa_files_path = output_hdul[2]
+    msa_conf_root = output_hdul[2]
+    esa_files_path = output_hdul[3]
 
     # define the threshold difference between the pipeline output and the ESA files for the pytest to pass or fail
-    threshold_diff = float(output_hdul[3])
+    threshold_diff = float(output_hdul[4])
 
     # save the output plots
-    save_wcs_plots = output_hdul[4]
+    save_wcs_plots = output_hdul[5]
 
     # show the figures
     show_figs = False
@@ -105,7 +107,7 @@ def validate_wcs_extract2d(output_hdul):
                                                   threshold_diff=threshold_diff)
 
     elif core_utils.check_MOS_true(hdu):
-        msa_conf_root = output_hdul.msa_conf_root
+        print("infile for compare_wcs = ", infile_name)
         median_diff = compare_wcs_mos.compare_wcs(infile_name, msa_conf_root=msa_conf_root,
                                                   esa_files_path=esa_files_path, auxiliary_code_path=None,
                                                   plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
@@ -116,8 +118,8 @@ def validate_wcs_extract2d(output_hdul):
                                                   plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
                                                   threshold_diff=threshold_diff)
     else:
-        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. \n "
-                    "This pytest tool does not yet include the routine to verify this kind of file.")
+        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")
+
     return median_diff
 
 

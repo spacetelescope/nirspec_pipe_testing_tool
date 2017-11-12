@@ -229,6 +229,7 @@ def str_to_bool(s):
     elif s == 'False':
          return False
 
+
 def check_FS_true(output_hdul):
     """
     This function checks if the fits file is a Fixed Slit.
@@ -240,7 +241,7 @@ def check_FS_true(output_hdul):
     """
     result = False
     if "EXP_TYPE" in output_hdul:
-        if "EXP_TYPE" == "NRS_FIXEDSLIT":
+        if output_hdul["EXP_TYPE"] == "NRS_FIXEDSLIT":
             result = True
     return result
 
@@ -256,7 +257,7 @@ def check_MOS_true(output_hdul):
     """
     result = False
     if "EXP_TYPE" in output_hdul:
-        if "EXP_TYPE" == "NRS_MSASPEC":
+        if output_hdul["EXP_TYPE"] == "NRS_MSASPEC":
             result = True
     return result
 
@@ -272,7 +273,7 @@ def check_IFU_true(output_hdul):
     """
     result = False
     if "EXP_TYPE" in output_hdul:
-        if "EXP_TYPE" == "NRS_IFU":
+        if output_hdul["EXP_TYPE"] == "NRS_IFU":
             result = True
     return result
 
@@ -289,7 +290,7 @@ def find_which_slit(output_hdul):
     slits = ["S200A1", "S200A2", "S200B1", "S400A1", "S1600A1"]
     if "FXD_SLIT" in output_hdul:
         for i, s in enumerate(slits):
-            if "FXD_SLIT" == s:
+            if output_hdul["FXD_SLIT"] == s:
                 return i+1, s
 
 

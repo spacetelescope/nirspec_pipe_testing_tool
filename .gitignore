@@ -1,8 +1,11 @@
 .DS_Store
 __pycashe__
 *.pyc
+*/*.pyc
+*/*/*.pyc
+*/*/*/*.pyc
 *.fits
-.cash
+.cache
 *.html
 notes_on_pytests.txt
 True_steps_suffix_map.txt

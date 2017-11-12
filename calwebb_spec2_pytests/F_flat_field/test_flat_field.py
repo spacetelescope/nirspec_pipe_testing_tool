@@ -104,9 +104,10 @@ def validate_flat_field(output_hdul):
 
     if core_utils.check_MOS_true(hdu):
        median_diff = flattest_mos.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                                            fflat_path=fflat_path, writefile=write_flattest_files,
-                                            show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
-                                            threshold_diff=flattest_threshold_diff, debug=False)
+                                           fflat_path=fflat_path, msa_conf_root=msa_conf_root,
+                                           writefile=write_flattest_files,
+                                           show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
+                                           threshold_diff=flattest_threshold_diff, debug=False)
 
     #if core_utils.check_IFU_true(hdu):
     #    median_diff = flattest_ifu.flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
@@ -115,8 +116,7 @@ def validate_flat_field(output_hdul):
     #                                        threshold_diff=flattest_threshold_diff, debug=False)
 
     else:
-        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. \n "
-                    "This pytest tool does not yet include the routine to verify this kind of file.")
+        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")
     return median_diff
 
 

@@ -55,7 +55,8 @@ def get_esafile(auxiliary_code_path, det, grat, filt, IFUslice, esa_files_path):
 
     # the ESA direcoty names use/follow their name conventions
     ESA_dir_name = CV3filename.split("_")[0].replace("NRS", "")+"_"+NID+"_JLAB88"
-    esafile_directory = esa_files_path+ESA_dir_name+"/"+ESA_dir_name+"_trace_IFU"
+    esa_directory = os.path.join(esa_files_path, ESA_dir_name)
+    esafile_directory = os.path.join(esa_directory, ESA_dir_name+"_trace_IFU")
 
     # to match current ESA intermediary files naming convention
     esafile_basename = "Trace_IFU_Slice_"+IFUslice+"_"+ESA_dir_name+".fits"
@@ -288,6 +289,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     # to rename file within the working directory
     cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
     print (cwc_fname)
+    cwc_fname = infile_name.replace(basenameinfile_name, cwc_fname)
     #os.system("mv "+wcoordfile+" "+cwc_fname)
 
     # loop over the slits
@@ -365,7 +367,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
 
         # match up the correct elements in each data set
         subpx, subex = auxfunc.do_idl_match(px, ex)
-        subpy, subey = wcsfunc.do_idl_match(py, ey)
+        subpy, subey = auxfunc.do_idl_match(py, ey)
         imp, ime = [], []
         for spy in subpy:
             im0 = subpx + npx * spy
@@ -441,8 +443,11 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
 
         # PLOTS
         if len(delwave) != 0:
+            print ("Making WCS plots...")
             if plot_names is not None:
                 hist_name, deltas_name, msacolormap_name = plot_names
+            else:
+                hist_name, deltas_name, msacolormap_name = None, None, None
 
             # HISTOGRAM
             if filt == "OPAQUE":

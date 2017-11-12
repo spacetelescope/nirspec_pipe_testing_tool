@@ -22,4 +22,3 @@ def s_ext2d_exists(output_hdul):
 
 
 
-

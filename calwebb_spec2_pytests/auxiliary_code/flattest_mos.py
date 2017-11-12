@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 import numpy as np
+import os
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -35,8 +36,8 @@ def reverse_cols(arr):
     return rev_arr
 
 
-def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, writefile=False,
-             show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-14, debug=False):
+def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, msa_conf_root=None,
+             writefile=False, show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-14, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the
     compute_world_coordinates.py script with the ESA files. The function calls that script.
@@ -46,6 +47,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         dflatref_path: str, path of where the D-flat reference fits files
         sfile_path: str, path of where the S-flat reference fits files
         fflat_path: str, path of where the F-flat reference fits files
+        msa_conf_root: str, path to where the MSA configuration fits file lives
         writefile: boolean, if True writes the fits files of the calculated flat and difference images
         show_figs: boolean, whether to show plots or not
         save_figs: boolean, save the plots (the 3 plots can be saved or not independently with the function call)
@@ -229,7 +231,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
         # get the slitlet info, needed for the F-Flat
         ext_shutter_info = "SHUTTER_INFO"   # this is extension 2 of the msa file, that has the shutter info
-        slitlet_info = fits.getdata(msametfl, ext_shutter_info)
+        msafile = os.path.join(msa_conf_root, msametfl)
+        slitlet_info = fits.getdata(msafile, ext_shutter_info)
         sltid = slitlet_info.field("SLITLET_ID")
         for j, s in enumerate(sltid):
             if s == int(slit_id):
@@ -264,7 +267,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             ffv = ffvq4
 
         # loop through the pixels
-        print ("looping through the pixels ... ")
+        print ("looping through the pixels, this may take a little time ... ")
         flat_wave = wave.flatten()
         for j in xrange(nw-1):
             if np.isfinite(flat_wave[j]):   # skip if wavelength is NaN
@@ -429,7 +432,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
         # This is the key argument for the assert pytest function
         median_diff = False
-        if delfg_median <= threshold_diff:
+        if delfg_median <= float(threshold_diff):
             median_diff = True
 
         # make histogram
@@ -471,7 +474,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if writefile:
             outfile = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
             main_hdr = fits.getheader(step_input_filename, 0)
-            #ext_hdr = fits.getheader(msametfl, 2)
+            #ext_hdr = fits.getheader(msafile, 2)
             hdu = fits.PrimaryHDU(main_hdr)
             hdulist = fits.HDUList([hdu, flatcor.reshape(n_p)])
             hdulist.writeto(outfile)
@@ -510,6 +513,6 @@ if __name__ == '__main__':
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                           fflat_path=fflat_path, writefile=writefile,
+                           fflat_path=fflat_path, msa_conf_root=msa_conf_root, writefile=writefile,
                            show_figs=True, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
 

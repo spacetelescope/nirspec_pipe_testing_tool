@@ -68,7 +68,8 @@ def get_esafile(auxiliary_code_path, det, grat, filt, sltname_list, esa_files_pa
 
     # the ESA direcoty names use/follow their name conventions
     ESA_dir_name = CV3filename.split("_")[0].replace("NRS", "")+"_"+NID+"_JLAB88"
-    esafile_directory = esa_files_path+ESA_dir_name+"/"+ESA_dir_name+"_trace_SLIT"
+    esa_directory = os.path.join(esa_files_path, ESA_dir_name)
+    esafile_directory = os.path.join(esa_directory, ESA_dir_name+"_trace_SLIT")
 
     # to match current ESA intermediary files naming convention
     esafile_basename = "Trace_SLIT_"+sltname+ESA_dir_name+".fits"
@@ -274,6 +275,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     # to rename file within the working directory
     cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
     print (cwc_fname)
+    cwc_fname = infile_name.replace(basenameinfile_name, cwc_fname)
     #os.system("mv "+wcoordfile+" "+cwc_fname)
 
     # loop over the slits
@@ -419,8 +421,11 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                 median_diff = True
 
             # PLOTS
+            print ("Making WCS plots...")
             if plot_names is not None:
                 hist_name, deltas_name = plot_names
+            else:
+                hist_name, deltas_name = None, None
 
             # HISTOGRAM
             title = filt+"   "+grat+"   SLIT="+sltname
