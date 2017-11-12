@@ -2,14 +2,14 @@
 
 ## What is a Pytest
 
-Simply put, a Pytest is simply a pass or fail Python test. For instance, with the WCS step, we have Python scripts (which we are calling auxiliary code within the frame of the testing tool) that compare the pipeline product with the ESA corresponding intermediary file, and calculates a difference. The Pytest is to asses if that difference is less than or equal to an X threshold value. 
+Simply put, a Pytest is a pass or fail Python test. For instance, with the WCS step, we have Python scripts (which we are calling auxiliary code within the frame of the testing tool) that compare the pipeline product with the ESA corresponding intermediary file, and calculates a difference. The Pytest is to asses if that difference is less than or equal to an X threshold value. 
 
 
 
 ## Quick Start Guide
 
 
-** Note**: This guide assumes that Conda has been installed. If you have not yet done so, please follow the instructions at:
+** Note **: This guide assumes that Conda has been installed. If you have not yet done so, please follow the instructions at:
 https://astroconda.readthedocs.io/en/latest/
 
 
