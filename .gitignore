@@ -1,0 +1,8 @@
+.DS_Store
+__pycashe__
+*.pyc
+*.fits
+.cash
+*.html
+notes_on_pytests.txt
+True_steps_suffix_map.txt
