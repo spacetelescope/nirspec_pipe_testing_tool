@@ -1,0 +1,14 @@
+NOTES ON Pytests
+
+*** All steps:
+- need to uncomment the line where the pipeline actually runs.
+
+*** In the test of extract 2d step:
+* test.py:
+- an extra directory or path is required to specify where the MSA configuration file will live.
+- we will have to verify the naming convention for this msa configuration file.
+
+* once WCS is functional in the pipeline, have to uncomment the lines to actually run this step on the wcs scripts in the auxiliary code directory for: MOS, FS.
+
+
+* For IFU wcs script, there is nor current way of differentiating from two dictionary entries with the same filter/grating configuration. The code will currently take the last entry, and return that esafile name
