@@ -6,3 +6,6 @@ __pycashe__
 *.html
 notes_on_pytests.txt
 True_steps_suffix_map.txt
+assets
+*.css
+
