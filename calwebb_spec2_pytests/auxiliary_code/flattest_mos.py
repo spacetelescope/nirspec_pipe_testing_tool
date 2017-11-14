@@ -98,7 +98,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # get the wavelength values
     dfwave = np.array([])
-    for i in xrange(0, naxis3):
+    for i in range(0, naxis3):
         keyword = "PFLAT_"+str(i+1)
         dfwave = np.append(dfwave, fits.getval(dfile, keyword, 1))
     dfrqe = fits.getdata(dfile, 2)
@@ -144,7 +144,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # get the wavelength values for sflat cube
     naxis3 = fits.getval(sfile, "NAXIS3", 1)
     sfimwave = np.array([])
-    for i in xrange(0, naxis3):
+    for i in range(0, naxis3):
         if i+1 < 10:
             keyword = "FLAT_0"+str(i+1)
         else:
@@ -158,7 +158,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     ffsq1 = fits.getdata(ffile, 1)
     naxis3 = fits.getval(ffile, "NAXIS3", 1)
     ffswaveq1 = np.array([])
-    for i in xrange(0, naxis3):
+    for i in range(0, naxis3):
         if i <= 9 :
             suff = "0"+str(i)
         else:
@@ -170,7 +170,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     ffvq1 = fits.getdata(ffile, 4)
     ffsq2 = fits.getdata(ffile, 1)
     ffswaveq2 = np.array([])
-    for i in xrange(0, naxis3):
+    for i in range(0, naxis3):
         if i <= 9:
             suff = "0"+str(i)
         else:
@@ -182,7 +182,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     ffvq2 = fits.getdata(ffile, 4)
     ffsq3 = fits.getdata(ffile, 1)
     ffswaveq3 = np.array([])
-    for i in xrange(0, naxis3):
+    for i in range(0, naxis3):
         if i <= 9 :
             suff = "0"+str(i)
         else:
@@ -194,7 +194,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     ffvq3 = fits.getdata(ffile, 4)
     ffsq4 = fits.getdata(ffile, 1)
     ffswaveq4 = np.array([])
-    for i in xrange(0, naxis3):
+    for i in range(0, naxis3):
         if i <= 9:
             suff = "0"+str(i)
         else:
@@ -269,7 +269,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # loop through the pixels
         print ("looping through the pixels, this may take a little time ... ")
         flat_wave = wave.flatten()
-        for j in xrange(nw-1):
+        for j in range(nw-1):
             if np.isfinite(flat_wave[j]):   # skip if wavelength is NaN
                 # get the pixel indeces
                 jwav = flat_wave[j]
