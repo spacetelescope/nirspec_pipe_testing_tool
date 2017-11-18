@@ -81,7 +81,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # get the reference files
     # D-Flat
     dflat_ending = "f_01.03.fits"
-    dfile = dflatref_path+"_nrs1_"+dflat_ending
+    dfile = "_".join((dflatref_path, "nrs1", dflat_ending))
     if det == "NRS2":
         dfile = dfile.replace("nrs1", "nrs2")
     dfim = fits.getdata(dfile, 1)
@@ -100,7 +100,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # get the wavelength values
     dfwave = np.array([])
     for i in range(naxis3):
-        keyword = "PFLAT_"+str(i+1)
+        keyword = "_".join(("PFLAT", str(i+1)))
         dfwave = np.append(dfwave, fits.getval(dfile, keyword, 1))
     dfrqe = fits.getdata(dfile, 2)
 
@@ -124,7 +124,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         return median_diff
 
     sflat_ending = "f_01.01.fits"
-    sfile = sfile_path+"_"+grat+"_OPAQUE_"+flat+"_nrs1_"+sflat_ending
+    sfile = "_".join((sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending))
 
     if debug:
         print ("grat = ", grat)
@@ -150,9 +150,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     sfimwave = np.array([])
     for i in range(0, naxis3):
         if i+1 < 10:
-            keyword = "FLAT_0"+str(i+1)
+            keyword = "".join(("FLAT_0", str(i+1)))
         else:
-            keyword = "FLAT_"+str(i+1)
+            keyword = "".join(("FLAT_", str(i+1)))
         sfimwave = np.append(sfimwave, fits.getval(sfile, keyword, 1))
     sfv = fits.getdata(sfile, 5)
 
@@ -164,10 +164,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     ffswaveq1 = np.array([])
     for i in range(0, naxis3):
         if i <= 9 :
-            suff = "0"+str(i)
+            suff = "".join(("0", str(i)))
         else:
             suff = str(i)
-        keyword = "FLAT_"+suff
+        t = ("FLAT", suff)
+        keyword = "_".join(t)
         ffswaveq1 = np.append(ffswaveq1, fits.getval(ffile, keyword, 1))
     ffserrq1 = fits.getdata(ffile, 2)
     ffsdqq1 = fits.getdata(ffile, 3)
@@ -176,10 +177,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     ffswaveq2 = np.array([])
     for i in range(0, naxis3):
         if i <= 9:
-            suff = "0"+str(i)
+            suff = "".join(("0", str(i)))
         else:
             suff = str(i)
-        keyword = "FLAT_"+suff
+        t = ("FLAT", suff)
+        keyword = "_".join(t)
         ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, 1))
     ffserrq2 = fits.getdata(ffile, 2)
     ffsdqq2 = fits.getdata(ffile, 3)
@@ -188,10 +190,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     ffswaveq3 = np.array([])
     for i in range(0, naxis3):
         if i <= 9 :
-            suff = "0"+str(i)
+            suff = "".join(("0", str(i)))
         else:
             suff = str(i)
-        keyword = "FLAT_"+suff
+        t = ("FLAT", suff)
+        keyword = "_".join(t)
         ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, 1))
     ffserrq3 = fits.getdata(ffile, 2)
     ffsdqq3 = fits.getdata(ffile, 3)
@@ -452,7 +455,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         fig = plt.figure(1, figsize=(8, 6))
         plt.subplots_adjust(hspace=.4)
         ax = plt.subplot(111)
-        plt.title(filt+" "+grat+" SLIT_"+slit_id)
+        t= (filt, grat, "   SLIT", slit_id)
+        plt.title(" ".join(t))
         plt.xlabel("flat$_{pipe}$ - flat$_{calc}$")
         plt.ylabel("N")
         xmin = delfg_median - delfg_std*5

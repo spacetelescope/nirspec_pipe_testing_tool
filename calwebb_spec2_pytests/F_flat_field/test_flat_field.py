@@ -12,7 +12,7 @@ from .. import core_utils
 from . import flat_field_utils
 from ..auxiliary_code import flattest_mos
 from ..auxiliary_code import flattest_fs
-#from ..auxiliary_code import flattest_ifu
+from ..auxiliary_code import flattest_ifu
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -111,11 +111,12 @@ def validate_flat_field(output_hdul):
                                            show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
                                            threshold_diff=flattest_threshold_diff, debug=False)
 
-    #if core_utils.check_IFU_true(hdu):
-    #    median_diff = flattest_ifu.flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-    #                                        fflat_path=fflat_path, writefile=write_flattest_files,
-    #                                        show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
-    #                                        threshold_diff=flattest_threshold_diff, debug=False)
+    if core_utils.check_IFU_true(hdu):
+       median_diff = flattest_ifu.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
+                                            fflat_path=fflat_path, writefile=write_flattest_files,
+                                            mk_all_slices_plt=False, show_figs=show_figs,
+                                            save_figs=save_flattest_plot, plot_name=None,
+                                            threshold_diff=flattest_threshold_diff, debug=False)
 
     else:
         pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")

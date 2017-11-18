@@ -75,7 +75,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # get the reference files
     # D-Flat
     dflat_ending = "f_01.03.fits"
-    dfile = dflatref_path+"_nrs1_"+dflat_ending
+    t = (dflatref_path, "nrs1", dflat_ending)
+    dfile = "_".join(t)
     if det == "NRS2":
         dfile = dfile.replace("nrs1", "nrs2")
     dfim = fits.getdata(dfile, 1)
@@ -94,7 +95,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # get the wavelength values
     dfwave = np.array([])
     for i in range(naxis3):
-        keyword = "PFLAT_"+str(i+1)
+        t = ("PFLAT", str(i+1))
+        keyword = "_".join(t)
         dfwave = np.append(dfwave, fits.getval(dfile, keyword, 1))
     dfrqe = fits.getdata(dfile, 2)
 
@@ -115,7 +117,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         exit()
     sflat_ending = "f_01.01.fits"
     if mode in sfile_path:
-        sfile = sfile_path+"_"+grat+"_OPAQUE_"+flat+"_nrs1_"+sflat_ending
+        t = (sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending)
+        sfile = "_".join(t)
     else:
         print ("Wrong path in for mode S-flat. This script handles mode ", mode, "only.")
         # This is the key argument for the assert pytest function
@@ -150,9 +153,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         sfv_b200 = fits.getdata(sfile, 5)
 
     # F-Flat
-    fflat_ending = "_01.01.fits"
+    fflat_ending = "01.01.fits"
     if mode in fflat_path:
-        ffile = fflat_path+"_"+filt+fflat_ending
+        ffile = "_".join((fflat_path, filt, fflat_ending))
     else:
         print ("Wrong path in for mode F-flat. This script handles mode ", mode, "only.")
         # This is the key argument for the assert pytest function
@@ -313,7 +316,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         fig = plt.figure(1, figsize=(8, 6))
         plt.subplots_adjust(hspace=.4)
         ax = plt.subplot(111)
-        plt.title(filt+" "+grat+" SLIT_"+slit_id)
+        t = (filt, grat, "  SLIT"+slit_id)
+        plt.title("_".join(t))
         plt.xlabel("flat$_{pipe}$ - flat$_{calc}$")
         plt.ylabel("N")
         xmin = delfg_median - delfg_std*5
@@ -329,7 +333,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if save_figs:
             if plot_name is None:
                 file_basename = step_input_filename.replace(".fits", "")
-                plot_name = file_basename+"_FS_flattest_histogram.jpg"
+                t = (file_basename, "FS_flattest_histogram.jpg")
+                plot_name = "_".join(t)
             plt.savefig(plot_name)
             print ('\n Plot saved: ', plot_name)
         if show_figs:
