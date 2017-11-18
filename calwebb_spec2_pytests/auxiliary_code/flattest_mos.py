@@ -10,7 +10,8 @@ import auxiliary_functions as auxfunc
 
 
 """
-This script tests the pipeline flat field step output for MOS data.
+This script tests the pipeline flat field step output for MOS data. It is the python version of the IDL script
+(with the same name) written by James Muzerolle.
 """
 
 
@@ -57,7 +58,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         debug: boolean, if true a series of print statements will show on-screen
 
     Returns:
-        - 3 plots, if told to save and/or show them.
+        - 1 plot, if told to save and/or show.
         - median_diff: Boolean, True if smaller or equal to 1e-14
 
     """
@@ -98,7 +99,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # get the wavelength values
     dfwave = np.array([])
-    for i in range(0, naxis3):
+    for i in range(naxis3):
         keyword = "PFLAT_"+str(i+1)
         dfwave = np.append(dfwave, fits.getval(dfile, keyword, 1))
     dfrqe = fits.getdata(dfile, 2)
@@ -118,7 +119,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         flat = "FLAT5"
     else:
         print ("No filter correspondence. Exiting the program.")
-        exit()
+        # This is the key argument for the assert pytest function
+        median_diff = None
+        return median_diff
+
     sflat_ending = "f_01.01.fits"
     sfile = sfile_path+"_"+grat+"_OPAQUE_"+flat+"_nrs1_"+sflat_ending
 
@@ -289,7 +293,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     delw = flat_wave[j] - flat_wave[j-1]
 
                 if debug:
-                    #print ("(j, (j-1), n_p[1], (j-1)/n_p[1], (j+1), n_p[1], (j+1)/n_p[1])", j, (j-1), n_p[1], int((j-1)/n_p[1]), (j+1), n_p[1], int((j+1)/n_p[1]))
+                    #print ("(j, (j-1), n_p[1], (j-1)/n_p[1], (j+1), (j+1)/n_p[1])", j, (j-1), n_p[1], int((j-1)/n_p[1]), (j+1), int((j+1)/n_p[1]))
                     #print ("np.isfinite(flat_wave[j+1]), np.isfinite(flat_wave[j-1])", np.isfinite(flat_wave[j+1]), np.isfinite(flat_wave[j-1]))
                     #print ("flat_wave[j+1], flat_wave[j-1] : ", np.isfinite(flat_wave[j+1]), flat_wave[j+1], flat_wave[j-1])
                     print ("delw = ", delw)
@@ -369,9 +373,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         int_tab = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw])
                         first_ffv_wav, last_ffv_wav = ffv_wav[iw[0]][0], ffv_wav[iw[0]][-1]
                         fff = int_tab/(last_ffv_wav - first_ffv_wav)
+
                 # interpolate over f-flat cube
                 ffs = np.interp(flat_wave[j], ffsallwave, ffsall[:, col-1, row-1])
                 flatcor[j] = dff*dfs*sff*sfs*fff*ffs
+
                 if (pind[1]-px0+1 == 9999) and (pind[0]-py0+1 == 9999):
                     print ("pind = ", pind)
                     print ("flat_wave[j] = ", flat_wave[j])
@@ -425,6 +431,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 else:
                     flatcor[j] = 1.0   # no correction if no wavelength
 
+        wc_hdulist.close()
 
         delfg = delf[np.where((delf != 999.0) & (delf >= -0.1))]   # ignore outliers
         delfg_median, delfg_std = np.median(delfg), np.std(delfg)
@@ -462,7 +469,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if save_figs:
             if fig_name is None:
                 file_basename = step_input_filename.replace(".fits", "")
-                fig_name = file_basename+"_MOSflattest_histogram.jpg"
+                fig_name = file_basename+"_MOS_flattest_histogram.jpg"
             plt.savefig(fig_name)
             print ('\n Plot saved: ', fig_name)
         if show_figs:

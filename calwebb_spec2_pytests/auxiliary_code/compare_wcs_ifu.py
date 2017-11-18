@@ -442,7 +442,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                 median_diff = True
 
         # PLOTS
-        if len(delwave) != 0:
+        if show_figs or save_figs and (len(delwave) != 0):
             print ("Making WCS plots...")
             if plot_names is not None:
                 hist_name, deltas_name, msacolormap_name = plot_names
@@ -487,7 +487,8 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             mk_plots(title, info_fig1=info_fig1, show_figs=show_figs, save_figs=save_figs,
                      msacolormap=True, fig_name=msacolormap_name)
         else:
-            print(" * Delta_wavelength array is emtpy. No plots being made. \n")
+            print ("compare_wcs.py ran but NO plots were made because show_figs and save_figs were both set to False \n")
+            print ("  OR the delta_wavelength array is emtpy.  \n")
 
     return median_diff
 

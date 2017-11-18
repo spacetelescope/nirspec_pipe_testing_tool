@@ -428,28 +428,31 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                 hist_name, deltas_name = None, None
 
             # HISTOGRAM
-            title = filt+"   "+grat+"   SLIT="+sltname
-            xmin1 = min(delwave) - (max(delwave)-min(delwave))*0.1
-            xmax1 = max(delwave) + (max(delwave)-min(delwave))*0.1
-            xlabel1, ylabel1 = r"$\lambda_{pipe}$ - $\lambda_{ESA}$ (10$^{-10}$m)", "N"
-            yarr = None
-            bins = 15
-            info_fig1 = [xlabel1, ylabel1, delwave, yarr, xmin1, xmax1, bins, delwave_median, delwave_stddev]
-            xmin2 = min(deldy) - (max(deldy)-min(deldy))*0.1
-            xmax2 = max(deldy) + (max(deldy)-min(deldy))*0.1
-            xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$ (relative slit position)", "N"
-            info_fig2 = [xlabel2, ylabel2, deldy, yarr, xmin2, xmax2, bins, deldy_median, deldy_stddev]
-            mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
-                     histogram=True, fig_name=hist_name)
+            if show_figs or save_figs:
+                title = filt+"   "+grat+"   SLIT="+sltname
+                xmin1 = min(delwave) - (max(delwave)-min(delwave))*0.1
+                xmax1 = max(delwave) + (max(delwave)-min(delwave))*0.1
+                xlabel1, ylabel1 = r"$\lambda_{pipe}$ - $\lambda_{ESA}$ (10$^{-10}$m)", "N"
+                yarr = None
+                bins = 15
+                info_fig1 = [xlabel1, ylabel1, delwave, yarr, xmin1, xmax1, bins, delwave_median, delwave_stddev]
+                xmin2 = min(deldy) - (max(deldy)-min(deldy))*0.1
+                xmax2 = max(deldy) + (max(deldy)-min(deldy))*0.1
+                xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$ (relative slit position)", "N"
+                info_fig2 = [xlabel2, ylabel2, deldy, yarr, xmin2, xmax2, bins, deldy_median, deldy_stddev]
+                mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
+                         histogram=True, fig_name=hist_name)
 
-            # DELTAS PLOT
-            title = ""
-            title1, xlabel1, ylabel1 = r"$\Delta \lambda$", "x (pixels)", "y (pixels)"
-            info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
-            title2, xlabel2, ylabel2 = r"$\Delta$ Flux", "x (pixels)", "y (pixels)"
-            info_fig2 = [title2, xlabel2, ylabel2, pxrg, pyrg, deldy, deldy_median, deldy_stddev]
-            mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
-                     deltas_plt=True, fig_name=deltas_name)
+                # DELTAS PLOT
+                title = ""
+                title1, xlabel1, ylabel1 = r"$\Delta \lambda$", "x (pixels)", "y (pixels)"
+                info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
+                title2, xlabel2, ylabel2 = r"$\Delta$ Flux", "x (pixels)", "y (pixels)"
+                info_fig2 = [title2, xlabel2, ylabel2, pxrg, pyrg, deldy, deldy_median, deldy_stddev]
+                mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
+                         deltas_plt=True, fig_name=deltas_name)
+            else:
+                print ("compare_wcs.py ran but NO plots were made because show_figs and save_figs were both set to False. \n")
         else:
             print(" * Delta_wavelength array is emtpy. No plots being made. \n")
 
