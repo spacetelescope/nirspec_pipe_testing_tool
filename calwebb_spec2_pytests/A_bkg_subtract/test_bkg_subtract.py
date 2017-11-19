@@ -45,6 +45,8 @@ def set_inandout_filenames(config):
     step_dict = dict(config.items("steps"))
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
     True_steps_suffix_map = config.get("calwebb_spec2_input_file", "True_steps_suffix_map")
+    pytests_directory = os.getcwd()
+    True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
     suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, step_dict)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames
     return step, step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map

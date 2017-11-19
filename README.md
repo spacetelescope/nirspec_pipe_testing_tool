@@ -47,7 +47,16 @@ pytest --collect-only
 pytest -s --config_file=cwspec2_config.cfg --html=report.html
 ```
 
-If all went well you should have a report.html in your directory. 
+
+If all went well you should have a report.html in your directory.
+
+
+NOTE THAT:
+- A text file containing a suffix name map will be created in the pytests directory.
+- If the central store directory calls do not respond, the pytest will be sikiped even if the step is set to True in the config file. To make the 
+tests run, you will have to download the files the tool is calling.
+- The output in the terminal can be a bit overwhelming if there was a failed test or an error. The html report is much clearer to understand what happened.
+
 
 If you have any question of what a specific step does, you can get a description at:
 http://ssb.stsci.edu/doc/jwst_dev/jwst/pipeline/description.html#stage2-imaging-flow

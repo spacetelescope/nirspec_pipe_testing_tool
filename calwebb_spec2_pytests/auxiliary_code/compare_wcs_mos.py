@@ -541,8 +541,10 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             mk_plots(title, info_fig1=info_fig1, show_figs=show_figs, save_figs=save_figs,
                      msacolormap=True, fig_name=msacolormap_name)
         else:
-            print ("compare_wcs.py ran but NO plots were made because show_figs and save_figs were both set to False \n")
-            print ("  OR the delta_wavelength array is emtpy.  \n")
+            if not show_figs or not save_figs:
+                print ("NO plots were made because show_figs and save_figs were both set to False. \n")
+            if len(delwave) == 0:
+                print ("NO plots were made because the delta_wavelength array is emtpy.  \n")
 
     return median_diff
 

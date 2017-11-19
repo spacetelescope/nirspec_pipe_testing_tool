@@ -1,7 +1,7 @@
 from __future__ import print_function, division
 
 """
-py.test module for unit testing the extract_2d step.
+py.test module for unit testing the flat field step.
 """
 
 import pytest
@@ -23,10 +23,10 @@ def set_inandout_filenames(request, config):
     step = "flat_field"
     step_dict = dict(config.items("steps"))
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
-    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
     True_steps_suffix_map = config.get("calwebb_spec2_input_file", "True_steps_suffix_map")
-    txt_name = os.path.join(working_directory, True_steps_suffix_map)
-    steps_list, suffix_list, completion_list = core_utils.read_True_steps_suffix_map(txt_name)
+    pytests_directory = os.getcwd()
+    True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
+    steps_list, suffix_list, completion_list = core_utils.read_True_steps_suffix_map(True_steps_suffix_map)
     step_input_filename = core_utils.get_correct_input_step_filename(initial_input_file, steps_list,
                                                                      suffix_list, completion_list)
     suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, step_dict)
