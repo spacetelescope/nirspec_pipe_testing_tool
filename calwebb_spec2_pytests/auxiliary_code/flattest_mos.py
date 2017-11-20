@@ -84,6 +84,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     dfile = "_".join((dflatref_path, "nrs1", dflat_ending))
     if det == "NRS2":
         dfile = dfile.replace("nrs1", "nrs2")
+    #print(" ***** path for d-flat: ", os.path.isfile(dfile))
     dfim = fits.getdata(dfile, 1)
     dfimdq = fits.getdata(dfile, 4)
     # need to flip/rotate the image into science orientation
@@ -125,6 +126,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     sflat_ending = "f_01.01.fits"
     sfile = "_".join((sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending))
+    #print(" ***** path for s-flat: ", os.path.isfile(sfile))
 
     if debug:
         print ("grat = ", grat)
@@ -159,6 +161,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # F-Flat
     fflat_ending = "_01.01.fits"
     ffile = fflat_path+"_"+filt+fflat_ending
+    #print(" ***** path for f-flat: ", os.path.isfile(ffile))
     ffsq1 = fits.getdata(ffile, 1)
     naxis3 = fits.getval(ffile, "NAXIS3", 1)
     ffswaveq1 = np.array([])

@@ -230,6 +230,58 @@ def str_to_bool(s):
          return False
 
 
+def set_inandout_filenames(step, config):
+    """
+    Set the step input and output file names, and add the step suffix to the step map.
+    Args:
+        step: string, name of the step as in the pipeline
+        config: object, this is the configuration file object
+
+    Returns:
+        step_input_filename = string
+        step_output_filename = string
+        in_file_suffix = string, suffix of the input file
+        out_file_suffix = string, suffix of the output file
+        True_steps_suffix_map = string, path to the suffix map
+    """
+    step_dict = dict(config.items("steps"))
+    initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
+    True_steps_suffix_map = config.get("calwebb_spec2_input_file", "True_steps_suffix_map")
+    pytests_directory = os.getcwd()
+    True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
+    steps_list, suffix_list, completion_list = read_True_steps_suffix_map(True_steps_suffix_map)
+    step_input_filename = get_correct_input_step_filename(initial_input_file, steps_list,
+                                                                     suffix_list, completion_list)
+    suffix_and_filenames = get_step_inandout_filename(step, initial_input_file, step_dict)
+    in_file_suffix, out_file_suffix, _, _ = suffix_and_filenames
+    step_output_filename = step_input_filename.replace(".fits", out_file_suffix+".fits")
+    print ("step_input_filename = ", step_input_filename)
+    print ("step_output_filename = ", step_output_filename)
+    return step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map
+
+
+def read_info4outputhdul(config, step_info):
+    """
+    Unfold the variables from the return of the function set_inandout_filenames, and get variables from the
+    configuration file.
+    Args:
+        config: object, this is the configuration file object
+        step_info: list, this is the output from the function set_inandout_filenames
+
+    Returns:
+        set_inandout_filenames_info = list, variables from set_inandout_filenames function and configuration file
+    """
+    initiate_calwebb_spc2 = "calwebb_spec2_input_file"
+    working_directory = config.get(initiate_calwebb_spc2, "working_directory")
+    step, step_input_filename, output_file, in_file_suffix, outstep_file_suffix, True_steps_suffix_map = step_info
+    txt_name = os.path.join(working_directory, True_steps_suffix_map)
+    step_input_file = os.path.join(working_directory, step_input_filename)
+    step_output_file = os.path.join(working_directory, output_file)
+    run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
+    set_inandout_filenames_info = [step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix]
+    return set_inandout_filenames_info
+
+
 def check_FS_true(output_hdul):
     """
     This function checks if the fits file is a Fixed Slit.
@@ -257,7 +309,7 @@ def check_MOS_true(output_hdul):
     """
     result = False
     if "EXP_TYPE" in output_hdul:
-        if output_hdul["EXP_TYPE"] == "NRS_MSASPEC":
+        if "MSA" in output_hdul["EXP_TYPE"]:
             result = True
     return result
 
@@ -273,9 +325,10 @@ def check_IFU_true(output_hdul):
     """
     result = False
     if "EXP_TYPE" in output_hdul:
-        if output_hdul["EXP_TYPE"] == "NRS_IFU":
+        if "IFU" in output_hdul["EXP_TYPE"]:
             result = True
     return result
+
 
 def find_which_slit(output_hdul):
     """
@@ -290,7 +343,7 @@ def find_which_slit(output_hdul):
     slits = ["S200A1", "S200A2", "S200B1", "S400A1", "S1600A1"]
     if "FXD_SLIT" in output_hdul:
         for i, s in enumerate(slits):
-            if output_hdul["FXD_SLIT"] == s:
+            if s in output_hdul["FXD_SLIT"]:
                 return i+1, s
 
 

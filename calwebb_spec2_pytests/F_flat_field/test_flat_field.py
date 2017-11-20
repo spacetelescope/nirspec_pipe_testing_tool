@@ -21,45 +21,25 @@ from ..auxiliary_code import flattest_ifu
 @pytest.fixture(scope="module")
 def set_inandout_filenames(request, config):
     step = "flat_field"
-    step_dict = dict(config.items("steps"))
-    initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
-    True_steps_suffix_map = config.get("calwebb_spec2_input_file", "True_steps_suffix_map")
-    pytests_directory = os.getcwd()
-    True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
-    steps_list, suffix_list, completion_list = core_utils.read_True_steps_suffix_map(True_steps_suffix_map)
-    step_input_filename = core_utils.get_correct_input_step_filename(initial_input_file, steps_list,
-                                                                     suffix_list, completion_list)
-    suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, step_dict)
-    in_file_suffix, out_file_suffix, _, _ = suffix_and_filenames
-    step_output_filename = step_input_filename.replace(".fits", out_file_suffix+".fits")
-    print ("step_input_filename = ", step_input_filename)
-    print ("step_output_filename = ", step_output_filename)
+    step_info = core_utils.set_inandout_filenames(step, config)
+    step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map = step_info
     return step, step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map
 
 
 # fixture to read the output file header
 @pytest.fixture(scope="module")
 def output_hdul(set_inandout_filenames, config):
-    initiate_calwebb_spc2 = "calwebb_spec2_input_file"
-    working_directory = config.get(initiate_calwebb_spc2, "working_directory")
-    step = set_inandout_filenames[0]
-    step_input_filename = set_inandout_filenames[1]
-    output_file = set_inandout_filenames[2]
-    outstep_file_suffix = set_inandout_filenames[4]
-    True_steps_suffix_map = set_inandout_filenames[5]
-    txt_name = os.path.join(working_directory, True_steps_suffix_map)
-    step_input_file = os.path.join(working_directory, step_input_filename)
-    step_output_file = os.path.join(working_directory, output_file)
+    set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
+    step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     stp = FlatFieldStep()
-    run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
-    dflatref_path = config.get("esa_intermediary_products", "dflatref_path")
-    sfile_path = config.get("esa_intermediary_products", "sfile_path")
+    dflat_path = config.get("esa_intermediary_products", "dflat_path")
+    sflat_path = config.get("esa_intermediary_products", "sflat_path")
     fflat_path = config.get("esa_intermediary_products", "fflat_path")
     flattest_threshold_diff = config.get("additional_arguments", "flattest_threshold_diff")
     save_flattest_plot = config.getboolean("additional_arguments", "save_flattest_plot")
     write_flattest_files = config.getboolean("additional_arguments", "write_flattest_files")
-    flattest_paths = [step_output_file, msa_conf_root, dflatref_path, sfile_path, fflat_path]
+    flattest_paths = [step_output_file, msa_conf_root, dflat_path, sflat_path, fflat_path]
     flattest_switches = [flattest_threshold_diff, save_flattest_plot, write_flattest_files]
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
@@ -95,7 +75,9 @@ def validate_flat_field(output_hdul):
     # show the figures
     show_figs = False
 
+    skip_this_test = True
     if core_utils.check_FS_true(hdu):
+        skip_this_test = False
         # Find what slit the data corresponds to
         ext, slit = core_utils.find_which_slit(hdu)
         if (slit is not None) or (slit != "NULL"):
@@ -105,21 +87,24 @@ def validate_flat_field(output_hdul):
                                                 threshold_diff=flattest_threshold_diff, debug=False)
 
     if core_utils.check_MOS_true(hdu):
-       median_diff = flattest_mos.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
+        skip_this_test = False
+        median_diff = flattest_mos.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
                                            fflat_path=fflat_path, msa_conf_root=msa_conf_root,
                                            writefile=write_flattest_files,
                                            show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
                                            threshold_diff=flattest_threshold_diff, debug=False)
 
     if core_utils.check_IFU_true(hdu):
-       median_diff = flattest_ifu.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
+        skip_this_test = False
+        median_diff = flattest_ifu.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
                                             fflat_path=fflat_path, writefile=write_flattest_files,
                                             mk_all_slices_plt=False, show_figs=show_figs,
                                             save_figs=save_flattest_plot, plot_name=None,
                                             threshold_diff=flattest_threshold_diff, debug=False)
 
-    else:
-        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")
+    if skip_this_test:
+        pytest.skip("Skipping pytest: The input fits file is not FS, MOS, or IFU. This tool does not yet include the "
+                    "routine to verify this kind of file.")
     return median_diff
 
 
