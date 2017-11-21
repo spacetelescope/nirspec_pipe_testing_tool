@@ -75,9 +75,7 @@ def validate_flat_field(output_hdul):
     # show the figures
     show_figs = False
 
-    skip_this_test = True
     if core_utils.check_FS_true(hdu):
-        skip_this_test = False
         # Find what slit the data corresponds to
         ext, slit = core_utils.find_which_slit(hdu)
         if (slit is not None) or (slit != "NULL"):
@@ -86,23 +84,21 @@ def validate_flat_field(output_hdul):
                                                 show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
                                                 threshold_diff=flattest_threshold_diff, debug=False)
 
-    if core_utils.check_MOS_true(hdu):
-        skip_this_test = False
+    elif core_utils.check_MOS_true(hdu):
         median_diff = flattest_mos.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
                                            fflat_path=fflat_path, msa_conf_root=msa_conf_root,
                                            writefile=write_flattest_files,
                                            show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
                                            threshold_diff=flattest_threshold_diff, debug=False)
 
-    if core_utils.check_IFU_true(hdu):
-        skip_this_test = False
+    elif core_utils.check_IFU_true(hdu):
         median_diff = flattest_ifu.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
                                             fflat_path=fflat_path, writefile=write_flattest_files,
                                             mk_all_slices_plt=False, show_figs=show_figs,
                                             save_figs=save_flattest_plot, plot_name=None,
                                             threshold_diff=flattest_threshold_diff, debug=False)
 
-    if skip_this_test:
+    else:
         pytest.skip("Skipping pytest: The input fits file is not FS, MOS, or IFU. This tool does not yet include the "
                     "routine to verify this kind of file.")
     return median_diff
@@ -112,7 +108,7 @@ def validate_flat_field(output_hdul):
 # Unit tests
 
 def test_s_flat_exists(output_hdul):
-    assert flat_field_utils.s_flat_exists(output_hdul[0])
+    assert flat_field_utils.s_flat_exists(output_hdul[0]), "The keyword S_FLAT was not added to the header --> flat_field step was not completed."
 
 def test_validate_flat_field(output_hdul):
-    assert validate_flat_field(output_hdul)
+    assert validate_flat_field(output_hdul), "Output value from flattest.py is greater than threshold."

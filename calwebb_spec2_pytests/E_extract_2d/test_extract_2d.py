@@ -87,7 +87,6 @@ def validate_wcs_extract2d(output_hdul):
                                                   threshold_diff=threshold_diff)
 
     elif core_utils.check_MOS_true(hdu):
-        print("infile for compare_wcs = ", infile_name)
         median_diff = compare_wcs_mos.compare_wcs(infile_name, msa_conf_root=msa_conf_root,
                                                   esa_files_path=esa_files_path, auxiliary_code_path=None,
                                                   plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
@@ -107,8 +106,8 @@ def validate_wcs_extract2d(output_hdul):
 ### Unit tests
 
 def test_s_ext2d_exists(output_hdul):
-    assert extract_2d_utils.s_ext2d_exists(output_hdul[0])
+    assert extract_2d_utils.s_ext2d_exists(output_hdul[0]), "The keyword S_EXTR2D was not added to the header --> extract_2d step was not completed."
 
 
 def test_validate_wcs_extract2d(output_hdul):
-    assert validate_wcs_extract2d(output_hdul)
+    assert validate_wcs_extract2d(output_hdul), "Output value from compare_wcs.py is greater than threshold."

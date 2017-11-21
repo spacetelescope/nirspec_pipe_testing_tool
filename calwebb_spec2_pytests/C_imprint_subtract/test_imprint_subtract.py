@@ -62,4 +62,4 @@ def output_hdul(set_inandout_filenames, config):
 # Unit tests
 
 def test_s_imprint_exists(output_hdul):
-    assert imprint_subtract_utils.s_imprint_exists(output_hdul)
+    assert imprint_subtract_utils.s_imprint_exists(output_hdul), "The keyword S_IMPRINT was not added to the header --> imprint_subtract step was not completed."

@@ -46,6 +46,7 @@ pytest --collect-only
 ```bash
 pytest -s --config_file=cwspec2_config.cfg --html=report.html
 ```
+The "-s" will capture all the print statements in the code on screen.
 
 
 If all went well you should have a report.html in your directory.
@@ -55,6 +56,16 @@ NOTE THAT:
 - A text file containing a suffix name map will be created in the pytests directory.
 - If any of the central store directory calls do not respond, the pytest will be skipped even if the step is set to True in the config file. To make the tests run, you will have to download the files the tool is calling, and change the corresponding paths in the configuration file.
 - The output in the terminal can be a bit overwhelming if there was a failed test or an error. The html report is much clearer to understand what happened.
+
+
+
+## POSSIBLE OUTCOMES OF THE PYTESTS
+
+- Passed = the assertion was true, so the test condition was met.
+- Failed = the assertion was false, the test condition was NOT met (there will be an AssertionError on-screen and in the html file, with a message of what happened).
+- Skipped = the test was skipped (there will be a message on the html report and on-screen explaining why the test was skipped).
+- Error = this is a coding error (a bug), please send me an email with the html report. 
+
 
 
 If you have any question of what a specific step does, you can get a description at:

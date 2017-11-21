@@ -118,5 +118,5 @@ def output_hdul(set_inandout_filenames, config):
 # Unit tests
 
 def test_s_bkdsub_exists(output_hdul):
-    assert bkg_subtract_utils.s_bkdsub_exists(output_hdul)
+    assert bkg_subtract_utils.s_bkdsub_exists(output_hdul), "The keyword S_BKDSUB was not added to the header --> background step was not completed."
 

@@ -53,11 +53,11 @@ def output_hdul(set_inandout_filenames, config):
 # Unit tests
 
 def test_wavstart_exists(output_hdul):
-    assert assign_wcs_utils.wavstart_exists(output_hdul)
+    assert assign_wcs_utils.wavstart_exists(output_hdul), "The keyword WAVSTART was not added to the header."
 
 def test_sporder_exists(output_hdul):
-    assert assign_wcs_utils.sporder_exists(output_hdul)
+    assert assign_wcs_utils.sporder_exists(output_hdul), "The keyword SPORDER was not added to the header."
 
 def test_s_wcs_exists(output_hdul):
-    assert assign_wcs_utils.s_wcs_exists(output_hdul)
+    assert assign_wcs_utils.s_wcs_exists(output_hdul), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
 
