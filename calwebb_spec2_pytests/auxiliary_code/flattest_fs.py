@@ -333,7 +333,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if save_figs:
             if plot_name is None:
                 file_basename = step_input_filename.replace(".fits", "")
-                t = (file_basename, "FS_flattest_histogram.jpg")
+                t = (file_basename, "FS_flattest_histogram.pdf")
                 plot_name = "_".join(t)
             plt.savefig(plot_name)
             print ('\n Plot saved: ', plot_name)
@@ -381,7 +381,7 @@ if __name__ == '__main__':
     writefile = True
 
     # set the names of the resulting plots
-    plot_name = "FS_flattest_histogram.jpg"
+    plot_name = "FS_flattest_histogram.pdf"
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,

@@ -1,4 +1,3 @@
-from __future__ import print_function, division
 
 """
 py.test module for unit testing the extract_2d step.
@@ -6,13 +5,13 @@ py.test module for unit testing the extract_2d step.
 
 import pytest
 import os
-from jwst.extract_2d.extract_2d_step import Extract2dStep
 
+from jwst.extract_2d.extract_2d_step import Extract2dStep
 from .. import core_utils
 from . import extract_2d_utils
-from ..auxiliary_code import compare_wcs_fs
-from ..auxiliary_code import compare_wcs_mos
-from ..auxiliary_code import compare_wcs_ifu
+from .. import auxiliary_code.compare_wcs_fs
+from .. auxiliary_code import compare_wcs_mos
+from .. auxiliary_code import compare_wcs_ifu
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files

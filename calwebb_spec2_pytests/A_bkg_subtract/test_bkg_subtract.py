@@ -1,11 +1,11 @@
-from __future__ import print_function, division
+
 """
 py.test module for unit testing the bkg_subtract step.
 """
 
 import pytest
 import os
-from jwst.pipeline import Spec2Pipeline
+from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
 from jwst.background.background_step import BackgroundStep
 
 from .. import core_utils

@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
 from jwst.assign_wcs.tools.nirspec import compute_world_coordinates
-import auxiliary_functions as auxfunc
+from . import auxiliary_functions as auxfunc
+from .. auxiliary_code import CV3_testdata_used4build7
 
 
 """
@@ -40,8 +41,6 @@ def get_esafile(auxiliary_code_path, det, grat, filt, IFUslice, esa_files_path):
 
     # get the corresponding ESA file to the input file
     # to do this, the script needs the python dictionary of the CV3 data
-    sys.path.append(auxiliary_code_path)
-    import CV3_testdata_used4build7
     if det == "NRS1":
         file4detector = 0
     elif det == "NRS2":
@@ -222,15 +221,16 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
         plt.minorticks_on()
     if save_figs:
+        type_fig = "pdf"
         if histogram:
             if fig_name is None:
-                fig_name = "wcs_histogram.jpg"
+                fig_name = ".".join("wcs_histogram", type_fig)
         if deltas_plt:
             if fig_name is None:
-                fig_name = "wcs_Deltas.jpg"
+                fig_name = ".".join("wcs_Deltas", type_fig)
         if msacolormap:
             if fig_name is None:
-                fig_name = "wcs_MSAcolormap.jpg"
+                fig_name = ".".join("wcs_MSAcolormap", type_fig)
         fig.savefig(fig_name)
         print ('\n Plot saved: ', fig_name)
     if show_figs:
@@ -507,9 +507,9 @@ if __name__ == '__main__':
     esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_IFU/"
 
     # set the names of the resulting plots
-    hist_name = infile_name.replace("fits", "")+"_wcs_histogram.jpg"
-    deltas_name = infile_name.replace("fits", "")+"_wcs_deltas.jpg"
-    msacolormap_name = infile_name.replace("fits", "")+"_wcs_msacolormap.jpg"
+    hist_name = infile_name.replace("fits", "")+"_wcs_histogram.pdf"
+    deltas_name = infile_name.replace("fits", "")+"_wcs_deltas.pdf"
+    msacolormap_name = infile_name.replace("fits", "")+"_wcs_msacolormap.pdf"
     plot_names = [hist_name, deltas_name, msacolormap_name]
 
     # Run the principal function of the script

@@ -476,7 +476,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if save_figs:
             if fig_name is None:
                 file_basename = step_input_filename.replace(".fits", "")
-                fig_name = file_basename+"_MOS_flattest_histogram.jpg"
+                fig_name = file_basename+"_MOS_flattest_histogram.pdf"
             plt.savefig(fig_name)
             print ('\n Plot saved: ', fig_name)
         if show_figs:
@@ -523,7 +523,7 @@ if __name__ == '__main__':
     writefile = True
 
     # set the names of the resulting plots
-    plot_name = "jwtest1010001_01101_00001_MOS_flattest_histogram.jpg"
+    plot_name = "jwtest1010001_01101_00001_MOS_flattest_histogram.pdf"
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,

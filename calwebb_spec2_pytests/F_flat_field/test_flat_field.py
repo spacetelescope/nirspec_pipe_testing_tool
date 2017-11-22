@@ -1,4 +1,3 @@
-from __future__ import print_function, division
 
 """
 py.test module for unit testing the flat field step.
@@ -6,13 +5,13 @@ py.test module for unit testing the flat field step.
 
 import pytest
 import os
-from jwst.flatfield.flat_field_step import FlatFieldStep
 
+from jwst.flatfield.flat_field_step import FlatFieldStep
 from .. import core_utils
 from . import flat_field_utils
-from ..auxiliary_code import flattest_mos
-from ..auxiliary_code import flattest_fs
-from ..auxiliary_code import flattest_ifu
+from .. auxiliary_code import flattest_mos
+from .. auxiliary_code import flattest_fs
+from .. auxiliary_code import flattest_ifu
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files

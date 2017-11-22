@@ -11,6 +11,7 @@ Simply put, a Pytest is a pass or fail Python test. For instance, with the WCS s
 
 ** Note ** : This guide assumes that Conda has been installed. If you have not yet done so, please follow the instructions at:
 https://astroconda.readthedocs.io/en/latest/
+Please use python 3.5
 
 
 1. Create the conda environment for testing the correct version of the pipeline
@@ -18,7 +19,7 @@ https://astroconda.readthedocs.io/en/latest/
 * Specific instructions to create the build7.1 environment.
 For example, in a terminal type:
 ```bash
-conda create -n jwst_b7.1 --file url_to_be_given_to_us
+conda create -n jwst_b7.1 --file url_to_be_given_to_us python=3.5
 ```
 
 2. Activate the conda environment for testing the pipeline, e.g. type:

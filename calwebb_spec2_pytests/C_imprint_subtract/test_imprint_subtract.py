@@ -1,4 +1,4 @@
-from __future__ import print_function, division
+
 """
 py.test module for unit testing the imprint_subtract step.
 """
