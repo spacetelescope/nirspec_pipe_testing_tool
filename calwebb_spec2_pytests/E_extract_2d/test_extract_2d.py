@@ -9,7 +9,7 @@ import os
 from jwst.extract_2d.extract_2d_step import Extract2dStep
 from .. import core_utils
 from . import extract_2d_utils
-from .. import auxiliary_code.compare_wcs_fs
+from .. auxiliary_code import compare_wcs_fs
 from .. auxiliary_code import compare_wcs_mos
 from .. auxiliary_code import compare_wcs_ifu
 

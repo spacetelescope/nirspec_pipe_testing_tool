@@ -883,5 +883,5 @@ if __name__ == '__main__':
     for nid, nid_dict_key in d["MOS"]["NID"].items():
         if nid_dict_key["grism"] == "G140H":
             if nid_dict_key["filter"] == "OPAQUE":
-                print "NID =", nid
-                print "CV3filename = ", nid_dict_key["CV3filename"][0] # the 0 is because of detector 491
+                print ("NID =", nid)
+                print ("CV3filename = ", nid_dict_key["CV3filename"][0]) # the 0 is because of detector 491

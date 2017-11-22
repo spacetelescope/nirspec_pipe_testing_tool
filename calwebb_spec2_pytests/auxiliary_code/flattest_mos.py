@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
 
-import auxiliary_functions as auxfunc
+from .. auxiliary_code import auxiliary_functions as auxfunc
 
 
 """
