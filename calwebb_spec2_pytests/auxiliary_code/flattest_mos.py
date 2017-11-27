@@ -474,11 +474,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         _, _, _ = ax.hist(delfg, bins=30, histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
         if save_figs:
-            if fig_name is None:
+            if plot_name is None:
                 file_basename = step_input_filename.replace(".fits", "")
-                fig_name = file_basename+"_MOS_flattest_histogram.pdf"
-            plt.savefig(fig_name)
-            print ('\n Plot saved: ', fig_name)
+                plot_name = file_basename+"_MOS_flattest_histogram.pdf"
+            plt.savefig(plot_name)
+            print ('\n Plot saved: ', plot_name)
         if show_figs:
             plt.show()
         plt.close()

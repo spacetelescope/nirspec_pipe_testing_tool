@@ -52,11 +52,14 @@ def get_esafile(auxiliary_code_path, det, grat, filt, esa_files_path, quad, row,
                 CV3filename = nid_dict_key["CV3filename"][file4detector]
                 print ("NID of ESA file:", NID)
                 print("CV3filename =", CV3filename)
+                break
     # read in ESA data
     # the ESA direcoty names use/follow their name conventions
     ESA_dir_name = CV3filename.split("_")[0].replace("NRS", "")+"_"+NID+"_JLAB88"
     esa_directory = os.path.join(esa_files_path, ESA_dir_name)
     esafile_directory = os.path.join(esa_directory, ESA_dir_name+"_trace_MOS")
+    #print("esa_directory = ", esa_directory)
+    #print("esafile_directory = ", esafile_directory)
     # add a 0 if necessary for convention purposes
     if col < 99:
         col = "0"+str(col[0])
@@ -233,13 +236,13 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         type_fig = "pdf"
         if histogram:
             if fig_name is None:
-                fig_name = ".".join("wcs_histogram", type_fig)
+                fig_name = ".".join(("wcs_histogram", type_fig))
         if deltas_plt:
             if fig_name is None:
-                fig_name = ".".join("wcs_Deltas", type_fig)
+                fig_name = ".".join(("wcs_Deltas", type_fig))
         if msacolormap:
             if fig_name is None:
-                fig_name = ".".join("wcs_MSAcolormap", type_fig)
+                fig_name = ".".join(("wcs_MSAcolormap", type_fig))
         fig.savefig(fig_name)
         print ('\n Plot saved: ', fig_name)
     if show_figs:
@@ -502,7 +505,11 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             if plot_names is not None:
                 hist_name, deltas_name, msacolormap_name = plot_names
             else:
-                hist_name, deltas_name, msacolormap_name = None, None, None
+                #hist_name, deltas_name, msacolormap_name = None, None, None
+                hist_name = infile_name.replace(".fits", "_wcs_histogram.pdf")
+                deltas_name = infile_name.replace(".fits", "_wcs_Deltas.pdf")
+                msacolormap_name = infile_name.replace(".fits", "_wcs_MSAcolormap.pdf")
+
 
             # HISTOGRAM
             if filt == "OPAQUE":

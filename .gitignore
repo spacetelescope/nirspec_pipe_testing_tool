@@ -5,6 +5,7 @@ __pycashe__
 */*/*.pyc
 */*/*/*.pyc
 *.fits
+*.pdf
 .cache
 *.html
 notes_on_pytests.txt

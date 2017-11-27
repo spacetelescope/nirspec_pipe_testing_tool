@@ -59,12 +59,16 @@ def get_esafile(auxiliary_code_path, det, grat, filt, sltname_list, esa_files_pa
         sltname = sltname.split("S")[1]
         if sltname[-1] == "A1":
             sltname = "A_"+sltname.split("A")[0]+"_1"
+            break
         elif sltname[-1] == "A2":
             sltname = "A_"+sltname.split("A")[0]+"_2"
+            break
         elif sltname[-1] == "A":
             sltname = "A_"+sltname.split("A")[0]+"_"
+            break
         elif sltname[-1] == "B":
             sltname = "B_"+sltname.split("B")[0]+"_"
+            break
 
     # the ESA direcoty names use/follow their name conventions
     ESA_dir_name = CV3filename.split("_")[0].replace("NRS", "")+"_"+NID+"_JLAB88"
@@ -214,10 +218,10 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         type_fig = "pdf"
         if histogram:
             if fig_name is None:
-                fig_name = ".".join("FS_wcs_histogram", type_fig)
+                fig_name = ".".join(("FS_wcs_histogram", type_fig))
         if deltas_plt:
             if fig_name is None:
-                fig_name = ".".join("FS_wcs_Deltas", type_fig)
+                fig_name = ".".join(("FS_wcs_Deltas", type_fig))
         plt.savefig(fig_name)
         print ('\n Plot saved: ', fig_name)
     if show_figs:
@@ -426,7 +430,10 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             if plot_names is not None:
                 hist_name, deltas_name = plot_names
             else:
-                hist_name, deltas_name = None, None
+                #hist_name, deltas_name = None, None
+                hist_name = infile_name.replace(".fits", "_wcs_histogram.pdf")
+                deltas_name = infile_name.replace(".fits", "_wcs_Deltas.pdf")
+
 
             # HISTOGRAM
             if show_figs or save_figs:
