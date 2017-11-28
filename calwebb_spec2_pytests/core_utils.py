@@ -119,6 +119,7 @@ def get_step_inandout_filename(step, initial_input_file, steps_dict):
     step_string_dict["straylight"] = "_stray"
     step_string_dict["fringe"] = "_fringe"
     step_string_dict["pathloss"] = "_pathloss"
+    step_string_dict["barshadow"] = "_barshadow"
     step_string_dict["photom"] = "_photom"
     step_string_dict["resample_spec"] = "_resample"
     step_string_dict["cube_build"] = "_cube"

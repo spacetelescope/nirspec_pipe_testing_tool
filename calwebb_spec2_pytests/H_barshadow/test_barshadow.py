@@ -37,8 +37,8 @@ def output_hdul(set_inandout_filenames, config):
             if config.getboolean("steps", step):
                 print ("*** Step "+step+" set to True")
                 if os.path.isfile(step_input_file):
-                    #result = stp.call(step_input_file)
-                    #result.save(step_output_file)
+                    result = stp.call(step_input_file)
+                    result.save(step_output_file)
                     step_completed = True
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
