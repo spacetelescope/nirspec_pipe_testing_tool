@@ -28,35 +28,45 @@ def set_inandout_filenames(request, config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
-    stp = ImprintStep()
-    # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
-    step_completed = False
-    if not run_calwebb_spec2:
-        if config.getboolean("steps", step):
-            print ("*** Step "+step+" set to True")
-            if os.path.isfile(step_input_file):
-                print(" The input file ", step_input_file,"exists... will run step "+step)
-                msa_imprint_structure = config.get("additional_arguments", "msa_imprint_structure")
-                if not os.path.isfile(msa_imprint_structure):
-                    print (" Need msa_imprint_structure file to continue. Step will be skipped.")
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
-                    pytest.skip("Skipping "+step+" because msa_imprint_structure file in the configuration file does not exist.")
-                else:
-                    result = stp.call(step_input_file, msa_imprint_structure)
-                    if result is not None:
-                        result.save(step_output_file)
-                        hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                        step_completed = True
+    skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
+    # Only run step if data is IFU
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    if core_utils.check_IFU_true(inhdu) or core_utils.check_MOS_true(inhdu):
+        stp = ImprintStep()
+        # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
+        step_completed = False
+        if not run_calwebb_spec2:
+            if config.getboolean("steps", step):
+                print ("*** Step "+step+" set to True")
+                if os.path.isfile(step_input_file):
+                    print(" The input file ", step_input_file,"exists... will run step "+step)
+                    msa_imprint_structure = config.get("additional_arguments", "msa_imprint_structure")
+                    if not os.path.isfile(msa_imprint_structure):
+                        print (" Need msa_imprint_structure file to continue. Step will be skipped.")
+                        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
+                        pytest.skip("Skipping "+step+" because msa_imprint_structure file in the configuration file does not exist.")
                     else:
-                        hdul = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+                        if not skip_runing_pipe_step:
+                            result = stp.call(step_input_file, msa_imprint_structure)
+                            if result is not None:
+                                result.save(step_output_file)
+                                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                                step_completed = True
+                            else:
+                                hdul = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+                        else:
+                            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                            step_completed = True
+                        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
+                        return hdul
+                else:
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
-                    return hdul
+                    pytest.skip("Skipping "+step+" because the input file does not exist.")
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
-        else:
-            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
-            pytest.skip("Skipping "+step+". Step set to False in configuration file.")
+                pytest.skip("Skipping "+step+". Step set to False in configuration file.")
+    else:
+        pytest.skip("Skipping "+step+" because data is neither IFU or MOS.")
 
 
 # Unit tests
