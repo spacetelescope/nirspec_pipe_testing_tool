@@ -110,8 +110,8 @@ def get_step_inandout_filename(step, initial_input_file, steps_dict):
 
     # dictionary of the steps and corresponding strings to be added to the file name after the step has ran
     step_string_dict = collections.OrderedDict()
-    step_string_dict["bkg_subtract"] = "_subtract_images"
     step_string_dict["assign_wcs"] = "_assign_wcs"
+    step_string_dict["bkg_subtract"] = "_subtract_images"
     step_string_dict["imprint_subtract"] = "_imprint"
     step_string_dict["msa_flagging"] = "_msa_flag"
     step_string_dict["extract_2d"] = "_extract_2d"

@@ -30,6 +30,7 @@ def set_inandout_filenames(request, config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
+    skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
     stp = Extract2dStep()
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
     msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
@@ -41,8 +42,9 @@ def output_hdul(set_inandout_filenames, config):
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
-                #result = stp.call(step_input_file)
-                #result.save(step_output_file)
+                if not skip_runing_pipe_step:
+                    result = stp.call(step_input_file)
+                    result.save(step_output_file)
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)

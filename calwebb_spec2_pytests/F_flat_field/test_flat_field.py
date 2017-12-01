@@ -40,14 +40,16 @@ def output_hdul(set_inandout_filenames, config):
     write_flattest_files = config.getboolean("additional_arguments", "write_flattest_files")
     flattest_paths = [step_output_file, msa_conf_root, dflat_path, sflat_path, fflat_path]
     flattest_switches = [flattest_threshold_diff, save_flattest_plot, write_flattest_files]
+    skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     if not run_calwebb_spec2:
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
-                #result = stp.call(step_input_file)
-                #result.save(step_output_file)
+                if not skip_runing_pipe_step:
+                    result = stp.call(step_input_file)
+                    result.save(step_output_file)
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)

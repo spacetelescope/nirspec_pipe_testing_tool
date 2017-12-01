@@ -1,15 +1,15 @@
 
 """
-py.test module for unit testing the bkg_subtract step.
+py.test module for unit testing the assign_wcs step.
 """
 
 import pytest
 import os
 from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
-from jwst.background.background_step import BackgroundStep
+from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
 
 from .. import core_utils
-from . import bkg_subtract_utils
+from . import assign_wcs_utils
 
 
 def create_completed_steps_txtfile(True_steps_suffix_map, step_input_file, step, outstep_file_suffix, step_completed):
@@ -36,12 +36,13 @@ def create_completed_steps_txtfile(True_steps_suffix_map, step_input_file, step,
         tf.write(line2write+"\n")
 
 
+
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
 # Default names of pipeline input and output files
 @pytest.fixture(scope="module")
 def set_inandout_filenames(config):
-    step = "bkg_subtract"
+    step = "assign_wcs"
     step_dict = dict(config.items("steps"))
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
     True_steps_suffix_map = config.get("calwebb_spec2_input_file", "True_steps_suffix_map")
@@ -55,61 +56,39 @@ def set_inandout_filenames(config):
 # fixture to read the output file header
 @pytest.fixture(scope="module")
 def output_hdul(set_inandout_filenames, config):
-    initiate_calwebb_spc2 = "calwebb_spec2_input_file"
-    working_directory = config.get(initiate_calwebb_spc2, "working_directory")
-    step = set_inandout_filenames[0]
-    step_input_filename = set_inandout_filenames[1]
-    output_file = set_inandout_filenames[2]
-    outstep_file_suffix = set_inandout_filenames[4]
-    True_steps_suffix_map = set_inandout_filenames[5]
-    txt_name = os.path.join(working_directory, True_steps_suffix_map)
-    step_input_file = os.path.join(working_directory, step_input_filename)
-    step_output_file = os.path.join(working_directory, output_file)
-    stp = BackgroundStep()
+    set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
+    step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
+    stp = AssignWcsStep()
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
+    skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     if run_calwebb_spec2:
         print ("*** Will run calwebb_spec2... ")
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
         final_output_name = step_input_file.replace(".fits", "_calwebb_spec2.fits")
-        result_level2B = Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
-        result_level2B.save(final_output_name)
+        #result_level2B = Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
+        #result_level2B.save(final_output_name)
         hdul = core_utils.read_hdrfits(final_output_name, info=True, show_hdr=True)
         return hdul
     else:
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
-                print(" The input file ", step_input_filename,"exists... will run step "+step)
-                bkg_list = core_utils.getlist("additional_arguments", "bkg_list")
-                existing_bgfiles = 0
-                for bg_file in bkg_list:
-                    if os.path.isfile(bg_file):
-                        existing_bgfiles += 1
-                if existing_bgfiles == 0:
-                    print (" Need at least one background file to continue. Step will be skipped.")
-                    create_completed_steps_txtfile(txt_name, step_input_filename, step,
-                                                   outstep_file_suffix, step_completed)
-                    pytest.skip("Skipping "+step+" because files listed on bkg_list in the configuration file do not exist.")
-                else:
-                    result = stp.call(step_input_file, bkg_list)
-                    if result is not None:
-                        result.save(step_output_file)
-                        hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                        step_completed = True
-                    else:
-                        hdul = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
-                    create_completed_steps_txtfile(txt_name, step_input_filename, step,
-                                                   outstep_file_suffix, step_completed)
-                    return hdul
+                if not skip_runing_pipe_step:
+                    result = stp.call(step_input_file)
+                    result.save(step_output_file)
+                step_completed = True
+                create_completed_steps_txtfile(txt_name, step_input_file, step,
+                               outstep_file_suffix, step_completed)
+                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                return hdul
             else:
-                print (" The input file does not exist. Skipping step.")
-                create_completed_steps_txtfile(txt_name, step_input_filename, step,
-                                               outstep_file_suffix, step_completed)
+                print("Skipping step. Intput file "+step_input_file+" does not exit.")
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
         else:
-            create_completed_steps_txtfile(txt_name, step_input_filename, step,
+            create_completed_steps_txtfile(txt_name, step_input_file, step,
                                            outstep_file_suffix, step_completed)
             pytest.skip("Skipping "+step+". Step set to False in configuration file.")
 
@@ -117,6 +96,12 @@ def output_hdul(set_inandout_filenames, config):
 
 # Unit tests
 
-def test_s_bkdsub_exists(output_hdul):
-    assert bkg_subtract_utils.s_bkdsub_exists(output_hdul), "The keyword S_BKDSUB was not added to the header --> background step was not completed."
+def test_wavstart_exists(output_hdul):
+    assert assign_wcs_utils.wavstart_exists(output_hdul), "The keyword WAVSTART was not added to the header."
+
+def test_sporder_exists(output_hdul):
+    assert assign_wcs_utils.sporder_exists(output_hdul), "The keyword SPORDER was not added to the header."
+
+def test_s_wcs_exists(output_hdul):
+    assert assign_wcs_utils.s_wcs_exists(output_hdul), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
 
