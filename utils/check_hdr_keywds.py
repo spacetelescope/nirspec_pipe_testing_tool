@@ -9,8 +9,8 @@ import argparse
 import collections
 
 # import the header keyword dictionaries
-import hdr-keywds-dict as hkwd
-import sample-hdr-keywd-dict as shkvd
+import hdr_keywds_dict as hkwd
+import sample_hdr_keywd_dict as shkvd
 
 '''
 This script checks that the fits files to be used as input for the pipeline build 7.1, have the expected keywords in
@@ -19,10 +19,10 @@ the main and science headers.
 Example usage:
     The code works from the terminal.
     To create a NEW FS fits file with the updated header type:
-        > python check-hdr-keywds.py blah.fits
+        > python check_hdr_keywds.py blah.fits
 
     To simply update the header of the existing fits file type:
-        > python check-hdr-keywds.py blah.fits -u
+        > python check_hdr_keywds.py blah.fits -u
 
 '''
 
@@ -378,6 +378,6 @@ if __name__ == '__main__':
     t = NIRSpec_hdr_format_check(file_keywd_dict, fits_file, only_update, mosdata)
     t.perform_check()
 
-    print ('\n * Script  check-hdr-keywds.py  finished * \n')
+    print ('\n * Script  check_hdr_keywds.py  finished * \n')
 
 
