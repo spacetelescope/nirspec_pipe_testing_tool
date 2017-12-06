@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os
 import re
 import numpy as np
@@ -9,8 +7,8 @@ import argparse
 import collections
 
 # import the header keyword dictionaries
-import hdr_keywds_dict as hkwd
-import sample_hdr_keywd_dict as shkvd
+from . import hdr_keywds_dict as hkwd
+from . import sample_hdr_keywd_dict as shkvd
 
 '''
 This script checks that the fits files to be used as input for the pipeline build 7.1, have the expected keywords in
@@ -46,6 +44,7 @@ def read_hdrfits(fits_file_name):
     # get and print header
     #print ('\n FILE HEADER: \n')
     hdr = hdulist[0].header
+    sci_hdr = hdulist[1].header
     #print (repr(hdr))
     # close the fits file
     hdulist.close()
@@ -240,67 +239,69 @@ def check_datetimeformat(key, val, check_time, check_date, check_datetime):
 ### keyword and format check
 
 class NIRSpec_hdr_format_check:
-    def __init__(self, file_keywd_dict, fits_file, only_update, mosdata):
+    def __init__(self, file_keywd_dict, fits_file, only_update):
         self.file_keywd_dict = file_keywd_dict
         self.fits_file = fits_file
         self.only_update = only_update
-        self.mosdata = mosdata
         self.warnings_list = []
         self.missing_keywds = []
 
     # Will check keywords against those in hdr_keywords_dictionary.py
     def check_keywds(self, warnings_file_name):
-        for hkwd_key, hkwd_val in hkwd.keywd_dict.iteritems():
+        for hkwd_key, hkwd_val in hkwd.keywd_dict.items():
             # start by making the warning for each keyword None and assigning key and val
             key = hkwd_key
 
-            # Check if keyword is in the file
-            if key not in file_keywd_dict:
-                self.missing_keywds.append(key)
-                warning = '*** Keyword '+key+' is not in header.'
-                val = None
-            else:
-                val = file_keywd_dict[hkwd_key]
-
-                # Check simple standard keyword values
-                if val in hkwd_val:
-                    print ('Keyword '+key+' has allowed value: '+ val)
-                    warning = None
+            # Check if keyword is in the file, expect for wcs info (these go in the science extension)
+            if key != 'wcsinfo':
+                if key not in file_keywd_dict:
+                    self.missing_keywds.append(key)
+                    warning = '*** Keyword '+key+' is not in header.'
+                    val = None
                 else:
-                    warning = check_value_type(key, val, hkwd_val)
+                    val = file_keywd_dict[hkwd_key]
 
-                # Check for specific keywords
-                if key=='DPSW_VER':
-                    warning = check3numbers(key, val)
-                elif (key=='VISITGRP') or (key=='ACT_ID'):
-                    warning = check_len(key, val, val_len=2)
-                elif (key=='OBSERVTN') or (key=='VISIT'):
-                    warning = check_len(key, val, val_len=3)
-                elif (key=='EXPOSURE'):
-                    warning = check_len(key, val, val_len=5)
-                elif (key=='DATE') or (key=='VSTSTART'):
-                    warning = check_datetimeformat(key, val, check_date=False, check_datetime=True,
-                                                   check_time=False)
-                elif key=='DATE-OBS':
-                    warning = check_datetimeformat(key, val, check_date=True, check_datetime=False,
-                                                   check_time=False)
-                elif key=='TIME-OBS':
-                    warning = check_datetimeformat(key, val, check_date=False, check_datetime=False,
-                                                   check_time=True)
+                    # Check simple standard keyword values
+                    if val in hkwd_val:
+                        print ('Keyword '+key+' has allowed value: '+ val)
+                        warning = None
+                    else:
+                        warning = check_value_type(key, val, hkwd_val)
 
-            if warning is not None:
-                self.warnings_list.append(warning)
-                with open(warnings_file_name, "a") as tf:
-                    tf.write(warning+'\n')
+                    # Check for specific keywords
+                    if key=='DPSW_VER':
+                        warning = check3numbers(key, val)
+                    elif (key=='VISITGRP') or (key=='ACT_ID'):
+                        warning = check_len(key, val, val_len=2)
+                    elif (key=='OBSERVTN') or (key=='VISIT'):
+                        warning = check_len(key, val, val_len=3)
+                    elif (key=='EXPOSURE'):
+                        warning = check_len(key, val, val_len=5)
+                    elif (key=='DATE') or (key=='VSTSTART'):
+                        warning = check_datetimeformat(key, val, check_date=False, check_datetime=True,
+                                                       check_time=False)
+                    elif key=='DATE-OBS':
+                        warning = check_datetimeformat(key, val, check_date=True, check_datetime=False,
+                                                       check_time=False)
+                    elif key=='TIME-OBS':
+                        warning = check_datetimeformat(key, val, check_date=False, check_datetime=False,
+                                                       check_time=True)
+
+                if warning is not None:
+                    self.warnings_list.append(warning)
+                    with open(warnings_file_name, "a") as tf:
+                        tf.write(warning+'\n')
 
 
-    def add_keywds(self, only_update):
+    def add_keywds(self, only_update, extname=None, after_key=None):
         '''
         This function adds the missing keywords from the hdr_keywords_dictionary.py (hkwd) file and gives
         the fake values taken from the dictionary sample_hdr_keywd_vals_dict.py (shkvd).
         Args:
             only_update: If false a copy of the original fits file will be created with the
                          updated header.
+            extname: extension name to be updated
+            after_key: keyword after wich the new keywords will be added
         '''
         # create name for updated fits file
         updated_fitsfile = fits_file
@@ -314,15 +315,31 @@ class NIRSpec_hdr_format_check:
             prev_key_idx = hkwd.keywd_dict.keys().index(key) - 1
             # add the keyword in the right place from the right dictionary
             new_value = shkvd.keywd_dict[key]
-            after_key = shkvd.keywd_dict.keys()[prev_key_idx]
-            if self.mosdata:
-                new_value = shkvdMOS.keywd_dict[key]
-                after_key = shkvdMOS.keywd_dict.keys()[prev_key_idx]
-            fits.setval(updated_fitsfile, key, value=new_value, after=after_key)
-        print ('\n New header: ')
-        hdulist = fits.open(updated_fitsfile)
-        hdr = hdulist[0].header
-        print (repr(hdr))
+            if after_key is None:
+                after_key = shkvd.keywd_dict.keys()[prev_key_idx]
+            if extname is None:
+                fits.setval(updated_fitsfile, key, value=new_value, after=after_key)
+                print ('\n New header: ')
+                hdulist = fits.open(updated_fitsfile)
+                hdr = hdulist[0].header
+                print (repr(hdr))
+            else:
+                fits.setval(updated_fitsfile, key, extname=extname, value=new_value, after=after_key)
+                print ("Science header has been updated.")
+
+
+    def add_wcs_keywds_to_sciext(self, only_update):
+        # Add the keyword and sample value to the science extension via sub-dictionary
+        wcs_dict = {}
+        for hkwd_key, hkwd_val in hkwd.keywd_dict.items():
+            if hkwd_key == 'wcsinfo':
+                for key, val in hkwd_key.items():
+                    wcs_dict[key] = val
+        extname = 'SCI'   # name of the extension to be modified
+        after_key = 'BUNIT'   # keyword after which the WCS keywords will be added
+        self.add_keywds(only_update, extname=extname, after_key=after_key)
+
+
 
     def perform_check(self):
         # create text file to log warnings
@@ -337,9 +354,7 @@ class NIRSpec_hdr_format_check:
         check_addedkeywds_file(addedkeywds_file_name)
 
         # if the warnings are just the misssing keywords and an empty value on VISIT_ID erase it
-        expected_warnings = ['Keyword VISIT_ID has empty value.', '*** Keyword V2_REF is not in header.',
-                             '*** Keyword V3_REF is not in header.', '*** Keyword RA_REF is not in header.',
-                             '*** Keyword DEC_REF is not in header.', '*** Keyword ROLL_REF is not in header.']
+        expected_warnings = ['Keyword VISIT_ID has empty value.']
         if self.warnings_list == expected_warnings:
             with open(addedkeywds_file_name, 'r') as wf:
                 lines = wf.readlines()
@@ -348,6 +363,7 @@ class NIRSpec_hdr_format_check:
         # create new file with updated header
         print('\n   Adding keywords...')
         self.add_keywds(self.only_update)
+        self.add_wcs_keywds_to_sciext(self.only_update)
 
 
 
@@ -369,13 +385,12 @@ if __name__ == '__main__':
     # Set the variables
     fits_file = args.fits_file
     only_update = args.only_update
-    mosdata = args.mosdata
 
     # read the keywords and corresponding values from fits file directly
     file_keywd_dict = read_hdrfits(fits_file)
 
     # Perform the keyword check
-    t = NIRSpec_hdr_format_check(file_keywd_dict, fits_file, only_update, mosdata)
+    t = NIRSpec_hdr_format_check(file_keywd_dict, fits_file, only_update)
     t.perform_check()
 
     print ('\n * Script  check_hdr_keywds.py  finished * \n')
