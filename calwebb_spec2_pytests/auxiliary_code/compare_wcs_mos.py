@@ -299,7 +299,7 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
     if auxiliary_code_path is None:
         auxiliary_code_path = "./"
 
-    #compute_world_coordinates.compute_world_coordinates(infile_name)
+    compute_world_coordinates.compute_world_coordinates(infile_name)
 
     # The world coordinate file was created but it needs to be renamed
     basenameinfile_name = os.path.basename(infile_name)
@@ -315,7 +315,7 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
     cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
     #print ("*** cwc_fname = ", cwc_fname)
     cwc_fname = infile_name.replace(basenameinfile_name, cwc_fname)
-    #os.system("mv "+wcoordfile+" "+cwc_fname)
+    os.system("mv "+wcoordfile+" "+cwc_fname)
 
     # get info from the extract_2d file header
     #extract_2d_file = cwc_fname.replace("_world_coordinates_James", "")
