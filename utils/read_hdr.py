@@ -9,11 +9,11 @@ This script reads the header of a fits file and gives info of its extensions.
 Example usage:
     The code works from the terminal.
     To simply see the header on-screen type:
-        > python hdr_info.py blah.fits
+        > python /path_to_this_script/read_hdr.py blah.fits
     To see and save the header into a text file type:
-        > python hdr_info.py blah.fits -s
+        > python /path_to_this_script/read_hdr.py blah.fits -s
     To see and save the header of a different extension from the main, use -e=extension_number:
-        > python hdr_info.py blah.fits -s -e=1
+        > python /path_to_this_script/read_hdr.py blah.fits -s -e=1
 
 """
 

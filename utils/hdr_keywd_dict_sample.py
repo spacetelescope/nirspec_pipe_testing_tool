@@ -4,9 +4,11 @@ import collections
 This script contains SAMPLE VALUES of the ordered python dictionary for the header keywords. These sample
 values were taken from a Fixed-Slit example file.
 
-* The information for the keywords was obtained from emails in the pipeline group and the information
+* The information for the keywords was obtained from emails in the pipeline group (i.e. basecamp) and the information
 contained in the online dictionary located at:
 https://iwjwdmsdauiwebv.stsci.edu/portal/Mashup/Clients/jwkeywords/
+and the pipeline GitHub page:
+https://github.com/STScI-JWST/jwst/blob/master/jwst/datamodels/schemas/wcsinfo.schema.yaml
 
 '''
 
@@ -137,8 +139,9 @@ keywd_dict['FILTER']  = 'OPAQUE' # name of the grating element used, options are
 keywd_dict['GRATING'] = 'G140M' # name of grating used, options are:
 #                                   'G140M', 'G235M', 'G395M', 'G140H', 'G235H', 'G395H', 'PRISM',
 #                                   'MIRROR', 'NULL', 'N/A', 'ANY'
-keywd_dict['GWAXTILT']= 0.3316612243652344 # grating x tilt, e.g. 0.35896975
-keywd_dict['GWAYTILT']= 0.1260581910610199 # grating y tilt, e.g. 0.13438272
+keywd_dict['GWA_XTIL']= 0.3622055649757385 # grating y tilt, e.g. 0.3622055649757385
+keywd_dict['GWA_YTIL']= 0.1346436440944672 # grating y tilt, e.g. 0.1346436440944672
+keywd_dict['GWA_TILT']= 4.028447479156018e+01 # GWA temperature ave [K], e.g. 4.028447479156018e+01
 keywd_dict['FXD_SLIT']= 'NONE' # name of fixed slit aperture used, options are:
 #                                   'NONE', 'S200A1', 'S200A2', 'S200B1', 'S400A1', 'S1600A1', 'NULL'
 keywd_dict['MSASTATE']= 'CONFIGURED' # state of MSA, options are:
@@ -196,12 +199,12 @@ keywd_dict['wcsinfo'] = {
                             'CRVAL1' : 5.3196, # RA at the reference pixel (degrees), e.g. 5.3196
                             'CRVAL2' : -72.98605000000001, # Dec at the reference pixel (degrees), e.g. -72.98605000000001
                             'CRVAL3' : 2.5, # Wavelength at the reference pixel (microns), e.g. 2.5
-                            'CTYPE1' : ['RA---TAN'], # first axis coordinate type
-                            'CTYPE2' : ['DEC--TAN'], # second axis coordinate type
+                            'CTYPE1' : 'RA---TAN', # first axis coordinate type
+                            'CTYPE2' : 'DEC--TAN', # second axis coordinate type
                             'CTYPE3' : 'WAVE', # third axis coordinate type, e.g. WAVE
-                            'CUNIT1' : ['deg'], # units for first axis
-                            'CUNIT2' : ['deg'], # units for seconds axis
-                            'CUNIT3' : ['micron'], # units for third axis
+                            'CUNIT1' : 'deg', # units for first axis
+                            'CUNIT2' : 'deg', # units for seconds axis
+                            'CUNIT3' : 'micron', # units for third axis
                             'CDELT1' : 0.12, # increment per pixel, axis 1, e.g. 0.12
                             'CDELT2' : 0.12, # increment per pixel, axis 2, e.g. 0.12
                             'CDELT3' : 0.000672, # increment per pixel, axis 3, e.g. 0.000672
@@ -219,7 +222,7 @@ keywd_dict['wcsinfo'] = {
                             'SPORDER' : 1.0, # default spectral order
                             'V2_REF' : 101.1, # location of the aperture reference point in V2 (arcsec): 100-400 arcsec
                             'V3_REF' : -202.2, # location of the aperture reference point in V3 (arcsec): -100 to -400 arcsec
-                            'VPARITY' : 1, # Relative sense of rotation between Ideal xy and V2V3
+                            'VPARITY' : -1, # Relative sense of rotation between Ideal xy and V2V3
                             'V3I_YANG' : 1.0, # Angle from V3 axis to Ideal y axis (deg)
                             'RA_REF' : 156.11, # RA at the reference point (deg): 0 < RA < 360
                             'DEC_REF' : -45.6, # Dec at the reference point (deg): -90 < Dec < +90

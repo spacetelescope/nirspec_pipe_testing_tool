@@ -4,8 +4,11 @@ import collections
 This script contains an ordered dictionary of the key words and their corresponding expected format and/or
 allowed values.
 
-* The information was obtained from emails in the pipeline group and the information contained in
+* The information for the keywords was obtained from emails in the pipeline group (i.e. basecamp) and the information
+contained in the online dictionary located at:
 https://iwjwdmsdauiwebv.stsci.edu/portal/Mashup/Clients/jwkeywords/
+and the pipeline GitHub page:
+https://github.com/STScI-JWST/jwst/blob/master/jwst/datamodels/schemas/wcsinfo.schema.yaml
 
 '''
 
@@ -21,18 +24,18 @@ keywd_dict['NEXTEND'] = [int] # Number of standard extensions, e.g. 3
 
 keywd_dict['TELESCOP']= ['JWST'] # Telescope used to acquire data
 keywd_dict['INSTRUME']= ['NIRSPEC'] # Identifier for instrument used to acquire data
-keywd_dict['RADESYS'] = ['ICRS'] # Coordinate reference frame for RA and Dec
+keywd_dict['RADESYS'] = [str] # Coordinate reference frame for RA and Dec, e.g. 'ICRS'
 
 keywd_dict['DATE']    = [str] # UTC date file created, e.g. 2016-07-12T12:43:27
-keywd_dict['ORIGIN']  = ['STScI'] # Institution responsible for creating FITS file
+keywd_dict['ORIGIN']  = [str] # Institution responsible for creating FITS file, e.g. STScI
 keywd_dict['FILENAME']= [str] # Name of file, e.g. jwtest1001001_01101_00001_NRS1_uncal.fits
-keywd_dict['FILETYPE']= ['UNCALIBRATED'] # Type of data found in file
+keywd_dict['FILETYPE']= [str] # Type of data found in file, e.g. UNCALIBRATED
 keywd_dict['DPSW_VER']= [str] # Data processing software version number, e.g. 0.1.1
 
 # Observation identifiers
 keywd_dict['DATE-OBS']= [str] # UTC date at start of exposure, e.g. 2013-01-19
 keywd_dict['TIME-OBS']= [str] # UTC time at start of exposure, e.g. 18:23:34.230
-keywd_dict['OBS_ID']  = ['SLIT-COMBO-001'] # full programmatic observation identifier
+keywd_dict['OBS_ID']  = [str] # full programmatic observation identifier, e.g. SLIT-COMBO-001
 keywd_dict['VISIT_ID']= [str] # visit identifier
 keywd_dict['PROGRAM'] = [str] # program number, e.g. test1
 keywd_dict['OBSERVTN']= [str] # observation number, e.g. 001
@@ -43,11 +46,11 @@ keywd_dict['ACT_ID']  = [str] # activity identifier, e.g. 01
 keywd_dict['EXPOSURE']= [str] # exposure request number, e.g. 00001
 
 # Exposure parameters
-keywd_dict['DETECTOR']= ['NRS1'] # name of detector used to acquire data
+keywd_dict['DETECTOR']= [str] # name of detector used to acquire data, e.g. 'NRS1'
 keywd_dict['NINTS']   = [int] # number of integrations within exposure, e.g. 1
 keywd_dict['NGROUPS'] = [int] # number of groups within integration, e.g. 20
 keywd_dict['ZEROFRAM']= ['T', 'F'] # boolean, T if a zero frame was read separately
-keywd_dict['READPATT']= ['NRSRAPID'] # readout pattern
+keywd_dict['READPATT']= [str] # readout pattern, e.g. 'NRSRAPID'
 keywd_dict['DATAPROB']= ['T', 'F'] # boolean, T if science telemetry indicated any problems
 
 # Program information
@@ -56,14 +59,14 @@ keywd_dict['PI_NAME'] = [str] # Name of principal investigator, e.g. UNKNOWN
 keywd_dict['CATEGORY']= [str] # program category, e.g. N/A
 keywd_dict['SUBCAT']  = [str] # program sub-category, e.g. N/A
 keywd_dict['SCICAT']  = [str] # science category assigned during TAC process, e.g. N/A
-keywd_dict['CONT_ID'] = [str] # continuation of the specified previous program, e.g. N/A
+keywd_dict['CONT_ID'] = [str, int] # continuation of the specified previous program, e.g. N/A
 
 # Observation information
 keywd_dict['TEMPLATE']= [str] # proposal instruction template used, e.g. N/A
 keywd_dict['OBSLABEL']= [str] # proposer label for observation, e.g. #TODO
 
 # Visit information
-keywd_dict['VISITYPE']= ['PRIME', 'PARALLEL'] # type of visit (prime or parallel)
+keywd_dict['VISITYPE']= ['PRIME', 'PARALLEL', 'GENERIC'] # type of visit (prime or parallel)
 keywd_dict['VSTSTART']= [str] # UTC visit start time, e.g. 2013-01-19T18:27:22
 keywd_dict['WFSVISIT']= ['NO', 'YES', 'SENSING_CONTROL', 'SENSING_ONLY'] # wavefront sensing and control visit indicator
 keywd_dict['NEXPOSUR']= [int] # total number of exposures in visit, e.g. 1
@@ -128,11 +131,12 @@ keywd_dict['SLOWAXIS']= [1, 2, -1, -2] # Direction of slow readout (+/-1 X direc
 
 # NIRSpec configuration (NIRSpec only)
 keywd_dict['FILTER']  = ['CLEAR', 'F070LP', 'F100LP', 'F110W', 'F140X', 'F170LP', 'F290LP',
-                         'P750L', 'NULL'] # name of the filter element used
+                         'P750L', 'NULL', 'OPAQUE'] # name of the filter element used
 keywd_dict['GRATING'] = ['G140M', 'G235M', 'G395M', 'G140H', 'G235H', 'G395H', 'PRISM',
                          'MIRROR', 'NULL', 'N/A', 'ANY'] # name of the grating element used
-keywd_dict['GWAXTILT']= [float] # grating x tilt, e.g. 0.35896975
-keywd_dict['GWAYTILT']= [float] # grating y tilt, e.g. 0.13438272
+keywd_dict['GWA_XTIL']= [float] # grating y tilt, e.g. 0.3622055649757385
+keywd_dict['GWA_YTIL']= [float] # grating y tilt, e.g. 0.1346436440944672
+keywd_dict['GWA_TILT']= [float] # GWA temperature ave [K], e.g. 4.028447479156018e+01
 keywd_dict['FXD_SLIT']= ['NONE', 'S200A1', 'S200A2', 'S200B1', 'S400A1', 'S1600A1', 'NULL'] # name of fixed slit aperture used
 keywd_dict['MSASTATE']= ['CONFIGURED', 'LAUNCHLOCK_ALLCLOSED', 'PRIMARYPARK_ALLOPEN', 'PRIMARYPARK_ALLCLOSED',
                          'PRIMARYPARK_CONFIGURED'] # state of MSA: all open, all closed, configured
@@ -145,20 +149,20 @@ keywd_dict['MSACONFG']= [str] # MSA configuration file name, e.g. 'N/A'
 keywd_dict['LAMP']    = [str] # internal lamp state, e.g. 'ARGON'
 
 # Guide star information
-keywd_dict['GS_ORDER']= [str] # index of guide star, e.g. 'N/A'
-keywd_dict['GSSTRTTM']= [str] # UTC start time of guide star acquisition, e.g. 'N/A'
-keywd_dict['GSENDTIM']= [str] # UTC end time of guide star acquisition, e.g. 'N/A'
+keywd_dict['GS_ORDER']= [str, int] # index of guide star, e.g. 'N/A'
+keywd_dict['GSSTRTTM']= [str, float] # UTC start time of guide star acquisition, e.g. 'N/A'
+keywd_dict['GSENDTIM']= [str, float] # UTC end time of guide star acquisition, e.g. 'N/A'
 keywd_dict['GDSTARID']= [str] # guide star identifier, e.g. 'N/A'
-keywd_dict['GS_RA']   = [str] # guide star right ascension, e.g. 'N/A'
-keywd_dict['GS_DEC']  = [str] # guide star declination, e.g. 'N/A'
-keywd_dict['GSURA']   = [str] # guide star right ascension uncertainty, e.g. 'N/A'
-keywd_dict['GSUDEC']  = [str] # guide star declination uncertainty, e.g. 'N/A'
-keywd_dict['GS_MAG']  = [str] # guide star magnitude in FGS detector, e.g. 'N/A'
-keywd_dict['GSUMAG']  = [str] # guide star magnitude uncertainty, e.g. 'N/A'
-keywd_dict['PCS_MODE']= [str] # Pointing Control System mode, e.g. 'N/A'
-keywd_dict['GSCENTX'] = [str] # guide star centroid x position, e.g. 'N/A'
-keywd_dict['GSCENTY'] = [str] # guide star centroid y position, e.g. 'N/A'
-keywd_dict['JITTERMS']= [str] # [arcsec] RMS jitter over the exposure, e.g. 'N/A'
+keywd_dict['GS_RA']   = [str, float] # guide star right ascension, e.g. 'N/A'
+keywd_dict['GS_DEC']  = [str, float] # guide star declination, e.g. 'N/A'
+keywd_dict['GSURA']   = [str, float] # guide star right ascension uncertainty, e.g. 'N/A'
+keywd_dict['GSUDEC']  = [str, float] # guide star declination uncertainty, e.g. 'N/A'
+keywd_dict['GS_MAG']  = [str, float] # guide star magnitude in FGS detector, e.g. 'N/A'
+keywd_dict['GSUMAG']  = [str, float] # guide star magnitude uncertainty, e.g. 'N/A'
+keywd_dict['PCS_MODE']= [str, float] # Pointing Control System mode, e.g. 'N/A'
+keywd_dict['GSCENTX'] = [str, float] # guide star centroid x position, e.g. 'N/A'
+keywd_dict['GSCENTY'] = [str, float] # guide star centroid y position, e.g. 'N/A'
+keywd_dict['JITTERMS']= [str, float] # [arcsec] RMS jitter over the exposure, e.g. 'N/A'
 
 # JWST ephemeris information
 keywd_dict['COORDSYS']= [str] # ephemeris coordinate system, e.g. 'N/A'
@@ -171,9 +175,9 @@ keywd_dict['JWST_DY'] = [float] # [km/sec] Y component of JWST velocity vector, 
 keywd_dict['JWST_DZ'] = [float] # [km/sec] Z component of JWST velocity vector, e.g. 0.0
 
 # Spacecraft pointing information
-keywd_dict['PA_V3']   = [str] # [deg] position angle of V3-axis of JWST, e.g. 'N/A'
-keywd_dict['RA_V1']   = [str] # [deg] RA of telescope V1 axis, e.g. 'N/A'
-keywd_dict['DEC_V1']  = [str] # [deg] Dec of telescope V1 axis, e.g. 'N/A'
+keywd_dict['PA_V3']   = [str, float] # [deg] position angle of V3-axis of JWST, e.g. 'N/A'
+keywd_dict['RA_V1']   = [str, float] # [deg] RA of telescope V1 axis, e.g. 'N/A'
+keywd_dict['DEC_V1']  = [str, float] # [deg] Dec of telescope V1 axis, e.g. 'N/A'
 
 # Aperture pointing information
 keywd_dict['APERNAME']= [str] # mnemonic for PDB science aperture used, e.g. #TODO
