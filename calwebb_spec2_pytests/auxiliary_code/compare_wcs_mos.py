@@ -380,8 +380,10 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             print  ("py0+npy-1 =", py0+npy-1)
 
         # read in the ESA data
-        esafile = get_esafile(auxiliary_code_path, det_extract_2d_file, grat_extract_2d_file, filt_extract_2d_file,
-                              esa_files_path, quad, row, col)
+        #esafile = get_esafile(auxiliary_code_path, det_extract_2d_file, grat_extract_2d_file, filt_extract_2d_file,
+        #                      esa_files_path, quad, row, col)
+        rawdatroot = fits.getval(extract_2d_file, "rawdatroot", 0)
+
         esahdulist = fits.open(esafile)
         print ("* ESA file contents ")
         esahdulist.info()

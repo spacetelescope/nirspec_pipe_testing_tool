@@ -4,6 +4,7 @@ import os
 from scipy import integrate
 from scipy import interpolate
 from astropy.io import fits
+from glob import glob
 
 
 """
@@ -94,30 +95,86 @@ def do_idl_rebin(a, *args):
     return eval(''.join(evList))
 
 
-def get_esafile(esa_files_path, det, mode, configuration):
+def get_esafile(esa_files_path, rawdatroot, mode, specifics):
     """
     This function gets the ESA file corresponding to the input given.
     Args:
-        esa_files_path: str, path where to find all the files with single configuration names
-        det: string, detector e.g "NRS1"
+        esa_files_path: str, top level of where the regression test data lives
+        rawdatroot: str, name of the raw data file (the file ran in create_data)
         mode: string, either 'MOS', 'FS', or 'IFU'
-        configuration: list of 2 strings, grating and filter of configuration
+        specifics: list, specific parameters needed for each mode
 
     Returns:
         esafile: str, full path of the ESA file corresponding to input given
     """
-    # get all the fits into a searchable list
-    fits_files_list = []
-    for root, dirs, files in os.walk(os.path.join(esa_files_path, mode)):
-        for file in files:
-            if file.endswith('.fits'):
-                fits_files_list.append(file)
-    # Find the file of interest
-    esafile = 'configuration not found'
-    grat, filt = configuration
-    for fitsfile in fits_files_list:
-        if (grat in fitsfile) and (filt in fitsfile) and (det in fitsfile):
-            esafile = fitsfile
+
+    def find_esafile_basename(specifics, jlab88_dir):
+        """
+        This function is simply to avoid code repetition.
+        """
+        # get the right esa file according to the mode
+        if mode == "MOS":
+            quad,row, col = specifics
+            # add a 0 if necessary for convention purposes
+            if col < 99:
+                col = "0"+str(col[0])
+            else:
+                col = str(col[0])
+            if row < 99:
+                row = "0"+str(row[0])
+            else:
+                row = str(row[0])
+            # to match current ESA intermediary files naming convention
+            esafile_basename = "Trace_MOS_"+str(quad[0])+"_"+row+"_"+col+"_"+jlab88_dir+".fits"
+
+        if mode == "FS":
+            sltname_list = specifics
+            for sltname in sltname_list:
+                # change the format of the string to match the ESA trace
+                sltname = sltname.split("S")[1]
+                if sltname[-1] == "A1":
+                    sltname = "A_"+sltname.split("A")[0]+"_1"
+                    break
+                elif sltname[-1] == "A2":
+                    sltname = "A_"+sltname.split("A")[0]+"_2"
+                    break
+                elif sltname[-1] == "A":
+                    sltname = "A_"+sltname.split("A")[0]+"_"
+                    break
+                elif sltname[-1] == "B":
+                    sltname = "B_"+sltname.split("B")[0]+"_"
+                    break
+            # to match current ESA intermediary files naming convention
+            esafile_basename = "Trace_SLIT_"+sltname+jlab88_dir+".fits"
+
+        if mode == "IFU":
+            IFUslice = specifics[0]
+            # to match current ESA intermediary files naming convention
+            esafile_basename = "Trace_IFU_Slice_"+IFUslice+"_"+jlab88_dir+".fits"
+
+        return esafile_basename
+
+
+    # get the root name from rawdatroot keyword (e.g. NRSV96214001001P0000000002105_1_491_SE_2016-01-24T01h59m01.fits)
+    esaroot = rawdatroot.split("_")[0]
+
+    # go into the esa_files_path directory and enter the the mode to get the right esafile
+    jlab88_list = os.path.join(esa_files_path, glob("*"+esaroot+"*"))
+    for jlab88_dir in jlab88_list:
+        mode_dir = os.path.join(jlab88_dir, glob("*"+esaroot+"*")[0])
+        esafile_basename = find_esafile_basename(specifics, jlab88_dir)
+        print ("Using this ESA file: \n", "Directory =", mode_dir, "\n", "File =", esafile_basename)
+        esafile = os.path.join(mode_dir, esafile_basename)
+
+        # check if we got the right esafile
+        root_filename = fits.getval(esafile, "FILENAME", 0)
+        if rawdatroot.replace(".fits", "") in root_filename:
+            break
+
+    # make sure the path is right or print a message
+    if not os.path.isfile(esafile):
+        esafile = "ESA file not found"
+
     return esafile
 
 
@@ -150,7 +207,7 @@ def idl_tabulate(x, f, p=5):
         return (x[-1] - x[0]) / (x.shape[0] - 1) * dot_wf
 
     ret = 0
-    for idx in xrange(0, x.shape[0], p - 1) :
+    for idx in range(0, x.shape[0], p - 1) :
         ret += newton_cotes(x[idx:idx + p], f[idx:idx + p])
     return ret
 
