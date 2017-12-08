@@ -27,7 +27,7 @@ For example, in a terminal type:
 ```bash
 conda create -n jwst_b7.1 --file url_depending_on_your_system python=3.5
 ```
-the ulr options are:
+for the current release candidate, the ulr options are:
 - Linux: http://ssb.stsci.edu/releases/jwstdp/0.7.8/latest-linux
 - O5S X: http://ssb.stsci.edu/releases/jwstdp/0.7.8/latest-osx
 
@@ -53,20 +53,62 @@ conda env remove -n name_of_your_old_environment
 pip install pytest-html
 ```
 
-4. In a text file editor, you are going to modify the configuration file 
+
+4. Clone the repository so you have the testing tool. To do this click at the top right 
+of this page, in the dropdown button that says clone or download, then copy the ulr that
+appears there. Now, go/create to the directory where you want the testing tool to "live" 
+in, and type:
+```bash
+git clone the_ulr_you_copied
+```
+After this is done you should see a full copy of the testing tool in your directory.
+
+
+5. Prepare the data to run through the pipeline. To do this:
+a) Copy the test data you will use from the NIRSpec vault directory. Go to the directory 
+where you want to have the testing data:
+```bash
+cp /grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/the_data_you_want_to_copy .
+```
+
+b) In the directory where you copied the test data, you will need to run a script PER
+fits file you want to test. Do not worry, this will only be done once. This script will
+create a new subdirectory with the necessary input file to run the SSB script 
+that converts raw data into uncal type files. You can choose to either keep this subfolder,
+or ask to remove it after the operation is done. In the terminal type:
+```bash
+python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/prepare_data2run.py fits_file.fits -u
+```
+This command will update the uncal keyword header without creating a new file, and
+will also keep the subdirectory. To remove it, simply add ```-rm``` at the end.
+The new uncal fits file is now ready for pipeline ingest.
+
+c) Optional. If you want to see the header of any file, you can use the another script
+in the ```utils``` directory of the testing tool. If you just want to see on-screen the 
+header, go where your fits file "lives" and type"
+```bash
+python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/read_hdr.py fits_file.fits
+```
+This command will show the main header. To save the header to a text file add a ```-s``` 
+at the end. If you want to see/save a different extension add at the end ```-e=1``` for 
+extension 1, and so on.
+
+
+6. In a text file editor, you are going to modify the configuration file 
 "cwspec2_config.cfg" (but everything should be ok for the first run but better to check).
 - This is where you will give all the arguments to the testing tool.
 - Make sure all the paths are what you need.
 - Set to True or False the steps that you want to be ran or not.
 - Modify the threshold values and figure switches in the bottom part of the file.
 
-5. See what pytests will be executed and in which order. Within the active conda 
+
+7. See what pytests will be executed and in which order. Within the active conda 
 environment type:
 ```bash
 pytest --collect-only
 ```
 
-6. Do the first run and create a "report.html" file as an output of the testing tool. In 
+8. Do the first run and create a "report.html" file as an output of the testing tool. In 
 the terminal type:
 ```bash
 pytest -s --config_file=cwspec2_config.cfg --html=report.html
