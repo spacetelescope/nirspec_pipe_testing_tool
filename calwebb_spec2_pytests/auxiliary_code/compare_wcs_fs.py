@@ -1,4 +1,3 @@
-from __future__ import print_function, division
 import numpy as np
 import os
 import sys
@@ -267,7 +266,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     if auxiliary_code_path is None:
         auxiliary_code_path = "./"
 
-    #compute_world_coordinates.compute_world_coordinates(infile_name)
+    compute_world_coordinates.compute_world_coordinates(infile_name)
 
     # The world coordinate file was created but it needs to be renamed
     basenameinfile_name = os.path.basename(infile_name)
@@ -281,7 +280,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
     print (cwc_fname)
     cwc_fname = infile_name.replace(basenameinfile_name, cwc_fname)
-    #os.system("mv "+wcoordfile+" "+cwc_fname)
+    os.system("mv "+wcoordfile+" "+cwc_fname)
 
     # loop over the slits
     sltname_list = []

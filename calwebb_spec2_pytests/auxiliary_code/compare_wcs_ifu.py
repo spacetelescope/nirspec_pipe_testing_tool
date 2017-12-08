@@ -1,4 +1,3 @@
-from __future__ import print_function, division
 import numpy as np
 import os
 import sys
@@ -291,7 +290,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
     print (cwc_fname)
     cwc_fname = infile_name.replace(basenameinfile_name, cwc_fname)
-    #os.system("mv "+wcoordfile+" "+cwc_fname)
+    os.system("mv "+wcoordfile+" "+cwc_fname)
 
     # loop over the slits
     wchdu = fits.open(cwc_fname)

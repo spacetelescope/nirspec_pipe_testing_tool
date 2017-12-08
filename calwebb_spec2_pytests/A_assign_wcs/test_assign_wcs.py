@@ -67,8 +67,8 @@ def output_hdul(set_inandout_filenames, config):
         print ("*** Will run calwebb_spec2... ")
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
         final_output_name = step_input_file.replace(".fits", "_calwebb_spec2.fits")
-        #result_level2B = Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
-        #result_level2B.save(final_output_name)
+        result_level2B = Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
+        result_level2B.save(final_output_name)
         hdul = core_utils.read_hdrfits(final_output_name, info=True, show_hdr=True)
         return hdul
     else:
