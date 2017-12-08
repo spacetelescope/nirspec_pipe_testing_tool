@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
 from jwst.assign_wcs.tools.nirspec import compute_world_coordinates
-from . import auxiliary_functions as wcsfunc
-from .. auxiliary_code import CV3_testdata_used4build7
+import auxiliary_functions as wcsfunc
+import CV3_testdata_used4build7
 
 
 """
@@ -379,10 +379,13 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             print  ("py =", py)
             print  ("py0+npy-1 =", py0+npy-1)
 
-        # read in the ESA data
+        # read in the ESA data using the CV3 data dictionary
         #esafile = get_esafile(auxiliary_code_path, det_extract_2d_file, grat_extract_2d_file, filt_extract_2d_file,
         #                      esa_files_path, quad, row, col)
-        rawdatroot = fits.getval(extract_2d_file, "rawdatroot", 0)
+        # read in the ESA file using raw data root file name
+        rawdatroot = fits.getval(extract_2d_file, "rawdatrt", 0)
+        specifics = [quad,row, col]
+        esafile = wcsfunc.get_esafile(esa_files_path, rawdatroot, "MOS", specifics)
 
         esahdulist = fits.open(esafile)
         print ("* ESA file contents ")
