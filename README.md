@@ -80,7 +80,8 @@ or ask to remove it after the operation is done. In the terminal type:
 python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/prepare_data2run.py fits_file.fits -u
 ```
 This command will update the uncal keyword header without creating a new file, and
-will also keep the subdirectory. To remove it, simply add ```-rm``` at the end.
+will also keep the subdirectory. To remove it, simply add ```-rm``` at the end. To save
+the keyword changes in a new fits file (instead of updating), remove the ```-u```.
 The new uncal fits file is now ready for pipeline ingest.
 
 c) Optional. If you want to see the header of any file, you can use the another script
