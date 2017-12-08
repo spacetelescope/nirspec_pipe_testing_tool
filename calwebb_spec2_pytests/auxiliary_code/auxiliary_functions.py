@@ -110,7 +110,7 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
 
     def find_esafile_basename(specifics, jlab88_dir):
         """
-        This function is simply to avoid code repetition.
+        This function simply avoids code repetition.
         """
         # get the right esa file according to the mode
         if mode == "MOS":
@@ -126,7 +126,6 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
                 row = str(row[0])
             # to match current ESA intermediary files naming convention
             esafile_basename = "Trace_MOS_"+str(quad[0])+"_"+row+"_"+col+"_"+jlab88_dir+".fits"
-
         if mode == "FS":
             sltname_list = specifics
             for sltname in sltname_list:
@@ -146,23 +145,28 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
                     break
             # to match current ESA intermediary files naming convention
             esafile_basename = "Trace_SLIT_"+sltname+jlab88_dir+".fits"
-
         if mode == "IFU":
             IFUslice = specifics[0]
             # to match current ESA intermediary files naming convention
             esafile_basename = "Trace_IFU_Slice_"+IFUslice+"_"+jlab88_dir+".fits"
-
         return esafile_basename
 
-
     # get the root name from rawdatroot keyword (e.g. NRSV96214001001P0000000002105_1_491_SE_2016-01-24T01h59m01.fits)
-    esaroot = rawdatroot.split("_")[0]
+    esaroot = rawdatroot.split("_")[0].replace("NRS", "")
 
     # go into the esa_files_path directory and enter the the mode to get the right esafile
-    jlab88_list = os.path.join(esa_files_path, glob("*"+esaroot+"*"))
+    # get all subdirectories within esa_files_path
+    subdir_list = glob(esa_files_path+"*")
+    jlab88_list = []
+    for subdir in subdir_list:
+        #subdir = subdir.split("/")[-1]
+        if esaroot in subdir:
+            jlab88_list.append(subdir)
     for jlab88_dir in jlab88_list:
-        mode_dir = os.path.join(jlab88_dir, glob("*"+esaroot+"*")[0])
-        esafile_basename = find_esafile_basename(specifics, jlab88_dir)
+        if mode == "FS":
+            mode = "SLIT"
+        mode_dir = os.path.join(jlab88_dir, jlab88_dir.split("/")[-1]+"_trace_"+mode)
+        esafile_basename = find_esafile_basename(specifics, jlab88_dir.split("/")[-1])
         print ("Using this ESA file: \n", "Directory =", mode_dir, "\n", "File =", esafile_basename)
         esafile = os.path.join(mode_dir, esafile_basename)
 
@@ -174,8 +178,10 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
     # make sure the path is right or print a message
     if not os.path.isfile(esafile):
         esafile = "ESA file not found"
+        print (esafile)
 
     return esafile
+
 
 
 def idl_tabulate(x, f, p=5):
