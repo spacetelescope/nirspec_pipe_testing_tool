@@ -5,6 +5,7 @@ py.test module for unit testing the assign_wcs step.
 
 import pytest
 import os
+import time
 from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
 from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
 
@@ -12,7 +13,8 @@ from .. import core_utils
 from . import assign_wcs_utils
 
 
-def create_completed_steps_txtfile(True_steps_suffix_map, step_input_file, step, outstep_file_suffix, step_completed):
+def create_completed_steps_txtfile(True_steps_suffix_map, step_input_file, step, outstep_file_suffix, step_completed,
+                                   end_time):
     """
     This function adds the completed steps along with the corresponding suffix of the output file name into a text file.
     Args:
@@ -21,6 +23,7 @@ def create_completed_steps_txtfile(True_steps_suffix_map, step_input_file, step,
         step: string, pipeline step just ran
         outstep_file_suffix: string, suffix added right before .fits to the input file
         step_completed: boolean, True if the step was completed and False if it was skiped
+        end_time: str, time it took for the pipeline or step to run.
 
     Returns:
         nothing
@@ -28,8 +31,8 @@ def create_completed_steps_txtfile(True_steps_suffix_map, step_input_file, step,
     # name of the text file to collect the step name and suffix
     print ("Map created at: ", True_steps_suffix_map)
     line0 = "# {:<20}".format("Input file: "+step_input_file)
-    line1 = "# {:<17} {:<20} {:<20}".format("Step", "Added suffix", "Step complition")
-    line2write = "{:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed))
+    line1 = "# {:<17} {:<20} {:<20} {:<20}".format("Step", "Added suffix", "Step complition", "Time to run [s]")
+    line2write = "{:<20} {:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed), end_time)
     with open(True_steps_suffix_map, "w+") as tf:
         tf.write(line0+"\n")
         tf.write(line1+"\n")
@@ -63,12 +66,18 @@ def output_hdul(set_inandout_filenames, config):
     skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
+    end_time = '0.0'
     if run_calwebb_spec2:
         print ("*** Will run calwebb_spec2... ")
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
         final_output_name = step_input_file.replace(".fits", "_calwebb_spec2.fits")
+        # start the timer to compute the step running time
+        start_time = time.time()
         result_level2B = Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
         result_level2B.save(final_output_name)
+        # end the timer to compute calwebb_spec2 running time
+        end_time = time.time() - start_time   # this is in seconds
+        print(" * calwebb_spec2 took "+end_time+" seconds to finish.")
         hdul = core_utils.read_hdrfits(final_output_name, info=True, show_hdr=True)
         return hdul
     else:
@@ -76,20 +85,26 @@ def output_hdul(set_inandout_filenames, config):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
                 if not skip_runing_pipe_step:
+                    # start the timer to compute the step running time
+                    start_time = time.time()
                     result = stp.call(step_input_file)
                     result.save(step_output_file)
+                    # end the timer to compute the step running time
+                    end_time = time.time() - start_time   # this is in seconds
+                    print("Step "+step+" took "+end_time+" seconds to finish")
                 step_completed = True
                 create_completed_steps_txtfile(txt_name, step_input_file, step,
-                               outstep_file_suffix, step_completed)
+                                               outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                 return hdul
             else:
                 print("Skipping step. Intput file "+step_input_file+" does not exit.")
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
+                create_completed_steps_txtfile(txt_name, step_input_file, step,
+                                               outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
         else:
             create_completed_steps_txtfile(txt_name, step_input_file, step,
-                                           outstep_file_suffix, step_completed)
+                                           outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+". Step set to False in configuration file.")
 
 

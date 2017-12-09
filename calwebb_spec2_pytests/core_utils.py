@@ -1,7 +1,7 @@
-from __future__ import print_function, division
-from astropy.io import fits
 import collections
 import os
+import numpy as np
+from astropy.io import fits
 
 '''
 This script contains functions frequently used in the test suite.
@@ -176,7 +176,7 @@ def read_True_steps_suffix_map(txtfile_name_with_path):
     return steps_list, suffix_list, completion_list
 
 
-def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_completed):
+def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_completed, end_time):
     """
     This function adds the completed steps along with the corresponding suffix of the output file name into a text file.
     Args:
@@ -184,12 +184,13 @@ def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_c
         step: string, pipeline step just ran
         outstep_file_suffix: string, suffix added right before .fits to the input file
         step_completed: boolean, True if the step was completed and False if it was skiped
+        end_time: string, time it took for the step to run (in seconds)
 
     Returns:
         nothing
     """
     print ("Map saved at: ", True_steps_suffix_map)
-    line2write = "{:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed))
+    line2write = "{:<20} {:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed), end_time)
     print (line2write)
     with open(True_steps_suffix_map, "a") as tf:
         tf.write(line2write+"\n")
@@ -360,3 +361,18 @@ def find_DETECTOR(output_hdul):
     if "DETECTOR" in output_hdul:
         det = output_hdul["DETECTOR"]
         return det
+
+
+def get_time_to_run_pipeline(True_steps_suffix_map):
+    """
+    This function calculates the total running time by adding the individual time per step.
+    Args:
+        True_steps_suffix_map: string, full path of where the text file will be written into
+
+    Returns:
+        total_time: string, total calculate the total time by reading the time of each step from the map
+
+    """
+    times_per_step = np.loadtxt(True_steps_suffix_map, comments="#", usecols=(3), unpack=True)
+    total_time = sum(times_per_step)
+    return total_time

@@ -66,7 +66,7 @@ keywd_dict['TEMPLATE']= 'N/A' # proposal instruction template used, e.g. N/A
 keywd_dict['OBSLABEL']= '#TODO' # proposer label for observation, e.g. #TODO
 
 # Visit information
-keywd_dict['VISITYPE']= 'PRIME' # type of visit (prime or parallel)
+keywd_dict['VISITYPE']= 'GENERIC' # type of visit (prime or parallel)
 keywd_dict['VSTSTART']= '2016-01-17T17:34:57' # UTC visit start time, e.g. 2013-01-19T18:27:22
 keywd_dict['WFSVISIT']= 'NO' # wavefront sensing and control visit indicator, options are:
 #                                                    'NO', 'YES', 'SENSING_CONTROL', 'SENSING_ONLY'

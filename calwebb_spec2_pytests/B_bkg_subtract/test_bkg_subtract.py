@@ -5,6 +5,8 @@ py.test module for unit testing the bkg_subtract step.
 
 import pytest
 import os
+import time
+import copy
 from jwst.background.background_step import BackgroundStep
 
 from .. import core_utils
@@ -31,6 +33,7 @@ def output_hdul(set_inandout_filenames, config):
     skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
+    end_time = '0.0'
     if config.getboolean("steps", step):
         print ("*** Step "+step+" set to True")
         if os.path.isfile(step_input_file):
@@ -42,13 +45,18 @@ def output_hdul(set_inandout_filenames, config):
                     existing_bgfiles += 1
             if existing_bgfiles == 0:
                 print (" Need at least one background file to continue. Step will be skipped.")
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because files listed on bkg_list in the configuration file do not exist.")
             else:
                 if not skip_runing_pipe_step:
+                    # start the timer to compute the step running time
+                    start_time = time.time()
                     result = stp.call(step_input_file, bkg_list)
                     if result is not None:
                         result.save(step_output_file)
+                        # end the timer to compute the step running time
+                        end_time = time.time() - start_time   # this is in seconds
+                        print("Step "+step+" took "+end_time+" seconds to finish")
                         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                         step_completed = True
                     else:
@@ -56,20 +64,40 @@ def output_hdul(set_inandout_filenames, config):
                 else:
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                     step_completed = True
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
-                return hdul
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                return hdul, step_input_file
         else:
             print (" The input file does not exist. Skipping step.")
-            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+" because the input file does not exist.")
     else:
-        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
+        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
         pytest.skip("Skipping "+step+". Step set to False in configuration file.")
 
+
+### THESE FUNCTION FOR VALIDATION
+
+# fixture to validate the background substract
+@pytest.fixture(scope="module")
+def check_if_subtract_is_zero(step_input_file):
+    """
+    This function uses a copy of the background input file and runs it through the step to test if the subtraction
+    is performed correctly, i.e. if the result is zero.
+    Args:
+        step_input_file: string, name of the step input file
+
+    Returns:
+        result: float, the result from the subtraction step.
+    """
+    bgfile_copy = copy.deepcopy(step_input_file)
+    stp = BackgroundStep()
+    result = stp.call(step_input_file, bgfile_copy)
+
+    pass
 
 
 # Unit tests
 
 def test_s_bkdsub_exists(output_hdul):
-    assert bkg_subtract_utils.s_bkdsub_exists(output_hdul), "The keyword S_BKDSUB was not added to the header --> background step was not completed."
+    assert bkg_subtract_utils.s_bkdsub_exists(output_hdul[0]), "The keyword S_BKDSUB was not added to the header --> background step was not completed."
 
