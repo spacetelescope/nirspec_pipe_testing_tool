@@ -90,7 +90,7 @@ def output_hdul(set_inandout_filenames, config):
                     result = stp.call(step_input_file)
                     result.save(step_output_file)
                     # end the timer to compute the step running time
-                    end_time = time.time() - start_time   # this is in seconds
+                    end_time = repr(time.time() - start_time)   # this is in seconds
                     print("Step "+step+" took "+end_time+" seconds to finish")
                 step_completed = True
                 create_completed_steps_txtfile(txt_name, step_input_file, step,

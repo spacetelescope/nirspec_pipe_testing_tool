@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
 from jwst.assign_wcs.tools.nirspec import compute_world_coordinates
-import auxiliary_functions as auxfunc
-import CV3_testdata_used4build7
+from . import auxiliary_functions as auxfunc
+from . import CV3_testdata_used4build7
 
 
 """

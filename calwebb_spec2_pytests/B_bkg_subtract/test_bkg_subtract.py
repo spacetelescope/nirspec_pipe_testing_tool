@@ -55,7 +55,7 @@ def output_hdul(set_inandout_filenames, config):
                     if result is not None:
                         result.save(step_output_file)
                         # end the timer to compute the step running time
-                        end_time = time.time() - start_time   # this is in seconds
+                        end_time = repr(time.time() - start_time)   # this is in seconds
                         print("Step "+step+" took "+end_time+" seconds to finish")
                         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                         step_completed = True
@@ -75,11 +75,11 @@ def output_hdul(set_inandout_filenames, config):
         pytest.skip("Skipping "+step+". Step set to False in configuration file.")
 
 
-### THESE FUNCTION FOR VALIDATION
+### FUNCTION FOR VALIDATION
 
 # fixture to validate the background substract
-@pytest.fixture(scope="module")
-def check_if_subtract_is_zero(step_input_file):
+#@pytest.fixture(scope="module")
+#def check_if_subtract_is_zero(step_input_file):
     """
     This function uses a copy of the background input file and runs it through the step to test if the subtraction
     is performed correctly, i.e. if the result is zero.
@@ -89,11 +89,11 @@ def check_if_subtract_is_zero(step_input_file):
     Returns:
         result: float, the result from the subtraction step.
     """
-    bgfile_copy = copy.deepcopy(step_input_file)
-    stp = BackgroundStep()
-    result = stp.call(step_input_file, bgfile_copy)
+#    bgfile_copy = copy.deepcopy(step_input_file)
+#    stp = BackgroundStep()
+#    result = stp.call(step_input_file, bgfile_copy)
 
-    pass
+
 
 
 # Unit tests
