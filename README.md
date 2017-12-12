@@ -94,6 +94,9 @@ This command will show the main header. To save the header to a text file add a 
 at the end. If you want to see/save a different extension add at the end ```-e=1``` for 
 extension 1, and so on.
 
+d) Now, the data is ready to be ran through cal_detector1. Please go ahead and do that 
+before running the tool.
+
 
 6. In a text file editor, you are going to modify the configuration file 
 "cwspec2_config.cfg" (but everything should be ok for the first run but better to check).
