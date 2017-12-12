@@ -7,72 +7,12 @@ from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
 from jwst.assign_wcs.tools.nirspec import compute_world_coordinates
 from . import auxiliary_functions as wcsfunc
-from . import CV3_testdata_used4build7
 
 
 """
 This script compares pipeline WCS info with ESA results for Multi-Object Spectroscopy (MOS) data.
 
 """
-
-
-def get_esafile(auxiliary_code_path, det, grat, filt, esa_files_path, quad, row, col):
-    """
-    This function gets the ESA file corresponding to the input given.
-    Args:
-        auxiliary_code_path: str, path where to find the auxiliary code. If not set the code will assume
-                            it is in the the auxiliary code directory
-        det: str, e.g "NRS1"
-        grat: str, grating
-        filt: str, filter
-        sltname_list: list, slit from data extension
-        esa_files_path: str, full path of where to find all ESA intermediary products to make comparisons for the tests
-        quad: list, slitlet quadrant
-        row: list, slitlet row
-        col: list, slitlet column
-
-    Returns:
-        esafile: str, full path of the ESA file corresponding to input given
-    """
-
-    # check if a specific file needs to be used
-    if ".fits" in esa_files_path:
-        return esa_files_path
-
-    # get the corresponding ESA file to the input file
-    # to do this, the script needs the python dictionary of the CV3 data
-    if det == "NRS1":
-        file4detector = 0
-    elif det == "NRS2":
-        file4detector = 1
-    for NID, nid_dict_key in CV3_testdata_used4build7.CV3_testdata_dict["MOS"]["NID"].items():
-        if nid_dict_key["grism"] == grat:
-            if nid_dict_key["filter"] == filt:
-                CV3filename = nid_dict_key["CV3filename"][file4detector]
-                print ("NID of ESA file:", NID)
-                print("CV3filename =", CV3filename)
-                break
-    # read in ESA data
-    # the ESA direcoty names use/follow their name conventions
-    ESA_dir_name = CV3filename.split("_")[0].replace("NRS", "")+"_"+NID+"_JLAB88"
-    esa_directory = os.path.join(esa_files_path, ESA_dir_name)
-    esafile_directory = os.path.join(esa_directory, ESA_dir_name+"_trace_MOS")
-    #print("esa_directory = ", esa_directory)
-    #print("esafile_directory = ", esafile_directory)
-    # add a 0 if necessary for convention purposes
-    if col < 99:
-        col = "0"+str(col[0])
-    else:
-        col = str(col[0])
-    if row < 99:
-        row = "0"+str(row[0])
-    else:
-        row = str(row[0])
-    # to match current ESA intermediary files naming convention
-    esafile_basename = "Trace_MOS_"+str(quad[0])+"_"+row+"_"+col+"_"+ESA_dir_name+".fits"
-    print ("Using this ESA file: \n", "Directory =", esafile_directory, "\n", "File =", esafile_basename)
-    esafile = os.path.join(esafile_directory, esafile_basename)
-    return esafile
 
 
 def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=None,
@@ -379,9 +319,6 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             print  ("py =", py)
             print  ("py0+npy-1 =", py0+npy-1)
 
-        # read in the ESA data using the CV3 data dictionary
-        #esafile = get_esafile(auxiliary_code_path, det_extract_2d_file, grat_extract_2d_file, filt_extract_2d_file,
-        #                      esa_files_path, quad, row, col)
         # read in the ESA file using raw data root file name
         rawdatroot = fits.getval(extract_2d_file, "rawdatrt", 0)
         specifics = [quad,row, col]

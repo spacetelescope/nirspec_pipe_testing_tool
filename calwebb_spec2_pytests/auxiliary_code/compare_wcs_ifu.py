@@ -7,7 +7,6 @@ from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
 from jwst.assign_wcs.tools.nirspec import compute_world_coordinates
 from . import auxiliary_functions as auxfunc
-from . import CV3_testdata_used4build7
 
 
 """
@@ -17,51 +16,6 @@ THIS CODE HAS NOT BEEN TESTED YET....
 
 """
 
-
-def get_esafile(auxiliary_code_path, det, grat, filt, IFUslice, esa_files_path):
-    """
-    This function gets the ESA file corresponding to the input given.
-    Args:
-        auxiliary_code_path: str, path where to find the auxiliary code. If not set the code will assume
-                            it is in the the auxiliary code directory
-        det: str, e.g "NRS1"
-        grat: str, grating
-        filt: str, filter
-        IFUslice: string, IFU slice, e.g. '02'
-        esa_files_path: str, full path of where to find all ESA intermediary products to make comparisons for the tests
-
-    Returns:
-        esafile: str, full path of the ESA file corresponding to input given
-    """
-
-    # check if a specific file needs to be used
-    if ".fits" in esa_files_path:
-        return esa_files_path
-
-    # get the corresponding ESA file to the input file
-    # to do this, the script needs the python dictionary of the CV3 data
-    if det == "NRS1":
-        file4detector = 0
-    elif det == "NRS2":
-        file4detector = 1
-    for NID, nid_dict_key in CV3_testdata_used4build7.CV3_testdata_dict["IFU"]["NID"].items():
-        if nid_dict_key["grism"] == grat:
-            if nid_dict_key["filter"] == filt:
-                CV3filename = nid_dict_key["CV3filename"][file4detector]
-                print ("NID of ESA file:", NID)
-                print("CV3filename =", CV3filename)
-                break
-
-    # the ESA direcoty names use/follow their name conventions
-    ESA_dir_name = CV3filename.split("_")[0].replace("NRS", "")+"_"+NID+"_JLAB88"
-    esa_directory = os.path.join(esa_files_path, ESA_dir_name)
-    esafile_directory = os.path.join(esa_directory, ESA_dir_name+"_trace_IFU")
-
-    # to match current ESA intermediary files naming convention
-    esafile_basename = "Trace_IFU_Slice_"+IFUslice+"_"+ESA_dir_name+".fits"
-    print ("Using this ESA file: \n", "Directory =", esafile_directory, "\n", "File =", esafile_basename)
-    esafile = os.path.join(esafile_directory, esafile_basename)
-    return esafile
 
 
 def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=None,
@@ -335,8 +289,6 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             print  ("py =", py)
             print  ("py0+npy-1 =", py0+npy-1)
 
-        # read in ESA data using the CV3 data dictionary
-        #esafile = get_esafile(auxiliary_code_path, det, grat, filt, IFUslice, esa_files_path)
         # read in the ESA file using raw data root file name
         rawdatroot = fits.getval(infile_name, "rawdatrt", 0)
         specifics = [IFUslice]
