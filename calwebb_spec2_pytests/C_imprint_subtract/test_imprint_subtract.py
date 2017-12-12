@@ -6,6 +6,9 @@ py.test module for unit testing the imprint_subtract step.
 import pytest
 import os
 import time
+import copy
+import subprocess
+from astropy.io import fits
 from jwst.imprint.imprint_step import ImprintStep
 
 from .. import core_utils
@@ -30,7 +33,7 @@ def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
-    # Only run step if data is IFU
+    # Only run step if data is IFU or MSA
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
     if core_utils.check_IFU_true(inhdu) or core_utils.check_MOS_true(inhdu):
@@ -38,14 +41,15 @@ def output_hdul(set_inandout_filenames, config):
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
         if not run_calwebb_spec2:
-            if config.getboolean("steps", step):
+            run_step = config.getboolean("steps", step)
+            if run_step:
                 print ("*** Step "+step+" set to True")
                 if os.path.isfile(step_input_file):
                     print(" The input file ", step_input_file,"exists... will run step "+step)
                     msa_imprint_structure = config.get("additional_arguments", "msa_imprint_structure")
                     if not os.path.isfile(msa_imprint_structure):
                         print (" Need msa_imprint_structure file to continue. Step will be skipped.")
-                        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed)
+                        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                         pytest.skip("Skipping "+step+" because msa_imprint_structure file in the configuration file does not exist.")
                     else:
                         if not skip_runing_pipe_step:
@@ -55,7 +59,7 @@ def output_hdul(set_inandout_filenames, config):
                                 start_time = time.time()
                                 result.save(step_output_file)
                                 # end the timer to compute the step running time
-                                end_time = time.time() - start_time   # this is in seconds
+                                end_time = repr(time.time() - start_time)   # this is in seconds
                                 print("Step "+step+" took "+end_time+" seconds to finish")
                                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                                 step_completed = True
@@ -65,7 +69,7 @@ def output_hdul(set_inandout_filenames, config):
                             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                             step_completed = True
                         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                        return hdul
+                        return hdul, run_step, step_input_file, step_output_file
                 else:
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     pytest.skip("Skipping "+step+" because the input file does not exist.")
@@ -76,7 +80,44 @@ def output_hdul(set_inandout_filenames, config):
         pytest.skip("Skipping "+step+" because data is neither IFU or MOS.")
 
 
-# Unit tests
+
+### VALIDATION FUNCTIONS
+
+# fixture to validate the subtraction works fine: re-run the step with the same file as msa_imprint file
+@pytest.fixture(scope="module")
+def check_output_is_zero(output_hdul):
+    run_step = output_hdul[1]
+    step_input_file = output_hdul[2]
+    step_output_file = output_hdul[3]
+    # Only run test if data is IFU or MSA
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    if core_utils.check_IFU_true(inhdu) or core_utils.check_MOS_true(inhdu):
+        if run_step:
+            # set specifics for the test
+            msa_imprint_structure = copy.deepcopy(step_input_file)
+            result_to_check = step_output_file.replace(".fits", "_zerotest.fits")
+            # run the step with the specifics
+            stp = ImprintStep()
+            res = stp.call(step_input_file, msa_imprint_structure)
+            res.save(result_to_check)
+            # check that the end product of image - image is zero
+            r = fits.getdata(step_output_file)
+            c = fits.getdata(result_to_check)
+            substraction = sum((r-c).flatten())
+            result = False
+            if substraction == 0.0:
+                result = True
+            # erase test output file
+            subprocess.run(["rm", result_to_check])
+            return result
+        pytest.skip("Skipping validation check for imprint_subtract. Step set to False in configuration file.")
+
+
+
+### Unit tests
 
 def test_s_imprint_exists(output_hdul):
-    assert imprint_subtract_utils.s_imprint_exists(output_hdul), "The keyword S_IMPRINT was not added to the header --> imprint_subtract step was not completed."
+    assert imprint_subtract_utils.s_imprint_exists(output_hdul[0]), "The keyword S_IMPRINT was not added to the header --> imprint_subtract step was not completed."
+
+def test_check_output_is_zero(output_hdul):
+    assert check_output_is_zero(output_hdul)

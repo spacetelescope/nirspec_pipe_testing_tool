@@ -55,7 +55,7 @@ def output_hdul(set_inandout_filenames, config):
                     if result is not None:
                         result.save(step_output_file)
                         # end the timer to compute the step running time
-                        end_time = time.time() - start_time   # this is in seconds
+                        end_time = repr(time.time() - start_time)   # this is in seconds
                         print("Step "+step+" took "+end_time+" seconds to finish")
                         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                         step_completed = True
@@ -93,7 +93,7 @@ def output_hdul(set_inandout_filenames, config):
 #    stp = BackgroundStep()
 #    result = stp.call(step_input_file, bgfile_copy)
 
- 
+
 
 
 # Unit tests
