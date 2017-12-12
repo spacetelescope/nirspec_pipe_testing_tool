@@ -295,6 +295,12 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     warning = check_datetimeformat(key, val, check_date=False, check_datetime=False,
                                                    check_time=True)
 
+                # specific check for VISITYPE, set to GENERIC
+                if key == 'VISITYPE':
+                    ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
+                    print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
+                    fits.setval(ff, key, 0, value='GENERIC')
+
             if warning is not None:
                 missing_keywds.append(key)
                 warnings_list.append(warning)
@@ -338,14 +344,11 @@ def add_keywds(fits_file, only_update, missing_keywds):
         if key != 'wcsinfo':
             print("adding keyword: ", key, " in extension: primary")
             fits.setval(updated_fitsfile, key, value=new_value, after=after_key)
-            #print ('\n New header: ')
-            #hdulist = fits.open(updated_fitsfile)
-            #hdr = hdulist[0].header
-            #print (repr(hdr))
         else:
             # go into the subdictionary for WCS keywords
             extname = 'sci'
             main_hdr = fits.getheader(updated_fitsfile, 0)
+            sci_hdr = fits.getheader(updated_fitsfile, extname)
             for subkey, new_value in shkvd.keywd_dict["wcsinfo"].items():
                 # first remove these keywords from the main header
                 if subkey in main_hdr:
@@ -355,8 +358,9 @@ def add_keywds(fits_file, only_update, missing_keywds):
                     fits.delval(updated_fitsfile, subkey, 0)
                 # uncomment this line if wanting to use the original keyword value given by create_data
                 #new_value = wcs_keywds_from_main_hdr[subkey]
-                print("adding keyword: ", subkey, " in extension: ", extname, " with value: ", new_value)
-                fits.setval(updated_fitsfile, subkey, 1, value=new_value, after='EXTNAME')
+                if subkey not in sci_hdr:
+                    print("adding keyword: ", subkey, " in extension: ", extname, " with value: ", new_value)
+                    fits.setval(updated_fitsfile, subkey, 1, value=new_value, after='EXTNAME')
             print ("Science header has been updated.")
 
 
