@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import sys
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -233,6 +232,7 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
     col = shutter_info.field("shutter_column")
     slitlet_id = repr(row[0])+"_"+repr(col[0])
     print ('pslit=', pslit, "   quad=", quad, "   row=", row, "   col=", col, "   slitlet_id=", slitlet_id)
+    print ('Will use this MSA shutter configuration file: ', metafile)
 
     # Run compute_world_coordinates.py in order to produce the necessary file
     # !!! note that the code expects to be in the build environment !!!

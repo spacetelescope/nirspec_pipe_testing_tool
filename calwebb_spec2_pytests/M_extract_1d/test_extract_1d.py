@@ -6,6 +6,7 @@ py.test module for unit testing the extract_1d step.
 import pytest
 import os
 import time
+import subprocess
 
 from jwst.extract_1d.extract_1d_step import Extract1dStep
 from .. import core_utils
@@ -33,7 +34,17 @@ def output_hdul(set_inandout_filenames, config):
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
-    if not run_calwebb_spec2:
+    if run_calwebb_spec2:
+        # read the assign wcs fits file
+        local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
+        hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
+        # move the output file into the working directory
+        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+        step_output_file = os.path.join(working_directory, local_step_output_file)
+        print ("Step product was saved as: ", step_output_file)
+        subprocess.run(["mv", local_step_output_file, step_output_file])
+        return hdul
+    else:
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):

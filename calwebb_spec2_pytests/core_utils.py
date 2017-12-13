@@ -13,7 +13,7 @@ def getlist(option, sep=',', chars=None):
     return [ chunk.strip(chars) for chunk in option.split(sep) ]
 
 
-def read_hdrfits(fits_file_name, info=False, show_hdr=False):
+def read_hdrfits(fits_file_name, info=False, show_hdr=False, ext=0):
     '''
     This function reads the header fits file and returns a dictionary of the keywords with
     corresponding values. Keywords will be stored in the order they are read.
@@ -21,6 +21,7 @@ def read_hdrfits(fits_file_name, info=False, show_hdr=False):
         fits_file_name: full path with name of the header text file
         info: if True the function will show the contents and shapes of the file
         show_hdr: if True the function will print the header of the file
+        ext: integer, number of extension to be read
 
     Returns:
         hdrl: The header of the fits file
@@ -32,7 +33,7 @@ def read_hdrfits(fits_file_name, info=False, show_hdr=False):
         print ('\n FILE INFORMATION: \n')
         hdulist.info()
     # get and print header
-    hdrl = hdulist[0].header
+    hdrl = hdulist[ext].header
     if show_hdr:
         print ('\n FILE HEADER: \n')
         print (repr(hdrl))
@@ -174,6 +175,25 @@ def read_True_steps_suffix_map(txtfile_name_with_path):
                 suffix_list.append(info[1])
                 completion_list.append(info[2])
     return steps_list, suffix_list, completion_list
+
+
+def read_completion_to_full_run_map(full_run_map, step):
+    """
+    This function adds the completion boolean to the full run map file.
+    Args:
+        full_run_map: string, path and name of the text file to be updated
+        step: string, name of the step to be updated
+
+    Returns:
+        step_product = string, name of the intermediary fits product of the step
+    """
+    step_product = ""
+    with open(full_run_map, "r") as tf:
+        for line in tf.readlines():
+            if "#" not in line:
+                if step in line:
+                    step_product = line.split()[1]
+    return step_product
 
 
 def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_completed, end_time):
