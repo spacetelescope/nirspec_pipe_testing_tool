@@ -9,6 +9,8 @@ contained in the online dictionary located at:
 https://iwjwdmsdauiwebv.stsci.edu/portal/Mashup/Clients/jwkeywords/
 and the pipeline GitHub page:
 https://github.com/STScI-JWST/jwst/blob/master/jwst/datamodels/schemas/wcsinfo.schema.yaml
+and the Confluence page:
+https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+Reports
 
 '''
 
