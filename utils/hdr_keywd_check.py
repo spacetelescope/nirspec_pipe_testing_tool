@@ -301,6 +301,13 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
                     fits.setval(ff, key, 0, value='GENERIC')
 
+                # specific check for SUBARRAY, set to GENERIC
+                if key == 'SUBARRAY':
+                    if val not in hkwd_val:
+                        ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
+                        print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
+                        fits.setval(ff, key, 0, value='GENERIC')
+
             if warning is not None:
                 missing_keywds.append(key)
                 warnings_list.append(warning)

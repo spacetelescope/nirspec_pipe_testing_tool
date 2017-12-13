@@ -9,6 +9,8 @@ contained in the online dictionary located at:
 https://iwjwdmsdauiwebv.stsci.edu/portal/Mashup/Clients/jwkeywords/
 and the pipeline GitHub page:
 https://github.com/STScI-JWST/jwst/blob/master/jwst/datamodels/schemas/wcsinfo.schema.yaml
+and the Confluence page:
+https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+Reports
 
 '''
 
@@ -116,7 +118,7 @@ keywd_dict['CHRGTIME']= -1.0 # [seconds] charge accumulation time, e.g. -1.0
 keywd_dict['DURATION']= -1.0 # [seconds] total duration of exposuree.g. -1.0
 
 # Subarray parameters
-keywd_dict['SUBARRAY']= 'FULL' # name of subarray used, options are:
+keywd_dict['SUBARRAY']= 'GENERIC' # name of subarray used, options are:
 #                          '1024X16', '128X128', '128X2048', '2048X128', '2048X64', '32X32', '64X2048', '8X8',
 #                          'ALLSLITS', 'BRIGHTSKY', 'FULL', 'GENERIC', 'MASK1065', 'MASK1140', 'MASK1550',
 #                          'MASKLYOT', 'S1600A1', 'S200A1', 'S200A2', 'S200B1', 'S400A1', 'SLITLESSPRISM',
@@ -148,6 +150,13 @@ keywd_dict['MSASTATE']= 'CONFIGURED' # state of MSA, options are:
 #                                       'CONFIGURED', 'LAUNCHLOCK_ALLCLOSED', 'PRIMARYPARK_ALLOPEN',
 #                                       'PRIMARYPARK_ALLCLOSED', 'PRIMARYPARK_CONFIGURED'
 keywd_dict['FOCUSPOS']= 0.0 # [mm] focus position for NIRSpec, e.g. 0.0
+
+# keywords added for build 7.1 from https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+Reports
+#keywd_dict['NRS_NORM']= ?  # int, Number of normal pixels in IRS2 readout
+#keywd_dict['NRS_REF']= ?  # int, Number of reference pixels in IRS2 readout
+keywd_dict['FRMDIVSR']= 1  # integer, Divisor applied to frame-averaged groups
+keywd_dict['XOFFSET']= 0.0  # float, x offset from pattern starting position
+keywd_dict['YOFFSET']= 0.0  # float, y offset from pattern starting position
 
 # NIRSpec MSA supporting files (NIRSpec MSA only)
 keywd_dict['MSACONFG']= 'N/A' # MSA configuration file name, e.g. 'N/A'
@@ -190,7 +199,7 @@ keywd_dict['DEC_V1']  = 0.0 # [deg] Dec of telescope V1 axis, e.g. 'N/A'
 keywd_dict['APERNAME']= '#TODO' # mnemonic for PDB science aperture used, e.g. #TODO
 keywd_dict['PA_APER'] = -999.0 # [deg] position angle of aperture used, e.g. -999.0
 
-# WCS parameters
+# WCS parameters in science extension
 keywd_dict['wcsinfo'] = {
                             'WCSAXES' : 3, # number of World Coordinate System axes, e.g. 3
                             'CRPIX1' : 1024, # x-coordinate of the reference pixel, e.g. 1024.0

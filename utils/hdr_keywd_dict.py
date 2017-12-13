@@ -9,6 +9,8 @@ contained in the online dictionary located at:
 https://iwjwdmsdauiwebv.stsci.edu/portal/Mashup/Clients/jwkeywords/
 and the pipeline GitHub page:
 https://github.com/STScI-JWST/jwst/blob/master/jwst/datamodels/schemas/wcsinfo.schema.yaml
+and the Confluence page:
+https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+Reports
 
 '''
 
@@ -141,6 +143,13 @@ keywd_dict['FXD_SLIT']= ['NONE', 'S200A1', 'S200A2', 'S200B1', 'S400A1', 'S1600A
 keywd_dict['MSASTATE']= ['CONFIGURED', 'LAUNCHLOCK_ALLCLOSED', 'PRIMARYPARK_ALLOPEN', 'PRIMARYPARK_ALLCLOSED',
                          'PRIMARYPARK_CONFIGURED'] # state of MSA: all open, all closed, configured
 keywd_dict['FOCUSPOS']= [float] # [mm] focus position for NIRSpec, e.g. 0.0
+
+# keywords added for build 7.1 from https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+Reports
+#keywd_dict['NRS_NORM']= [int]  # Number of normal pixels in IRS2 readout
+#keywd_dict['NRS_REF']= [int]  # Number of reference pixels in IRS2 readout
+keywd_dict['FRMDIVSR']= [int]  # Divisor applied to frame-averaged groups
+keywd_dict['XOFFSET']= [float] # x offset from pattern starting position
+keywd_dict['YOFFSET']= [float] # y offset from pattern starting position
 
 # NIRSpec MSA supporting files (NIRSpec MSA only)
 keywd_dict['MSACONFG']= [str] # MSA configuration file name, e.g. 'N/A'

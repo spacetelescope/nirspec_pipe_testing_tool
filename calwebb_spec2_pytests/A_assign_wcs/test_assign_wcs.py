@@ -6,38 +6,13 @@ py.test module for unit testing the assign_wcs step.
 import pytest
 import os
 import time
+import subprocess
+from astropy.io import fits
 from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
 from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
 
 from .. import core_utils
 from . import assign_wcs_utils
-
-
-def create_completed_steps_txtfile(True_steps_suffix_map, step_input_file, step, outstep_file_suffix, step_completed,
-                                   end_time):
-    """
-    This function adds the completed steps along with the corresponding suffix of the output file name into a text file.
-    Args:
-        True_steps_suffix_map: string, full path of where the text file will be written into
-        step_input_file: string, name of the input file for the pipeline step
-        step: string, pipeline step just ran
-        outstep_file_suffix: string, suffix added right before .fits to the input file
-        step_completed: boolean, True if the step was completed and False if it was skiped
-        end_time: str, time it took for the pipeline or step to run.
-
-    Returns:
-        nothing
-    """
-    # name of the text file to collect the step name and suffix
-    print ("Map created at: ", True_steps_suffix_map)
-    line0 = "# {:<20}".format("Input file: "+step_input_file)
-    line1 = "# {:<17} {:<20} {:<20} {:<20}".format("Step", "Added suffix", "Step complition", "Time to run [s]")
-    line2write = "{:<20} {:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed), end_time)
-    with open(True_steps_suffix_map, "w+") as tf:
-        tf.write(line0+"\n")
-        tf.write(line1+"\n")
-        tf.write(line2write+"\n")
-
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -67,24 +42,49 @@ def output_hdul(set_inandout_filenames, config):
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
+    # get the MSA shutter configuration file full path
+    msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
+    msametfl = fits.getval(step_input_file, "MSAMETFL", 0)
+    msa_shutter_conf = os.path.join(msa_conf_root, msametfl)
+    # run the pipeline
     if run_calwebb_spec2:
         print ("*** Will run calwebb_spec2... ")
+        # create the map
+        full_run_map = "full_run_map.txt"
+        assign_wcs_utils.create_map_from_full_run(full_run_map, step_input_file)
+        # get the name of the configuration file and run the pipeline
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
-        final_output_name = step_input_file.replace(".fits", "_calwebb_spec2.fits")
+        input_file_basename_list = step_input_file.split("_")[:4]
+        input_file_basename = "_".join((input_file_basename_list))
+        final_output_name = "_".join((input_file_basename, "cal.fits"))
+        final_output_name_basename = os.path.basename(final_output_name)
+        # copy the MSA shutter configuration file into the pytest directory
+        subprocess.run(["cp", msa_shutter_conf, "."])
         # start the timer to compute the step running time
         start_time = time.time()
-        result_level2B = Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
-        result_level2B.save(final_output_name)
+        Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
         # end the timer to compute calwebb_spec2 running time
-        end_time = time.time() - start_time   # this is in seconds
+        end_time = repr(time.time() - start_time)   # this is in seconds
         print(" * calwebb_spec2 took "+end_time+" seconds to finish.")
-        hdul = core_utils.read_hdrfits(final_output_name, info=True, show_hdr=True)
-        return hdul
+        # remove the copy of the MSA shutter configuration file
+        subprocess.run(["rm", msametfl])
+        # move the output file into the working directory
+        print ("The final calwebb_spec2 product was saved in: ", final_output_name)
+        subprocess.run(["mv", final_output_name_basename, final_output_name])
+        # read the assign wcs fits file
+        step_output_file = core_utils.read_completion_to_full_run_map(full_run_map, step)
+        hdul = core_utils.read_hdrfits(step_output_file, info=True, show_hdr=True)
+        scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+        return hdul, scihdul
     else:
+        # create the Map of file names
+        assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
                 if not skip_runing_pipe_step:
+                    # copy the MSA shutter configuration file into the pytest directory
+                    subprocess.run(["cp", msa_shutter_conf, "."])
                     # start the timer to compute the step running time
                     start_time = time.time()
                     result = stp.call(step_input_file)
@@ -92,19 +92,19 @@ def output_hdul(set_inandout_filenames, config):
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
                     print("Step "+step+" took "+end_time+" seconds to finish")
+                    # remove the copy of the MSA shutter configuration file
+                    subprocess.run(["rm", msametfl])
                 step_completed = True
-                create_completed_steps_txtfile(txt_name, step_input_file, step,
-                                               outstep_file_suffix, step_completed, end_time)
-                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
+                scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+                return hdul, scihdul
             else:
                 print("Skipping step. Intput file "+step_input_file+" does not exit.")
-                create_completed_steps_txtfile(txt_name, step_input_file, step,
-                                               outstep_file_suffix, step_completed, end_time)
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
         else:
-            create_completed_steps_txtfile(txt_name, step_input_file, step,
-                                           outstep_file_suffix, step_completed, end_time)
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+". Step set to False in configuration file.")
 
 
@@ -112,11 +112,11 @@ def output_hdul(set_inandout_filenames, config):
 # Unit tests
 
 def test_wavstart_exists(output_hdul):
-    assert assign_wcs_utils.wavstart_exists(output_hdul), "The keyword WAVSTART was not added to the header."
+    assert assign_wcs_utils.wavstart_exists(output_hdul[1]), "The keyword WAVSTART was not added to the header."
 
 def test_sporder_exists(output_hdul):
-    assert assign_wcs_utils.sporder_exists(output_hdul), "The keyword SPORDER was not added to the header."
+    assert assign_wcs_utils.sporder_exists(output_hdul[1]), "The keyword SPORDER was not added to the header."
 
 def test_s_wcs_exists(output_hdul):
-    assert assign_wcs_utils.s_wcs_exists(output_hdul), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
+    assert assign_wcs_utils.s_wcs_exists(output_hdul[0]), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
 
