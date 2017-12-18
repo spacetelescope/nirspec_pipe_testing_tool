@@ -104,7 +104,7 @@ else:
 fits_list = glob("*.fits")
 if len(fits_list) >= 1:
     print("Output fits files are located at: ", working_dir)
-    #subprocess.run(["mv", "*.fits", working_dir])
+    subprocess.run(["mv", "*.fits", working_dir])
 else:
     print("No fits files detected after calwbb_detector1 finished. Exiting script.")
 
