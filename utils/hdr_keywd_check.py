@@ -255,6 +255,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
     Returns:
         nothing
     """
+    ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
     for hkwd_key, hkwd_val in hkwd.keywd_dict.items():
         # start by making the warning for each keyword None and assigning key and val
         key = hkwd_key
@@ -297,14 +298,12 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # specific check for VISITYPE, set to GENERIC
                 if key == 'VISITYPE':
-                    ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
                     print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
                     fits.setval(ff, key, 0, value='GENERIC')
 
                 # specific check for SUBARRAY, set to GENERIC
                 if key == 'SUBARRAY':
                     if val not in hkwd_val:
-                        ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
                         print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
                         fits.setval(ff, key, 0, value='GENERIC')
 
@@ -322,6 +321,16 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 warnings_list.append(warning)
                 with open(warnings_file_name, "a") as tf:
                     tf.write(warning+'\n')
+
+    # if the keyword is not in the dictionary remove it
+    for file_key in file_keywd_dict:
+        if file_key == "RAWDATRT":
+            print (file_key, file_keywd_dict[file_key], " will remain in the header")
+        elif (file_key not in hkwd.keywd_dict):
+            fits.delval(ff, file_key, 0)
+            warning = '{:<15} {:<9} {:<25}'.format(file_key, ext, 'Keyword removed from header')
+            print (warning)
+
     print("missing_keywords = ", missing_keywds)
 
 
@@ -354,15 +363,8 @@ def add_keywds(fits_file, only_update, missing_keywds):
         else:
             # go into the subdictionary for WCS keywords
             extname = 'sci'
-            main_hdr = fits.getheader(updated_fitsfile, 0)
             sci_hdr = fits.getheader(updated_fitsfile, extname)
             for subkey, new_value in shkvd.keywd_dict["wcsinfo"].items():
-                # first remove these keywords from the main header
-                if subkey in main_hdr:
-                    # uncomment this section if wanting to save the original keyword value
-                    #val = file_keywd_dict[hkwd_key]
-                    #wcs_keywds_from_main_hdr[hkwd_key] = val
-                    fits.delval(updated_fitsfile, subkey, 0)
                 # uncomment this line if wanting to use the original keyword value given by create_data
                 #new_value = wcs_keywds_from_main_hdr[subkey]
                 if subkey not in sci_hdr:

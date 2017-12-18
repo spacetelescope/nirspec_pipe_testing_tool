@@ -32,7 +32,7 @@ keywd_dict['DATE']    = [str] # UTC date file created, e.g. 2016-07-12T12:43:27
 keywd_dict['ORIGIN']  = [str] # Institution responsible for creating FITS file, e.g. STScI
 keywd_dict['FILENAME']= [str] # Name of file, e.g. jwtest1001001_01101_00001_NRS1_uncal.fits
 keywd_dict['FILETYPE']= [str] # Type of data found in file, e.g. UNCALIBRATED
-keywd_dict['DPSW_VER']= [str] # Data processing software version number, e.g. 0.1.1
+keywd_dict['SDP_VER']= [str] # Data processing software version number, e.g. 0.1.1
 
 # Observation identifiers
 keywd_dict['DATE-OBS']= [str] # UTC date at start of exposure, e.g. 2013-01-19
@@ -51,9 +51,9 @@ keywd_dict['EXPOSURE']= [str] # exposure request number, e.g. 00001
 keywd_dict['DETECTOR']= [str] # name of detector used to acquire data, e.g. 'NRS1'
 keywd_dict['NINTS']   = [int] # number of integrations within exposure, e.g. 1
 keywd_dict['NGROUPS'] = [int] # number of groups within integration, e.g. 20
-keywd_dict['ZEROFRAM']= ['T', 'F'] # boolean, T if a zero frame was read separately
+keywd_dict['ZEROFRAM']= ['T', 'F'] # boolean represented with string, T if a zero frame was read separately
 keywd_dict['READPATT']= [str] # readout pattern, e.g. 'NRSRAPID'
-keywd_dict['DATAPROB']= ['T', 'F'] # boolean, T if science telemetry indicated any problems
+keywd_dict['DATAPROB']= ['T', 'F'] # boolean represented with string, T if science telemetry indicated any problems
 
 # Program information
 keywd_dict['TITLE']   = [str] # proposal title
@@ -61,7 +61,7 @@ keywd_dict['PI_NAME'] = [str] # Name of principal investigator, e.g. UNKNOWN
 keywd_dict['CATEGORY']= [str] # program category, e.g. N/A
 keywd_dict['SUBCAT']  = [str] # program sub-category, e.g. N/A
 keywd_dict['SCICAT']  = [str] # science category assigned during TAC process, e.g. N/A
-keywd_dict['CONT_ID'] = [str, int] # continuation of the specified previous program, e.g. N/A
+keywd_dict['CONT_ID'] = [int] # continuation of the specified previous program, e.g. 1
 
 # Observation information
 keywd_dict['TEMPLATE']= [str] # proposal instruction template used, e.g. N/A
@@ -70,11 +70,9 @@ keywd_dict['OBSLABEL']= [str] # proposer label for observation, e.g. #TODO
 # Visit information
 keywd_dict['VISITYPE']= ['PRIME', 'PARALLEL', 'GENERIC'] # type of visit (prime or parallel)
 keywd_dict['VSTSTART']= [str] # UTC visit start time, e.g. 2013-01-19T18:27:22
-keywd_dict['WFSVISIT']= ['NO', 'YES', 'SENSING_CONTROL', 'SENSING_ONLY'] # wavefront sensing and control visit indicator
 keywd_dict['NEXPOSUR']= [int] # total number of exposures in visit, e.g. 1
-keywd_dict['INTARGET']= ['T', 'F'] # boolean, T if at least one exposure in visit is internal
-keywd_dict['EXTARGET']= ['T', 'F'] # boolean, T if at least one exposure in visit is external
-keywd_dict['TARGOOPP']= ['T', 'F'] # boolean, visit scheduled as target of opportunity
+keywd_dict['INTARGET']= ['T', 'F'] # boolean represented with string, T if at least one exposure in visit is internal
+keywd_dict['TARGOOPP']= ['T', 'F'] # boolean represented with string, visit scheduled as target of opportunity
 
 # Exposure information
 keywd_dict['PNTG_SEQ']= [int] # pointing sequence number, e.g. 1
@@ -93,7 +91,7 @@ keywd_dict['TARG_DEC']= [float] # target DEC computed at time of exposure, e.g. 
 keywd_dict['TARRUDEC']= [float] # target Dec uncertainty, e.g. 0.0
 keywd_dict['PROP_RA'] = [float] # proposer specified RA for the target, e.g. 0.0
 keywd_dict['PROP_DEC']= [float] # proposer specified Dec for the target, e.g. 0.0
-keywd_dict['PROPEPOC']= [float] # proposer specified epoch for RA and Dec, e.g. 2000.0
+keywd_dict['MU_EPOCH']= [float] # epoch of proper motion values for RA and Dec, proposer specified, e.g. 2000.0
 
 # Exposure times
 keywd_dict['EXPSTART']= [float] # UTC exposure start time (MJD), e.g. 56311.76636840278
@@ -105,13 +103,12 @@ keywd_dict['NSAMPLES']= [int] # number of A/D samples per pixel, e.g. 1
 keywd_dict['NFRAMES'] = [int] # number of frames in group, e.g. 1
 keywd_dict['GROUPGAP']= [int] # number of frames dropped between groups, e.g. 10
 keywd_dict['TSAMPLE'] = [int] # delta time between samples in microseconds, e.g. 10
-keywd_dict['NRESET']  = [int] # number of resets between integrations, e.g. 1
+keywd_dict['NRESETS']  = [int] # number of resets between integrations, e.g. 1
 keywd_dict['NRSTSTRT']= [int] # number of extra resets at start of exposure, e.g. 1
 keywd_dict['TFRAME']  = [float] # [seconds] time between frames, e.g. 5.49132
 keywd_dict['TGROUP']  = [float] # [seconds] time between groups, e.g 5.49132
 keywd_dict['EFFINTTM']= [float] # [seconds] effective integration time, e.g. 104.33508
 keywd_dict['EFFEXPTM']= [float] # [seconds] effective exposure time, e.g. 104.33508
-keywd_dict['CHRGTIME']= [float] # [seconds] charge accumulation time, e.g. -1.0
 keywd_dict['DURATION']= [float] # [seconds] total duration of exposuree.g. -1.0
 
 # Subarray parameters
@@ -127,7 +124,6 @@ keywd_dict['SUBSTRT1']= [int] # starting pixel number in the SIAS x direction, e
 keywd_dict['SUBSIZE1']= [int] # number of pixels in the SIAS x direction, e.g. 2048
 keywd_dict['SUBSTRT2']= [int] # starting pixel number in the SIAS y direction, e.g. 897
 keywd_dict['SUBSIZE2']= [int] # number of pixels in the SIAS y direction, e.g. 256
-keywd_dict['NXLIGHT'] = [str] # number of light sensitive x values (columns), e.g #TODO
 keywd_dict['FASTAXIS']= [1, 2, -1, -2] # Direction of fast readout (+/-2 X direction, +/-
 keywd_dict['SLOWAXIS']= [1, 2, -1, -2] # Direction of slow readout (+/-1 X direction, +/-
 
@@ -142,7 +138,7 @@ keywd_dict['GWA_TILT']= [float] # GWA temperature ave [K], e.g. 4.02844747915601
 keywd_dict['FXD_SLIT']= ['NONE', 'S200A1', 'S200A2', 'S200B1', 'S400A1', 'S1600A1', 'NULL'] # name of fixed slit aperture used
 keywd_dict['MSASTATE']= ['CONFIGURED', 'LAUNCHLOCK_ALLCLOSED', 'PRIMARYPARK_ALLOPEN', 'PRIMARYPARK_ALLCLOSED',
                          'PRIMARYPARK_CONFIGURED'] # state of MSA: all open, all closed, configured
-keywd_dict['FOCUSPOS']= [float] # [mm] focus position for NIRSpec, e.g. 0.0
+keywd_dict['FOCUSPOS']= [int] # [mm] focus position for NIRSpec, e.g. 1
 
 # keywords added for build 7.1 from https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+Reports
 #keywd_dict['NRS_NORM']= [int]  # Number of normal pixels in IRS2 readout
@@ -152,7 +148,8 @@ keywd_dict['XOFFSET']= [float] # x offset from pattern starting position
 keywd_dict['YOFFSET']= [float] # y offset from pattern starting position
 
 # NIRSpec MSA supporting files (NIRSpec MSA only)
-keywd_dict['MSACONFG']= [str] # MSA configuration file name, e.g. 'N/A'
+keywd_dict['MSAMETFL']= [str] # MSA configuration file name, e.g. 'N/A'
+keywd_dict['MSAMETID']= [int] # MSA meta data ID for the exposure, e.g. 1
 
 # lamp configuration
 keywd_dict['LAMP']    = [str] # internal lamp state, e.g. 'ARGON'
@@ -167,14 +164,11 @@ keywd_dict['GS_DEC']  = [str, float] # guide star declination, e.g. 'N/A'
 keywd_dict['GSURA']   = [str, float] # guide star right ascension uncertainty, e.g. 'N/A'
 keywd_dict['GSUDEC']  = [str, float] # guide star declination uncertainty, e.g. 'N/A'
 keywd_dict['GS_MAG']  = [str, float] # guide star magnitude in FGS detector, e.g. 'N/A'
-keywd_dict['GSUMAG']  = [str, float] # guide star magnitude uncertainty, e.g. 'N/A'
+keywd_dict['GS_UMAG']  = [str, float] # guide star magnitude uncertainty, e.g. 'N/A'
 keywd_dict['PCS_MODE']= [str, float] # Pointing Control System mode, e.g. 'N/A'
-keywd_dict['GSCENTX'] = [str, float] # guide star centroid x position, e.g. 'N/A'
-keywd_dict['GSCENTY'] = [str, float] # guide star centroid y position, e.g. 'N/A'
-keywd_dict['JITTERMS']= [str, float] # [arcsec] RMS jitter over the exposure, e.g. 'N/A'
 
 # JWST ephemeris information
-keywd_dict['COORDSYS']= [str] # ephemeris coordinate system, e.g. 'N/A'
+keywd_dict['REFFRAME']= [str] # ephemeris coordinate system, e.g. 'N/A'
 keywd_dict['EPH_TIME']= [float] # [sec] UTC time from ephemeris start time, e.g. 0.0
 keywd_dict['JWST_X']  = [float] # [km] X spatial coordinate of JWST, e.g. 0.0
 keywd_dict['JWST_Y']  = [float] # [km] Y spatial coordinate of JWST, e.g. 0.0
@@ -206,11 +200,11 @@ keywd_dict['wcsinfo'] = {
                             'CTYPE3' : [str], # third axis coordinate type, e.g. WAVE
                             'CUNIT1' : ['deg'], # units for first axis
                             'CUNIT2' : ['deg'], # units for seconds axis
-                            'CUNIT3' : ['micron'], # units for third axis
+                            'CUNIT3' : ['um'], # units for third axis, e.g. 'micron'
                             'CDELT1' : [float], # increment per pixel, axis 1, e.g. 0.12
                             'CDELT2' : [float], # increment per pixel, axis 2, e.g. 0.12
                             'CDELT3' : [float], # increment per pixel, axis 3, e.g. 0.000672
-                            'PC1_1' : [float], # linear transformation matrix element, e.g. 1.0
+                            'PC1_1' : [float], # linear transformation matrix element, e.g. -1.0
                             'PC1_2' : [float], # linear transformation matrix element, e.g. 0.0
                             'PC1_3' : [float], # linear transformation matrix element, e.g. 0.0
                             'PC2_1' : [float], # linear transformation matrix element, e.g. 0.0

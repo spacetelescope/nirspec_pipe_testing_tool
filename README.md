@@ -94,30 +94,45 @@ This command will show the main header. To save the header to a text file add a 
 at the end. If you want to see/save a different extension add at the end ```-e=1``` for 
 extension 1, and so on.
 
-d) Now, the data is ready to be ran through cal_detector1. Please go ahead and do that 
-before running the tool.
+d) Now, the data is ready to be ran through cal_detector1. Please go ahead on to step 6
+of this guide to do that.
 
 
-6. In a text file editor, you are going to modify the configuration file 
-"cwspec2_config.cfg" (but everything should be ok for the first run but better to check).
-- This is where you will give all the arguments to the testing tool.
-- Make sure all the paths are what you need.
+6. In a text file editor, you are going to modify the configuration file ```cwspec2_config.cfg```,
+which lives at ```/nirspec_pipetesting_tool/calwebb_spec2_pytests/```. This is the file 
+that controls all the input that the tool needs. Please open it and make sure that:
+- All the paths point to the right places (the files can be located anywhere, but the both
+the pipeline and the tool will run faster if the files are local to your computer).
 - Set to True or False the steps that you want to be ran or not.
-- Modify the threshold values and figure switches in the bottom part of the file.
+- All the additional arguments for the testing tool are correct, e.g. the threshold values
+and figure switches in the bottom part of the file.
 
 
-7. See what pytests will be executed and in which order. Within the active conda 
+7. You are now ready to run ```calwebb_detector1``` to obtain the level 2 data required to 
+run the testing tool. In a terminal, go into the directory where the testing tool lives 
+(i.e. at the level of the ```/calwebb_spec2/``` directory), and make sure the testing
+conda environment is on. Now type:
+```bash
+python ../utils/runcal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits
+```
+This will execute calwebb detector 1 in a single run, using the configuration file that 
+you have for it in the ```utils``` directory. You can also add a ```-sbs``` in order to 
+execute the processing of level 1 step by step. If everything went well, you now w should 
+have the input for running the testing tool.
+ 
+
+8. See what pytests will be executed and in which order. Within the active conda 
 environment type:
 ```bash
 pytest --collect-only
 ```
 
-8. Do the first run and create a "report.html" file as an output of the testing tool. In 
+9. Do the first run and create a "report.html" file as an output of the testing tool. In 
 the terminal type:
 ```bash
 pytest -s --config_file=cwspec2_config.cfg --html=report.html
 ```
-The "-s" will capture all the print statements in the code on screen.
+The ```-s``` will capture all the print statements in the code on screen.
 
 
 If all went well you should have a report.html in your directory.

@@ -87,7 +87,7 @@ if os.path.isfile(uncal_file):
     hkch.perform_check(uncal_file, only_update)
 
     # add a keyword with the name of the raw data fits file name
-    fits.setval(uncal_file, 'rawdatrt', 0, value=uncal_file, after='DPSW_VER')
+    fits.setval(uncal_file, 'rawdatrt', 0, value=fits_file, after='SDP_VER')
 
 else:
     print("The *uncal.fits file does not exist. Exiting the code.")
