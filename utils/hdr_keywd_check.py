@@ -298,6 +298,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # specific check for VISITYPE, set to GENERIC
                 if key == 'VISITYPE':
+                    #if val not in hkwd_val:
+                    # for now always set this keyword to generic
                     print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
                     fits.setval(ff, key, 0, value='GENERIC')
 

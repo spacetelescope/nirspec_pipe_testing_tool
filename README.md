@@ -127,19 +127,41 @@ environment type:
 pytest --collect-only
 ```
 
-9. Do the first run and create a "report.html" file as an output of the testing tool. In 
-the terminal type:
+9. Do the first testing tool run. As an output of the testing tool you will see an html 
+file, ```report.html```, and an intermediary product file name map will appear in the 
+```/calwebb_spec2/``` directory, along with fits files of intermediary products in the 
+path you pointed with the ```cwspec2_config.cfg``` file with the variable
+ ```working_directory```. In the terminal type:
 ```bash
 pytest -s --config_file=cwspec2_config.cfg --html=report.html
 ```
 The ```-s``` will capture all the print statements in the code on screen.
 
 
-If all went well you should have a report.html in your directory.
+10. Report your findings. If all went well you should have the html report in the 
+```/calwebb_spec2/``` directory, along with the file name map of intermediary products. 
+Each section of the report specifies what tests passed or failed, and, if there were any 
+errors, the report will tell you (with the name of the file where the error occured) if 
+it is a pipeline error or a testing tool error. We keep the testing progress and the 
+reports in this Confluence page:
+https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
+
+* Actions for the following outcomes:
+- If there are no testing tool errors and some of the pytests failed, you can check off 
+the steps and please put that report in the Confluence page.
+- If there are testing tool errors please place your report in the Confluence page, add a 
+small comment in the Testing Tool column, and send me an email that you have done so, 
+so I can address the error as soon as possible.
+- If there are errors on the pipeline, please create a basecamp ticket and place the link
+in the corresponding column of the Confluence table.
+- At the end of the testing campaign, Maria will place the final html reports in the 
+staging directory of the NIRSpec_vault.
+
 
 
 NOTE THAT:
-- A text file containing a suffix name map will be created in the pytests directory.
+- A text file containing an intermediary product name map will be created in the pytests 
+directory.
 - If any of the central store directory calls do not respond, the pytest will be skipped 
 even if the step is set to True in the config file. To make the tests run, you will have 
 to download the files the tool is calling, and change the corresponding paths in the 
