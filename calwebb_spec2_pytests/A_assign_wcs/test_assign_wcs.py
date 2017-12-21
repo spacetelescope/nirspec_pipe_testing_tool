@@ -42,10 +42,12 @@ def output_hdul(set_inandout_filenames, config):
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
-    # get the MSA shutter configuration file full path
-    msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
-    msametfl = fits.getval(step_input_file, "MSAMETFL", 0)
-    msa_shutter_conf = os.path.join(msa_conf_root, msametfl)
+    # get the MSA shutter configuration file full path only for MOS data
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    if core_utils.check_MOS_true(inhdu):
+        msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
+        msametfl = fits.getval(step_input_file, "MSAMETFL", 0)
+        msa_shutter_conf = os.path.join(msa_conf_root, msametfl)
     # run the pipeline
     if run_calwebb_spec2:
         print ("*** Will run calwebb_spec2... ")
@@ -58,16 +60,18 @@ def output_hdul(set_inandout_filenames, config):
         input_file_basename = "_".join((input_file_basename_list))
         final_output_name = "_".join((input_file_basename, "cal.fits"))
         final_output_name_basename = os.path.basename(final_output_name)
-        # copy the MSA shutter configuration file into the pytest directory
-        subprocess.run(["cp", msa_shutter_conf, "."])
+        if core_utils.check_MOS_true(inhdu):
+            # copy the MSA shutter configuration file into the pytest directory
+            subprocess.run(["cp", msa_shutter_conf, "."])
         # start the timer to compute the step running time
         start_time = time.time()
         Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
         # end the timer to compute calwebb_spec2 running time
         end_time = repr(time.time() - start_time)   # this is in seconds
         print(" * calwebb_spec2 took "+end_time+" seconds to finish.")
-        # remove the copy of the MSA shutter configuration file
-        subprocess.run(["rm", msametfl])
+        if core_utils.check_MOS_true(inhdu):
+            # remove the copy of the MSA shutter configuration file
+            subprocess.run(["rm", msametfl])
         # move the output file into the working directory
         print ("The final calwebb_spec2 product was saved in: ", final_output_name)
         subprocess.run(["mv", final_output_name_basename, final_output_name])
@@ -83,8 +87,9 @@ def output_hdul(set_inandout_filenames, config):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
                 if not skip_runing_pipe_step:
-                    # copy the MSA shutter configuration file into the pytest directory
-                    subprocess.run(["cp", msa_shutter_conf, "."])
+                    if core_utils.check_MOS_true(inhdu):
+                        # copy the MSA shutter configuration file into the pytest directory
+                        subprocess.run(["cp", msa_shutter_conf, "."])
                     # start the timer to compute the step running time
                     start_time = time.time()
                     result = stp.call(step_input_file)
@@ -92,8 +97,9 @@ def output_hdul(set_inandout_filenames, config):
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
                     print("Step "+step+" took "+end_time+" seconds to finish")
-                    # remove the copy of the MSA shutter configuration file
-                    subprocess.run(["rm", msametfl])
+                    if core_utils.check_MOS_true(inhdu):
+                        # remove the copy of the MSA shutter configuration file
+                        subprocess.run(["rm", msametfl])
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)

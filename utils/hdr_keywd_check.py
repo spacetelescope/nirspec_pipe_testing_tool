@@ -298,16 +298,37 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # specific check for VISITYPE, set to GENERIC
                 if key == 'VISITYPE':
-                    #if val not in hkwd_val:
-                    # for now always set this keyword to generic
-                    print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
-                    fits.setval(ff, key, 0, value='GENERIC')
+                    if val not in hkwd_val:
+                        # for now always set this keyword to generic
+                        print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
+                        fits.setval(ff, key, 0, value='GENERIC')
 
                 # specific check for SUBARRAY, set to GENERIC
                 if key == 'SUBARRAY':
                     if val not in hkwd_val:
                         print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
                         fits.setval(ff, key, 0, value='GENERIC')
+
+                # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
+                if key == 'EXP_TYPE':
+                    if 'MODEUSED' in file_keywd_dict:
+                        print('   * MODEUSED  = ', file_keywd_dict['MODEUSED'])
+                        mode_used = fits.getval(ff, 'MODEUSED', 0)
+                        if 'FS' in mode_used:
+                            val = 'NRS_FIXEDSLIT'
+                        elif 'IFU' in mode_used:
+                            val = 'NRS_IFU'
+                        fits.setval(ff, key, 0, value=val)
+                    else:
+                        warning = '*** WARNING ***: keyword MODEUSED not found in file --> value for EXP_TYPE might not match mode used for data'
+                        warnings_list.append(warning)
+                    print('     Setting value of ', key, ' to ', val)
+
+                # make sure the MSASTATE keyword is set correctly
+                if key == 'MSASTATE':
+                    mode_used = fits.getval(ff, 'MODEUSED', 0)
+                    if (mode_used == 'FS') or (mode_used == 'IFU'):
+                        val = 'PRIMARYPARK_ALLCLOSED'
 
             if warning is not None:
                 missing_keywds.append(key)
@@ -326,12 +347,18 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
     # if the keyword is not in the dictionary remove it
     for file_key in file_keywd_dict:
-        if file_key == "RAWDATRT":
+        if (file_key == "RAWDATRT") or (file_key == "MODEUSED"):
             print (file_key, file_keywd_dict[file_key], " will remain in the header")
         elif (file_key not in hkwd.keywd_dict):
             fits.delval(ff, file_key, 0)
             warning = '{:<15} {:<9} {:<25}'.format(file_key, ext, 'Keyword removed from header')
             print (warning)
+
+    # check that the RAWDATRT keyword is present
+    if 'RAWDATRT' not in file_keywd_dict:
+        warning = '*** WARNING ***: keyword RAWDATRT not found in file --> impossible to confirm if ESA intermediary product matches data'
+        warnings_list.append(warning)
+        print (warning)
 
     print("missing_keywords = ", missing_keywds)
 

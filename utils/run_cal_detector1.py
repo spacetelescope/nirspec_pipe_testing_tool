@@ -4,6 +4,7 @@ import argparse
 import subprocess
 import configparser
 from glob import glob
+from astropy.io import fits
 
 from jwst.pipeline.calwebb_detector1 import Detector1Pipeline
 from jwst.group_scale.group_scale_step import GroupScaleStep
@@ -42,7 +43,8 @@ def get_caldet1cfg_and_workingdir():
     pipe_testing_tool_path = config.get("calwebb_spec2_input_file", "pipe_testing_tool_path")
     calwebb_detector1_cfg = os.path.join(pipe_testing_tool_path, "utils/calwebb_detector1.cfg")
     working_dir = config.get("calwebb_spec2_input_file", "working_directory")
-    return calwebb_detector1_cfg, working_dir
+    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
+    return calwebb_detector1_cfg, working_dir, mode_used
 
 
 
@@ -64,8 +66,11 @@ fits_input_uncal_file = args.fits_input_uncal_file
 step_by_step = args.step_by_step
 
 # Get the calwebb_detector1.cfg file
-calwebb_detector1_cfg, working_dir = get_caldet1cfg_and_workingdir()
+calwebb_detector1_cfg, working_dir, mode_used = get_caldet1cfg_and_workingdir()
 print ("Using this configuration file: ", calwebb_detector1_cfg)
+
+# Get and save the value of the raw data root name to add at the end of calwebb_detector1
+rawdatrt = fits.getval(fits_input_uncal_file, 'modeused', 0)
 
 if not step_by_step:
     # start the timer to compute the step running time
@@ -99,6 +104,12 @@ else:
     end_time = repr(time.time() - start_time)   # this is in seconds
     print(" * calwebb_detector1 step by step took "+end_time+" seconds to finish *")
 
+
+# add a keyword with the name of the raw data fits file name
+fits.setval(final_out, 'rawdatrt', 0, value=rawdatrt, after='OBSLABEL')
+
+# add a keyword with the mode used for the data set
+fits.setval(final_out, 'modeused', 0, value=mode_used, after='rawdatrt')
 
 # Move fits products to working dir
 fits_list = glob("*.fits")

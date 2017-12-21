@@ -50,7 +50,7 @@ def output_hdul(set_inandout_filenames, config):
         step_output_file = os.path.join(working_directory, local_step_output_file)
         print ("Step product was saved as: ", step_output_file)
         subprocess.run(["mv", local_step_output_file, step_output_file])
-        return hdul, flattest_paths, flattest_switches
+        return hdul, step_output_file, msa_conf_root, esa_files_path, wcs_threshold_diff, save_wcs_plots
     else:
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
