@@ -63,6 +63,12 @@ git clone the_ulr_you_copied
 ```
 After this is done you should see a full copy of the testing tool in your directory.
 
+NOTE: If you have already cloned the repository, in the terminal go to where you placed 
+the ```nirspec_pipe_testing_tool``` directory. Then use this command to update the code:
+```git pull```
+However, if you had written script(s) in the tools directory tree, git will not let you
+until you move the script(s) to another directory. 
+
 
 5. Prepare the data to run through the pipeline. To do this:
 a) Copy the test data you will use from the NIRSpec vault directory. Go to the directory 
@@ -151,7 +157,7 @@ it is a pipeline error or a testing tool error. We keep the testing progress and
 reports in this Confluence page:
 https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
 
-Please follow these actions for the depending on the outcome:
+Please follow these actions for reporting depending on the outcome:
 - If there are no testing tool errors and some of the pytests failed, you can check  
 off the steps and please put that report in Table 2 of the Confluence page.
 - If there are testing tool errors please place your report in the Confluence page, 
