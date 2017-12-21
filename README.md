@@ -66,7 +66,7 @@ After this is done you should see a full copy of the testing tool in your direct
 NOTE: If you have already cloned the repository, in the terminal go to where you placed 
 the ```nirspec_pipe_testing_tool``` directory. Then use this command to update the code:
 ```git pull```
-However, if you had written script(s) in the tools directory tree, git will not let you
+However, if you had written script(s) in the tool's directory tree, git will not let you
 until you move the script(s) to another directory. 
 
 
