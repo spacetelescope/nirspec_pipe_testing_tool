@@ -1,0 +1,44 @@
+# Commands to run the calwebb_spec2 steps from the terminal as of December-2017
+# pipeline version 0.7.8.rc9
+
+# PLEASE MAKE SURE YOUR CONDA TESTING ENVIRONMENT IS ON
+
+# Full calwebb_sepc2
+strun jwst.pipeline.Spec2Pipeline final_output_from_cal_detector1.fits
+
+# Assign WCS
+strun jwst.assign_wcs.AssignWcsStep fits_file.fits
+
+# Background Subtract *** CURRENTLY NOT WORKING FROM THE COMMAND LINE
+strun jwst.background.BackgroundStep fits_file.fits background_file.fits
+
+# Imprint Subtract (IFU or MSA data)
+strun jwst.imprint.ImprintStep fits_file.fits msa_imprint_file.fits
+
+# Extract 2d
+strun jwst.extract_2d.Extract2dStep fits_file.fits
+
+# Flat field
+strun jwst.flatfield.FlatFieldStep fits_file.fits
+
+# Source type 
+strun jwst.srctype.SourceTypeStep fits_file.fits
+
+# Pathloss
+strun jwst.pathloss.PathLossStep fits_file.fits
+
+# Barshadow (only MOS data)
+strun jwst.barshadow.BarShadowStep fits_file.fits
+
+# Photom
+strun jwst.photom.PhotomStep fits_file.fits
+
+# Resample (FS and MOS data)
+strun jwst.resample.ResampleStep fits_file
+
+# Cube build (only IFU data)
+strun jwst.cube_build.CubeBuildStep fits_file.fits
+
+# Extract 1d
+strun jwst.extract_1d.Extract1dStep fits_file.fits
+

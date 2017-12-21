@@ -47,6 +47,8 @@ def output_hdul(set_inandout_filenames, config):
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
+    # get the MSA shutter configuration file full path only for MOS data
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if run_calwebb_spec2:
         # read the assign wcs fits file
         local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
@@ -62,11 +64,12 @@ def output_hdul(set_inandout_filenames, config):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
                 if not skip_runing_pipe_step:
-                    # copy the MSA shutter configuration file into the pytest directory
-                    msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
-                    msametfl = fits.getval(step_input_file, "MSAMETFL", 0)
-                    msa_shutter_conf = os.path.join(msa_conf_root, msametfl)
-                    subprocess.run(["cp", msa_shutter_conf, "."])
+                    if core_utils.check_MOS_true(inhdu):
+                        # copy the MSA shutter configuration file into the pytest directory
+                        msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
+                        msametfl = fits.getval(step_input_file, "MSAMETFL", 0)
+                        msa_shutter_conf = os.path.join(msa_conf_root, msametfl)
+                        subprocess.run(["cp", msa_shutter_conf, "."])
                     # start the timer to compute the step running time
                     start_time = time.time()
                     result = stp.call(step_input_file)
@@ -74,8 +77,9 @@ def output_hdul(set_inandout_filenames, config):
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
                     print("Step "+step+" took "+end_time+" seconds to finish")
-                    # remove the copy of the MSA shutter configuration file
-                    subprocess.run(["rm", msametfl])
+                    if core_utils.check_MOS_true(inhdu):
+                        # remove the copy of the MSA shutter configuration file
+                        subprocess.run(["rm", msametfl])
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)

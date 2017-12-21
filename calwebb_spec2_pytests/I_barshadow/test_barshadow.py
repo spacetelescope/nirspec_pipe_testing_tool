@@ -33,6 +33,7 @@ def output_hdul(set_inandout_filenames, config):
     # Only run step if data is MOS
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
+    print("core_utils.check_MOS_true(inhdu)=", core_utils.check_MOS_true(inhdu))
     if core_utils.check_MOS_true(inhdu):
         stp = BarShadowStep()
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran

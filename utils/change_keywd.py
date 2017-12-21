@@ -40,8 +40,11 @@ def new_keywd(extension_number, value):
         print ("Exiting the code.")
         exit()
     else:
-        val_type = input("Please type the value type of the keyword value (use one of the following: float, int, str)   ")
-        new_value = val_type(value)
+        val_type = input("Please type the value type of the keyword value (use one of the following: [str], float, int)   ")
+        if (val_type == "float") or (val_type == "int"):
+            new_value = val_type(value)
+        else:
+            new_value = value
     return new_value
 
 
