@@ -190,7 +190,12 @@ even if the step is set to True in the config file. To make the tests run, you w
 to download the files the tool is calling, and change the corresponding paths in the 
 configuration file.
 - The output in the terminal can be a bit overwhelming if there was a failed test or an 
-error. The html report is much clearer to understand what happened.
+error. In the html report is much clearer to understand what happened.
+- In the ```utils``` directory there is a text file named ```terminal_commands_calwebb_spec2_steps.txt```.
+This file contains all the commands you can use from the terminal for running calwebb spec2
+steps. As part of the testing campaign, it is important that you run the pipeline from the
+command line and that you make sure that the outcome intermediary files are the same as 
+those ran with the testing tool. This sanity check is minor but important to verify.
 - Remember that:
 a) Whenever you need to read either the main or science headers of a file,
 you can always use the ```read_hdr.py``` script located in the ```utils``` directory of
