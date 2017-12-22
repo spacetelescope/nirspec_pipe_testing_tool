@@ -74,7 +74,8 @@ until you move the script(s) to another directory.
 a) Copy the test data you will use from the NIRSpec vault directory. Go to the directory 
 where you want to have the testing data:
 ```bash
-cp /grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/the_data_you_want_to_copy .
+cp /grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/
+                                             test_data_suite/the_data_you_want_to_copy .
 ```
 
 b) In the directory where you copied the test data, you will need to run a script PER
@@ -83,7 +84,8 @@ create a new subdirectory with the necessary input file to run the SSB script
 that converts raw data into uncal type files. You can choose to either keep this subfolder,
 or ask to remove it after the operation is done. In the terminal type:
 ```bash
-python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/prepare_data2run.py fits_file.fits -u
+python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/
+                                                   prepare_data2run.py fits_file.fits -u
 ```
 This command will update the uncal keyword header without creating a new file, and
 will also keep the subdirectory. To remove it, simply add ```-rm``` at the end. To save
@@ -94,7 +96,8 @@ c) Optional. If you want to see the header of any file, you can use the another 
 in the ```utils``` directory of the testing tool. If you just want to see on-screen the 
 header, go where your fits file "lives" and type"
 ```bash
-python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/read_hdr.py fits_file.fits
+python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/
+                                                              read_hdr.py fits_file.fits
 ```
 This command will show the main header. To save the header to a text file add a ```-s``` 
 at the end. If you want to see/save a different extension add at the end ```-e=1``` for 
@@ -104,11 +107,14 @@ d) Now, the data is ready to be ran through cal_detector1. Please go ahead on to
 of this guide to do that.
 
 
-6. In a text file editor, you are going to modify the configuration file ```cwspec2_config.cfg```,
-which lives at ```/nirspec_pipetesting_tool/calwebb_spec2_pytests/```. This is the file 
-that controls all the input that the tool needs. Please open it and make sure that:
+6. In a text file editor, you are going to modify the configuration file 
+```cwspec2_config.cfg```, which lives at 
+```/nirspec_pipetesting_tool/calwebb_spec2_pytests/```. 
+This is the file that controls all the input that the tool needs. Please open it and 
+make sure that:
 - All the paths point to the right places (the files can be located anywhere, but the both
 the pipeline and the tool will run faster if the files are local to your computer).
+- Set the adequate mode for the data to be tested.
 - Set to True or False the steps that you want to be ran or not.
 - All the additional arguments for the testing tool are correct, e.g. the threshold values
 and figure switches in the bottom part of the file.
@@ -161,11 +167,13 @@ Please follow these actions for reporting depending on the outcome:
 - If there are no testing tool errors and some of the pytests failed, you can check  
 off the steps and please put that report in Table 2 of the Confluence page.
 - If there are testing tool errors please place your report in the Confluence page, 
-add a small comment in the Testing Tool column, and send Maria Pena-Guerrero (pena@stsci.edu)
-an email that you have done this, so the error can be addressed as soon as possible.
+add a small comment in the Testing Tool column, and send Maria Pena-Guerrero 
+(pena@stsci.edu) an email that you have done this, so the error can be addressed as 
+soon as possible.
 - If there are errors in the pipeline, please create a Basecamp ticket 
 (https://stsci-ins.basecamphq.com/projects/11477312-jwst-pipeline/posts), following the 
-guidelines for doing this at https://confluence.stsci.edu/display/JWST/NIRSpec+Guidelines+for+Pipeline+Reporting
+guidelines for doing this at:
+https://confluence.stsci.edu/display/JWST/NIRSpec+Guidelines+for+Pipeline+Reporting
 and copy the link in the corresponding column of Table 2 of the Confluence table.
 - Keep updating the html report as you continue with the testing, and including the final
 report.
@@ -179,7 +187,8 @@ report
 c) Also inside that directory, create a text file named ```YourNameMODEresults.txt```, 
 e.g. ```MariaIFUresults.txt```. In this text file you will only type the full path where 
 you obtained the testing data, e.g. 
-```/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/IFU_CV3```
+```/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/
+                                                              test_data_suite/IFU_CV3```
 d) Finally, place the ```YourNameMODEresults``` directory in the staging directory of the 
 NIRSpec vault, and send Gray an email that you have done so at: gkanarek@stsci.edu
 The path of the staging directory is:
@@ -197,11 +206,13 @@ to download the files the tool is calling, and change the corresponding paths in
 configuration file.
 - The output in the terminal can be a bit overwhelming if there was a failed test or an 
 error. In the html report is much clearer to understand what happened.
-- In the ```utils``` directory there is a text file named ```terminal_commands_calwebb_spec2_steps.txt```.
-This file contains all the commands you can use from the terminal for running calwebb spec2
-steps. As part of the testing campaign, it is important that you run the pipeline from the
-command line and that you make sure that the outcome intermediary files are the same as 
-those ran with the testing tool. This sanity check is minor but important to verify.
+- In the ```utils``` directory there is a text file named 
+```terminal_commands_calwebb_spec2_steps.txt```.
+This file contains all the commands you can use from the terminal for running 
+calwebb spec2 steps. As part of the testing campaign, it is important that you run the 
+pipeline from the command line and that you make sure that the outcome intermediary 
+files are the same as those ran with the testing tool. This sanity check is minor but 
+important to verify.
 - Remember that:
 a) Whenever you need to read either the main or science headers of a file,
 you can always use the ```read_hdr.py``` script located in the ```utils``` directory of
@@ -228,13 +239,19 @@ You can add additional testing routines. We prefer if these are written in pytho
 however, due to time constraints, we devised a method for including scripts in other 
 programing languages. For this testing campaign, the guidelines for auxiliary code are 
 the following: 
-1. Programing language = preferably Python 3.5, however, other languages (e.g. IDL, C) are OK.
-2. Please comment as much as you can so that it is easy for other testers to follow your code.
+1. Programing language = preferably Python 3.5, however, other languages (e.g. IDL, C) 
+are OK.
+
+2. Please comment as much as you can so that it is easy for other testers to follow 
+your code.
+
 3. At the end of your script you must create a pass or fail test, e.g. after you calculate 
 a root-mean-square check if that value is within some range. If instead you have a 
 threshold value, please make the threshold an input variable with a default value.
+
 4. Your script must produce a text file named ```same_name_as_the_script_result.txt``` at
 the end, which will only contain one word: True or False.
+
 5. Create a directory named ```same_name_as_the_script`` with the following contents:
 a) A text file named ```same_name_as_the_script_init.txt```, and in there type in line 1 
 the pipeline step after which your code should be run, in line 2 the language you used, 
@@ -243,24 +260,26 @@ line 2 should be the exact call from within the IDL session.
 b) The script you wrote.
 c) One level up from where you created the script directory, create a new directory named 
 ```YourName_PTT_auxiliary_code```. In this directory, please place the directory 
-```same_name_as_the_script```, and a create a text file ```named YourName_PTT_auxiliary_code.txt```. 
+```same_name_as_the_script```, and a create a text file named 
+```YourName_PTT_auxiliary_code.txt```. 
 This file will only contain the following path:
 ```/grp/jwst/wit4/nirspec_vault/pipe_testing_tool/auxiliary_code```
+
 6. Now, copy the ```YourName_PTT_auxiliary_code``` directory in the NIRSpec vault, and 
 please send an email to Gray Kanarek (gkanarek@stsci.edu). The vault's path is:
 ```/grp/jwst/wit4/nirspec_vault/staging```.
+
 7. Your code will be implemented for the next testing campaign and if there is a threshold 
 associated with it, it will appear as a variable in the PTT configuration file. For the 
 current testing campaign, please place it in the "PTT Comments and/or errors" column of  
 Table 2 of our progress keeping confluence page:
 https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
-You will be asked to write a little description of your code for the final testing report 
-of this testing campaign.
+You will be asked to write a description of your code for the final testing report 
+of the current testing campaign.
 
 
 
 ## Enjoy your pipeline testing!
 
 If you have any question of what a specific step does, you can get a description at:
-http://ssb.stsci.edu/doc/jwst_dev/jwst/pipeline/description.html#stage2-imaging-flow
-
+http://jwst-pipeline.readthedocs.io/en/latest/jwst/pipeline/description.html#stage-2-spectroscopic-pipeline-step-flow-calwebb-spec2
