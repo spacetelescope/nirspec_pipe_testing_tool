@@ -70,8 +70,9 @@ calwebb_detector1_cfg, working_dir, mode_used = get_caldet1cfg_and_workingdir()
 print ("Using this configuration file: ", calwebb_detector1_cfg)
 
 # Get and save the value of the raw data root name to add at the end of calwebb_detector1
-rawdatrt = fits.getval(fits_input_uncal_file, 'modeused', 0)
+rawdatrt = fits.getval(fits_input_uncal_file, 'rawdatrt', 0)
 
+final_out = "gain_scale.fits"
 if not step_by_step:
     # start the timer to compute the step running time
     start_time = time.time()
@@ -83,7 +84,8 @@ else:
     # steps to be ran, in order
     steps_to_run = [GroupScaleStep(), DQInitStep(), SaturationStep(), SuperBiasStep(), RefPixStep(), RSCD_Step(),
                     LastFrameStep(), LinearityStep(), DarkCurrentStep(), JumpStep(), RampFitStep(), GainScaleStep()]
-    final_out = fits_input_uncal_file.replace(".fits", "_caldet1.fits")
+    comp_keys = ["S_GRPSCL", "S_DQINIT", "S_SATURA", "S_SUPERB", "S_REFPIX", "S_RSCD", "S_LASTFR", "S_LINEAR",
+                 "S_DARK", "S_JUMP", "S_RAMP", "S_GANSCL"]
     output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits", "rscd.fits",
                     "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits", final_out]
 
@@ -96,17 +98,40 @@ else:
         if i == 0:
             step_input_file = fits_input_uncal_file
         else:
-            step_input_file = output_names[i-1]
-        result = stp.call(step_input_file)
-        result.save(output_names[i])
+            # check if step was completed and find the appropriate input file
+            j = 1
+            continue_while = True
+            while continue_while:
+                step_input_file = output_names[i-j]
+                if (i-j == 0):
+                    step_input_file = fits_input_uncal_file
+                    break
+                if i == len(output_names)-1:
+                    step_input_file = glob("jump_rampfit*.fits")[0]
+                    break
+                if os.path.isfile(step_input_file):
+                    completion_key_val = fits.getval(step_input_file, comp_keys[i-j])
+                    print (" * Completion keyword: ", comp_keys[i-j], completion_key_val)
+                    if "SKIPPED" in completion_key_val:
+                        j += 1
+                    elif "COMPLETE" in completion_key_val:
+                        continue_while = False
+        print ("-> Running step: ", stp, "   with input file: ", step_input_file)
+        print ("   output will be saved as: ", output_names[i])
+        if "ramp" not in output_names[i]:
+            result = stp.call(step_input_file)
+            result.save(output_names[i])
+        else:
+            # currently, ramp_fit is NOT working correctly in script mode, workaround is a call from command line
+            subprocess.call(["strun", "jwst.ramp_fitting.RampFitStep", "jump.fits"])
+            #stp.call(step_input_file, save_opt=True, opt_name=output_names[i])
 
     # end the timer to compute calwebb_spec2 running time
     end_time = repr(time.time() - start_time)   # this is in seconds
     print(" * calwebb_detector1 step by step took "+end_time+" seconds to finish *")
 
-
 # add a keyword with the name of the raw data fits file name
-fits.setval(final_out, 'rawdatrt', 0, value=rawdatrt, after='OBSLABEL')
+fits.setval(final_out, 'rawdatrt', 0, value=rawdatrt, after='OBS_ID')
 
 # add a keyword with the mode used for the data set
 fits.setval(final_out, 'modeused', 0, value=mode_used, after='rawdatrt')
@@ -115,7 +140,8 @@ fits.setval(final_out, 'modeused', 0, value=mode_used, after='rawdatrt')
 fits_list = glob("*.fits")
 if len(fits_list) >= 1:
     print("Output fits files are located at: ", working_dir)
-    subprocess.run(["mv", "*.fits", working_dir])
+    for ff in fits_list:
+        subprocess.run(["mv", ff, working_dir])
 else:
     print("No fits files detected after calwbb_detector1 finished. Exiting script.")
 

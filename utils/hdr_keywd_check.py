@@ -2,9 +2,11 @@ import argparse
 import collections
 import os
 import re
+import subprocess
 import numpy as np
 from datetime import datetime
 from astropy.io import fits
+from collections import OrderedDict
 
 # import the header keyword dictionaries
 import hdr_keywd_dict as hkwd
@@ -253,9 +255,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         missing_keywds: list of the keywords not in the original the header
 
     Returns:
-        nothing
+        specific_keys_dict: dictionary with specific keys and values that need to be changed
     """
     ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
+    specific_keys_dict = {}
     for hkwd_key, hkwd_val in hkwd.keywd_dict.items():
         # start by making the warning for each keyword None and assigning key and val
         key = hkwd_key
@@ -301,13 +304,17 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     if val not in hkwd_val:
                         # for now always set this keyword to generic
                         print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
-                        fits.setval(ff, key, 0, value='GENERIC')
+                        #fits.setval(ff, key, 0, value='GENERIC')
+                        specific_keys_dict[key] = 'GENERIC'
+                        missing_keywds.append(key)
 
                 # specific check for SUBARRAY, set to GENERIC
                 if key == 'SUBARRAY':
                     if val not in hkwd_val:
                         print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
-                        fits.setval(ff, key, 0, value='GENERIC')
+                        #fits.setval(ff, key, 0, value='GENERIC')
+                        specific_keys_dict[key] = 'GENERIC'
+                        missing_keywds.append(key)
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
@@ -318,7 +325,9 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             val = 'NRS_FIXEDSLIT'
                         elif 'IFU' in mode_used:
                             val = 'NRS_IFU'
-                        fits.setval(ff, key, 0, value=val)
+                        #fits.setval(ff, key, 0, value=val)
+                        specific_keys_dict[key] = val
+                        missing_keywds.append(key)
                     else:
                         warning = '*** WARNING ***: keyword MODEUSED not found in file --> value for EXP_TYPE might not match mode used for data'
                         warnings_list.append(warning)
@@ -329,6 +338,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     mode_used = fits.getval(ff, 'MODEUSED', 0)
                     if (mode_used == 'FS') or (mode_used == 'IFU'):
                         val = 'PRIMARYPARK_ALLCLOSED'
+                        specific_keys_dict[key] = val
+                        missing_keywds.append(key)
 
             if warning is not None:
                 missing_keywds.append(key)
@@ -350,8 +361,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         if (file_key == "RAWDATRT") or (file_key == "MODEUSED"):
             print (file_key, file_keywd_dict[file_key], " will remain in the header")
         elif (file_key not in hkwd.keywd_dict):
-            fits.delval(ff, file_key, 0)
-            warning = '{:<15} {:<9} {:<25}'.format(file_key, ext, 'Keyword removed from header')
+            #fits.delval(ff, file_key, 0)
+            specific_keys_dict[key] = 'remove'
+            missing_keywds.append(key)
+            warning = '{:<15} {:<9} {:<25}'.format(file_key, ext, 'Keyword to be removed from header')
             print (warning)
 
     # check that the RAWDATRT keyword is present
@@ -360,10 +373,11 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         warnings_list.append(warning)
         print (warning)
 
-    print("missing_keywords = ", missing_keywds)
+    print("keywords to be modified: ", list(OrderedDict.fromkeys(missing_keywds)))
+    return specific_keys_dict
 
 
-def add_keywds(fits_file, only_update, missing_keywds):
+def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
     '''
     This function adds the missing keywords from the hdr_keywords_dictionary.py (hkwd) file and gives
     the fake values taken from the dictionary sample_hdr_keywd_vals_dict.py (shkvd).
@@ -371,29 +385,49 @@ def add_keywds(fits_file, only_update, missing_keywds):
         only_update: If false a copy of the original fits file will be created with the
                      updated header.
         missing_keywds: list, missing keywords will be appended here
+        specific_keys_dict: dictionary with specific keys and values that need to be changed
     '''
+    missing_keywds = list(OrderedDict.fromkeys(missing_keywds))
+    #print ("specific_keys_dict = ", specific_keys_dict)
     # create name for updated fits file
     updated_fitsfile = fits_file
     if not only_update:
         updated_fitsfile = fits_file.replace('.fits', '_updatedHDR.fits')
-        os.system('cp '+fits_file+' '+updated_fitsfile)
+        subprocess.run(["cp", fits_file, updated_fitsfile])
     # add missimg keywords
     wcs_keywds_from_main_hdr = {}
-    print ('Path of updated file: ', updated_fitsfile)
+    print ('Saving keyword values in file: ', updated_fitsfile)
+    ext = 0
     for i, key in enumerate(missing_keywds):
+        if key in specific_keys_dict:
+            #print ("found it in the dict: ", key, specific_keys_dict[key])
+            if specific_keys_dict[key] == 'remove':
+                # keyword to be deleted
+                fits.delval(updated_fitsfile, key, ext)
+            else:
+                # change the keyword to specified value
+                fits.setval(updated_fitsfile, key, value=specific_keys_dict[key])
+            continue
         # get the index of the keyword previous to the one you want to add
-        prev_key_idx = list(hkwd.keywd_dict.keys()).index(key) - 1
+        prev_key_idx = list(shkvd.keywd_dict.keys()).index(key) - 1
         # add the keyword in the right place from the right dictionary
         new_value = shkvd.keywd_dict[key]
         after_key = list(shkvd.keywd_dict.keys())[prev_key_idx]
         if key != 'wcsinfo':
-            print("adding keyword: ", key, " in extension: primary")
-            fits.setval(updated_fitsfile, key, value=new_value, after=after_key)
+            print("adding keyword: ", key, " in extension: primary    after: ", after_key)
+            fits.setval(updated_fitsfile, key, 0, value=new_value, after=after_key)
         else:
             # go into the subdictionary for WCS keywords
             extname = 'sci'
             sci_hdr = fits.getheader(updated_fitsfile, extname)
+            main_hdr = fits.getheader(updated_fitsfile, 0)
             for subkey, new_value in shkvd.keywd_dict["wcsinfo"].items():
+                # first remove these keywords from the main header
+                if subkey in main_hdr:
+                    #val = fits.getval(updated_fitsfile, subkey, 0)
+                    #wcs_keywds_from_main_hdr[subkey] = val
+                    fits.delval(updated_fitsfile, subkey, 0)
+                # following commented lines are not working
                 # uncomment this line if wanting to use the original keyword value given by create_data
                 #new_value = wcs_keywds_from_main_hdr[subkey]
                 if subkey not in sci_hdr:
@@ -424,14 +458,14 @@ def perform_check(fits_file, only_update):
     # check the keywords
     print('\n   Starting keyword check...')
     warnings_list, missing_keywds = [], []
-    check_keywds(file_keywd_dict, addedkeywds_file_name, warnings_list, missing_keywds)
+    specific_keys_dict = check_keywds(file_keywd_dict, addedkeywds_file_name, warnings_list, missing_keywds)
 
     # if warnings text file is empty erase it
     check_addedkeywds_file(addedkeywds_file_name)
 
     # create new file with updated header or simply update the input fits file
     print('\n   Adding keywords...')
-    add_keywds(fits_file, only_update, missing_keywds)
+    add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict)
 
 
 

@@ -20,12 +20,17 @@ Example usage:
         > python /path_to_this_script/prepare_data2run.py blah.fits
 """
 
+
 # Get arguments to run script
 parser = argparse.ArgumentParser(description='')
 parser.add_argument("fits_file",
                     action='store',
                     default=None,
                     help='Name of fits file, i.e. blah.fits')
+parser.add_argument("mode",
+                    action='store',
+                    default=None,
+                    help='Mode in which the data was taken, i.e. FS, MOS, IFU')
 parser.add_argument("-rm",
                     dest="rm_prep_data",
                     action='store_true',
@@ -40,6 +45,7 @@ args = parser.parse_args()
 
 # Set the variables inputed from the command line
 fits_file = args.fits_file
+mode = args.mode
 rm_prep_data = args.rm_prep_data
 only_update = args.only_update
 
@@ -81,13 +87,16 @@ if os.path.isfile(uncal_file):
 
     # move the fixed uncal file out of prep_data
     subprocess.run(["mv", uncal_file, "."])
+    uncal_file = os.path.basename(uncal_file)
+    fits_file = os.path.basename(fits_file)
+
+    # add keywords with the name of the raw data fits file name , and mode used
+    fits.setval(uncal_file, 'rawdatrt', 0, value=fits_file, after='OBS_ID')
+    fits.setval(uncal_file, 'modeused', 0, value=mode, after='rawdatrt')
 
     # add the missing header keywords and fix the format to the one the pipeline expects
     uncal_file = glob("*_uncal.fits")[0]
     hkch.perform_check(uncal_file, only_update)
-
-    # add a keyword with the name of the raw data fits file name
-    fits.setval(uncal_file, 'rawdatrt', 0, value=fits_file, after='OBSLABEL')
 
 else:
     print("The *uncal.fits file does not exist. Exiting the code.")

@@ -21,15 +21,15 @@ Please use python 3.5
 
 
 1. Create the conda environment for testing the correct version of the pipeline
-- Current testing version is 7.1
+- Current testing version is 7.1 for release candidate 0.7.9.0
 - Specific instructions to create the build7.1 environment.
 For example, in a terminal type:
 ```bash
 conda create -n jwst_b7.1 --file url_depending_on_your_system python=3.5
 ```
 for the current release candidate, the ulr options are:
-- Linux: http://ssb.stsci.edu/releases/jwstdp/0.7.8/latest-linux
-- O5S X: http://ssb.stsci.edu/releases/jwstdp/0.7.8/latest-osx
+- Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-linux
+- OS X: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-osx
 
 
 2. Activate the conda environment for testing the pipeline, e.g. type:
@@ -54,6 +54,7 @@ conda env remove -n name_of_your_old_environment
 ```bash
 pip install pytest-html
 ```
+NOTE: Every time you create a new conda environment you need to install html plugin.
 
 
 4. Clone the repository so you have the PTT. To do this click at the top right 
@@ -91,19 +92,20 @@ subdirectory, or tell the script to remove it after the operation is done. In th
 terminal type:
 ```bash
 python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/
-                                                   prepare_data2run.py fits_file.fits -u
+                                        prepare_data2run.py fits_file.fits MODE -u
 ```
-This command will update the uncal keyword header without creating a new file, and
-will also keep the subdirectory. To remove it, simply add ```-rm``` at the end. To save
-the keyword changes in a new fits file (instead of updating), remove the ```-u```.
-The new uncal fits file is now ready for pipeline ingest.
+where the MODE is expected to be one of: FS, MOS, IFU. This command will update the uncal 
+keyword header without creating a new file, and will also keep the subdirectory. To 
+remove it, simply add ```-rm``` at the end. To save the keyword changes in a new fits 
+file (instead of updating), remove the ```-u```. The new uncal fits file is now ready 
+for pipeline ingest.
 
 c. Optional. If you want to see the header of any file, you can use the another script
 in the ```utils``` directory of the PTT. If you just want to see on-screen the 
 header, go where your fits file "lives" and type:
 ```bash
 python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/
-                                                              read_hdr.py fits_file.fits
+                                                        read_hdr.py fits_file.fits
 ```
 This command will show the main header. To save the header to a text file add a ```-s``` 
 at the end. If you want to see/save a different extension add at the end ```-e=1``` for 
@@ -150,10 +152,18 @@ http://calibration-pipeline-testing-tool.readthedocs.io/en/latest/
 
 c. Now, in the ```utils``` directory of ```nirspec_pipe_testing_tool```, you will find a 
 sample json file that you can modify in order to use as input for the MESA calwebb
-detector 1 testing tool. Go ahead and modify the json file with the name of your 
-intermediary fits products from running the calwebb_detector1 pipeline.
+detector 1 testing tool. Notice that it differs from the example given in the MESA 
+documentation. In our example, the steps are in the order of the pipeline, to make it 
+easier to determine what file is input to which step. Please copy our sample json file 
+from the ```utils``` directory into the ```MESA_cal_detector1``` directory you created,
+and or modify the json file with the name and path of your intermediary fits products 
+from running the calwebb_detector1 pipeline.
 
-d. Run the MESA testing tool. Please record your progress and place the html report in 
+d. Run the MESA testing tool with the following command:
+```bash
+test_pipeline --config ./cal_detector1_input.json
+```
+Please record your progress and place the html report in 
 the corresponding column of Table 2 of our testing campaign Confluence page:
 https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
 
