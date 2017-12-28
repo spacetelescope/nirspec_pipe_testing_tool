@@ -57,6 +57,7 @@ def output_hdul(set_inandout_filenames, config):
                 if os.path.isfile(step_input_file):
                     print(" The input file ", step_input_file,"exists... will run step "+step)
                     msa_imprint_structure = config.get("additional_arguments", "msa_imprint_structure")
+                    print("msa_imprint_structure file: ", msa_imprint_structure)
                     if not os.path.isfile(msa_imprint_structure):
                         print (" Need msa_imprint_structure file to continue. Step will be skipped.")
                         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
