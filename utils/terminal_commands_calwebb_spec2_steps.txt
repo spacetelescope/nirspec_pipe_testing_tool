@@ -1,10 +1,11 @@
 # Commands to run the calwebb_spec2 steps from the terminal as of December-2017
-# pipeline version 0.7.8.rc9
+# pipeline version 7.1
 
 # PLEASE MAKE SURE YOUR CONDA TESTING ENVIRONMENT IS ON
 
 # Full calwebb_sepc2
 strun jwst.pipeline.Spec2Pipeline final_output_from_cal_detector1.fits
+
 
 # Assign WCS
 strun jwst.assign_wcs.AssignWcsStep fits_file.fits

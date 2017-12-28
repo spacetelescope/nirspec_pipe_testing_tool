@@ -1,0 +1,44 @@
+# Commands to run the calwebb_detector1 steps from the terminal as of December-2017
+# pipeline version 7.1
+
+# PLEASE MAKE SURE YOUR CONDA TESTING ENVIRONMENT IS ON
+
+# Full calwebb_detector1
+strun jwst.pipeline.Detector1Pipeline uncal_file.fits
+
+
+# Group Scale
+strun jwst.group_scale.GroupScaleStep fits_file.fits
+
+# DQ Init
+strun jwst.dq_init.DQInitStep fits_file.fits
+
+# Saturation
+strun jwst.saturation.SaturationStep fits_file.fits
+
+# Superbias
+strun jwst.superbias.SuperBiasStep fits_file.fits
+
+# Refpix
+strun jwst.refpix.RefPixStep fits_file.fits
+
+# RSCD
+strun jwst.rscd.RSCD_Step fits_file.fits
+
+# Lastframe
+strun jwst.lastframe.LastFrameStep fits_file.fits
+
+# Linearity
+strun jwst.linearity.LinearityStep fits_file.fits
+
+# Dark Current
+strun jwst.dark_current.DarkCurrentStep fits_file.fits
+
+# Jump
+strun jwst.jump.JumpStep fits_file.fits
+
+# Ramp fit
+strun jwst.ramp_fitting.RampFitStep fits_file.fits
+
+# Gain Scale
+strun jwst.gain_scale.GainScaleStep fits_file.fits
