@@ -1,41 +1,41 @@
 {
     "dq_init": [
-        "dq_init_input.fits"
+        "dq_init.fits.fits"
     ],
 
     "saturation": [
-        "saturation_input.fits"
+        "saturation.fits"
     ],
 
     "superbias": [
-        "superbias_input.fits"
-    ],
-
-    "dark_current": [
-        "dark_current_input.fits"
+        "superbias.fits"
     ],
 
     "refpix": [
-        "refpix_input.fits"
+        "refpix.fits"
     ],
-
-    "linearity": [
-        "linearity_input.fits"
-    ],
-
+    
     "rscd": [
-        "rscd_input.fits"
+        "rscd.fits"
     ],
 
     "lastframe": [
-        "lastframe_input.fits"
+        "lastframe.fits"
+    ],
+
+    "linearity": [
+        "linearity.fits"
+    ],
+
+    "dark_current": [
+        "dark_current.fits"
     ],
 
     "jump": [
-        "jump_input.fits"
+        "jump.fits"
     ],
 
     "ramp_fit": [
-        "ramp_fit_input.fits"
+        "ramp_fit_0.fits"
     ]
 }

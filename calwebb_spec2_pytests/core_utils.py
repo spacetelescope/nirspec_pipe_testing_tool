@@ -396,3 +396,33 @@ def get_time_to_run_pipeline(True_steps_suffix_map):
     times_per_step = np.loadtxt(True_steps_suffix_map, comments="#", usecols=(3), unpack=True)
     total_time = sum(times_per_step)
     return total_time
+
+
+def get_reffile_used(output_hdul):
+    '''
+    This function obtains the list of reference files used in the processing of step_outfile_fits. It only looks for
+    the keywords that match the text file of expected reference files used, located at: /auxiliary_code/ref_files.txt
+    Args:
+        output_hdul: dictionary, main header of the step output fits file
+
+    Returns:
+        ref_files_used_so_far: dictionary, reference files used in processing of step_outfile_fits
+    '''
+
+    # list of the keywords to look for according to the step (NOT in order of processing)
+    # these are only the reference keywords for which we have an expected correspnding file in the text file:
+    # /auxiliary_code/ref_files.txt
+    txt_file_ref_keys = ["R_MASK", "R_SATURA", "R_SUPERB", "R_LINEAR",  "R_DARK", "R_READNO", "R_GAIN", "R_FORE",
+                         "R_DISPER", "R_CAMERA", "R_COLLIM", "R_FPA", "R_IFUFOR", "R_IFUPOS", "R_IFUSLI", "R_MSA",
+                         "R_OTE", "R_WAVRAN", "R_PTHLOS", "R_PHOTOM", "R_EXTR1D", "R_DFLAT", "R_FFLAT", "R_SFLAT"]
+
+    # get the list of reference file keywords set so far
+    ref_files_used_so_far = {}
+    for reffile_key in txt_file_ref_keys:
+        if reffile_key in output_hdul:
+            reffile_key_value = output_hdul[reffile_key]
+            ref_files_used_so_far[reffile_key] = reffile_key_value
+        else:
+            print ("Keyword: ", reffile_key, "  not found in main header.")
+
+    return ref_files_used_so_far

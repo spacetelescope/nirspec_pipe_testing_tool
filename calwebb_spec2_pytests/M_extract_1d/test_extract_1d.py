@@ -77,3 +77,5 @@ def output_hdul(set_inandout_filenames, config):
 def test_s_extr1d_exists(output_hdul):
     assert extract_1d_utils.s_extr1d_exists(output_hdul), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
 
+def test_extract1d_rfile(output_hdul):
+    assert extract_1d_utils.extract1d_rfile_is_correct(output_hdul)
