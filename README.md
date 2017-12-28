@@ -248,12 +248,15 @@ the corresponding paths in the configuration file.
 - The output in the terminal can be a bit overwhelming if there was a failed test or an 
 error, since it shows both, the pipeline messages and the PTT messages. In the html 
 report is much clearer to understand what happened.
-- In the ```utils``` directory there is a text file named 
-```terminal_commands_calwebb_spec2_steps.txt```. This file contains all the commands 
-you can use from the terminal to run the calwebb spec2 steps. As part of the testing 
-campaign, it is important that you run the pipeline from the command line as well, and 
-that you make sure that the outcome intermediary files are consistent with the ones ran 
-with scripts, i.e. the PTT. This sanity check is minor but important to verify.
+- As part of the testing campaign, it is important that you run the pipeline from the 
+command line as well, and that you make sure that the outcome intermediary files are 
+consistent with the ones ran with scripts, i.e. the PTT. This sanity check is minor 
+but important to verify. 
+In the ```utils``` directory there are two text files named 
+```terminal_commands_calwebb_detector1_steps.txt``` and
+```terminal_commands_calwebb_spec2_steps.txt```. These files contain all the commands 
+you can use from the terminal to run the calwebb_detector1 and calwebb spec2 steps,
+respectively.
 - Finally, remember that:
 
 a. Whenever you need to read either the main or science headers of a file,
