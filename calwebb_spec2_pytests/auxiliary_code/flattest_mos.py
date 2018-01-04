@@ -426,7 +426,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     print ("ffs = ", ffs)
 
                 # Difference between pipeline and calculated values
-                if (pind[0]-py0) < np.shape(pipeflat)[0]:
+                if ((pind[0]-py0) < np.shape(pipeflat)[0]) and ((pind[1]-px0) < np.shape(pipeflat)[1]):
                     delf[j] = pipeflat[pind[0]-py0, pind[1]-px0] - flatcor[j]
                 else:
                     break
