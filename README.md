@@ -31,6 +31,21 @@ for the current release candidate, the ulr options are:
 - Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-linux
 - OS X: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-osx
 
+NOTE:
+If you need to use the development version of the pipeline then do the following:
+```bash
+conda create -n jwst_dev --override-channels -c http://ssb.stsci.edu/conda-dev -c 
+                                                                         defaults --all
+```
+Then, to update the development environment, activate the environment and then type (and
+yes, this is a very long command that goes in one single line):
+```
+bash
+conda install --override-channels -c http://ssb.stsci.edu/conda-dev -c defaults 
+                                jwst=$(conda search -c http://ssb.stsci.edu/conda-dev 
+                                   jwst | grep 0.9.0rc | tail -n 1 | awk '{ print  $1 }')
+```
+
 
 2. Activate the conda environment for testing the pipeline, e.g. type:
 ```bash
@@ -302,7 +317,7 @@ threshold value, please make the threshold an input variable with a default valu
 4. Your script must produce a text file named ```scriptname_result.txt``` at
 the end, which will only contain one word: True or False.
 
-5. Create a directory named ```scriptname`` with the following contents:
+5. Create a directory named ```scriptname``` with the following contents:
 a. A text file named ```scriptname_init.txt```, and in there type in line 1 
 the pipeline step after which your code should be run, in line 2 the language you used, 
 and in line 3 the exact command you would use to run the script. If this is an IDL script, 

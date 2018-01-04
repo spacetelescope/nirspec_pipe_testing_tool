@@ -124,7 +124,10 @@ else:
         else:
             # currently, ramp_fit is NOT working correctly in script mode, workaround is a call from command line
             subprocess.call(["strun", "jwst.ramp_fitting.RampFitStep", "jump.fits"])
-            #stp.call(step_input_file, save_opt=True, opt_name=output_names[i])
+            #(out_slope, int_slope) = stp.run(step_input_file)
+            #out_slope.save(slope_file_name)
+            #int_slope.save(integration_specific_results_name)
+
 
     # end the timer to compute calwebb_spec2 running time
     end_time = repr(time.time() - start_time)   # this is in seconds

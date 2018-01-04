@@ -151,17 +151,20 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
             esafile_basename = "Trace_IFU_Slice_"+IFUslice+"_"+jlab88_dir+".fits"
         return esafile_basename
 
+
     # get the root name from rawdatroot keyword (e.g. NRSV96214001001P0000000002105_1_491_SE_2016-01-24T01h59m01.fits)
     esaroot = rawdatroot.split("_")[0].replace("NRS", "")
 
     # go into the esa_files_path directory and enter the the mode to get the right esafile
     # get all subdirectories within esa_files_path
-    subdir_list = glob(esa_files_path+"*")
+    subdir_list = glob(esa_files_path+"/*")
     jlab88_list = []
+    esafile = "ESA file not found"
     for subdir in subdir_list:
         #subdir = subdir.split("/")[-1]
         if esaroot in subdir:
             jlab88_list.append(subdir)
+    print("jlab88_list=", jlab88_list)
     for jlab88_dir in jlab88_list:
         if mode == "FS":
             mode = "SLIT"
@@ -177,7 +180,6 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
 
     # make sure the path is right or print a message
     if not os.path.isfile(esafile):
-        esafile = "ESA file not found"
         print (esafile)
 
     return esafile

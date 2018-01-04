@@ -1,6 +1,6 @@
 {
     "dq_init": [
-        "dq_init.fits.fits"
+        "dq_init.fits"
     ],
 
     "saturation": [
