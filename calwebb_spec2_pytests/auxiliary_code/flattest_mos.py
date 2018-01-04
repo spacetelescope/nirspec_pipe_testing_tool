@@ -74,8 +74,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     print ("rate_file  -->     Grating:", grat, "   Filter:", filt, "   Lamp:", lamp)
 
     # read in the on-the-fly flat image
-    #flatfile = step_input_filename.replace("2d_flat_field.fits", "intflat.fits")
-    flatfile = step_input_filename    # this is for testing purposes only
+    flatfile = step_input_filename.replace("2d_flat_field.fits", "intflat.fits")
     pipeflat = fits.getdata(flatfile, 1)
 
     # get the reference files
@@ -279,7 +278,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # loop through the pixels
         print ("looping through the pixels, this may take a little time ... ")
         flat_wave = wave.flatten()
-        for j in range(nw-1):
+        for j in range(0, nw-1):
             if np.isfinite(flat_wave[j]):   # skip if wavelength is NaN
                 # get the pixel indeces
                 jwav = flat_wave[j]
@@ -427,9 +426,15 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     print ("ffs = ", ffs)
 
                 # Difference between pipeline and calculated values
-                delf[j] = pipeflat[pind[0]-py0, pind[1]-px0] - flatcor[j]
-                #print("pind[0], px0, pind[1], flatcor[j], delf[j] : ", pind[0], px0, pind[1], flatcor[j], delf[j])
+                if pind[0]-py0 < np.shape(pipeflat)[0]:
+                    delf[j] = pipeflat[pind[0]-py0, pind[1]-px0] - flatcor[j]
+                else:
+                    break
+                #print("pind[0], py0, pind[1], px0, flatcor[j] : ", pind[0], py0, pind[1], px0, flatcor[j])
+                #print("(pind[0]-py0, pind[1]-px0) : ", pind[0]-py0, pind[1]-px0 )
+                #print("(pind[0]-py0, pind[1]-px0) - flatcor[j] : ", (pind[0]-py0, pind[1]-px0) - flatcor[j])
                 #print("np.shape(pipeflat) = ", np.shape(pipeflat))
+                #print("delf[j] : ", delf[j])
 
                 # Remove all pixels with values=1 (mainly inter-slit pixels) for statistics
                 if pipeflat[pind[0]-py0, pind[1]-px0] == 1:

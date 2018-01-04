@@ -110,7 +110,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # read in the on-the-fly flat image
     flatfile = step_input_filename.replace("2d_flat_field.fits", "intflat.fits")
-    #flatfile = step_input_filename    # this is for testing purposes only
     pipeflat = fits.getdata(flatfile, 1)
 
     # get the reference files

@@ -302,7 +302,7 @@ threshold value, please make the threshold an input variable with a default valu
 4. Your script must produce a text file named ```scriptname_result.txt``` at
 the end, which will only contain one word: True or False.
 
-5. Create a directory named ```scriptname`` with the following contents:
+5. Create a directory named ```scriptname``` with the following contents:
 a. A text file named ```scriptname_init.txt```, and in there type in line 1 
 the pipeline step after which your code should be run, in line 2 the language you used, 
 and in line 3 the exact command you would use to run the script. If this is an IDL script, 
