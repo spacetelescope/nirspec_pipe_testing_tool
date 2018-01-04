@@ -31,6 +31,21 @@ for the current release candidate, the ulr options are:
 - Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-linux
 - OS X: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-osx
 
+NOTE:
+If you need to use the development version of the pipeline then do the following:
+```bash
+conda create -n jwst_dev --override-channels -c http://ssb.stsci.edu/conda-dev -c 
+                                                                         defaults --all
+```
+Then, to update the development environment, activate the environment and then type (and
+yes, this is a very long command that goes in one single line):
+```
+bash
+conda install --override-channels -c http://ssb.stsci.edu/conda-dev -c defaults 
+                                jwst=$(conda search -c http://ssb.stsci.edu/conda-dev 
+                                   jwst | grep 0.9.0rc | tail -n 1 | awk '{ print  $1 }')
+```
+
 
 2. Activate the conda environment for testing the pipeline, e.g. type:
 ```bash
