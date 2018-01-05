@@ -80,6 +80,8 @@ def output_hdul(set_inandout_filenames, config):
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
                     print("Step "+step+" took "+end_time+" seconds to finish")
+                    # move the on-the-fly flat to the working directory
+                    subprocess.run(["mv", os.path.basename(ontheflyflat), ontheflyflat])
                     if core_utils.check_MOS_true(inhdu):
                         # remove the copy of the MSA shutter configuration file
                         subprocess.run(["rm", msametfl])
