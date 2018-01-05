@@ -71,8 +71,11 @@ def output_hdul(set_inandout_filenames, config):
                         msa_shutter_conf = os.path.join(msa_conf_root, msametfl)
                         subprocess.run(["cp", msa_shutter_conf, "."])
                     # start the timer to compute the step running time
+                    ontheflyflat = step_output_file.replace("flat_field.fits", "intflat.fits")
+                    print ("Step product will be saved as: ", step_output_file)
+                    print ("on-the-fly flat will be saved as: ", ontheflyflat)
                     start_time = time.time()
-                    result = stp.call(step_input_file)
+                    result = stp.call(step_input_file, flat_suffix="intflat")
                     result.save(step_output_file)
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
