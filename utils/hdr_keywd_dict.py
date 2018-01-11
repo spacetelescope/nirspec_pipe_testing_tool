@@ -141,8 +141,8 @@ keywd_dict['MSASTATE']= ['CONFIGURED', 'LAUNCHLOCK_ALLCLOSED', 'PRIMARYPARK_ALLO
 keywd_dict['FOCUSPOS']= [int] # [mm] focus position for NIRSpec, e.g. 1
 
 # keywords added for build 7.1 from https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+Reports
-#keywd_dict['NRS_NORM']= [int]  # Number of normal pixels in IRS2 readout
-#keywd_dict['NRS_REF']= [int]  # Number of reference pixels in IRS2 readout
+keywd_dict['NRS_NORM']= [int]  # Number of normal pixels in IRS2 readout, used also in IFU data
+keywd_dict['NRS_REF']= [int]  # Number of reference pixels in IRS2 readout, used also in IFU data
 keywd_dict['FRMDIVSR']= [int]  # Divisor applied to frame-averaged groups
 keywd_dict['XOFFSET']= [float] # x offset from pattern starting position
 keywd_dict['YOFFSET']= [float] # y offset from pattern starting position
