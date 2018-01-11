@@ -69,10 +69,22 @@ step_by_step = args.step_by_step
 calwebb_detector1_cfg, working_dir, mode_used = get_caldet1cfg_and_workingdir()
 print ("Using this configuration file: ", calwebb_detector1_cfg)
 
+# create the text file to record the names of the output files and the time the pipeline took to run
+txt_outputs_summary = "cal_detector1_outputs_and_times.txt"
+end_time_total = []
+line0 = "# {:<20}".format("Input file: "+fits_input_uncal_file)
+line1 = "# {:<17} {:<20} {:<20}".format("Step", "Output file", "Time to run [s]")
+with open(txt_outputs_summary, "w+") as tf:
+    tf.write(line0+"\n")
+    tf.write(line1+"\n")
+
+final_out = "gain_scale.fits"
+output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits", "rscd.fits",
+                "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits", final_out]
+
 # Get and save the value of the raw data root name to add at the end of calwebb_detector1
 rawdatrt = fits.getval(fits_input_uncal_file, 'rawdatrt', 0)
 
-final_out = "gain_scale.fits"
 if not step_by_step:
     # start the timer to compute the step running time
     start_time = time.time()
@@ -80,17 +92,17 @@ if not step_by_step:
     # end the timer to compute calwebb_spec2 running time
     end_time = repr(time.time() - start_time)   # this is in seconds
     print(" * calwebb_detector1 took "+end_time+" seconds to finish *")
+    total_time = "{:<18} {:<20} {:<20}".format("", "total time = ", end_time)
+    for outnm in output_names:
+        line2write = "{:<18} {:<20} {:<20}".format(outnm.replace(".fits", ""), outnm, "")
+        with open(txt_outputs_summary, "a") as tf:
+            tf.write(line2write+"\n")
 else:
     # steps to be ran, in order
     steps_to_run = [GroupScaleStep(), DQInitStep(), SaturationStep(), SuperBiasStep(), RefPixStep(), RSCD_Step(),
                     LastFrameStep(), LinearityStep(), DarkCurrentStep(), JumpStep(), RampFitStep(), GainScaleStep()]
     comp_keys = ["S_GRPSCL", "S_DQINIT", "S_SATURA", "S_SUPERB", "S_REFPIX", "S_RSCD", "S_LASTFR", "S_LINEAR",
                  "S_DARK", "S_JUMP", "S_RAMP", "S_GANSCL"]
-    output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits", "rscd.fits",
-                    "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits", final_out]
-
-    # start the timer to compute the step running time
-    start_time = time.time()
 
     # run the pipeline step by step
     for i, stp_instance in enumerate(steps_to_run):
@@ -107,31 +119,55 @@ else:
                     step_input_file = fits_input_uncal_file
                     break
                 if i == len(output_names)-1:
-                    step_input_file = glob("jump_rampfit*.fits")[0]
+                    step_input_file = glob("*ramp*.fits")[0]
                     break
                 if os.path.isfile(step_input_file):
                     completion_key_val = fits.getval(step_input_file, comp_keys[i-j])
+                    print("Checking for next step... ")
                     print (" * Completion keyword: ", comp_keys[i-j], completion_key_val)
                     if "SKIPPED" in completion_key_val:
                         j += 1
                     elif "COMPLETE" in completion_key_val:
                         continue_while = False
-        print ("-> Running step: ", stp, "   with input file: ", step_input_file)
+        print ("\n-> Running step: ", stp, "   with input file: ", step_input_file)
         print ("   output will be saved as: ", output_names[i])
+
+        # start the timer to compute the step running time
+        start_time = time.time()
+
         if "ramp" not in output_names[i]:
             result = stp.call(step_input_file)
             result.save(output_names[i])
         else:
-            # currently, ramp_fit is NOT working correctly in script mode, workaround is a call from command line
-            subprocess.call(["strun", "jwst.ramp_fitting.RampFitStep", "jump.fits"])
-            #(out_slope, int_slope) = stp.run(step_input_file)
-            #out_slope.save(slope_file_name)
-            #int_slope.save(integration_specific_results_name)
+            # the pipeline works differently for the ramp_fit step because it has more than one output
+            # this step is also hanging from the command line
+            #subprocess.call(["strun", "jwst.ramp_fitting.RampFitStep", "jump.fits"])
+            (out_slope, int_slope) = stp.call(step_input_file)
+            out_slope.save(output_names[i])
+            try:
+                int_slope.save("ramp_fit_int.fits")
+            except:
+                AttributeError
+                print ("File has only 1 integration.")
 
+        # end the timer to compute cal_detector1 running time
+        end_time = repr(time.time() - start_time)   # this is in seconds
+        end_time_total.append(time.time() - start_time)
+        step = output_names[i].replace(".fits", "")
+        print(" * calwebb_detector1 step ", step, " took "+end_time+" seconds to finish * \n")
 
-    # end the timer to compute calwebb_spec2 running time
-    end_time = repr(time.time() - start_time)   # this is in seconds
-    print(" * calwebb_detector1 step by step took "+end_time+" seconds to finish *")
+        # record results in text file
+        line2write = "{:<18} {:<20} {:<20}".format(step, output_names[i], end_time)
+        with open(txt_outputs_summary, "a") as tf:
+            tf.write(line2write+"\n")
+
+    # record total time in text file
+    total_time = "{:<18} {:<20} {:<20}".format("", "total time = ", repr(sum(end_time_total)))
+
+# record total time in text file
+with open(txt_outputs_summary, "a") as tf:
+    tf.write(total_time+"\n")
+print ("\n ** Calwebb_detector 1 took "+repr(sum(end_time_total)/60.0))+" minutes to complete **"
 
 # add a keyword with the name of the raw data fits file name
 fits.setval(final_out, 'rawdatrt', 0, value=rawdatrt, after='OBS_ID')
@@ -145,6 +181,8 @@ if len(fits_list) >= 1:
     print("Output fits files are located at: ", working_dir)
     for ff in fits_list:
         subprocess.run(["mv", ff, working_dir])
+    # move the text file too
+    subprocess.run(["mv", txt_outputs_summary, working_dir])
 else:
     print("No fits files detected after calwbb_detector1 finished. Exiting script.")
 

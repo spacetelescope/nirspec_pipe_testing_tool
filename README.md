@@ -36,12 +36,9 @@ If you need to use the development version of the pipeline then do the following
 ```bash
 conda create -n jwst_dev -c http://ssb.stsci.edu/conda-dev jwst python=3.5
 ```
-Then, to update the development environment, activate the environment and then type (and
-yes, this is a very long command that goes in one single line):
+Then, to update the development environment, activate the environment and then type:
 ```bash
-conda install --override-channels -c http://ssb.stsci.edu/conda-dev -c defaults 
-                                jwst=$(conda search -c http://ssb.stsci.edu/conda-dev 
-                                   jwst | grep 0.9.0rc | tail -n 1 | awk '{ print  $1 }')
+conda update --override-channels -c http://ssb.stsci.edu/conda-dev -c defaults --all
 ```
 
 
@@ -153,7 +150,14 @@ python ../utils/runcal_detector1.py /path_where_the_uncal_file_lives/uncal_file.
 This script will execute the calwebb detector 1 pipeline in a single run, using the 
 configuration file that you have for it in the ```utils``` directory. You can also add 
 a ```-sbs``` to the previous command in order to execute the processing of level 1 
-step-by-step. If everything went well, you now are able to run the MESA calwebb 
+step-by-step. If everything went well, you will see a text file called 
+```cal_detector1_outputs_and_times.txt```, which contains the steps ran, the name of the 
+output fits file, and the time each step took to run. However, if you chose to run the 
+calwebb detector1 in a single run, you will only see the total running time. This text file,
+along with the intermediary products will be located in the path you set for the 
+```working_directory``` variable in the configuration file of the PTT.
+
+You now are able to run the MESA calwebb 
 detector 1 testing tool. Steps to obtain the MESA testing tool:
 
 a. At the same level as the top directory of the PTT (i.e. the ```nirspec_pipe_testing_tool``` 

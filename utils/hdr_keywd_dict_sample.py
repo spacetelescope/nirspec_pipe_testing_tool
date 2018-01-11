@@ -147,8 +147,8 @@ keywd_dict['MSASTATE']= 'CONFIGURED' # state of MSA, options are:
 keywd_dict['FOCUSPOS']= 1 # int, [mm] focus position for NIRSpec, e.g. 0
 
 # keywords added for build 7.1 from https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+Reports
-#keywd_dict['NRS_NORM']= ?  # int, Number of normal pixels in IRS2 readout
-#keywd_dict['NRS_REF']= ?  # int, Number of reference pixels in IRS2 readout
+keywd_dict['NRS_NORM']= 16  # int, Number of normal pixels in IRS2 readout, used also in IFU data
+keywd_dict['NRS_REF']= 4  # int, Number of reference pixels in IRS2 readout, used also in IFU data
 keywd_dict['FRMDIVSR']= 1  # integer, Divisor applied to frame-averaged groups
 keywd_dict['XOFFSET']= 0.0  # float, x offset from pattern starting position
 keywd_dict['YOFFSET']= 0.0  # float, y offset from pattern starting position
