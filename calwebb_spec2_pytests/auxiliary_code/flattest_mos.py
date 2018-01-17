@@ -147,7 +147,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         sfimdq = sfimdq[::-1]
 
     # get the wavelength values for sflat cube
-    naxis3 = fits.getval(sfile, "NAXIS3", 1)
     sfimwave = np.array([])
     for i in range(0, naxis3):
         if i+1 < 10:
@@ -162,7 +161,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     ffile = fflat_path+"_"+filt+fflat_ending
     #print(" ***** path for f-flat: ", os.path.isfile(ffile))
     ffsq1 = fits.getdata(ffile, 1)
-    naxis3 = fits.getval(ffile, "NAXIS3", 1)
     ffswaveq1 = np.array([])
     for i in range(0, naxis3):
         if i <= 9 :

@@ -210,6 +210,9 @@ def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_c
         nothing
     """
     print ("Map saved at: ", True_steps_suffix_map)
+    if (float(end_time)) > 60.0:
+        end_time_min = float(end_time)/60.  # this is in minutes
+        end_time = end_time+"  ="+repr(round(end_time_min, 2))+"min"
     line2write = "{:<20} {:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed), end_time)
     print (line2write)
     with open(True_steps_suffix_map, "a") as tf:

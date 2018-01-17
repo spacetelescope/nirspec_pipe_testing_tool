@@ -94,6 +94,21 @@ if os.path.isfile(uncal_file):
     fits.setval(uncal_file, 'rawdatrt', 0, value=fits_file, after='OBS_ID')
     fits.setval(uncal_file, 'modeused', 0, value=mode, after='rawdatrt')
 
+    # make sure the lamp, filter, and grating values are correctly propagated
+    lamp = fits.getval(fits_file, 'CAA_LAMP')
+    if 'LINE1' in lamp:
+        filt = 'F100LP'
+    elif 'LINE2' in lamp:
+        filt = 'F170LP'
+    elif 'LINE3' in lamp:
+        filt = 'F290LP'
+    elif 'LINE4' in lamp:
+        filt = 'CLEAR'
+    elif 'FLAT4' in lamp:
+        filt = 'F070LP'
+    fits.setval(uncal_file, 'LAMP', 0, value=lamp)
+    fits.setval(uncal_file, 'FILTER', 0, value=filt, after='DETECTOR')
+
     # add the missing header keywords and fix the format to the one the pipeline expects
     uncal_file = glob("*_uncal.fits")[0]
     hkch.perform_check(uncal_file, only_update)

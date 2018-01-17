@@ -158,7 +158,12 @@ keywd_dict['MSAMETFL']= 'N/A' # MSA configuration file name, e.g. 'blah.fits'
 keywd_dict['MSAMETID']= 1 # int, MSA meta data ID for the exposure, e.g. 1
 
 # lamp configuration
-keywd_dict['LAMP']    = 'ARGON' # internal lamp state, e.g. 'ARGON'
+keywd_dict['LAMP']    = 'LINE1' # internal lamp state, e.g. 'ARGON', the combinations are:
+                                # F100LP LINE1  FLAT1
+                                # F170LP LINE2  FLAT2
+                                # F290LP LINE3  FLAT3
+                                # CLEAR  LINE4  FLAT5
+                                # F070LP FLAT4
 
 # Guide star information
 keywd_dict['GS_ORDER']= 1 # index of guide star, e.g. 'N/A'
