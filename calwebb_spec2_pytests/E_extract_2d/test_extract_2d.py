@@ -13,7 +13,6 @@ from .. import core_utils
 from . import extract_2d_utils
 from .. auxiliary_code import compare_wcs_fs
 from .. auxiliary_code import compare_wcs_mos
-from .. auxiliary_code import compare_wcs_ifu
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -116,10 +115,6 @@ def validate_wcs_extract2d(output_hdul):
                                                   plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
                                                   threshold_diff=threshold_diff)
 
-    elif core_utils.check_IFU_true(hdu):
-        median_diff = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=None,
-                                                  plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
-                                                  threshold_diff=threshold_diff)
     else:
         pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")
 

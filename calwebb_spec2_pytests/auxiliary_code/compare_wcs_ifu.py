@@ -12,8 +12,6 @@ from . import auxiliary_functions as auxfunc
 """
 This script compares pipeline WCS info with ESA results for Integral Field Unit (IFU) data.
 
-THIS CODE HAS NOT BEEN TESTED YET....
-
 """
 
 
@@ -222,7 +220,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     lamp = fits.getval(infile_name, "LAMP", 0)
     grat = fits.getval(infile_name, "GRATING", 0)
     filt = fits.getval(infile_name, "FILTER", 0)
-    print ("extract_2d  -->     Detector:", det, "   Grating:", grat, "   Filter:", filt, "   Lamp:", lamp)
+    print ("Info from WCS file  -->     Detector:", det, "   Grating:", grat, "   Filter:", filt, "   Lamp:", lamp)
 
 
     # Run compute_world_coordinates.py in order to produce the necessary file

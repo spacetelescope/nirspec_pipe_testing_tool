@@ -13,6 +13,7 @@ from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
 
 from .. import core_utils
 from . import assign_wcs_utils
+from .. auxiliary_code import compare_wcs_ifu
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -39,6 +40,9 @@ def output_hdul(set_inandout_filenames, config):
     stp = AssignWcsStep()
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
+    esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
+    wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
+    save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -79,7 +83,7 @@ def output_hdul(set_inandout_filenames, config):
         step_output_file = core_utils.read_completion_to_full_run_map(full_run_map, step)
         hdul = core_utils.read_hdrfits(step_output_file, info=True, show_hdr=True)
         scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-        return hdul, scihdul
+        return hdul, scihdul, step_output_file, esa_files_path, wcs_threshold_diff, save_wcs_plots
     else:
         # create the Map of file names
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
@@ -104,7 +108,7 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
                 scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-                return hdul, scihdul
+                return hdul, scihdul, step_output_file, esa_files_path, wcs_threshold_diff, save_wcs_plots
             else:
                 print("Skipping step. Intput file "+step_input_file+" does not exit.")
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
@@ -113,6 +117,35 @@ def output_hdul(set_inandout_filenames, config):
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+". Step set to False in configuration file.")
 
+
+
+### THESE FUNCTIONS ARE TO VALIDATE BOTH THE WCS STEP FOR IFU DATA (since extract_2d is not ran for that step)
+
+# fixture to validate the WCS and extract 2d steps
+@pytest.fixture(scope="module")
+def validate_wcs_IFU(output_hdul):
+    # get the input information for the wcs routine
+    hdu = output_hdul[0]
+    infile_name = output_hdul[2]
+    esa_files_path = output_hdul[3]
+
+    # define the threshold difference between the pipeline output and the ESA files for the pytest to pass or fail
+    threshold_diff = float(output_hdul[4])
+
+    # save the output plots
+    save_wcs_plots = output_hdul[5]
+
+    # show the figures
+    show_figs = False
+
+    if core_utils.check_IFU_true(hdu):
+        median_diff = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=None,
+                                                  plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
+                                                  threshold_diff=threshold_diff)
+    else:
+        pytest.skip("Skipping pytest: Validation of WCS step for non IFU data will be done after the extract_2d step.")
+
+    return median_diff
 
 
 # Unit tests
@@ -185,5 +218,8 @@ def test_sporder_exists(output_hdul):
 
 def test_s_wcs_exists(output_hdul):
     assert assign_wcs_utils.s_wcs_exists(output_hdul[0]), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
+
+def test_validate_wcs_IFU(output_hdul):
+    assert validate_wcs_IFU(output_hdul), "Output value from compare_wcs.py is greater than threshold."
 
 
