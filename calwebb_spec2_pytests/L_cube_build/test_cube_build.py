@@ -7,6 +7,8 @@ import pytest
 import os
 import time
 import subprocess
+from glob import glob
+from astropy.io import fits
 
 from jwst.cube_build.cube_build_step import CubeBuildStep
 from .. import core_utils
@@ -59,9 +61,16 @@ def output_hdul(set_inandout_filenames, config):
                         # end the timer to compute the step running time
                         end_time = repr(time.time() - start_time)   # this is in seconds
                         print("Step "+step+" took "+end_time+" seconds to finish")
+                    # determine the specific output of the cube step
+                    filt = fits.getval(step_input_file, 'filter')
+                    grat = fits.getval(step_input_file, 'grating')
+                    gratfilt = '-'.join((grat,filt))
+                    specific_output_file = glob(step_output_file.replace('cube.fits', (gratfilt+'*.fits').lower()))[0]
+                    cube_suffix = specific_output_file.split('photom_')[-1].replace('.fits', '')
+                    # record info
                     step_completed = True
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    core_utils.add_completed_steps(txt_name, step, cube_suffix, step_completed, end_time)
+                    hdul = core_utils.read_hdrfits(specific_output_file, info=False, show_hdr=False)
                     return hdul
                 else:
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)

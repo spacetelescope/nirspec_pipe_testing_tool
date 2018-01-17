@@ -76,6 +76,9 @@ def output_hdul(set_inandout_filenames, config):
                     print ("on-the-fly flat will be saved as: ", ontheflyflat)
                     start_time = time.time()
                     result = stp.call(step_input_file, flat_suffix="intflat")
+                                      #override_dflat="/grp/crds/jwst/references/jwst/jwst_nirspec_dflat_0001.fits",
+                                      #override_fflat="/grp/crds/jwst/references/jwst/jwst_nirspec_fflat_0015.fits",
+                                      #override_sflat="/grp/crds/jwst/references/jwst/jwst_nirspec_sflat_0034.fits")
                     result.save(step_output_file)
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds

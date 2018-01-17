@@ -13,7 +13,6 @@ from .. import core_utils
 from . import extract_2d_utils
 from .. auxiliary_code import compare_wcs_fs
 from .. auxiliary_code import compare_wcs_mos
-from .. auxiliary_code import compare_wcs_ifu
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -41,38 +40,43 @@ def output_hdul(set_inandout_filenames, config):
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
-    if run_calwebb_spec2:
-        # read the assign wcs fits file
-        local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
-        hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
-        # move the output file into the working directory
-        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-        step_output_file = os.path.join(working_directory, local_step_output_file)
-        print ("Step product was saved as: ", step_output_file)
-        subprocess.run(["mv", local_step_output_file, step_output_file])
-        return hdul, step_output_file, msa_conf_root, esa_files_path, wcs_threshold_diff, save_wcs_plots
-    else:
-        if config.getboolean("steps", step):
-            print ("*** Step "+step+" set to True")
-            if os.path.isfile(step_input_file):
-                if not skip_runing_pipe_step:
-                    # start the timer to compute the step running time
-                    start_time = time.time()
-                    result = stp.call(step_input_file)
-                    result.save(step_output_file)
-                    # end the timer to compute the step running time
-                    end_time = repr(time.time() - start_time)   # this is in seconds
-                    print("Step "+step+" took "+end_time+" seconds to finish")
-                step_completed = True
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul, step_output_file, msa_conf_root, esa_files_path, wcs_threshold_diff, save_wcs_plots
+    # only do this step if data is NOT IFU
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    if not core_utils.check_IFU_true(inhdu):
+        if run_calwebb_spec2:
+            # read the assign wcs fits file
+            local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
+            hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
+            # move the output file into the working directory
+            working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+            step_output_file = os.path.join(working_directory, local_step_output_file)
+            print ("Step product was saved as: ", step_output_file)
+            subprocess.run(["mv", local_step_output_file, step_output_file])
+            return hdul, step_output_file, msa_conf_root, esa_files_path, wcs_threshold_diff, save_wcs_plots
+        else:
+            if config.getboolean("steps", step):
+                print ("*** Step "+step+" set to True")
+                if os.path.isfile(step_input_file):
+                    if not skip_runing_pipe_step:
+                        # start the timer to compute the step running time
+                        start_time = time.time()
+                        result = stp.call(step_input_file)
+                        result.save(step_output_file)
+                        # end the timer to compute the step running time
+                        end_time = repr(time.time() - start_time)   # this is in seconds
+                        print("Step "+step+" took "+end_time+" seconds to finish")
+                    step_completed = True
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    return hdul, step_output_file, msa_conf_root, esa_files_path, wcs_threshold_diff, save_wcs_plots
+                else:
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip("Skiping "+step+" because the input file does not exist.")
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skiping "+step+" because the input file does not exist.")
-        else:
-            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            pytest.skip("Skiping "+step+". Step set to False in configuration file.")
+                pytest.skip("Skiping "+step+". Step set to False in configuration file.")
+    else:
+        pytest.skip("Skipping "+step+" because data is IFU.")
 
 
 
@@ -111,10 +115,6 @@ def validate_wcs_extract2d(output_hdul):
                                                   plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
                                                   threshold_diff=threshold_diff)
 
-    elif core_utils.check_IFU_true(hdu):
-        median_diff = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=None,
-                                                  plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
-                                                  threshold_diff=threshold_diff)
     else:
         pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")
 

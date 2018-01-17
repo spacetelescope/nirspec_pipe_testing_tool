@@ -119,7 +119,7 @@ else:
                     step_input_file = fits_input_uncal_file
                     break
                 if i == len(output_names)-1:
-                    step_input_file = glob("*ramp*.fits")[0]
+                    step_input_file = glob("*ramp*fit.fits")[0]
                     break
                 if os.path.isfile(step_input_file):
                     completion_key_val = fits.getval(step_input_file, comp_keys[i-j])
@@ -155,19 +155,25 @@ else:
         end_time_total.append(time.time() - start_time)
         step = output_names[i].replace(".fits", "")
         print(" * calwebb_detector1 step ", step, " took "+end_time+" seconds to finish * \n")
+        if (time.time() - start_time) > 60.0:
+            end_time_min = (time.time() - start_time)/60.  # this is in minutes
+            print ("    ( = "+repr(end_time_min)+" minutes )")
+            end_time = end_time+" ="+repr(round(end_time_min, 2))+"min"
 
         # record results in text file
-        line2write = "{:<18} {:<20} {:<20}".format(step, output_names[i], end_time)
+        line2write = "{:<18} {:<20} {:>20}".format(step, output_names[i], end_time)
         with open(txt_outputs_summary, "a") as tf:
             tf.write(line2write+"\n")
 
     # record total time in text file
-    total_time = "{:<18} {:<20} {:<20}".format("", "total time = ", repr(sum(end_time_total)))
+    tot_time_sec = sum(end_time_total)
+    tot_time_min = round((tot_time_sec/60.0), 2)
+    total_time = "{:<18} {:>20} {:<20}".format("", "total_time  ", repr(tot_time_sec)+"  ="+repr(tot_time_min)+"min")
 
 # record total time in text file
 with open(txt_outputs_summary, "a") as tf:
     tf.write(total_time+"\n")
-print ("\n ** Calwebb_detector 1 took "+repr(sum(end_time_total)/60.0))+" minutes to complete **"
+print ("\n ** Calwebb_detector 1 took "+repr(tot_time_min)+" minutes to complete **")
 
 # add a keyword with the name of the raw data fits file name
 fits.setval(final_out, 'rawdatrt', 0, value=rawdatrt, after='OBS_ID')

@@ -61,7 +61,13 @@ def output_hdul(set_inandout_filenames, config):
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                 # get the total running time and print it in the file
                 total_time = core_utils.get_time_to_run_pipeline(txt_name)
+                total_time_min = float(total_time)/60.0
                 print ("The total time for the pipeline to run was "+total_time+" seconds.")
+                print ("   ( = "+repr(total_time_min)+" minutes )")
+                line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', ' total_time  ', total_time, '  ='+repr(total_time_min)+'min')
+                print (line2write)
+                with open(txt_name, "a") as tf:
+                    tf.write(line2write+"\n")
                 return hdul
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
