@@ -164,7 +164,7 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
         #subdir = subdir.split("/")[-1]
         if esaroot in subdir:
             jlab88_list.append(subdir)
-    print("jlab88_list=", jlab88_list)
+    #print("jlab88_list=", jlab88_list)
     for jlab88_dir in jlab88_list:
         if mode == "FS":
             mode = "SLIT"

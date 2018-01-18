@@ -326,6 +326,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         elif 'IFU' in mode_used:
                             val = 'NRS_IFU'
                         #fits.setval(ff, key, 0, value=val)
+                        elif 'MOS' in mode_used:
+                            val = 'NRS_MSASPEC'
                         specific_keys_dict[key] = val
                         missing_keywds.append(key)
                     else:
@@ -403,7 +405,10 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
             #print ("found it in the dict: ", key, specific_keys_dict[key])
             if specific_keys_dict[key] == 'remove':
                 # keyword to be deleted
-                fits.delval(updated_fitsfile, key, ext)
+                try:
+                    fits.delval(updated_fitsfile, key, ext)
+                except:
+                    KeyError
             else:
                 # change the keyword to specified value
                 fits.setval(updated_fitsfile, key, value=specific_keys_dict[key])

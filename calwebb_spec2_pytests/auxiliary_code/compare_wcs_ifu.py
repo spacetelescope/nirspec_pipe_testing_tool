@@ -5,7 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
-from jwst.assign_wcs.tools.nirspec import compute_world_coordinates
+from jwst.assign_wcs.tools.nirspec import compute_world_coordinates as cwc
 from . import auxiliary_functions as auxfunc
 
 
@@ -184,7 +184,7 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             if fig_name is None:
                 fig_name = ".".join(("wcs_MSAcolormap", type_fig))
         fig.savefig(fig_name)
-        print ('\n Plot saved: ', fig_name)
+        print (' Plot saved: ', fig_name)
     if show_figs:
         plt.show()
     plt.close()
@@ -228,7 +228,10 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     if auxiliary_code_path is None:
         auxiliary_code_path = "./"
 
-    compute_world_coordinates.compute_world_coordinates(infile_name)
+    # compute world coordinates with Nadia's script
+    print ("running compute_world_coordinates.py script...")
+    #cwc.ifu_coords(infile_name)
+    print (" ... done.")
 
     # The world coordinate file was created but it needs to be renamed
     basenameinfile_name = os.path.basename(infile_name)
@@ -240,7 +243,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     #cwc_fname = infile_name.replace(".fits", "_world_coordinates.fits")
     # to rename file within the working directory
     cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
-    print (cwc_fname)
+    #print (cwc_fname)
     cwc_fname = infile_name.replace(basenameinfile_name, cwc_fname)
     os.system("mv "+wcoordfile+" "+cwc_fname)
 
@@ -250,25 +253,26 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     print ('sci_ext_list=', sci_ext_list, '\n')
 
     for i, s_ext in enumerate(sci_ext_list):
+        wc_ext = 1+1
         print("-> opening science extension =", s_ext, "  in ", infile_name)
-        print("   which corresponds to ext:", i+1, " of file:", cwc_fname)
-        hdr = wchdu[i+1].header
+        print("   which corresponds to ext:",wc_ext, " of file:", cwc_fname)
+        hdr = wchdu[wc_ext].header
 
         # what is the slice of this exposure
-        pslit = hdr["SLIT"]
+        pslit = hdr["SLIT"].replace("SLIT_", "")
         IFUslice = "0"+pslit
-        print("slice = ", IFUslice)
+        print("working with slice: ", IFUslice)
 
         # for matched spectrum, get the wavelength and Delta_Y values
-        fdata = fits.getdata(infile_name, ext=s_ext)
-        pwave = fdata[0,:]*1.0e-6
-        pdy = fdata[3,:]
-        pskyx = fdata[1,:]
-        pskyy = fdata[2,:]
+        fdata = fits.getdata(cwc_fname, ext=s_ext)
+        pwave = fdata[0,:,:] * 1.0e-6
+        pdy = fdata[3,:,:]
+        pskyx = fdata[1,:,:]
+        pskyy = fdata[2,:,:]
 
         # get the subwindow origin (technically no subwindows for IFU, but need it for comparing with IDT extractions)
-        px0 = fits.getval(cwc_fname, "CRVAL1", 1)
-        py0 = fits.getval(cwc_fname, "CRVAL2", 1)
+        px0 = fits.getval(cwc_fname, "CRVAL1", wc_ext)
+        py0 = fits.getval(cwc_fname, "CRVAL2", wc_ext)
         if debug:
             print ("px0=",px0, "   py0=", py0)
 
@@ -276,7 +280,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         counts = fits.getdata(infile_name, 1)
         n_p = np.shape(pwave)
         if debug:
-            print("n_p =", np.shape(pwave))
+            print("n_p =", n_p)
         npx = n_p[1]
         npy = n_p[0]
         px = np.arange(npx)+px0
@@ -398,7 +402,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
 
         # PLOTS
         if show_figs or save_figs and (len(delwave) != 0):
-            print ("Making WCS plots...")
+            print ("\n * Making WCS plots *")
             if plot_names is not None:
                 hist_name, deltas_name, msacolormap_name = plot_names
             else:
@@ -408,6 +412,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                 msacolormap_name = infile_name.replace(".fits", "_wcs_MSAcolormap.pdf")
 
             # HISTOGRAM
+            print("\n Making histogram...")
             if filt == "OPAQUE":
                 filt = lamp
             title = filt+"   "+grat+"   slice ID: "+IFUslice
@@ -425,6 +430,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                      histogram=True, fig_name=hist_name)
 
             # DELTAS PLOT
+            print("\n Making deltas plot...")
             title = ""
             title1, xlabel1, ylabel1 = r"$\Delta \lambda$", "x (pixels)", "y (pixels)"
             info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
@@ -434,6 +440,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                      deltas_plt=True, fig_name=deltas_name)
 
             # MSA COLOR MAP
+            print("\n Making color map...")
             title = "MSA Color Map"
             xlabel, ylabel = "MSA_x (m)", "MSA_y (m)"
             emsax, emsay = emsax.flatten(), emsay.flatten()

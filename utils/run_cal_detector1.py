@@ -158,10 +158,10 @@ else:
         if (time.time() - start_time) > 60.0:
             end_time_min = (time.time() - start_time)/60.  # this is in minutes
             print ("    ( = "+repr(end_time_min)+" minutes )")
-            end_time = end_time+" ="+repr(round(end_time_min, 2))+"min"
+            end_time = end_time+"  ="+repr(round(end_time_min, 2))+"min"
 
         # record results in text file
-        line2write = "{:<18} {:<20} {:>20}".format(step, output_names[i], end_time)
+        line2write = "{:<18} {:<20} {:<20}".format(step, output_names[i], end_time)
         with open(txt_outputs_summary, "a") as tf:
             tf.write(line2write+"\n")
 
