@@ -196,6 +196,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     wc_hdulist = fits.open(wc_file_name)
     # loop over the slices and read in the WCS values
     for ext, _ in enumerate(wc_hdulist):
+        ext =+ 1
         slice_id = fits.getval(wc_file_name, "SLIT", 2)
         wc_data = fits.getdata(wc_file_name, ext)
         # get the wavelength
@@ -235,7 +236,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 if (j==0) or not np.isfinite(flat_wave[j-1]) or (int((j-1)/nx) != int(j/nx)):
                     delw = 0.5 * (flat_wave[j+1] - flat_wave[j])
                 if (j==nw-1) or not np.isfinite(flat_wave[j+1]) or (int((j+1)/nx) != int(j/nx)):
-                    delw = 0.5 (flat_wave[j] - flat_wave[j-1])
+                    delw = 0.5 * (flat_wave[j] - flat_wave[j-1])
 
                 if debug:
                     #print ("(j, (j-1), nx, (j-1)/nx, (j+1), (j+1)/nx)", j, (j-1), nx, int((j-1)/nx), (j+1), int((j+1)/nx))
@@ -271,11 +272,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 sfv_dat = sfv.field("DATA")
                 if (jwav < 5.3) and (jwav > 0.6):
                     iw = np.where((sfv_wav >= jwav-delw/2.0) & (sfv_wav <= jwav+delw/2.0))
-                    sff = sfv_dat
-                    if np.size(iw) != 0:
+                    if np.size(iw) > 1:
                         int_tab = auxfunc.idl_tabulate(sfv_wav[iw], sfv_dat[iw])
                         first_sfv_wav, last_sfv_wav = sfv_wav[iw[0]][0], sfv_wav[iw[0]][-1]
                         sff = int_tab/(last_sfv_wav - first_sfv_wav)
+                    elif np.size(iw) == 1:
+                        sff = float(sfv_dat[iw])
+                    else:
+                        sff = 999.0
 
                 # get s-flat pixel-dependent correction
                 sfs = 1.0
@@ -293,8 +297,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         int_tab = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw])
                         first_ffv_wav, last_ffv_wav = ffv_wav[iw[0]][0], ffv_wav[iw[0]][-1]
                         fff = int_tab/(last_ffv_wav - first_ffv_wav)
-                    else:
-                        fff = ffv_dat
+                    elif np.size(iw) == 1:
+                        fff = float(ffv_dat[iw[0]])
 
                 flatcor[j] = dff * dfs * sff * sfs * fff
                 sffarr[j] = sff
@@ -316,13 +320,21 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
                 delfg = delf[np.where((delf != 999.0) & (delf >= -0.1))]   # ignore outliers
                 delfg_median, delfg_std = np.median(delfg), np.std(delfg)
-                print ("median and stdev in flat value differences for slice #: ", i)
+                print ("median and stdev in flat value differences for slice #: ", ext)
                 print ("median = ", delfg_median, "    stdev =", delfg_std)
+
+                print ("   dff =", dff, "    dfs =", dfs, "    sff =", sff, "    sfs =", sfs , "    fff=", fff)
+                print("flatcor[j] = ", flatcor[j])
+                print("delf[j] = ", delf[j])
+                print("len(delf) = ", len(delf))
+                print("pipeflat[pind[0]-py0, pind[1]-px0] = ", pipeflat[pind[0]-py0, pind[1]-px0])
+                #if not delfg:
+                #    continue
 
                 # make the slice plot
                 if (show_figs) or (save_figs):
                     # create histogram
-                    t = (file_basename, det, "IFUflatcomp_hist", repr(i))
+                    t = (file_basename, det, "IFUflatcomp_hist", repr(ext))
                     title = ("_".join(t))
                     mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_name)
 
@@ -335,6 +347,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
         delfg = delf[np.where((delf != 999.0) & (delf >= -0.1))]   # ignore outliers
         delfg_median, delfg_std = np.median(delfg), np.std(delfg)
+        if not delfg:
+            delfg_median = 999.0
         print ("median, stdev in flat value differences: ", delfg_median, delfg_std)
 
         if mk_all_slices_plt:
@@ -348,6 +362,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         median_diff = False
         if delfg_median <= float(threshold_diff):
             median_diff = True
+        # if the test is failed exit the script
+        if delfg_median == 999.0:
+            print ("Exiting the code without making plots.")
+            exit()
 
 
         # create fits file to hold the calculated flat for each slit
