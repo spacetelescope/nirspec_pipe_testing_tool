@@ -74,11 +74,17 @@ def output_hdul(set_inandout_filenames, config):
                     ontheflyflat = step_output_file.replace("flat_field.fits", "intflat.fits")
                     print ("Step product will be saved as: ", step_output_file)
                     print ("on-the-fly flat will be saved as: ", ontheflyflat)
+                    # get the right configuration files to run the step
+                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                    # start the timer to compute the step running time
                     start_time = time.time()
-                    result = stp.call(step_input_file, flat_suffix="intflat")
-                                      #override_dflat="/grp/crds/jwst/references/jwst/jwst_nirspec_dflat_0001.fits",
-                                      #override_fflat="/grp/crds/jwst/references/jwst/jwst_nirspec_fflat_0015.fits",
-                                      #override_sflat="/grp/crds/jwst/references/jwst/jwst_nirspec_sflat_0034.fits")
+                    if local_pipe_cfg_path == "pipe_source_tree_code":
+                        result = stp.call(step_input_file, flat_suffix="intflat")
+                                          #override_dflat="/grp/crds/jwst/references/jwst/jwst_nirspec_dflat_0001.fits",
+                                          #override_fflat="/grp/crds/jwst/references/jwst/jwst_nirspec_fflat_0015.fits",
+                                          #override_sflat="/grp/crds/jwst/references/jwst/jwst_nirspec_sflat_0034.fits")
+                    else:
+                        result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/flat_field.cfg')
                     result.save(step_output_file)
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
@@ -115,31 +121,32 @@ def validate_flat_field(output_hdul):
     show_figs = False
 
     if core_utils.check_FS_true(hdu):
-        # Find what slit the data corresponds to
-        ext, slit = core_utils.find_which_slit(hdu)
-        if (slit is not None) or (slit != "NULL"):
-            median_diff = flattest_fs.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
+        median_diff, msg = flattest_fs.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
                                                 fflat_path=fflat_path, writefile=write_flattest_files,
                                                 show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
                                                 threshold_diff=flattest_threshold_diff, debug=False)
 
     elif core_utils.check_MOS_true(hdu):
-        median_diff = flattest_mos.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                                           fflat_path=fflat_path, msa_conf_root=msa_conf_root,
-                                           writefile=write_flattest_files,
-                                           show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
-                                           threshold_diff=flattest_threshold_diff, debug=False)
+        median_diff, msg = flattest_mos.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
+                                               fflat_path=fflat_path, msa_conf_root=msa_conf_root,
+                                               writefile=write_flattest_files,
+                                               show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
+                                               threshold_diff=flattest_threshold_diff, debug=False)
 
     elif core_utils.check_IFU_true(hdu):
-        median_diff = flattest_ifu.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                                            fflat_path=fflat_path, writefile=write_flattest_files,
-                                            mk_all_slices_plt=False, show_figs=show_figs,
-                                            save_figs=save_flattest_plot, plot_name=None,
-                                            threshold_diff=flattest_threshold_diff, debug=False)
+        median_diff, msg = flattest_ifu.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
+                                                fflat_path=fflat_path, writefile=write_flattest_files,
+                                                mk_all_slices_plt=False, show_figs=show_figs,
+                                                save_figs=save_flattest_plot, plot_name=None,
+                                                threshold_diff=flattest_threshold_diff, debug=False)
 
     else:
         pytest.skip("Skipping pytest: The input fits file is not FS, MOS, or IFU. This tool does not yet include the "
                     "routine to verify this kind of file.")
+
+    if median_diff == "skip":
+        pytest.skip(msg)
+
     return median_diff
 
 

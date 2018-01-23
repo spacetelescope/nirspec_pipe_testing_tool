@@ -49,9 +49,14 @@ def output_hdul(set_inandout_filenames, config):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
                 if not skip_runing_pipe_step:
+                    # get the right configuration files to run the step
+                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
                     # start the timer to compute the step running time
                     start_time = time.time()
-                    result = stp.call(step_input_file)
+                    if local_pipe_cfg_path == "pipe_source_tree_code":
+                        result = stp.call(step_input_file)
+                    else:
+                        result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/extract_1d.cfg')
                     result.save(step_output_file)
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
@@ -60,11 +65,11 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                 # get the total running time and print it in the file
-                total_time = core_utils.get_time_to_run_pipeline(txt_name)
-                total_time_min = float(total_time)/60.0
+                total_time = repr(core_utils.get_time_to_run_pipeline(txt_name))
+                total_time_min = repr(float(total_time)/60.0)
                 print ("The total time for the pipeline to run was "+total_time+" seconds.")
                 print ("   ( = "+repr(total_time_min)+" minutes )")
-                line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', ' total_time  ', total_time, '  ='+repr(total_time_min)+'min')
+                line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'total_time  ', total_time, '  ='+total_time_min+'min')
                 print (line2write)
                 with open(txt_name, "a") as tf:
                     tf.write(line2write+"\n")

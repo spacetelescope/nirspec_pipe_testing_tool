@@ -33,7 +33,7 @@ def output_hdul(set_inandout_filenames, config):
     # Only run step if data is MOS
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
-    if core_utils.check_MOS_true(inhdu):
+    if core_utils.check_FS_true(inhdu):
         stp = MSAFlagOpenStep()
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
@@ -52,10 +52,14 @@ def output_hdul(set_inandout_filenames, config):
                 print ("*** Step "+step+" set to True")
                 if os.path.isfile(step_input_file):
                     if not skip_runing_pipe_step:
+                        # get the right configuration files to run the step
+                        #local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
                         # start the timer to compute the step running time
                         start_time = time.time()
+                        #if local_pipe_cfg_path == "pipe_source_tree_code":
                         result = stp.call(step_input_file)
-                        result.save(step_output_file)
+                        #else:
+                        #    result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/NOCONFIGFI.cfg')
                         # end the timer to compute the step running time
                         end_time = repr(time.time() - start_time)   # this is in seconds
                         print("Step "+step+" took "+end_time+" seconds to finish")
@@ -70,7 +74,7 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+". Step set to False in configuration file.")
     else:
-        pytest.skip("Skipping "+step+" because data is not MOS.")
+        pytest.skip("Skipping "+step+" because data is FS.")
 
 
 

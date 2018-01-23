@@ -1,6 +1,6 @@
-from __future__ import print_function, division
 import numpy as np
 import os
+import subprocess
 import matplotlib
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -57,8 +57,9 @@ def mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_na
     x_stddev = "stddev = {:0.3}".format(delfg_std)
     ax.text(0.7, 0.9, x_median, transform=ax.transAxes, fontsize=fontsize)
     ax.text(0.7, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
-    #_, _, _ = ax.hist(delfg, bins=int((xmax-xmin)/40.), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-    _, _, _ = ax.hist(delfg, bins=30, histtype='bar', ec='k', facecolor="red", alpha=alpha)
+    binwidth = (xmax-xmin)/40.
+    _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+    #_, _, _ = ax.hist(delfg, bins=30, histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
     if save_figs:
         if plot_name is None:
@@ -154,8 +155,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     else:
         print ("No filter correspondence. Exiting the program.")
         # This is the key argument for the assert pytest function
-        median_diff = None
-        return median_diff
+        msg = "Test skiped because there is no flat correspondance for the filter in the data: {}".format(filt)
+        median_diff = "skip"
+        return median_diff, msg
 
     sflat_ending = "f_01.01.fits"
     sfile = sfile_path+"_"+grat+"_OPAQUE_"+flat+"_nrs1_"+sflat_ending
@@ -187,8 +189,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     else:
         print ("Wrong path in for mode F-flat. This script handles mode ", mode, "only.")
         # This is the key argument for the assert pytest function
-        median_diff = None
-        return median_diff
+        msg = "Wrong path in for mode F-flat. Test skiped because mode is not IFU."
+        median_diff = "skip"
+        return median_diff, msg
+
     ffv = fits.getdata(ffile, 1)
 
     # go through each pixel in the test data
@@ -320,28 +324,23 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
                 delfg = delf[np.where((delf != 999.0) & (delf >= -0.1))]   # ignore outliers
                 delfg_median, delfg_std = np.median(delfg), np.std(delfg)
-                print ("median and stdev in flat value differences for slice #: ", ext)
-                print ("median = ", delfg_median, "    stdev =", delfg_std)
+                if np.isfinite(delfg_median) and np.isfinite(delfg_std):
+                    print ("median and stdev in flat value differences for slice #: ", ext)
+                    print ("median = ", delfg_median, "    stdev =", delfg_std)
 
-                print ("   dff =", dff, "    dfs =", dfs, "    sff =", sff, "    sfs =", sfs , "    fff=", fff)
-                print("flatcor[j] = ", flatcor[j])
-                print("delf[j] = ", delf[j])
-                print("len(delf) = ", len(delf))
-                print("pipeflat[pind[0]-py0, pind[1]-px0] = ", pipeflat[pind[0]-py0, pind[1]-px0])
+                #print ("   dff =", dff, "    dfs =", dfs, "    sff =", sff, "    sfs =", sfs , "    fff=", fff)
+                #print("flatcor[j] = ", flatcor[j])
+                #print("delf[j] = ", delf[j])
+                #print("len(delf) = ", len(delf))
+                #print("pipeflat[pind[0]-py0, pind[1]-px0] = ", pipeflat[pind[0]-py0, pind[1]-px0])
                 #if not delfg:
                 #    continue
-
-                # make the slice plot
-                if (show_figs) or (save_figs):
-                    # create histogram
-                    t = (file_basename, det, "IFUflatcomp_hist", repr(ext))
-                    title = ("_".join(t))
-                    mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_name)
 
                 if debug:
                     print ("dfs = ", dfs)
                     print ("sff = ", sff)
                     print ("sfs = ", sfs)
+
 
         wc_hdulist.close()
 
@@ -349,41 +348,67 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         delfg_median, delfg_std = np.median(delfg), np.std(delfg)
         if not delfg:
             delfg_median = 999.0
-        print ("median, stdev in flat value differences: ", delfg_median, delfg_std)
+        if np.isfinite(delfg_median) and np.isfinite(delfg_std):
+            print ("median, stdev in flat value differences: ", delfg_median, delfg_std)
 
-        if mk_all_slices_plt:
-            # create histogram
-            t = (file_basename, det, "IFU_flatcomp_hist")
-            title = ("_".join(t))
-            mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_name)
+        #if mk_all_slices_plt:
+        #    # create histogram
+        #    t = (file_basename, det, "IFU_flatcomp_hist")
+        #    title = ("_".join(t))
+        #    mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_name)
 
+        # make the slice plot
+        if np.isfinite(delfg_median):
+            if (show_figs) or (save_figs):
+                # create histogram
+                t = (file_basename, det, "IFUflatcomp_hist", repr(ext))
+                title = ("_".join(t))
+                mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_name)
+
+        # create fits file to hold the calculated flat for each slice
+        if writefile:
+            outfile = step_input_filename.replace("2d_flat_field.fits", det+"_"+slice_id+"_flat_calc.fits")
+            complfile = step_input_filename.replace("2d_flat_field.fits", det+"_"+slice_id+"_flat_comp.fits")
+
+            # check if the files exist and, if they do, replace them
+            if os.path.isfile(outfile):
+                print ("Overwritting file: ", outfile)
+                subprocess.run(["rm", outfile])
+
+            if os.path.isfile(complfile):
+                print ("Overwritting file: ", complfile)
+                subprocess.run(["rm", complfile])
+
+            hdu = fits.PrimaryHDU(flatcor)
+            hdulist = fits.HDUList([hdu])
+            hdulist.writeto(outfile)
+
+            # this is the file to hold the image of pipeline-calculated difference values
+            hdu = fits.PrimaryHDU(delf)
+            hdulist = fits.HDUList([hdu])
+            hdulist.writeto(complfile)
 
         # This is the key argument for the assert pytest function
         median_diff = False
-        if delfg_median <= float(threshold_diff):
+        if abs(delfg_median) <= float(threshold_diff):
             median_diff = True
+        if median_diff:
+            test_result = "PASSED"
+        else:
+            test_result = "FAILED"
+        print (" *** Result of the test: ",test_result)
+
         # if the test is failed exit the script
         if delfg_median == 999.0:
             print ("Exiting the code without making plots.")
-            exit()
+            msg = "Unable to determine mean and std_dev. Test set to be skiped."
+            median_diff = "skip"
+            return median_diff, msg
 
 
-        # create fits file to hold the calculated flat for each slit
-        if writefile:
-            outfile = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
-            main_hdr = fits.getheader(step_input_filename, 0)
-            #ext_hdr = fits.getheader(msafile, 2)
-            hdu = fits.PrimaryHDU(main_hdr)
-            hdulist = fits.HDUList([hdu, flatcor.reshape(n_p)])
-            hdulist.writeto(outfile)
-            # this is the file to hold the image of pipeline-calculated difference values
-            complfile = step_input_filename.replace("2d_flat_field.fits", det+"_flat_comp.fits")
-            hdu = fits.PrimaryHDU(main_hdr)
-            hdulist = fits.HDUList([hdu, delf.reshape(n_p)])
-            hdulist.writeto(complfile)
 
-
-    return median_diff
+    msg = ""
+    return median_diff, msg
 
 
 
@@ -406,7 +431,7 @@ if __name__ == '__main__':
     writefile = True
 
     # set the names of the resulting plots
-    plot_name = "IFU_flattest_histogram.pdf"
+    plot_name = None#"IFU_flattest_histogram.pdf"
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,

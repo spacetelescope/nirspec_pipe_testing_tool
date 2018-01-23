@@ -1,4 +1,3 @@
-from __future__ import print_function, division
 import numpy as np
 import os
 from scipy import integrate
@@ -113,7 +112,8 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
         This function simply avoids code repetition.
         """
         # get the right esa file according to the mode
-        if mode == "MOS":
+        esafile_basename = "No match found for esafile"
+        if "MOS" in mode:
             quad,row, col = specifics
             # add a 0 if necessary for convention purposes
             if col < 99:
@@ -126,26 +126,32 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
                 row = str(row[0])
             # to match current ESA intermediary files naming convention
             esafile_basename = "Trace_MOS_"+str(quad[0])+"_"+row+"_"+col+"_"+jlab88_dir+".fits"
-        if mode == "FS":
+        if "SLIT" in mode:
             sltname_list = specifics
+            esafiles = []
             for sltname in sltname_list:
                 # change the format of the string to match the ESA trace
-                sltname = sltname.split("S")[1]
-                if sltname[-1] == "A1":
-                    sltname = "A_"+sltname.split("A")[0]+"_1"
-                    break
-                elif sltname[-1] == "A2":
-                    sltname = "A_"+sltname.split("A")[0]+"_2"
-                    break
-                elif sltname[-1] == "A":
+                sltname = sltname.replace("S", "")
+                print("sltname after removing S: ", sltname)
+                if ("A" in sltname) and ("200" in sltname):
+                    sltname = "A_"+sltname.split("A")[0]+"_1_"
+                    esafiles.append(sltname)
+                if ("A2" in sltname) and ("200" in sltname):
+                    sltname = "A_"+sltname.split("A")[0]+"_2_"
+                    esafiles.append(sltname)
+                if ("400" in sltname) or ("1600" in sltname):
                     sltname = "A_"+sltname.split("A")[0]+"_"
-                    break
-                elif sltname[-1] == "B":
+                    esafiles.append(sltname)
+                if "B" in sltname:
                     sltname = "B_"+sltname.split("B")[0]+"_"
-                    break
+                    esafiles.append(sltname)
             # to match current ESA intermediary files naming convention
-            esafile_basename = "Trace_SLIT_"+sltname+jlab88_dir+".fits"
-        if mode == "IFU":
+            esafile_basename_list = []
+            for sltname in esafiles:
+                esafile_basename = "Trace_SLIT_"+sltname+jlab88_dir+".fits"
+                esafile_basename_list.append(esafile_basename)
+            esafile_basename = esafile_basename_list
+        if "IFU" in mode:
             IFUslice = specifics[0]
             # to match current ESA intermediary files naming convention
             esafile_basename = "Trace_IFU_Slice_"+IFUslice+"_"+jlab88_dir+".fits"
@@ -171,16 +177,30 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
         mode_dir = os.path.join(jlab88_dir, jlab88_dir.split("/")[-1]+"_trace_"+mode)
         esafile_basename = find_esafile_basename(specifics, jlab88_dir.split("/")[-1])
         print ("Using this ESA file: \n", "Directory =", mode_dir, "\n", "File =", esafile_basename)
-        esafile = os.path.join(mode_dir, esafile_basename)
-
-        # check if we got the right esafile
-        root_filename = fits.getval(esafile, "FILENAME", 0)
-        if rawdatroot.replace(".fits", "") in root_filename:
-            break
-
-    # make sure the path is right or print a message
-    if not os.path.isfile(esafile):
-        print (esafile)
+        if not isinstance(esafile_basename, list):
+            esafile = os.path.join(mode_dir, esafile_basename)
+            # check if we got the right esafile
+            root_filename = fits.getval(esafile, "FILENAME", 0)
+            print("root_filename = ", root_filename)
+            print("rawdatroot = ", rawdatroot)
+            if rawdatroot.replace(".fits", "") in root_filename:
+                print (" * File name matches raw file used for create_data.")
+                break
+            else:
+                print (" * WARNING: Raw data file name used for create_data does not match esa root file name.")
+        else:
+            esafile = []
+            for esabase in esafile_basename:
+                esaf = os.path.join(mode_dir, esabase)
+                esafile.append(esaf)
+                # check if we got the right esafile
+                root_filename = fits.getval(esaf, "FILENAME", 0)
+                print("root_filename = ", root_filename)
+                print("rawdatroot = ", rawdatroot)
+                if rawdatroot.replace(".fits", "") in root_filename:
+                    print (" * File name matches raw file used for create_data.")
+                else:
+                    print (" * WARNING: Raw data file name used for create_data does not match esa root file name.")
 
     return esafile
 
@@ -204,6 +224,7 @@ def idl_tabulate(x, f, p=5):
             return 0
         rn = (x.shape[0] - 1) * (x - x[0]) / (x[-1] - x[0])
         weights = integrate.newton_cotes(rn)[0]
+        """
         # I added this part for the last remaining non 5 points, it will only use the available points
         lw, lf = len(weights), len(f)
         if lw != lf:
@@ -211,6 +232,7 @@ def idl_tabulate(x, f, p=5):
             for i, fi in enumerate(f):
                 last_weights.append(weights[i])
             weights = np.array(last_weights)
+        """
         dot_wf = np.dot(weights, f)
         return (x[-1] - x[0]) / (x.shape[0] - 1) * dot_wf
 
@@ -239,28 +261,13 @@ def idl_valuelocate(arr, vals):
     idx_list = []
     for v in vals:
         # Find the index and value of the closest element to vals
-        arr_val, arr_idx = find_nearest(arr, v)
-        #print ("arr_val, arr_idx : ", arr_val, arr_idx)
-
-        if arr_val == v:
-            idx_list.append(arr_idx)
-        else:
-            # Determine if v would go before or after arr_val
-            i = arr_idx
-            if v > arr_val:
-                while v > arr[i]:
-                    i += 1
-                    if i >= len(arr):
-                        i = len(arr) - 1
-                        break
-                idx_list.append(i)
-            else:
-                while v < arr[i]:
-                    i -=  1
-                    if i < 0:
-                        i = 0
-                        break
-                idx_list.append(i)
+        if (v > arr[0]) and (v < arr[-1]):
+            arr_val, i = find_nearest(arr, v)
+            """
+            if arr[i] > v:
+                i =-1
+            """
+            idx_list.append(i)
     #print ("v, i, arr[i] : ", v, i, arr[i])
     return idx_list
 

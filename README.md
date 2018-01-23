@@ -20,7 +20,8 @@ https://astroconda.readthedocs.io/en/latest/
 Please use python 3.5
 
 
-1. Create the conda environment for testing the correct version of the pipeline
+1. Create the conda environment for testing and get the configuration files.  
+a. Conda environment for this testing campaign:
 - Current testing version is 7.1 for release candidate 0.7.9.0
 - Specific instructions to create the build7.1 environment.
 For example, in a terminal type:
@@ -31,6 +32,7 @@ for the current release candidate, the ulr options are:
 - Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-linux
 - OS X: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-osx
 
+
 NOTE:
 If you need to use the development version of the pipeline then do the following:
 ```bash
@@ -39,6 +41,13 @@ conda create -n jwst_dev -c http://ssb.stsci.edu/conda-dev jwst python=3.5
 Then, to update the development environment, activate the environment and then type:
 ```bash
 conda update --override-channels -c http://ssb.stsci.edu/conda-dev -c defaults --all
+```
+
+b. Configuration files corresponding to this build. Create a directory (e.g. 
+```b7.1cfg_files```) somewhere in your testing working space, and ```cd``` into it. Now 
+type the following command within the conda environment you just created.
+```bash
+collect_pipeline_cfgs .
 ```
 
 
@@ -70,7 +79,12 @@ NOTE: Every time you create a new conda environment you need to install html plu
 4. Clone the repository so you have the PTT. To do this click at the top right 
 of this page, in the dropdown button that says clone or download, then copy the ulr that
 appears there. Now, within the conda testing environment, go to or create the directory 
-where you want the PTT to "live" in, and type:
+where you want the PTT to "live" in. However, make sure that the configuration files 
+directory is at least at the top level of the directory tree where the PTT will live, e.g. 
+the ```b7.1cfg_files``` directory and the ```nirspec_testing_tool``` directory can be at 
+the same level, but the ```b7.1cfg_files``` directory cannot be inside the 
+```nirspec_testing_tool``` directory because otherwise the .cfg files
+will be picked up by Git and it will try to put them in your space.
 ```bash
 git clone the_ulr_you_copied
 ```

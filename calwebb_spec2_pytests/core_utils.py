@@ -368,6 +368,7 @@ def find_which_slit(output_hdul):
     slits = ["S200A1", "S200A2", "S200B1", "S400A1", "S1600A1"]
     if "FXD_SLIT" in output_hdul:
         for i, s in enumerate(slits):
+            print("slit: ", s, i)
             if s in output_hdul["FXD_SLIT"]:
                 return i+1, s
 
@@ -396,7 +397,18 @@ def get_time_to_run_pipeline(True_steps_suffix_map):
         total_time: string, total calculate the total time by reading the time of each step from the map
 
     """
-    times_per_step = np.loadtxt(True_steps_suffix_map, comments="#", usecols=(3), unpack=True)
+    #times_per_step = np.loadtxt(True_steps_suffix_map, comments="#", usecols=(3), unpack=True)
+    times_per_step = []
+    with open(True_steps_suffix_map, "r") as tf:
+        for line in tf.readlines():
+            if '#' in line:
+                continue
+            if  "srctype" in line:
+                t=line.split()[2]
+            else:
+                t=line.split()[3]
+            t = float(t)
+            times_per_step.append(t)
     total_time = sum(times_per_step)
     return total_time
 
