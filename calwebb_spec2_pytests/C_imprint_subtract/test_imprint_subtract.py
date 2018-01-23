@@ -64,10 +64,16 @@ def output_hdul(set_inandout_filenames, config):
                         pytest.skip("Skipping "+step+" because msa_imprint_structure file in the configuration file does not exist.")
                     else:
                         if not skip_runing_pipe_step:
-                            result = stp.call(step_input_file, msa_imprint_structure)
+                            # get the right configuration files to run the step
+                            local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                            # start the timer to compute the step running time
+                            start_time = time.time()
+                            if local_pipe_cfg_path == "pipe_source_tree_code":
+                                result = stp.call(step_input_file, msa_imprint_structure)
+                            else:
+                                result = stp.call(step_input_file, msa_imprint_structure,
+                                                  config_file=local_pipe_cfg_path+'/imprint.cfg')
                             if result is not None:
-                                # start the timer to compute the step running time
-                                start_time = time.time()
                                 result.save(step_output_file)
                                 # end the timer to compute the step running time
                                 end_time = repr(time.time() - start_time)   # this is in seconds

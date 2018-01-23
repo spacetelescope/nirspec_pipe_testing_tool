@@ -30,6 +30,7 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         save_figs: boolean, save figures or not
         info_fig1: list, arrays, number of bins, and limits for the first figure in the plot
         info_fig2: list, arrays, number of bins, and limits for the second figure in the plot
+        info_fig3: list, arrays, number of bins, and limits for the second figure in the plot
         histogram: boolean, are the figures in the plot histograms
         deltas_plt: boolean, regular plot
         fig_name: str, name of plot
@@ -48,8 +49,8 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
 
     # FIGURE 1
     # number in the parenthesis are nrows, ncols, and plot number, numbering in next row starts at left
-    ax = plt.subplot(211)
     if histogram:
+        ax = plt.subplot(211)
         xlabel1, ylabel1, xarr1, yarr1, xmin, xmax, bins, x_median, x_stddev = info_fig1
         x_median = "median = {:0.3}".format(x_median)
         x_stddev = "stddev = {:0.3}".format(x_stddev)
@@ -61,7 +62,9 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         ax.text(0.7, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
         n, bins, patches = ax.hist(xarr1, bins=bins, histtype='bar', ec='k', facecolor="red", alpha=alpha)
     if deltas_plt:
+        ax = plt.subplot(211)
         title1, xlabel1, ylabel1, xarr1, yarr1, xdelta, x_median, x_stddev = info_fig1
+        xarr1, yarr1 = xarr1[0], yarr1[0]
         plt.title(title1)
         plt.xlabel(xlabel1)
         plt.ylabel(ylabel1)
@@ -102,8 +105,8 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
 
     # FIGURE 2
     # number in the parenthesis are nrows, ncols, and plot number, numbering in next row starts at left
-    ax = plt.subplot(212)
     if histogram:
+        ax = plt.subplot(212)
         xlabel2, ylabel2, xarr2, yarr2, xmin, xmax, bins, y_median, y_stddev = info_fig2
         y_median = "median = {:0.3}".format(y_median)
         y_stddev = "stddev = {:0.3}".format(y_stddev)
@@ -114,7 +117,9 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         ax.text(0.7, 0.83, y_stddev, transform=ax.transAxes, fontsize=fontsize)
         n, bins, patches = ax.hist(xarr2, bins=bins, histtype='bar', ec='k', facecolor="red", alpha=alpha)
     if deltas_plt:
+        ax = plt.subplot(212)
         title2, xlabel2, ylabel2, xarr2, yarr2, ydelta, y_median, y_stddev = info_fig2
+        xarr2, yarr2 = xarr2[0], yarr2[0]
         plt.title(title2)
         plt.xlabel(xlabel2)
         plt.ylabel(ylabel2)
@@ -150,6 +155,33 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
         #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
         #plt.plot(xarr2, yarr2, linewidth=7)
+        """
+        ax = plt.subplot(313)
+        title3, xlabel3, ylabel3, xarr3, yarr3, ydelta, y_median, y_stddev = info_fig3
+        xarr3, yarr3 = xarr3[0], yarr3[0]
+        plt.title(title3)
+        plt.xlabel(xlabel3)
+        plt.ylabel(ylabel3)
+        mean_minus_1half_std = y_median - 1.5*y_stddev
+        mean_minus_half_std = y_median - 0.5*y_stddev
+        mean_plus_half_std = y_median + 0.5*y_stddev
+        mean_plus_1half_std = y_median + 1.5*y_stddev
+        idx_red = np.where(ydelta > mean_plus_1half_std)
+        idx_fuchsia = np.where(ydelta < mean_minus_1half_std)
+        idx_blue = np.where((ydelta > mean_minus_1half_std) & (ydelta < mean_minus_half_std))
+        idx_lime = np.where((ydelta > mean_minus_half_std) & (ydelta < mean_plus_half_std))
+        idx_black = np.where((ydelta > mean_plus_half_std) & (ydelta < mean_plus_1half_std))
+        plt.plot(xarr3[idx_red], yarr3[idx_red], linewidth=7, marker='D', color='red')#, label="ydelta > median_plus_1half_std")
+        plt.plot(xarr3[idx_fuchsia], yarr3[idx_fuchsia], linewidth=7, marker='D', color='fuchsia')#, label="ydelta < median_minus_1half_std")
+        plt.plot(xarr3[idx_blue], yarr3[idx_blue], linewidth=7, marker='D', color='blue')#, label="median_plus_1half_std > ydelta > median_minus_1half_std")
+        plt.plot(xarr3[idx_lime], yarr3[idx_lime], linewidth=7, marker='D', color='lime')#, label="median_plus_half_std > ydelta > median_minus_half_std")
+        plt.plot(xarr3[idx_black], yarr3[idx_black], linewidth=7, marker='D', color='black')#, label="median_plus_1half_std > ydelta > median_minus_half_std")
+        # add legend
+        #box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
+        #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
+        #plt.plot(xarr3, yarr3, linewidth=7)
+        """
     plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
     plt.minorticks_on()
     if save_figs:
@@ -229,8 +261,8 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     print ('sci_ext_list=', sci_ext_list, '\n')
 
     for i, s_ext in enumerate(sci_ext_list):
-        print("-> opening science extension =", s_ext, "  in ", infile_name)
-        print("   which corresponds to ext:", i+1, " of file:", cwc_fname)
+        print("-> opening extension =", i+1, "  in ", cwc_fname)
+        print("   which corresponds to science ext:", s_ext, " of file:", infile_name)
         hdr = wchdu[i+1].header
 
         # what is the slit of this exposure
@@ -238,11 +270,14 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         print("SLIT = ", pslit)
 
         # for matched spectrum, get the wavelength and Delta_Y values
-        fdata = fits.getdata(infile_name, ext=s_ext)
-        pwave = fdata[0,:]
-        pdy = fdata[3,:]
-        pskyx = fdata[1,:]
-        pskyy = fdata[2,:]
+        fdata = fits.getdata(cwc_fname, ext=i+1)
+        pwave = fdata[0,:,:]
+        pdy = fdata[3,:,:]
+        pskyx = fdata[1,:,:]
+        pskyy = fdata[2,:,:]
+        #print('pskyx=', pskyx)
+        #print('pskyy=', pskyy)
+        #print('np.shape(fdata) = ', np.shape(fdata))
 
         # get the origin of the subwindow
         px0 = fits.getval(infile_name, "SLTSTRT1", ext=s_ext)+fits.getval(infile_name, "SUBSTRT1", ext=0)-1
@@ -250,11 +285,11 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         sltname = fits.getval(infile_name, "SLTNAME", ext=s_ext)
         sltname_list.append(sltname)
         n_p = np.shape(fdata)
-        npx = n_p[0]
+        npx = n_p[2]
         npy = n_p[1]
-        print("npx+1=", npx+1, "px0_list=", px0)
-        px = np.arange(1, npx+1)+np.array(px0)
-        py = np.arange(1, npy+1)+np.array(py0)
+        #print("npx=", npx, "npy=", npy)
+        px = np.arange(npx)+np.array(px0)
+        py = np.arange(npy)+np.array(py0)
         print  ("Pipeline subwindow corner pixel ID: ", px0, py0)
 
         # read in the ESA file using raw data root file name
@@ -262,9 +297,24 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         specifics = sltname_list
         esafile = auxfunc.get_esafile(esa_files_path, rawdatroot, "FS", specifics)
 
-        esahdulist = fits.open(esafile)
-        #print ("* ESA file contents ")
-        #esahdulist.info()
+        if not isinstance(esafile, list):
+            esafile_list = [esafile]
+        else:
+            esafile_list = esafile
+
+        slit = sltname.replace("S", "")
+        if "A" in slit:
+            slit = "_"+slit.split("A")[0]+"_"
+        if "B" in slit:
+            slit = "_"+slit.split("B")[0]+"_"
+
+        # choose corresponding esa file
+        for esafile in esafile_list:
+            if slit in esafile:
+                esahdulist = fits.open(esafile)
+                #print ("* ESA file contents ")
+                #esahdulist.info()
+
         esahdr1 = esahdulist[1].header
         enext = []
         for ext in esahdulist:
@@ -274,11 +324,20 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             ewave = fits.getdata(esafile, 4)
             edy = fits.getdata(esafile, 5)
         if det == "NRS2":
-            eflux = fits.getdata(esafile, 6)
-            ewave = fits.getdata(esafile, 9)
-            edy = fits.getdata(esafile, 10)
+            try:
+                eflux = fits.getdata(esafile, 6)
+                ewave = fits.getdata(esafile, 9)
+                edy = fits.getdata(esafile, 10)
+            except:
+                IndexError
+                print(" * compare_wcs_fs.py is exiting because there are no extensions that match detector NRS2 in the ESA file.")
+                print("   -> The WCS test is now set to skip and no plots will be generated. ")
+                median_diff = "skip"
+                return median_diff
+
         esahdulist.close()
         n_p = np.shape(eflux)
+        #print("eflux=", eflux.flatten())
         nex = n_p[1]
         ney = n_p[0]
         # get the origin of the subwindow
@@ -293,16 +352,20 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         print("ESA subwindow corner pixel ID: ", ex0, ey0)
         if debug:
             print("From ESA file: ")
-            print("   ex0 =", ex0)
+            #print("   ex0 =", ex0)
             print("   ex0+nex-1 =", ex0+nex-1)
-            print("   ey0 =", ey0)
+            #print("   ey0 =", ey0)
             print("   ey0+ney-1 =", ey0+ney-1)
-            print("   ex=", ex, "   ey=", ey)
+            print("   ex=", len(ex), "   ey=", len(ey))
+            print("   px=", len(px), "   py=", len(py))
 
         # match up the correct elements in each data set
         subpx, subex = auxfunc.do_idl_match(px, ex)
         subpy, subey = auxfunc.do_idl_match(py, ey)
-        print("matched elements in the 2D spectra: ", len(subex), len(subey))
+        print("matched elements in the 2D spectra: ", len(subpx), len(subey))
+        for sx in subpx:
+            if px[sx] not in ex:
+                print("aha! found it!  ", ex[sx])
         imp, ime = [], []
         for spy in subpy:
             im0 = subpx + npx * spy
@@ -313,22 +376,20 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         imp, ime = np.array(imp), np.array(ime)
         imp, ime  = imp.flatten(), ime.flatten()
 
+        #print('ime = ', np.shape(ime), '   imp =', np.shape(imp))
+        #print('ime[0:9] = ', ime[0:10])
+
         # get the difference between the two in units of resels
         # do not include pixels where one or the other solution is 0 or NaN
         flat_pwave, flat_ewave = pwave.flatten(), ewave.flatten()
-        ig = []
-        for ip, ie, ig_i in zip(imp, ime, range(len(imp))):
-            if all( [flat_pwave[ip] != 0 and flat_ewave[ie].size != 0 and np.isfinite(flat_pwave[ip]) and np.isfinite(flat_ewave[ip])] ):
-                ig.append(ig_i)
+        # get the elements with index imp and ime
+        #print('flat_pwave=', len(flat_pwave), '  flat_ewave=', len(flat_ewave))
 
-        delwave = []
-        for ig_i in ig:
-            delw = flat_pwave[imp[ig_i]] - flat_ewave[ime[ig_i]]
-            delwave.append(delw)
-        delwave = np.array(delwave)
-        for dw in delwave:
-            if not np.isfinite(dw):
-                print("Got a NaN in delwave array!, median and standard deviation will fail.")
+        try:
+            ig = np.where((flat_pwave[imp]!=0.0) & (flat_ewave[ime]!=0.0) & (np.isfinite(flat_pwave[imp])) & (np.isfinite(flat_ewave[imp])))
+        except:
+            IndexError
+        #print('ig = ', np.shape(ig))
 
         pxr, pyr = np.array([]), np.array([])
         for _ in range(npy):
@@ -342,68 +403,88 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
 
         pxrg, pyrg, deldy = [], [], []
         flat_pdy, flat_edy = pdy.flatten(), edy.flatten()
-        for ig_i in ig:
-            pxrg_i = pxr[imp[ig_i]]
-            pxrg.append(pxrg_i)
-            pyrg_i = pyr[imp[ig_i]]
-            pyrg.append(pyrg_i)
-            deldy_i = flat_pdy[imp[ig_i]] - flat_edy[ime[ig_i]]
-            deldy.append(deldy_i)
-        pxrg, pyrg, deldy = np.array(pxrg), np.array(pyrg), np.array(deldy)
-        for d in deldy:
-            if not np.isfinite(d):
-                print("Got a NaN in deldy array!, median and standard deviation will fail.")
+        try:
+            for ig_i in ig:
+                pxrg_i = pxr[imp[ig_i]]
+                pxrg.append(pxrg_i)
+                pyrg_i = pyr[imp[ig_i]]
+                pyrg.append(pyrg_i)
+                deldy_i = flat_pdy[imp[ig_i]] - flat_edy[ime[ig_i]]
+                deldy.append(deldy_i)
+            pxrg, pyrg, deldy = np.array(pxrg), np.array(pyrg), np.array(deldy)
+
+            igy = np.where((flat_pdy[imp]!=0.0) & (flat_edy[ime]!=0.0) & (np.isfinite(flat_pdy[imp])) & (np.isfinite(flat_edy[imp])))
+            #print('igy = ', np.shape(igy))
+
+            delwave = (flat_pwave[imp[ig]]*1.0e-6 -flat_ewave[ime[ig]])
+            deldy = flat_pdy[imp[igy]] - flat_edy[ime[igy]]
+            #delflx = flat_pdy[imp[ig]] - flat_edy[ime[ig]]
+            #print (flat_pdy[imp[ig]], flat_edy[ime[ig]])
+
+            #print('np.shape(delwave) = ', np.shape(delwave))
+            #print('np.shape(deldy) = ', np.shape(deldy))
+        except:
+            IndexError
 
         # get the median and standard deviations
         median_diff = False
-        if len(delwave) != 0:
+        if (len(delwave) != 0) and (len(deldy) != 0):
             delwave_median, delwave_stddev = np.median(delwave), np.std(delwave)
             deldy_median, deldy_stddev = np.median(deldy), np.std(deldy)
             print("\n  delwave:   median =", delwave_median, "   stdev =", delwave_stddev)
-            print("\n  deldy:   median =", deldy_median, "   stdev =", deldy_stddev)
+            print("\n    deldy:   median =", deldy_median, "   stdev =", deldy_stddev)
 
             # This is the key argument for the assert pytest function
-            if delwave_median <= threshold_diff:
+            if abs(delwave_median) <= threshold_diff:
                 median_diff = True
+            if median_diff:
+                test_result = "PASSED"
+            else:
+                test_result = "FAILED"
+            print (" *** Result of the test: ",test_result)
 
             # PLOTS
-            print ("Making WCS plots...")
-            if plot_names is not None:
-                hist_name, deltas_name = plot_names
+            if np.isfinite(delwave_median):
+                print ("Making WCS plots...")
+                if plot_names is not None:
+                    hist_name, deltas_name = plot_names
+                else:
+                    #hist_name, deltas_name = None, None
+                    hist_name = infile_name.replace(".fits", "_"+sltname+"_wcs_histogram.pdf")
+                    deltas_name = infile_name.replace(".fits", "_"+sltname+"_wcs_Deltas.pdf")
+
+
+                # HISTOGRAM
+                if show_figs or save_figs:
+                    title = filt+"   "+grat+"   SLIT="+sltname
+                    xmin1 = min(delwave) - (max(delwave)-min(delwave))*0.1
+                    xmax1 = max(delwave) + (max(delwave)-min(delwave))*0.1
+                    xlabel1, ylabel1 = r"$\lambda_{pipe}$ - $\lambda_{ESA}$ (10$^{-10}$m)", "N"
+                    yarr = None
+                    bins = 15
+                    info_fig1 = [xlabel1, ylabel1, delwave, yarr, xmin1, xmax1, bins, delwave_median, delwave_stddev]
+                    xmin2 = min(deldy) - (max(deldy)-min(deldy))*0.1
+                    xmax2 = max(deldy) + (max(deldy)-min(deldy))*0.1
+                    xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$ (relative slit position)", "N"
+                    info_fig2 = [xlabel2, ylabel2, deldy, yarr, xmin2, xmax2, bins, deldy_median, deldy_stddev]
+                    mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
+                             histogram=True, fig_name=hist_name)
+
+                    # DELTAS PLOT
+                    title = ""
+                    title1, xlabel1, ylabel1 = r"$\Delta \lambda$", "x (pixels)", "y (pixels)"
+                    info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
+                    title2, xlabel2, ylabel2 = "Relative slit position", "x (pixels)", "y (pixels)"
+                    info_fig2 = [title2, xlabel2, ylabel2, pxrg, pyrg, deldy, deldy_median, deldy_stddev]
+                    #title3, xlabel3, ylabel3 = r"$\Delta$ Flux", "x (pixels)", "y (pixels)"
+                    #info_fig3 = [title3, xlabel3, ylabel3, pxrg, pyrg, delflx, deldy_median, deldy_stddev]
+                    mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2,
+                             show_figs=show_figs, save_figs=save_figs, deltas_plt=True, fig_name=deltas_name)
+
+                else:
+                    print ("compare_wcs.py ran but NO plots were made because show_figs and save_figs were both set to False. \n")
             else:
-                #hist_name, deltas_name = None, None
-                hist_name = infile_name.replace(".fits", "_wcs_histogram.pdf")
-                deltas_name = infile_name.replace(".fits", "_wcs_Deltas.pdf")
-
-
-            # HISTOGRAM
-            if show_figs or save_figs:
-                title = filt+"   "+grat+"   SLIT="+sltname
-                xmin1 = min(delwave) - (max(delwave)-min(delwave))*0.1
-                xmax1 = max(delwave) + (max(delwave)-min(delwave))*0.1
-                xlabel1, ylabel1 = r"$\lambda_{pipe}$ - $\lambda_{ESA}$ (10$^{-10}$m)", "N"
-                yarr = None
-                bins = 15
-                info_fig1 = [xlabel1, ylabel1, delwave, yarr, xmin1, xmax1, bins, delwave_median, delwave_stddev]
-                xmin2 = min(deldy) - (max(deldy)-min(deldy))*0.1
-                xmax2 = max(deldy) + (max(deldy)-min(deldy))*0.1
-                xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$ (relative slit position)", "N"
-                info_fig2 = [xlabel2, ylabel2, deldy, yarr, xmin2, xmax2, bins, deldy_median, deldy_stddev]
-                mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
-                         histogram=True, fig_name=hist_name)
-
-                # DELTAS PLOT
-                title = ""
-                title1, xlabel1, ylabel1 = r"$\Delta \lambda$", "x (pixels)", "y (pixels)"
-                info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
-                title2, xlabel2, ylabel2 = r"$\Delta$ Flux", "x (pixels)", "y (pixels)"
-                info_fig2 = [title2, xlabel2, ylabel2, pxrg, pyrg, deldy, deldy_median, deldy_stddev]
-                mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
-                         deltas_plt=True, fig_name=deltas_name)
-            else:
-                print ("compare_wcs.py ran but NO plots were made because show_figs and save_figs were both set to False. \n")
-        else:
-            print(" * Delta_wavelength array is emtpy. No plots being made. \n")
+                print("Not making plots because median is NaN.")
 
     return median_diff
 
@@ -416,19 +497,20 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    infile_name = "jwtest1003001_01101_00001_NRS1_uncal_rate_assign_wcs_extract_2d.fits"
-    #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
+    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/Cheryl_test/NRS1/"
+    infile_name = data_dir+"jwdata0010010_11010_0001_NRS1_assign_wcs_extract_2d.fits"
+    esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     # if a specific file needs to be used
-    esa_files_path = pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/V84600003001P0000000002104_39528_JLAB88/V84600003001P0000000002104_39528_JLAB88_trace_SLIT/Trace_SLIT_A_200_1_V84600003001P0000000002104_39528_JLAB88.fits"
+    #esa_files_path = pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/V84600003001P0000000002104_39528_JLAB88/V84600003001P0000000002104_39528_JLAB88_trace_SLIT/Trace_SLIT_A_200_1_V84600003001P0000000002104_39528_JLAB88.fits"
 
     # set the names of the resulting plots
-    hist_name = "FS_jwtest1003001_01101_00001_wcs_histogram.pdf"
-    deltas_name = "FS_jwtest1003001_01101_00001_wcs_deltas.pdf"
+    hist_name = "FS_wcs_histogram.pdf"
+    deltas_name = "FS_wcs_deltas.pdf"
     plot_names = [hist_name, deltas_name]
 
     # Run the principal function of the script
-    median_diff = compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=auxiliary_code_path,
-                              plot_names=plot_names, show_figs=True, save_figs=False, threshold_diff=1.0e-14)
+    median_diff = compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=None, plot_names=None,
+                              show_figs=True, save_figs=False, threshold_diff=1.0e-14)
 
 
 

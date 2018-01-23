@@ -253,9 +253,9 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     print ('sci_ext_list=', sci_ext_list, '\n')
 
     for i, s_ext in enumerate(sci_ext_list):
-        wc_ext = 1+1
-        print("-> opening science extension =", s_ext, "  in ", infile_name)
-        print("   which corresponds to ext:",wc_ext, " of file:", cwc_fname)
+        wc_ext = i+1
+        print("-> opening extension =", wc_ext, "  in ", cwc_fname)
+        print("   which corresponds to science ext:", s_ext, " of file:", infile_name)
         hdr = wchdu[wc_ext].header
 
         # what is the slice of this exposure
@@ -264,7 +264,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         print("working with slice: ", IFUslice)
 
         # for matched spectrum, get the wavelength and Delta_Y values
-        fdata = fits.getdata(cwc_fname, ext=s_ext)
+        fdata = fits.getdata(cwc_fname, ext=wc_ext)
         pwave = fdata[0,:,:] * 1.0e-6
         pdy = fdata[3,:,:]
         pskyx = fdata[1,:,:]
@@ -397,8 +397,13 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             print("\n  deldy:   median =", deldy_median, "   stdev =", deldy_stddev)
 
             # This is the key argument for the assert pytest function
-            if delwave_median <= threshold_diff:
+            if abs(delwave_median) <= threshold_diff:
                 median_diff = True
+            if median_diff:
+                test_result = "PASSED"
+            else:
+                test_result = "FAILED"
+            print (" *** Result of the test: ",test_result)
 
         # PLOTS
         if show_figs or save_figs and (len(delwave) != 0):
@@ -434,7 +439,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             title = ""
             title1, xlabel1, ylabel1 = r"$\Delta \lambda$", "x (pixels)", "y (pixels)"
             info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
-            title2, xlabel2, ylabel2 = r"$\Delta$ Flux", "x (pixels)", "y (pixels)"
+            title2, xlabel2, ylabel2 = "Relative slit position", "x (pixels)", "y (pixels)"
             info_fig2 = [title2, xlabel2, ylabel2, pxrg, pyrg, deldy, deldy_median, deldy_stddev]
             mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
                      deltas_plt=True, fig_name=deltas_name)

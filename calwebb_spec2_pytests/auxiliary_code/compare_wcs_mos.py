@@ -293,7 +293,7 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
         #print("row_str, col_str: ", row_str, col_str)
 
         # get wavelength (convert from microns to m)
-        fdata = wchdu[1].data
+        fdata = wchdu[i].data
         pwave = fdata[0,:,:] * 1.0e-6
         pdy = fdata[3,:,:]
         pmsax = fdata[1,:,:]
@@ -437,8 +437,13 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             print("\n  deldy:   median =", deldy_median, "   stdev =", deldy_stddev)
 
             # This is the key argument for the assert pytest function
-            if delwave_median <= threshold_diff:
+            if abs(delwave_median) <= threshold_diff:
                 median_diff = True
+            if median_diff:
+                test_result = "PASSED"
+            else:
+                test_result = "FAILED"
+            print (" *** Result of the test: ",test_result)
 
         # PLOTS
         if show_figs or save_figs and (len(delwave) != 0):
@@ -466,17 +471,17 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             xmax2 = max(deldy) + (max(deldy)-min(deldy))*0.1
             xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$ (relative slit position)", "N"
             info_fig2 = [xlabel2, ylabel2, deldy, yarr, xmin2, xmax2, bins, deldy_median, deldy_stddev]
-            mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
-                     histogram=True, fig_name=hist_name)
+            #mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
+            #         histogram=True, fig_name=hist_name)
 
             # DELTAS PLOT
             title = ""
             title1, xlabel1, ylabel1 = r"$\Delta \lambda$", "x (pixels)", "y (pixels)"
             info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
-            title2, xlabel2, ylabel2 = r"$\Delta$ Flux", "x (pixels)", "y (pixels)"
+            title2, xlabel2, ylabel2 = "Relative slit position", "x (pixels)", "y (pixels)"
             info_fig2 = [title2, xlabel2, ylabel2, pxrg, pyrg, deldy, deldy_median, deldy_stddev]
-            mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
-                     deltas_plt=True, fig_name=deltas_name)
+            #mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
+            #         deltas_plt=True, fig_name=deltas_name)
 
             # MSA COLOR MAP
             title = "MSA Color Map"
@@ -487,8 +492,8 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
                 arrx.append(emsax[ime[ig_i]])
                 arry.append(emsay[ime[ig_i]])
             info_fig1 = [xlabel, ylabel, arrx, arry, delwave]
-            mk_plots(title, info_fig1=info_fig1, show_figs=show_figs, save_figs=save_figs,
-                     msacolormap=True, fig_name=msacolormap_name)
+            #mk_plots(title, info_fig1=info_fig1, show_figs=show_figs, save_figs=save_figs,
+            #         msacolormap=True, fig_name=msacolormap_name)
         else:
             if not show_figs or not save_figs:
                 print ("NO plots were made because show_figs and save_figs were both set to False. \n")
@@ -506,12 +511,11 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    #infile_name = pipeline_path+"/build7/test_data/MOS_CV3/complete_pipeline_testset/jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs_extract_2d.fits"
-    infile_name = "jwtest1010001_01101_00001_NRS1_rate_short_assign_wcs_extract_2d.fits"
-    #infile_name = "jwtest1010001_01101_00001_NRS1_rate_short.fits"
-    msa_conf_root = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7/test_data/MOS_CV3/complete_pipeline_testset"
-    #esaroot = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7/test_data/ESA_intermediary_products"
-    esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_MOS/"
+    working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/zzzz/first_run_MOSset_prueba/"
+    infile_name = working_dir+"jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs_extract_2d.fits"
+    msa_conf_root = working_dir
+    #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_MOS/"
+    esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/MOS_CV3/ESA_Int_products"
 
     # set the names of the resulting plots
     hist_name = "jwtest1010001_01101_00001_wcs_histogram.pdf"

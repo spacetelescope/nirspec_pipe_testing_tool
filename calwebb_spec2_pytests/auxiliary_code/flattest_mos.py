@@ -1,6 +1,6 @@
-from __future__ import print_function, division
 import numpy as np
 import os
+import subprocess
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -120,8 +120,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     else:
         print ("No filter correspondence. Exiting the program.")
         # This is the key argument for the assert pytest function
-        median_diff = None
-        return median_diff
+        msg = "Test skiped because there is no flat correspondance for the filter in the data: {}".format(filt)
+        median_diff = "skip"
+        return median_diff, msg
 
     sflat_ending = "f_01.01.fits"
     sfile = "_".join((sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending))
@@ -148,17 +149,24 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # get the wavelength values for sflat cube
     sfimwave = np.array([])
+    naxis3 = fits.getval(sfile, "NAXIS3", 1)
     for i in range(0, naxis3):
         if i+1 < 10:
             keyword = "".join(("FLAT_0", str(i+1)))
         else:
             keyword = "".join(("FLAT_", str(i+1)))
-        sfimwave = np.append(sfimwave, fits.getval(sfile, keyword, 1))
+        #print ("S-flat -> using ", keyword)
+        try:
+            sfimwave = np.append(sfimwave, fits.getval(sfile, keyword, 1))
+        except:
+            KeyError
     sfv = fits.getdata(sfile, 5)
 
     # F-Flat
+    #print ("F-flat -> using the following flats: ")
     fflat_ending = "_01.01.fits"
     ffile = fflat_path+"_"+filt+fflat_ending
+    naxis3 = fits.getval(ffile, "NAXIS3", 1)
     #print(" ***** path for f-flat: ", os.path.isfile(ffile))
     ffsq1 = fits.getdata(ffile, 1)
     ffswaveq1 = np.array([])
@@ -169,6 +177,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             suff = str(i)
         t = ("FLAT", suff)
         keyword = "_".join(t)
+        #print ("1. F-flat -> ", keyword)
         ffswaveq1 = np.append(ffswaveq1, fits.getval(ffile, keyword, 1))
     ffserrq1 = fits.getdata(ffile, 2)
     ffsdqq1 = fits.getdata(ffile, 3)
@@ -182,6 +191,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             suff = str(i)
         t = ("FLAT", suff)
         keyword = "_".join(t)
+        #print ("2. F-flat -> using ", keyword)
         ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, 1))
     ffserrq2 = fits.getdata(ffile, 2)
     ffsdqq2 = fits.getdata(ffile, 3)
@@ -195,6 +205,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             suff = str(i)
         t = ("FLAT", suff)
         keyword = "_".join(t)
+        #print ("3. F-flat -> using ", keyword)
         ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, 1))
     ffserrq3 = fits.getdata(ffile, 2)
     ffsdqq3 = fits.getdata(ffile, 3)
@@ -207,6 +218,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         else:
             suff = str(i)
         keyword = "FLAT_"+suff
+        #print ("4. F-flat -> using ", keyword)
         ffswaveq4 = np.append(ffswaveq4, fits.getval(ffile, keyword, 1))
     ffserrq4 = fits.getdata(ffile, 2)
     ffsdqq4 = fits.getdata(ffile, 3)
@@ -276,7 +288,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # loop through the pixels
         print ("looping through the pixels, this may take a little time ... ")
         flat_wave = wave.flatten()
-        for j in range(0, nw-1):
+        for j in range(0, nw):
             if np.isfinite(flat_wave[j]):   # skip if wavelength is NaN
                 # get the pixel indeces
                 jwav = flat_wave[j]
@@ -321,6 +333,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
                 # interpolate over dflat cube
                 iloc = auxfunc.idl_valuelocate(dfwave, flat_wave[j])[0]
+                if dfwave[iloc] > flat_wave[j]:
+                    iloc -= 1
                 ibr = [iloc]
                 if iloc != len(dfwave)-1:
                     ibr.append(iloc+1)
@@ -413,9 +427,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     plt.minorticks_on()
                     plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
                     plt.show()
-                    print ("Exiting the program.")
+                    print ("Exiting the program. Unable to determine mean and std_dev. Test set to be skiped.")
                     plt.close()
-                    exit()
+                    msg = "Unable to determine mean and std_dev. Test set to be skiped."
+                    median_diff = "skip"
+                    return median_diff, msg
 
                 if debug:
                     print ("dfs = ", dfs)
@@ -448,8 +464,13 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
         # This is the key argument for the assert pytest function
         median_diff = False
-        if delfg_median <= float(threshold_diff):
+        if abs(delfg_median) <= float(threshold_diff):
             median_diff = True
+        if median_diff:
+            test_result = "PASSED"
+        else:
+            test_result = "FAILED"
+        print (" *** Result of the test: ",test_result)
 
         # make histogram
         font = {#'family' : 'normal',
@@ -472,9 +493,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         x_stddev = "stddev = {:0.3}".format(delfg_std)
         ax.text(0.7, 0.9, x_median, transform=ax.transAxes, fontsize=fontsize)
         ax.text(0.7, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
-        #print("np.shape(delfg) = ", np.shape(delfg))
-        #_, _, _ = ax.hist(delfg, bins=int((xmax-xmin)/40.), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-        _, _, _ = ax.hist(delfg, bins=30, histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        binwidth = (xmax-xmin)/40.
+        _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        #_, _, _ = ax.hist(delfg, bins=30, histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
         if save_figs:
             if plot_name is None:
@@ -490,19 +511,29 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # create fits file to hold the calculated flat for each slit
         if writefile:
             outfile = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
-            main_hdr = fits.getheader(step_input_filename, 0)
-            #ext_hdr = fits.getheader(msafile, 2)
-            hdu = fits.PrimaryHDU(main_hdr)
-            hdulist = fits.HDUList([hdu, flatcor.reshape(n_p)])
-            hdulist.writeto(outfile)
-            # this is the file to hold the image of pipeline-calculated difference values
             complfile = step_input_filename.replace("2d_flat_field.fits", det+"_flat_comp.fits")
-            hdu = fits.PrimaryHDU(main_hdr)
-            hdulist = fits.HDUList([hdu, delf.reshape(n_p)])
+
+            # check if the files exist and, if they do, replace them
+            if os.path.isfile(outfile):
+                print ("Overwritting file: ", outfile)
+                subprocess.run(["rm", outfile])
+
+            if os.path.isfile(complfile):
+                print ("Overwritting file: ", complfile)
+                subprocess.run(["rm", complfile])
+
+            # this is the file to hold the image of pipeline-calculated difference values
+            hdu = fits.PrimaryHDU(flatcor)
+            hdulist = fits.HDUList([hdu])
+            hdulist.writeto(outfile)
+
+            # this is the file to hold the image of pipeline-calculated difference values
+            hdu = fits.PrimaryHDU(delf)
+            hdulist = fits.HDUList([hdu])
             hdulist.writeto(complfile)
 
-
-    return median_diff
+    msg = ""
+    return median_diff, msg
 
 
 

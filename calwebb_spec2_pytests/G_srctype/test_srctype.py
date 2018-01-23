@@ -49,9 +49,14 @@ def output_hdul(set_inandout_filenames, config):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
                 if not skip_runing_pipe_step:
+                    # get the right configuration files to run the step
+                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
                     # start the timer to compute the step running time
                     start_time = time.time()
-                    result = stp.call(step_input_file)
+                    if local_pipe_cfg_path == "pipe_source_tree_code":
+                        result = stp.call(step_input_file)
+                    else:
+                        result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/srctype.cfg')
                     result.save(step_output_file)
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds

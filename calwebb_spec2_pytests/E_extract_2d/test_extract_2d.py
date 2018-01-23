@@ -7,6 +7,7 @@ import pytest
 import os
 import time
 import subprocess
+from astropy.io import fits
 
 from jwst.extract_2d.extract_2d_step import Extract2dStep
 from .. import core_utils
@@ -58,9 +59,14 @@ def output_hdul(set_inandout_filenames, config):
                 print ("*** Step "+step+" set to True")
                 if os.path.isfile(step_input_file):
                     if not skip_runing_pipe_step:
+                        # get the right configuration files to run the step
+                        local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
                         # start the timer to compute the step running time
                         start_time = time.time()
-                        result = stp.call(step_input_file)
+                        if local_pipe_cfg_path == "pipe_source_tree_code":
+                            result = stp.call(step_input_file)
+                        else:
+                            result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/extract_2d.cfg')
                         result.save(step_output_file)
                         # end the timer to compute the step running time
                         end_time = repr(time.time() - start_time)   # this is in seconds
@@ -101,13 +107,14 @@ def validate_wcs_extract2d(output_hdul):
     show_figs = False
 
     if core_utils.check_FS_true(hdu):
-        # Find what slit the data corresponds to
-        ext, slit = core_utils.find_which_slit(hdu)
-        if (slit is not None) or (slit != "NULL"):
-            median_diff = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path,
-                                                     auxiliary_code_path=None, plot_names=None,
-                                                     show_figs=show_figs, save_figs=save_wcs_plots,
-                                                  threshold_diff=threshold_diff)
+        # Find what slit the data corresponds to and populate the keyword
+        #sltname_list = []
+        #sltname = fits.getval(infile_name, "SLTNAME", extname="SCI")
+        #fits.setval(infile_name, "FXD_SLIT", extname="SCI", value=sltname)
+        median_diff = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path,
+                                                 auxiliary_code_path=None, plot_names=None,
+                                                 show_figs=show_figs, save_figs=save_wcs_plots,
+                                                 threshold_diff=threshold_diff)
 
     elif core_utils.check_MOS_true(hdu):
         median_diff = compare_wcs_mos.compare_wcs(infile_name, msa_conf_root=msa_conf_root,
@@ -117,6 +124,9 @@ def validate_wcs_extract2d(output_hdul):
 
     else:
         pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")
+
+    if median_diff == "skip":
+        pytest.skip("WCS validation quit because there are no extensions that match detector NRS2 in the ESA file.")
 
     return median_diff
 

@@ -94,9 +94,14 @@ def output_hdul(set_inandout_filenames, config):
                     if core_utils.check_MOS_true(inhdu):
                         # copy the MSA shutter configuration file into the pytest directory
                         subprocess.run(["cp", msa_shutter_conf, "."])
+                    # get the right configuration files to run the step
+                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
                     # start the timer to compute the step running time
                     start_time = time.time()
-                    result = stp.call(step_input_file)
+                    if local_pipe_cfg_path == "pipe_source_tree_code":
+                        result = stp.call(step_input_file)
+                    else:
+                        result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/assign_wcs.cfg')
                     result.save(step_output_file)
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
