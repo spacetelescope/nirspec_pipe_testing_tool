@@ -471,8 +471,8 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             xmax2 = max(deldy) + (max(deldy)-min(deldy))*0.1
             xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$ (relative slit position)", "N"
             info_fig2 = [xlabel2, ylabel2, deldy, yarr, xmin2, xmax2, bins, deldy_median, deldy_stddev]
-            #mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
-            #         histogram=True, fig_name=hist_name)
+            mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
+                     histogram=True, fig_name=hist_name)
 
             # DELTAS PLOT
             title = ""
@@ -480,8 +480,8 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
             title2, xlabel2, ylabel2 = "Relative slit position", "x (pixels)", "y (pixels)"
             info_fig2 = [title2, xlabel2, ylabel2, pxrg, pyrg, deldy, deldy_median, deldy_stddev]
-            #mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
-            #         deltas_plt=True, fig_name=deltas_name)
+            mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
+                     deltas_plt=True, fig_name=deltas_name)
 
             # MSA COLOR MAP
             title = "MSA Color Map"
@@ -492,8 +492,8 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
                 arrx.append(emsax[ime[ig_i]])
                 arry.append(emsay[ime[ig_i]])
             info_fig1 = [xlabel, ylabel, arrx, arry, delwave]
-            #mk_plots(title, info_fig1=info_fig1, show_figs=show_figs, save_figs=save_figs,
-            #         msacolormap=True, fig_name=msacolormap_name)
+            mk_plots(title, info_fig1=info_fig1, show_figs=show_figs, save_figs=save_figs,
+                     msacolormap=True, fig_name=msacolormap_name)
         else:
             if not show_figs or not save_figs:
                 print ("NO plots were made because show_figs and save_figs were both set to False. \n")
