@@ -21,6 +21,7 @@ Please use python 3.5
 
 
 1. Create the conda environment for testing and get the configuration files.  
+
 a. Conda environment for this testing campaign:
 - Current testing version is 7.1 for release candidate 0.7.9.0
 - Specific instructions to create the build7.1 environment.
@@ -194,7 +195,7 @@ d. Run the MESA testing tool with the following command:
 ```bash
 test_pipeline --config ./cal_detector1_input.json
 ```
-Please record your progress and place the html report in 
+Please record your progress. Make a PDF export of the html report, and place it in 
 the corresponding column of Table 2 of our testing campaign Confluence page:
 https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
 
@@ -229,6 +230,9 @@ PTT error. Keep updating your testing progress in our testing campaign Confluenc
 https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
 
 Please follow these actions for reporting your progress, depending on the outcome:
+- Do not place the html file in the Confluence page because it will get corrupted. 
+Instead, please create a PDF export from the report and use that file for the 
+Confluence page and for any sharing purposes.
 - If there are no testing tool errors and some of the pytests failed, you can check  
 off the steps and please put that report in Table 2 of the Confluence page.
 - If there are testing tool errors please place your report in the Confluence page, 

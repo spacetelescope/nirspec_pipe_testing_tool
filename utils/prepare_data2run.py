@@ -17,8 +17,36 @@ order to run the create_data script, and then erase it (if asked to) once the jo
 Example usage:
     The code works from the terminal within the pipeline conda environment.
     In the directory where you want to store the uncalibrated data, type:
-        > python /path_to_this_script/prepare_data2run.py blah.fits
+        > python /path_to_this_script/prepare_data2run.py blah.fits MODE
+    where MODE is either FS, IFU, or MOS
 """
+
+
+def modify_PTT_cfg_file(fits_file, mode):
+    """
+    This function reads and modifies the config file with the mode used and the raw data file name.
+    Args:
+        fits_file: string, basename of the raw data file.fits
+        mode: string, either FS, MOS, or IFU
+
+    Returns:
+        nothing
+    """
+    # get script directory and config name
+    utils_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+    PPT_cfg_file = utils_dir.replace("utils", "calwebb_spec2_pytests/cwspec2_config.cfg")
+    with open(PPT_cfg_file, "r") as cfg:
+        cfg_lines = []
+        for line in cfg.readlines():
+            if "mode_used" in line:
+                line = "mode_used = "+mode+"\n"
+            if "raw_data_root_file" in line:
+                line = "raw_data_root_file = "+fits_file+"\n"
+            cfg_lines.append(line)
+    subprocess.run(["rm", PPT_cfg_file])
+    with open(PPT_cfg_file, "w") as cfg:
+        for line in cfg_lines:
+            cfg.write(line)
 
 
 # Get arguments to run script
@@ -91,8 +119,9 @@ if os.path.isfile(uncal_file):
     fits_file = os.path.basename(fits_file)
 
     # add keywords with the name of the raw data fits file name , and mode used
-    fits.setval(uncal_file, 'rawdatrt', 0, value=fits_file, after='OBS_ID')
-    fits.setval(uncal_file, 'modeused', 0, value=mode, after='rawdatrt')
+    #fits.setval(uncal_file, 'rawdatrt', 0, value=fits_file, after='OBS_ID')
+    #fits.setval(uncal_file, 'modeused', 0, value=mode, after='rawdatrt')
+    modify_PTT_cfg_file(fits_file, mode)
 
     # make sure the lamp, filter, and grating values are correctly propagated
     lamp = fits.getval(fits_file, 'CAA_LAMP')

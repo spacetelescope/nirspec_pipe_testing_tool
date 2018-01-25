@@ -29,6 +29,17 @@ Example usage:
 
 ### General functions
 
+def get_modeused_PTT_cfg_file():
+    # get script directory and config name
+    utils_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+    PPT_cfg_file = utils_dir.replace("utils", "calwebb_spec2_pytests/cwspec2_config.cfg")
+    with open(PPT_cfg_file, "r") as cfg:
+        for i, line in enumerate(cfg.readlines()):
+            if "mode_used" in line:
+                mode_used = line.split()[2]
+    return mode_used
+
+
 def read_hdrfits(fits_file_name):
     '''
     This function reads the header fits file and returns a dictionary of the keywords with
@@ -258,6 +269,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         specific_keys_dict: dictionary with specific keys and values that need to be changed
     """
     ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
+    mode_used = get_modeused_PTT_cfg_file()
     specific_keys_dict = {}
     for hkwd_key, hkwd_val in hkwd.keywd_dict.items():
         # start by making the warning for each keyword None and assigning key and val
@@ -318,9 +330,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
-                    if 'MODEUSED' in file_keywd_dict:
-                        print('   * MODEUSED  = ', file_keywd_dict['MODEUSED'])
-                        mode_used = fits.getval(ff, 'MODEUSED', 0)
+                    if mode_used in file_keywd_dict:
+                        print('   * MODE_USED  = ', mode_used)
                         if 'FS' in mode_used:
                             val = 'NRS_FIXEDSLIT'
                         elif 'IFU' in mode_used:
@@ -337,7 +348,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # make sure the MSASTATE keyword is set correctly
                 if key == 'MSASTATE':
-                    mode_used = fits.getval(ff, 'MODEUSED', 0)
+                    #mode_used = fits.getval(ff, 'MODEUSED', 0)
                     if (mode_used == 'FS') or (mode_used == 'IFU'):
                         val = 'PRIMARYPARK_ALLCLOSED'
                         specific_keys_dict[key] = val
@@ -358,6 +369,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 with open(warnings_file_name, "a") as tf:
                     tf.write(warning+'\n')
 
+    """
     # if the keyword is not in the dictionary remove it
     for file_key in file_keywd_dict:
         if (file_key == "RAWDATRT") or (file_key == "MODEUSED"):
@@ -374,6 +386,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         warning = '*** WARNING ***: keyword RAWDATRT not found in file --> impossible to confirm if ESA intermediary product matches data'
         warnings_list.append(warning)
         print (warning)
+    """
 
     print("keywords to be modified: ", list(OrderedDict.fromkeys(missing_keywds)))
     return specific_keys_dict

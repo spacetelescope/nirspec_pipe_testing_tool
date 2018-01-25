@@ -5,7 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from astropy.io import fits
 
-from .. auxiliary_code import auxiliary_functions as auxfunc
+from . import auxiliary_functions as auxfunc
 
 
 """
@@ -155,7 +155,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     else:
         print ("No filter correspondence. Exiting the program.")
         # This is the key argument for the assert pytest function
-        msg = "Test skiped because there is no flat correspondance for the filter in the data: {}".format(filt)
+        msg = "Test skiped because there is no flat correspondence for the filter in the data: {}".format(filt)
         median_diff = "skip"
         return median_diff, msg
 
@@ -199,10 +199,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     wc_file_name = step_input_filename.replace("_flat_field.fits", "_world_coordinates.fits")
     wc_hdulist = fits.open(wc_file_name)
     # loop over the slices and read in the WCS values
+    all_delfg_median = []
+    print ("Looping through the slices... ")
     for ext, _ in enumerate(wc_hdulist):
         ext =+ 1
         slice_id = fits.getval(wc_file_name, "SLIT", 2)
         wc_data = fits.getdata(wc_file_name, ext)
+        print("Working with slice: ", slice_id)
+
         # get the wavelength
         wave = wc_data[0, :, :]
 
@@ -213,17 +217,17 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         n_p = np.shape(wave)
         nx, ny = n_p[1], n_p[0]
         nw = nx * ny
+        print (" subwindow origin:   px0=",px0, "   py0=", py0)
         if debug:
-            print ("subwindow origin:   px0=",px0, "   py0=", py0)
             print ("nw = ", nw)
         delf = np.zeros([nw]) + 999.0
         flatcor = np.zeros([nw]) + 999.0
         sffarr = np.zeros([nw])
 
         # loop through the wavelengths
-        print ("looping through the wavelngth, this may take a little time ... ")
+        print (" looping through the wavelngth, this may take a little time ... ")
         flat_wave = wave.flatten()
-        for j in range(nw-1):
+        for j in range(nw):
             if np.isfinite(flat_wave[j]):   # skip if wavelength is NaN
                 # get the pixel indeces
                 jwav = flat_wave[j]
@@ -264,6 +268,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     #print ("np.shape(dfrqe_wav[iw[0]]) = ", np.shape(dfrqe_wav[iw[0]]))
                     #print ("np.shape(dfrqe_rqe[iw[0]]) = ", np.shape(dfrqe_rqe[iw[0]]))
                     #print ("int_tab=", int_tab)
+                    print ("np.shape(iw) = ", np.shape(iw))
                     print ("dff = ", dff)
 
                 # interpolate over D-flat cube
@@ -289,6 +294,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 sfs = 1.0
                 if sfimdq[pind[0], pind[1]] == 0:
                     sfs = sfim[pind[0], pind[1]]
+
+                if debug:
+                    print ("np.shape(iw) = ", np.shape(iw))
+                    print ("sfs = ", sfs)
+                    print ("sff = ", sff)
 
                 # integrate over f-flat fast vector
                 # reference file blue cutoff is 1 micron, so need to force solution for shorter wavs
@@ -317,16 +327,16 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     flatcor[j] = 1.0   # no correction if no wavelength
 
                 if debug:
-                    print ("pind = ", pind)
-                    print ("jwav = ", jwav)
-                    print ("dfs, dff = ", dfs, dff)
-                    print ("sfs, sff = ", sfs, sff)
+                    print ("np.shape(iw) = ", np.shape(iw))
+                    print ("fff = ", fff)
+                    print ("flatcor[j] = ", flatcor[j])
+                    print ("delf[j] = ", delf[j])
 
                 delfg = delf[np.where((delf != 999.0) & (delf >= -0.1))]   # ignore outliers
                 delfg_median, delfg_std = np.median(delfg), np.std(delfg)
                 if np.isfinite(delfg_median) and np.isfinite(delfg_std):
-                    print ("median and stdev in flat value differences for slice #: ", ext)
-                    print ("median = ", delfg_median, "    stdev =", delfg_std)
+                    print (" median and stdev in flat value differences for slice #: ", ext)
+                    print (" median = ", delfg_median, "    stdev =", delfg_std)
 
                 #print ("   dff =", dff, "    dfs =", dfs, "    sff =", sff, "    sfs =", sfs , "    fff=", fff)
                 #print("flatcor[j] = ", flatcor[j])
@@ -336,11 +346,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 #if not delfg:
                 #    continue
 
-                if debug:
-                    print ("dfs = ", dfs)
-                    print ("sff = ", sff)
-                    print ("sfs = ", sfs)
-
+                #exit()
 
         wc_hdulist.close()
 
@@ -349,7 +355,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if not delfg:
             delfg_median = 999.0
         if np.isfinite(delfg_median) and np.isfinite(delfg_std):
-            print ("median, stdev in flat value differences: ", delfg_median, delfg_std)
+            print (" median, stdev in flat value differences: ", delfg_median, delfg_std)
+        all_delfg_median.append(delfg_median)
 
         #if mk_all_slices_plt:
         #    # create histogram
@@ -358,10 +365,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         #    mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_name)
 
         # make the slice plot
-        if np.isfinite(delfg_median):
+        if np.isfinite(delfg_median) and (len(delfg)!=0):
             if (show_figs) or (save_figs):
                 # create histogram
-                t = (file_basename, det, "IFUflatcomp_hist", repr(ext))
+                t = (file_basename, det, slice_id, "IFUflatcomp_hist")
                 title = ("_".join(t))
                 mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_name)
 
@@ -396,18 +403,21 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             test_result = "PASSED"
         else:
             test_result = "FAILED"
-        print (" *** Result of the test: ",test_result)
+        print (" *** Result of the test: ", test_result)
 
         # if the test is failed exit the script
-        if delfg_median == 999.0:
-            print ("Exiting the code without making plots.")
-            msg = "Unable to determine mean and std_dev. Test set to be skiped."
-            median_diff = "skip"
-            return median_diff, msg
-
+        if (delfg_median == 999.0) or not np.isfinite(delfg_median):
+            if ext != len(wc_hdulist)-1:
+                print ("Unable to determine mean and std_dev. Continuing to next slice...")
+            else:
+                print ("Unable to determine mean and std_dev for the last slice.")
 
 
     msg = ""
+    if all(delfg_median == 999.0 for delfg_median in all_delfg_median):
+        msg = "Something went wrong. Unable to determine mean and std_dev for all slices. Test set to be skiped."
+        median_diff = "skip"
+
     return median_diff, msg
 
 
@@ -419,16 +429,18 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    step_input_filename = "jwtest1010001_01101_00001_NRS1_rate_short_assign_wcs_extract_2d_flat_field.fits"
-    #dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
-    #sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/IFU/nirspec_IFU_sflat"
-    #fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/IFU/nirspec_IFU_fflat"
-    dflatref_path = "nirspec_dflat"
-    sfile_path = "nirspec_IFU_sflat"
-    fflat_path = "nirspec_IFU_fflat"
+    #step_input_filename = "jwtest1010001_01101_00001_NRS1_rate_short_assign_wcs_extract_2d_flat_field.fits"
+    path2data = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part1_JanuaryDeadline/IFU_CV3/G140M_F100LP/pipe_testing_files_and_reports/491_processing"
+    step_input_filename = path2data+"/gain_scale_assign_wcs_flat_field.fits"
+    dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
+    sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/IFU/nirspec_IFU_sflat"
+    fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/IFU/nirspec_IFU_fflat"
+    #dflatref_path = "nirspec_dflat"
+    #sfile_path = "nirspec_IFU_sflat"
+    #fflat_path = "nirspec_IFU_fflat"
 
     # name of the output images
-    writefile = True
+    writefile = False
 
     # set the names of the resulting plots
     plot_name = None#"IFU_flattest_histogram.pdf"
@@ -436,5 +448,5 @@ if __name__ == '__main__':
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
                            fflat_path=fflat_path, writefile=writefile, mk_all_slices_plt=False,
-                           show_figs=True, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
+                           show_figs=True, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-14, debug=True)
 
