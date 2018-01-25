@@ -293,9 +293,10 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         print  ("Pipeline subwindow corner pixel ID: ", px0, py0)
 
         # read in the ESA file using raw data root file name
-        rawdatroot = fits.getval(infile_name, "rawdatrt", 0)
+        #rawdatroot = fits.getval(infile_name, "rawdatrt", 0)
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
         specifics = sltname_list
-        esafile = auxfunc.get_esafile(esa_files_path, rawdatroot, "FS", specifics)
+        esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics)
 
         if not isinstance(esafile, list):
             esafile_list = [esafile]

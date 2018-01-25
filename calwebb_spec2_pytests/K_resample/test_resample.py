@@ -33,6 +33,7 @@ def output_hdul(set_inandout_filenames, config):
     # Only run step if data is not IFU
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
+    print("Is the input file IFU? = ", core_utils.check_IFU_true(inhdu))
     if not core_utils.check_IFU_true(inhdu):
         stp = ResampleStep()
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
@@ -76,7 +77,7 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+". Step set to False in configuration file.")
     else:
-        pytest.skip("Skipping "+step+" because data is IFU data and resample will be done in cube_build.")
+        pytest.skip("Skipping "+step+" because data is IFU data and the resample will be done in cube_build.")
 
 
 

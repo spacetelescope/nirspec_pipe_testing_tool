@@ -74,7 +74,7 @@ def output_hdul(set_inandout_filenames, config):
                     cube_suffix = specific_output_file.split('photom_')[-1].replace('.fits', '')
                     # record info
                     step_completed = True
-                    core_utils.add_completed_steps(txt_name, step, cube_suffix, step_completed, end_time)
+                    core_utils.add_completed_steps(txt_name, step, "_"+cube_suffix, step_completed, end_time)
                     hdul = core_utils.read_hdrfits(specific_output_file, info=False, show_hdr=False)
                     return hdul
                 else:

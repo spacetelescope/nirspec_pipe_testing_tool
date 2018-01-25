@@ -114,7 +114,7 @@ def get_step_inandout_filename(step, initial_input_file, steps_dict):
     step_string_dict["assign_wcs"] = "_assign_wcs"
     step_string_dict["bkg_subtract"] = "_subtract_images"
     step_string_dict["imprint_subtract"] = "_imprint"
-    step_string_dict["msa_flagging"] = "_msa_flag"
+    #step_string_dict["msa_flagging"] = "_msa_flag"
     step_string_dict["extract_2d"] = "_extract_2d"
     step_string_dict["flat_field"] = "_flat_field"
     step_string_dict["straylight"] = "_stray"
@@ -403,7 +403,8 @@ def get_time_to_run_pipeline(True_steps_suffix_map):
         for line in tf.readlines():
             if '#' in line:
                 continue
-            if  "srctype" in line:
+            # this is for "msa_flagging" and "srctype"
+            if len(line.split()) < 4:
                 t=line.split()[2]
             else:
                 t=line.split()[3]

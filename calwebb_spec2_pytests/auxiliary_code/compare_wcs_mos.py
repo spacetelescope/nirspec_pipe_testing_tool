@@ -230,9 +230,7 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
     quad = shutter_info.field("shutter_quadrant")
     row = shutter_info.field("shutter_row")
     col = shutter_info.field("shutter_column")
-    slitlet_id = repr(row[0])+"_"+repr(col[0])
-    print ('pslit=', pslit, "   quad=", quad, "   row=", row, "   col=", col, "   slitlet_id=", slitlet_id)
-    print ('Will use this MSA shutter configuration file: ', metafile)
+    print ('Using this MSA shutter configuration file: ', metafile)
 
     # Run compute_world_coordinates.py in order to produce the necessary file
     # !!! note that the code expects to be in the build environment !!!
@@ -273,8 +271,11 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
     wchdu = fits.open(cwc_fname)
     n_ext = len(wchdu)
     for i in range(1, n_ext):
-        hdr = wchdu[i].header
+        slitlet_id = repr(row[i])+"_"+repr(col[i])
+        print ('pslit=', pslit[i], "   quad=", quad[i], "   row=", row[i], "   col=", col[i], "   slitlet_id=", slitlet_id)
+
         # check that the slitlet is in this exposure
+        hdr = wchdu[i].header
         wcslit = int(hdr["SLIT"])
         ims = np.where(np.array(pslit, dtype=int) == wcslit)
         # get slitlet in this exposure
@@ -320,9 +321,14 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             print  ("py0+npy-1 =", py0+npy-1)
 
         # read in the ESA file using raw data root file name
-        rawdatroot = fits.getval(extract_2d_file, "rawdatrt", 0)
-        specifics = [quad,row, col]
-        esafile = wcsfunc.get_esafile(esa_files_path, rawdatroot, "MOS", specifics)
+        #rawdatroot = fits.getval(extract_2d_file, "rawdatrt", 0)
+        _, raw_data_root_file = wcsfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
+        if len(quad) > 1:
+            q, r, c = [quad[i]], [row[i]], [col[i]]
+        else:
+            q, r, c = quad, row, col
+        specifics = [q, r, c]
+        esafile = wcsfunc.get_esafile(esa_files_path, raw_data_root_file, "MOS", specifics)
 
         esahdulist = fits.open(esafile)
         print ("* ESA file contents ")
@@ -452,9 +458,9 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
                 hist_name, deltas_name, msacolormap_name = plot_names
             else:
                 #hist_name, deltas_name, msacolormap_name = None, None, None
-                hist_name = infile_name.replace(".fits", "_wcs_histogram.pdf")
-                deltas_name = infile_name.replace(".fits", "_wcs_Deltas.pdf")
-                msacolormap_name = infile_name.replace(".fits", "_wcs_MSAcolormap.pdf")
+                hist_name = infile_name.replace(".fits", "_"+slitlet_id+"_wcs_histogram.pdf")
+                deltas_name = infile_name.replace(".fits", "_"+slitlet_id+"_wcs_Deltas.pdf")
+                msacolormap_name = infile_name.replace(".fits", "_"+slitlet_id+"_wcs_MSAcolormap.pdf")
 
 
             # HISTOGRAM

@@ -94,6 +94,19 @@ def do_idl_rebin(a, *args):
     return eval(''.join(evList))
 
 
+def get_modeused_and_rawdatrt_PTT_cfg_file():
+    # get script directory and config name
+    utils_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+    PPT_cfg_file = utils_dir.replace("auxiliary_code", "/cwspec2_config.cfg")
+    with open(PPT_cfg_file, "r") as cfg:
+        for i, line in enumerate(cfg.readlines()):
+            if "mode_used" in line:
+                mode_used = line.split()[2]
+            if "raw_data_root_file" in line:
+                raw_data_root_file = line.split()[2]
+    return mode_used, raw_data_root_file
+
+
 def get_esafile(esa_files_path, rawdatroot, mode, specifics):
     """
     This function gets the ESA file corresponding to the input given.

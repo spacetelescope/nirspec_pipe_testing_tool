@@ -33,7 +33,8 @@ def output_hdul(set_inandout_filenames, config):
     # Only run step if data is MOS
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
-    if core_utils.check_FS_true(inhdu):
+    print ("Is data FS?", core_utils.check_FS_true(inhdu))
+    if not core_utils.check_FS_true(inhdu):
         stp = MSAFlagOpenStep()
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False

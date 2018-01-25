@@ -292,9 +292,10 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             print  ("py0+npy-1 =", py0+npy-1)
 
         # read in the ESA file using raw data root file name
-        rawdatroot = fits.getval(infile_name, "rawdatrt", 0)
+        #rawdatroot = fits.getval(infile_name, "rawdatrt", 0)
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
         specifics = [IFUslice]
-        esafile = auxfunc.get_esafile(esa_files_path, rawdatroot, "IFU", specifics)
+        esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "IFU", specifics)
 
         esahdulist = fits.open(esafile)
         print ("* ESA file contents ")
@@ -412,9 +413,9 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                 hist_name, deltas_name, msacolormap_name = plot_names
             else:
                 #hist_name, deltas_name, msacolormap_name = None, None, None
-                hist_name = infile_name.replace(".fits", "_wcs_histogram.pdf")
-                deltas_name = infile_name.replace(".fits", "_wcs_Deltas.pdf")
-                msacolormap_name = infile_name.replace(".fits", "_wcs_MSAcolormap.pdf")
+                hist_name = infile_name.replace(".fits", "_"+IFUslice+"_wcs_histogram.pdf")
+                deltas_name = infile_name.replace(".fits", "_"+IFUslice+"_wcs_Deltas.pdf")
+                msacolormap_name = infile_name.replace(".fits", "_"+IFUslice+"_wcs_MSAcolormap.pdf")
 
             # HISTOGRAM
             print("\n Making histogram...")
