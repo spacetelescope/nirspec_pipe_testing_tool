@@ -101,6 +101,15 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
         #plt.plot(xarr1, yarr1, linewidth=7)
     plt.minorticks_on()
+    if histogram:
+        ax.xaxis.set_major_locator(MaxNLocator(6))
+        from matplotlib.ticker import FuncFormatter
+        def MyFormatter(x, lim):
+            if x == 0:
+                return 0
+            return '{0}E{1}'.format(round(x/1e-10, 2), -10)
+        majorFormatter = FuncFormatter(MyFormatter)
+        ax.xaxis.set_major_formatter(majorFormatter)
     plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
 
     # FIGURE 2
@@ -346,8 +355,8 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             ex0 = esahdr1["CRVAL1"] - esahdr1["CRPIX1"] + 1
             ey0 = esahdr1["CRVAL2"] - esahdr1["CRPIX2"] + 1
         else:
-            ex0 = 2048.0 - (esahdr1["CRPIX1"] - esahdr1["CRVAL1"] + 1)
-            ey0 = 2048.0 - (esahdr1["CRPIX2"] - esahdr1["CRVAL2"] + 1)
+            ex0 = 2048.0 - (esahdr1["CRPIX1"] - esahdr1["CRVAL1"])
+            ey0 = 2048.0 - (esahdr1["CRPIX2"] - esahdr1["CRVAL2"])
         ex = np.arange(nex) + ex0
         ey = np.arange(ney) + ey0
         print("ESA subwindow corner pixel ID: ", ex0, ey0)
@@ -482,10 +491,13 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                     mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2,
                              show_figs=show_figs, save_figs=save_figs, deltas_plt=True, fig_name=deltas_name)
 
+                    print("Done.")
+
                 else:
                     print ("compare_wcs.py ran but NO plots were made because show_figs and save_figs were both set to False. \n")
             else:
                 print("Not making plots because median is NaN.")
+
 
     return median_diff
 
@@ -511,7 +523,7 @@ if __name__ == '__main__':
 
     # Run the principal function of the script
     median_diff = compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=None, plot_names=None,
-                              show_figs=True, save_figs=False, threshold_diff=1.0e-14)
+                              show_figs=True, save_figs=False, threshold_diff=1.0e-14, debug=False)
 
 
 

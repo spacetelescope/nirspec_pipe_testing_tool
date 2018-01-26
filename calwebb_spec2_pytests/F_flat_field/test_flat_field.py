@@ -146,6 +146,8 @@ def validate_flat_field(output_hdul):
 
     if median_diff == "skip":
         pytest.skip(msg)
+    else:
+        print(msg)
 
     return median_diff
 

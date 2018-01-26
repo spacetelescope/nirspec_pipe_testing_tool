@@ -16,6 +16,9 @@ strun jwst.background.BackgroundStep fits_file.fits background_file.fits
 # Imprint Subtract (IFU or MSA data)
 strun jwst.imprint.ImprintStep fits_file.fits msa_imprint_file.fits
 
+# MSA flag open
+strun jwst.msaflagopen.MSAFlagOpenStep fits_file.fits
+
 # Extract 2d
 strun jwst.extract_2d.Extract2dStep fits_file.fits
 

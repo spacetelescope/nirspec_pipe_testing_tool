@@ -100,10 +100,11 @@ def get_modeused_and_rawdatrt_PTT_cfg_file():
     PPT_cfg_file = utils_dir.replace("auxiliary_code", "/cwspec2_config.cfg")
     with open(PPT_cfg_file, "r") as cfg:
         for i, line in enumerate(cfg.readlines()):
-            if "mode_used" in line:
-                mode_used = line.split()[2]
-            if "raw_data_root_file" in line:
-                raw_data_root_file = line.split()[2]
+            if "#" not in line:
+                if "mode_used" in line:
+                    mode_used = line.split()[2]
+                if "raw_data_root_file" in line:
+                    raw_data_root_file = line.split()[2]
     return mode_used, raw_data_root_file
 
 
@@ -127,18 +128,19 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
         # get the right esa file according to the mode
         esafile_basename = "No match found for esafile"
         if "MOS" in mode:
-            quad,row, col = specifics
+            quad, row, col = specifics
             # add a 0 if necessary for convention purposes
             if col < 99:
-                col = "0"+str(col[0])
+                col = "0"+repr(col)
             else:
-                col = str(col[0])
+                col = repr(col)
             if row < 99:
-                row = "0"+str(row[0])
+                row = "0"+repr(row)
             else:
-                row = str(row[0])
+                row = repr(row)
             # to match current ESA intermediary files naming convention
-            esafile_basename = "Trace_MOS_"+str(quad[0])+"_"+row+"_"+col+"_"+jlab88_dir+".fits"
+            esafile_basename = "Trace_MOS_"+repr(quad)+"_"+row+"_"+col+"_"+jlab88_dir+".fits"
+            print ("esafile_basename = ", esafile_basename)
         if "SLIT" in mode:
             sltname_list = specifics
             esafiles = []
@@ -281,6 +283,8 @@ def idl_valuelocate(arr, vals):
                 i =-1
             """
             idx_list.append(i)
+        else:
+            idx_list.append(-1)
     #print ("v, i, arr[i] : ", v, i, arr[i])
     return idx_list
 

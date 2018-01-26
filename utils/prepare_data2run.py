@@ -38,10 +38,11 @@ def modify_PTT_cfg_file(fits_file, mode):
     with open(PPT_cfg_file, "r") as cfg:
         cfg_lines = []
         for line in cfg.readlines():
-            if "mode_used" in line:
-                line = "mode_used = "+mode+"\n"
-            if "raw_data_root_file" in line:
-                line = "raw_data_root_file = "+fits_file+"\n"
+            if "#" not in line:
+                if "mode_used" in line:
+                    line = "mode_used = "+mode+"\n"
+                if "raw_data_root_file" in line:
+                    line = "raw_data_root_file = "+fits_file+"\n"
             cfg_lines.append(line)
     subprocess.run(["rm", PPT_cfg_file])
     with open(PPT_cfg_file, "w") as cfg:

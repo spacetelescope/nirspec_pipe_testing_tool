@@ -96,6 +96,15 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
             #plt.plot(xarr1, yarr1, linewidth=7)
         plt.minorticks_on()
+        if histogram:
+            ax.xaxis.set_major_locator(MaxNLocator(6))
+            from matplotlib.ticker import FuncFormatter
+            def MyFormatter(x, lim):
+                if x == 0:
+                    return 0
+                return '{0}E{1}'.format(round(x/1e-10, 2), -10)
+            majorFormatter = FuncFormatter(MyFormatter)
+            ax.xaxis.set_major_formatter(majorFormatter)
         plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
 
         # FIGURE 2
@@ -230,7 +239,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
 
     # compute world coordinates with Nadia's script
     print ("running compute_world_coordinates.py script...")
-    #cwc.ifu_coords(infile_name)
+    cwc.ifu_coords(infile_name)
     print (" ... done.")
 
     # The world coordinate file was created but it needs to be renamed
@@ -457,6 +466,9 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             info_fig1 = [xlabel, ylabel, arrx, arry, delwave]
             mk_plots(title, info_fig1=info_fig1, show_figs=show_figs, save_figs=save_figs,
                      msacolormap=True, fig_name=msacolormap_name)
+
+            print("Done.")
+
         else:
             if not show_figs or not save_figs:
                 print ("NO plots were made because show_figs and save_figs were both set to False. \n")
@@ -485,4 +497,4 @@ if __name__ == '__main__':
 
     # Run the principal function of the script
     median_diff = compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=auxiliary_code_path,
-                              plot_names=plot_names, show_figs=True, save_figs=False, threshold_diff=1.0e-14)
+                              plot_names=plot_names, show_figs=True, save_figs=False, threshold_diff=1.0e-14, debug=False)
