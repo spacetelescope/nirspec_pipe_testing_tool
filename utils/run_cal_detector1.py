@@ -44,7 +44,8 @@ def get_caldet1cfg_and_workingdir():
     calwebb_detector1_cfg = os.path.join(pipe_testing_tool_path, "utils/calwebb_detector1.cfg")
     working_dir = config.get("calwebb_spec2_input_file", "working_directory")
     mode_used = config.get("calwebb_spec2_input_file", "mode_used")
-    return calwebb_detector1_cfg, working_dir, mode_used
+    raw_data_root_file = config.get("calwebb_spec2_input_file", "raw_data_root_file")
+    return calwebb_detector1_cfg, working_dir, mode_used, raw_data_root_file
 
 
 
@@ -66,7 +67,7 @@ fits_input_uncal_file = args.fits_input_uncal_file
 step_by_step = args.step_by_step
 
 # Get the calwebb_detector1.cfg file
-calwebb_detector1_cfg, working_dir, mode_used = get_caldet1cfg_and_workingdir()
+calwebb_detector1_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
 print ("Using this configuration file: ", calwebb_detector1_cfg)
 
 # create the text file to record the names of the output files and the time the pipeline took to run
@@ -83,7 +84,7 @@ output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbia
                 "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits", final_out]
 
 # Get and save the value of the raw data root name to add at the end of calwebb_detector1
-rawdatrt = fits.getval(fits_input_uncal_file, 'rawdatrt', 0)
+#rawdatrt = fits.getval(fits_input_uncal_file, 'rawdatrt', 0)
 
 if not step_by_step:
     # start the timer to compute the step running time
@@ -176,10 +177,10 @@ with open(txt_outputs_summary, "a") as tf:
 print ("\n ** Calwebb_detector 1 took "+repr(tot_time_min)+" minutes to complete **")
 
 # add a keyword with the name of the raw data fits file name
-fits.setval(final_out, 'rawdatrt', 0, value=rawdatrt, after='OBS_ID')
+#fits.setval(final_out, 'rawdatrt', 0, value=rawdatrt, after='OBS_ID')
 
 # add a keyword with the mode used for the data set
-fits.setval(final_out, 'modeused', 0, value=mode_used, after='rawdatrt')
+#fits.setval(final_out, 'modeused', 0, value=mode_used, after='rawdatrt')
 
 # Move fits products to working dir
 fits_list = glob("*.fits")

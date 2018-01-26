@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
 
-from .. auxiliary_code import auxiliary_functions as auxfunc
+from . import auxiliary_functions as auxfunc
 
 
 """
@@ -227,6 +227,18 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # go through each pixel in the test data
     wc_file_name = step_input_filename.replace("_flat_field.fits", "_world_coordinates.fits")
     wc_hdulist = fits.open(wc_file_name)
+
+    if writefile:
+        # create the fits list to hold the image of pipeline-calculated difference values
+        hdu0 = fits.PrimaryHDU()
+        outfile = fits.HDUList()
+        outfile.append(hdu0)
+
+        # create the fits list to hold the image of pipeline-calculated difference values
+        hdu0 = fits.PrimaryHDU()
+        complfile = fits.HDUList()
+        complfile.append(hdu0)
+
     # loop over the 2D subwindows and read in the WCS values
     for i, _ in enumerate(wc_hdulist):
         ext = i+1
@@ -262,6 +274,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         quad = slitlet_info.field("SHUTTER_QUADRANT")[im]
         row = slitlet_info.field("SHUTTER_ROW")[im]
         col = slitlet_info.field("SHUTTER_COLUMN")[im]
+        slitlet_id = repr(row)+"_"+repr(col)
+        print ('sltid=', sltid, "   quad=", quad, "   row=", row, "   col=", col, "   slitlet_id=", slitlet_id)
 
         # get the relevant F-flat reference data
         if quad == 1:
@@ -495,12 +509,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         ax.text(0.7, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
         binwidth = (xmax-xmin)/40.
         _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-        #_, _, _ = ax.hist(delfg, bins=30, histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
         if save_figs:
-            if plot_name is None:
-                file_basename = step_input_filename.replace(".fits", "")
-                plot_name = file_basename+"_MOS_flattest_histogram.pdf"
+            #if plot_name is None:
+            file_basename = step_input_filename.replace(".fits", "")
+            plot_name = file_basename+"_"+slitlet_id+"_MOS_flattest_histogram.pdf"
             plt.savefig(plot_name)
             print ('\n Plot saved: ', plot_name)
         if show_figs:
@@ -510,27 +523,24 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
         # create fits file to hold the calculated flat for each slit
         if writefile:
-            outfile = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
-            complfile = step_input_filename.replace("2d_flat_field.fits", det+"_flat_comp.fits")
-
-            # check if the files exist and, if they do, replace them
-            if os.path.isfile(outfile):
-                print ("Overwritting file: ", outfile)
-                subprocess.run(["rm", outfile])
-
-            if os.path.isfile(complfile):
-                print ("Overwritting file: ", complfile)
-                subprocess.run(["rm", complfile])
+            # this is the file to hold the image of pipeline-calculated difference values
+            outfile_ext = fits.ImageHDU(flatcor, name=slitlet_id)
+            outfile.append(outfile_ext)
 
             # this is the file to hold the image of pipeline-calculated difference values
-            hdu = fits.PrimaryHDU(flatcor)
-            hdulist = fits.HDUList([hdu])
-            hdulist.writeto(outfile)
+            complfile_ext = fits.ImageHDU(delf, name=slitlet_id)
+            complfile.append(complfile_ext)
 
-            # this is the file to hold the image of pipeline-calculated difference values
-            hdu = fits.PrimaryHDU(delf)
-            hdulist = fits.HDUList([hdu])
-            hdulist.writeto(complfile)
+
+    if writefile:
+        outfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
+        complfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_comp.fits")
+
+        # this is the file to hold the image of pipeline-calculated difference values
+        outfile.writeto(outfile_name, overwrite=True)
+
+        # this is the file to hold the image of pipeline-calculated difference values
+        complfile.writeto(complfile_name, overwrite=True)
 
     msg = ""
     return median_diff, msg
@@ -544,23 +554,24 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    step_input_filename = "jwtest1010001_01101_00001_NRS1_rate_short_assign_wcs_extract_2d_flat_field.fits"
+    working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/zzzz/first_run_MOSset_prueba/"
+    step_input_filename = working_dir+"jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs_extract_2d_flat_field.fits"
     msa_conf_root = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7/test_data/MOS_CV3/complete_pipeline_testset"
-    #dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
-    #sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/MOS/nirspec_MOS_sflat"
-    #fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/MOS/nirspec_MOS_fflat"
-    dflatref_path = "nirspec_dflat"
-    sfile_path = "nirspec_MOS_sflat"
-    fflat_path = "nirspec_MOS_fflat"
+    dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
+    sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/MOS/nirspec_MOS_sflat"
+    fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/MOS/nirspec_MOS_fflat"
+    #dflatref_path = "nirspec_dflat"
+    #sfile_path = "nirspec_MOS_sflat"
+    #fflat_path = "nirspec_MOS_fflat"
 
     # name of the output images
     writefile = True
 
     # set the names of the resulting plots
-    plot_name = "jwtest1010001_01101_00001_MOS_flattest_histogram.pdf"
+    plot_name = None#"jwtest1010001_01101_00001_MOS_flattest_histogram.pdf"
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
                            fflat_path=fflat_path, msa_conf_root=msa_conf_root, writefile=writefile,
-                           show_figs=True, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
+                           show_figs=False, save_figs=True, plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
 

@@ -94,6 +94,15 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
             #plt.plot(xarr1, yarr1, linewidth=7)
         plt.minorticks_on()
+        if histogram:
+            ax.xaxis.set_major_locator(MaxNLocator(6))
+            from matplotlib.ticker import FuncFormatter
+            def MyFormatter(x, lim):
+                if x == 0:
+                    return 0
+                return '{0}E{1}'.format(round(x/1e-10, 2), -10)
+            majorFormatter = FuncFormatter(MyFormatter)
+            ax.xaxis.set_major_formatter(majorFormatter)
         plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
 
         # FIGURE 2
@@ -271,8 +280,9 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
     wchdu = fits.open(cwc_fname)
     n_ext = len(wchdu)
     for i in range(1, n_ext):
-        slitlet_id = repr(row[i])+"_"+repr(col[i])
-        print ('pslit=', pslit[i], "   quad=", quad[i], "   row=", row[i], "   col=", col[i], "   slitlet_id=", slitlet_id)
+        slitlet_idx = i-1
+        slitlet_id = repr(row[slitlet_idx])+"_"+repr(col[slitlet_idx])
+        print ('pslit=', pslit, "   quad=", quad, "   row=", row, "   col=", col, "   slitlet_id=", slitlet_id)
 
         # check that the slitlet is in this exposure
         hdr = wchdu[i].header
@@ -292,6 +302,8 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             elif len(col_str) == 2:
                 col_str = "0"+col_str
         #print("row_str, col_str: ", row_str, col_str)
+        #slitlet_id = repr(quad[ims])+"_"+row_str+col_str
+        #print ("Slitlet name: ", slitlet_id)
 
         # get wavelength (convert from microns to m)
         fdata = wchdu[i].data
@@ -323,10 +335,8 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
         # read in the ESA file using raw data root file name
         #rawdatroot = fits.getval(extract_2d_file, "rawdatrt", 0)
         _, raw_data_root_file = wcsfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
-        if len(quad) > 1:
-            q, r, c = [quad[i]], [row[i]], [col[i]]
-        else:
-            q, r, c = quad, row, col
+        print("Using this raw data file to find the corresponding ESA file: ", raw_data_root_file)
+        q, r, c = quad[slitlet_idx], row[slitlet_idx], col[slitlet_idx]
         specifics = [q, r, c]
         esafile = wcsfunc.get_esafile(esa_files_path, raw_data_root_file, "MOS", specifics)
 
@@ -500,6 +510,9 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             info_fig1 = [xlabel, ylabel, arrx, arry, delwave]
             mk_plots(title, info_fig1=info_fig1, show_figs=show_figs, save_figs=save_figs,
                      msacolormap=True, fig_name=msacolormap_name)
+
+            print("Done.")
+
         else:
             if not show_figs or not save_figs:
                 print ("NO plots were made because show_figs and save_figs were both set to False. \n")
@@ -522,14 +535,15 @@ if __name__ == '__main__':
     msa_conf_root = working_dir
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_MOS/"
     esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/MOS_CV3/ESA_Int_products"
+    #raw_data_root_file = NRSV96215001001P0000000002103_1_491_SE_2016-01-24T01h25m07.cts.fits
 
     # set the names of the resulting plots
     hist_name = "jwtest1010001_01101_00001_wcs_histogram.pdf"
     deltas_name = "jwtest1010001_01101_00001_wcs_deltas.pdf"
     msacolormap_name = "jwtest1010001_01101_00001_wcs_msacolormap.pdf"
-    plot_names = [hist_name, deltas_name, msacolormap_name]
+    plot_names = None#[hist_name, deltas_name, msacolormap_name]
 
     # Run the principal function of the script
     median_diff = compare_wcs(infile_name, msa_conf_root=msa_conf_root, esa_files_path=esa_files_path,
                               auxiliary_code_path=auxiliary_code_path, plot_names=plot_names,
-                              show_figs=True, save_figs=False, threshold_diff=1.0e-14)
+                              show_figs=False, save_figs=True, threshold_diff=1.0e-14)

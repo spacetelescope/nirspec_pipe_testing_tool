@@ -177,6 +177,18 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # now go through each pixel in the test data
     wc_file_name = step_input_filename.replace("_flat_field.fits", "_world_coordinates.fits")
     wc_hdulist = fits.open(wc_file_name)
+
+    if writefile:
+        # create the fits list to hold the image of pipeline-calculated difference values
+        hdu0 = fits.PrimaryHDU()
+        outfile = fits.HDUList()
+        outfile.append(hdu0)
+
+        # create the fits list to hold the image of pipeline-calculated difference values
+        hdu0 = fits.PrimaryHDU()
+        complfile = fits.HDUList()
+        complfile.append(hdu0)
+
     # loop over the slits
     print ("Now looping through the slits. This may take a while... ")
     for i, _ in enumerate(wc_hdulist):
@@ -401,14 +413,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             ax.text(0.65, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
             binwidth = (xmax-xmin)/40.
             _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-            #_, _, _ = ax.hist(delfg, bins=30, histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
             if save_figs:
-                if plot_name is None:
-                    file_basename = step_input_filename.replace(".fits", "")
-                    t = (file_basename, "FS_flattest_"+slit_id+"histogram.pdf")
-                    plot_name = "_".join(t)
-                plt.savefig(plot_name)
+                #if plot_name is None:
+                file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
+                file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
+                t = (file_basename, "FS_flattest_"+slit_id+"_histogram.pdf")
+                plot_name = "_".join(t)
+                plt.savefig("/".join((file_path, plot_name)))
                 print ('\n Plot saved: ', plot_name)
             if show_figs:
                 plt.show()
@@ -421,27 +433,27 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if writefile:
             print("Saving the fits files with the calculated flat for each slit...")
 
-            outfile = step_input_filename.replace("2d_flat_field.fits", det+"_"+slit_id+"_flat_calc.fits")
-            complfile = step_input_filename.replace("2d_flat_field.fits", det+"_"+slit_id+"_flat_comp.fits")
-            # check if the files exist and, if they do, replace them
-            if os.path.isfile(outfile):
-                print ("Overwritting file: ", outfile)
-                subprocess.run(["rm", outfile])
-            if os.path.isfile(complfile):
-                print ("Overwritting file: ", complfile)
-                subprocess.run(["rm", complfile])
+            # this is the file to hold the image of pipeline-calculated difference values
+            outfile_ext = fits.ImageHDU(flatcor, name=slit_id)
+            outfile.append(outfile_ext)
 
             # this is the file to hold the image of pipeline-calculated difference values
-            hdu = fits.PrimaryHDU(flatcor)
-            hdulist = fits.HDUList([hdu])
-            hdulist.writeto(outfile)
+            complfile_ext = fits.ImageHDU(delf, name=slit_id)
+            complfile.append(complfile_ext)
 
-            # this is the file to hold the image of pipeline-calculated difference values
-            hdu = fits.PrimaryHDU(delf)
-            hdulist = fits.HDUList([hdu])
-            hdulist.writeto(complfile)
 
     wc_hdulist.close()
+
+    if writefile:
+        outfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
+        complfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_comp.fits")
+
+        # this is the file to hold the image of pipeline-calculated difference values
+        outfile.writeto(outfile_name, overwrite=True)
+
+        # this is the file to hold the image of pipeline-calculated difference values
+        complfile.writeto(complfile_name, overwrite=True)
+
     msg = ""
     return median_diff, msg
 
@@ -464,13 +476,13 @@ if __name__ == '__main__':
     #fflat_path = "nirspec_FS_fflat"
 
     # name of the output images
-    writefile = False
+    writefile = True
 
     # set the names of the resulting plots
-    plot_name = "FS_flattest_histogram.pdf"
+    plot_name = None#"FS_flattest_histogram.pdf"
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                           fflat_path=fflat_path, writefile=writefile, show_figs=True, save_figs=False,
+                           fflat_path=fflat_path, writefile=writefile, show_figs=False, save_figs=True,
                            plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
 
