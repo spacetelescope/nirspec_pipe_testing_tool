@@ -126,7 +126,16 @@ if os.path.isfile(uncal_file):
 
     # make sure the lamp, filter, and grating values are correctly propagated
     lamp = fits.getval(fits_file, 'CAA_LAMP')
-    if 'LINE1' in lamp:
+    if "NO_LAMP" in lamp:
+        try:
+            filt = fits.getval(fits_file, "FWA_POS")
+        except:
+            print (" *** Unable to determine what was the FILTER used...  :(  ")
+            print (" The FILTER keyword has to be set up manually in order for the pipeline to be able to process data.")
+            filt = ""
+            KeyError
+
+    elif 'LINE1' in lamp:
         filt = 'F100LP'
     elif 'LINE2' in lamp:
         filt = 'F170LP'

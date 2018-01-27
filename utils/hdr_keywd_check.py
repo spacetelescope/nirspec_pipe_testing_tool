@@ -330,20 +330,15 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
-                    if mode_used in file_keywd_dict:
-                        print('   * MODE_USED  = ', mode_used)
-                        if 'FS' in mode_used:
-                            val = 'NRS_FIXEDSLIT'
-                        elif 'IFU' in mode_used:
-                            val = 'NRS_IFU'
-                        #fits.setval(ff, key, 0, value=val)
-                        elif 'MOS' in mode_used:
-                            val = 'NRS_MSASPEC'
-                        specific_keys_dict[key] = val
-                        missing_keywds.append(key)
-                    else:
-                        warning = '*** WARNING ***: keyword MODEUSED not found in file --> value for EXP_TYPE might not match mode used for data'
-                        warnings_list.append(warning)
+                    print('   * MODE_USED  = ', mode_used)
+                    if 'FS' in mode_used:
+                        val = 'NRS_FIXEDSLIT'
+                    if 'IFU' in mode_used:
+                        val = 'NRS_IFU'
+                    if 'MOS' in mode_used:
+                        val = 'NRS_MSASPEC'
+                    specific_keys_dict[key] = val
+                    missing_keywds.append(key)
                     print('     Setting value of ', key, ' to ', val)
 
                 # make sure the MSASTATE keyword is set correctly
