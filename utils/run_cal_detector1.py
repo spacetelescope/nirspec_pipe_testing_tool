@@ -91,9 +91,10 @@ if not step_by_step:
     start_time = time.time()
     Detector1Pipeline.call(fits_input_uncal_file, config_file=calwebb_detector1_cfg)
     # end the timer to compute calwebb_spec2 running time
-    end_time = repr(time.time() - start_time)   # this is in seconds
-    print(" * calwebb_detector1 took "+end_time+" seconds to finish *")
-    total_time = "{:<18} {:<20} {:<20}".format("", "total time = ", end_time)
+    end_time = time.time() - start_time  # this is in seconds
+    print(" * calwebb_detector1 took "+repr(end_time)+" seconds to finish *")
+    total_time = "{:<18} {:<20} {:<20}".format("", "total time = ", repr(end_time))
+    tot_time_min = round((end_time/60.0), 2)
     for outnm in output_names:
         line2write = "{:<18} {:<20} {:<20}".format(outnm.replace(".fits", ""), outnm, "")
         with open(txt_outputs_summary, "a") as tf:
