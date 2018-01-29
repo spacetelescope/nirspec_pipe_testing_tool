@@ -258,18 +258,25 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
 
     # loop over the slits
     wchdu = fits.open(cwc_fname)
+    slices = len(wchdu)
     sci_ext_list = auxfunc.get_sci_extensions(infile_name)
     print ('sci_ext_list=', sci_ext_list, '\n')
 
-    for i, s_ext in enumerate(sci_ext_list):
-        wc_ext = i+1
-        print("-> opening extension =", wc_ext, "  in ", cwc_fname)
-        print("   which corresponds to science ext:", s_ext, " of file:", infile_name)
-        hdr = wchdu[wc_ext].header
+    for wc_ext in range(1, slices):
+        try:
+            print("-> opening extension =", wc_ext, "  in ", cwc_fname)
+            hdr = wchdu[wc_ext].header
+        except:
+            IndexError
+            break
 
         # what is the slice of this exposure
         pslit = hdr["SLIT"].replace("SLIT_", "")
-        IFUslice = "0"+pslit
+        if float(pslit) < 10.0:
+            IFUslice = "0"+pslit
+        else:
+            IFUslice = pslit
+
         print("working with slice: ", IFUslice)
 
         # for matched spectrum, get the wavelength and Delta_Y values
@@ -486,15 +493,17 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    infile_name = "jwtest1010001_01101_00001_NRS1_rate_short_assign_wcs_extract_2d.fits"
-    esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_IFU/"
+    working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part1_JanuaryDeadline/IFU_CV3/PRISM_CLEAR/pipe_testing_files_and_reports/6007022859_491_processing"
+    infile_name = working_dir+"/gain_scale_assign_wcs.fits"
+    #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_IFU/"
+    esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/IFU_CV3/ESA_Int_products"
 
     # set the names of the resulting plots
     hist_name = infile_name.replace("fits", "")+"_wcs_histogram.pdf"
     deltas_name = infile_name.replace("fits", "")+"_wcs_deltas.pdf"
     msacolormap_name = infile_name.replace("fits", "")+"_wcs_msacolormap.pdf"
-    plot_names = [hist_name, deltas_name, msacolormap_name]
+    plot_names = None #[hist_name, deltas_name, msacolormap_name]
 
     # Run the principal function of the script
     median_diff = compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=auxiliary_code_path,
-                              plot_names=plot_names, show_figs=True, save_figs=False, threshold_diff=1.0e-14, debug=False)
+                              plot_names=plot_names, show_figs=False, save_figs=True, threshold_diff=1.0e-14, debug=False)

@@ -546,4 +546,4 @@ if __name__ == '__main__':
     # Run the principal function of the script
     median_diff = compare_wcs(infile_name, msa_conf_root=msa_conf_root, esa_files_path=esa_files_path,
                               auxiliary_code_path=auxiliary_code_path, plot_names=plot_names,
-                              show_figs=False, save_figs=True, threshold_diff=1.0e-14)
+                              show_figs=False, save_figs=True, threshold_diff=1.0e-14, debug=False)
