@@ -67,12 +67,11 @@ def mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_na
     ax.text(0.7, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
     binwidth = (xmax-xmin)/40.
     _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-    #_, _, _ = ax.hist(delfg, bins=30, histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
     if save_figs:
-        if plot_name is None:
-            t = (title, ".pdf")
-            plot_name = "".join(t)
+        #if plot_name is None:
+        t = (title, ".pdf")
+        plot_name = "".join(t)
         plt.savefig(plot_name)
         print ('\n Plot saved: ', plot_name)
     if show_figs:
@@ -223,8 +222,13 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     all_delfg_median, all_test_result = [], []
     print ("Looping through the slices... ")
     n_ext = len(wc_hdulist)
-    for ext in range(1, n_ext):
-        slice_id = fits.getval(wc_file_name, "SLIT", ext)
+    for ext in range(n_ext):
+        ext += 1
+        try:
+            slice_id = fits.getval(wc_file_name, "SLIT", ext)
+        except:
+            IndexError
+            break
         wc_data = fits.getdata(wc_file_name, ext)
         print("Working with slice: ", slice_id)
 
@@ -471,8 +475,9 @@ if __name__ == '__main__':
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
     #step_input_filename = "jwtest1010001_01101_00001_NRS1_rate_short_assign_wcs_extract_2d_flat_field.fits"
-    path2data = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part1_JanuaryDeadline/IFU_CV3/G140M_F100LP/pipe_testing_files_and_reports/491_processing"
+    path2data = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part1_JanuaryDeadline/IFU_CV3/PRISM_CLEAR/pipe_testing_files_and_reports/6007022859_491_processing"
     step_input_filename = path2data+"/gain_scale_assign_wcs_flat_field.fits"
+
     dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
     sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/IFU/nirspec_IFU_sflat"
     fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/IFU/nirspec_IFU_fflat"
@@ -489,5 +494,5 @@ if __name__ == '__main__':
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
                            fflat_path=fflat_path, writefile=writefile, mk_all_slices_plt=True,
-                           show_figs=True, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
+                           show_figs=False, save_figs=True, plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
 
