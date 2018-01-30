@@ -77,5 +77,5 @@ def output_hdul(set_inandout_filenames, config):
 # Unit tests
 
 def test_s_srctype_exists(output_hdul):
-    assert srctype_utils.s_srctype_exists(output_hdul), "The keyword SRCTYPE was not added to the header --> Pathloss step was not completed."
+    assert srctype_utils.s_srctype_exists(output_hdul), "The keyword SRCTYPE was not added to the header --> Srctype step was not completed."
 
