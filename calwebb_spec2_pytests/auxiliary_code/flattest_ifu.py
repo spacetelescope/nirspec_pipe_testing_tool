@@ -389,9 +389,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if np.isfinite(delfg_median) and (len(delfg)!=0):
             if (show_figs) or (save_figs):
                 # create histogram
-                t = (file_basename, det, slice_id, "IFUflatcomp_histogram.pdf")
+                t = (file_basename, det, slice_id, "IFUflatcomp_histogram")
                 title = ("_".join(t))
-                plot_name = "".join((file_path, title))
+                plot_name = "".join((file_path, title+".pdf"))
                 mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_name=plot_name)
 
         if writefile:
