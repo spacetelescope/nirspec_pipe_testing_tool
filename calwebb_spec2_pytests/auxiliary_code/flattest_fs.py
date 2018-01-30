@@ -1,5 +1,4 @@
 import os
-import subprocess
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -179,7 +178,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     wc_hdulist = fits.open(wc_file_name)
 
     if writefile:
-        # create the fits list to hold the image of pipeline-calculated difference values
+        # create the fits list to hold the calculated flat values for each slit
         hdu0 = fits.PrimaryHDU()
         outfile = fits.HDUList()
         outfile.append(hdu0)
@@ -411,6 +410,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             x_stddev = "stddev = {:0.3}".format(delfg_std)
             ax.text(0.65, 0.9, x_median, transform=ax.transAxes, fontsize=fontsize)
             ax.text(0.65, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
+            plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
             binwidth = (xmax-xmin)/40.
             _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
@@ -448,12 +448,20 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         outfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
         complfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_comp.fits")
 
-        # this is the file to hold the image of pipeline-calculated difference values
+        # create the fits list to hold the calculated flat values for each slit
         outfile.writeto(outfile_name, overwrite=True)
 
         # this is the file to hold the image of pipeline-calculated difference values
         complfile.writeto(complfile_name, overwrite=True)
 
+        print("Fits file with flat values of each slice saved as: ")
+        print(outfile_name)
+
+        print("Fits file with image of pipeline - calculated saved as: ")
+        print(complfile_name)
+
+
+    print("Done. ")
     msg = ""
     return median_diff, msg
 

@@ -8,7 +8,7 @@ import os
 import time
 import subprocess
 
-from jwst.resample.resample_step import ResampleStep
+from jwst.resample import ResampleSpecStep
 from .. import core_utils
 from . import resample_utils
 
@@ -35,7 +35,7 @@ def output_hdul(set_inandout_filenames, config):
     end_time = '0.0'
     print("Is the input file IFU? = ", core_utils.check_IFU_true(inhdu))
     if not core_utils.check_IFU_true(inhdu):
-        stp = ResampleStep()
+        stp = ResampleSpecStep()
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
         if run_calwebb_spec2:
@@ -61,7 +61,6 @@ def output_hdul(set_inandout_filenames, config):
                             result = stp.call(step_input_file)
                         else:
                             result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/resample_spec.cfg')
-                            #result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/resample.cfg')
                         result.save(step_output_file)
                         # end the timer to compute the step running time
                         end_time = repr(time.time() - start_time)   # this is in seconds
