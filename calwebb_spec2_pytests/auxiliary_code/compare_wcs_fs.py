@@ -456,12 +456,12 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             # PLOTS
             if np.isfinite(delwave_median):
                 print ("Making WCS plots...")
-                if plot_names is not None:
-                    hist_name, deltas_name = plot_names
-                else:
-                    #hist_name, deltas_name = None, None
-                    hist_name = infile_name.replace(".fits", "_"+sltname+"_wcs_histogram.pdf")
-                    deltas_name = infile_name.replace(".fits", "_"+sltname+"_wcs_Deltas.pdf")
+                #if plot_names is not None:
+                #    hist_name, deltas_name = plot_names
+                #else:
+                #    #hist_name, deltas_name = None, None
+                hist_name = infile_name.replace(".fits", "_"+sltname+"_wcs_histogram.pdf")
+                deltas_name = infile_name.replace(".fits", "_"+sltname+"_wcs_Deltas.pdf")
 
 
                 # HISTOGRAM
@@ -511,8 +511,9 @@ if __name__ == '__main__':
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
     data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/Cheryl_test/NRS1/"
-    infile_name = data_dir+"jwdata0010010_11010_0001_NRS1_assign_wcs_extract_2d.fits"
-    esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
+    infile_name = data_dir+"gain_scale_assign_wcs_extract_2d.fits"
+    #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
+    esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
     # if a specific file needs to be used
     #esa_files_path = pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/V84600003001P0000000002104_39528_JLAB88/V84600003001P0000000002104_39528_JLAB88_trace_SLIT/Trace_SLIT_A_200_1_V84600003001P0000000002104_39528_JLAB88.fits"
 
@@ -523,7 +524,7 @@ if __name__ == '__main__':
 
     # Run the principal function of the script
     median_diff = compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=None, plot_names=None,
-                              show_figs=True, save_figs=False, threshold_diff=1.0e-14, debug=False)
+                              show_figs=False, save_figs=True, threshold_diff=1.0e-14, debug=False)
 
 
 

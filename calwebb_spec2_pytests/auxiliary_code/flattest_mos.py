@@ -1,9 +1,7 @@
 import numpy as np
 import os
-import subprocess
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
 
 from . import auxiliary_functions as auxfunc
@@ -302,6 +300,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # loop through the pixels
         print ("looping through the pixels, this may take a little time ... ")
         flat_wave = wave.flatten()
+        wave_shape = np.shape(wave)
         for j in range(0, nw):
             if np.isfinite(flat_wave[j]):   # skip if wavelength is NaN
                 # get the pixel indeces
@@ -507,6 +506,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         x_stddev = "stddev = {:0.3}".format(delfg_std)
         ax.text(0.7, 0.9, x_median, transform=ax.transAxes, fontsize=fontsize)
         ax.text(0.7, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
+        plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
         binwidth = (xmax-xmin)/40.
         _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
@@ -524,11 +524,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # create fits file to hold the calculated flat for each slit
         if writefile:
             # this is the file to hold the image of pipeline-calculated difference values
-            outfile_ext = fits.ImageHDU(flatcor, name=slitlet_id)
+            outfile_ext = fits.ImageHDU(flatcor.reshape(wave_shape), name=slitlet_id)
             outfile.append(outfile_ext)
 
             # this is the file to hold the image of pipeline-calculated difference values
-            complfile_ext = fits.ImageHDU(delf, name=slitlet_id)
+            complfile_ext = fits.ImageHDU(delf.reshape(wave_shape), name=slitlet_id)
             complfile.append(complfile_ext)
 
 
@@ -542,6 +542,13 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # this is the file to hold the image of pipeline-calculated difference values
         complfile.writeto(complfile_name, overwrite=True)
 
+        print("Fits file with flat values of each slice saved as: ")
+        print(outfile_name)
+
+        print("Fits file with image of pipeline - calculated saved as: ")
+        print(complfile_name)
+
+    print("Done.")
     msg = ""
     return median_diff, msg
 
@@ -573,5 +580,5 @@ if __name__ == '__main__':
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
                            fflat_path=fflat_path, msa_conf_root=msa_conf_root, writefile=writefile,
-                           show_figs=False, save_figs=True, plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
+                           show_figs=False, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
 

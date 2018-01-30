@@ -1,12 +1,10 @@
 import numpy as np
 import os
-import subprocess
 import matplotlib
 import matplotlib.pyplot as plt
 from astropy.io import fits
-from glob import glob
 
-from . import auxiliary_functions as auxfunc
+import auxiliary_functions as auxfunc
 
 
 """
@@ -65,13 +63,14 @@ def mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_na
         x_stddev = "stddev = {:0.3}".format(delfg_std)
     ax.text(0.7, 0.9, x_median, transform=ax.transAxes, fontsize=fontsize)
     ax.text(0.7, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
+    plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
     binwidth = (xmax-xmin)/40.
     _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
     if save_figs:
-        #if plot_name is None:
-        t = (title, ".pdf")
-        plot_name = "".join(t)
+        if plot_name is None:
+            t = (title, ".pdf")
+            plot_name = "".join(t)
         plt.savefig(plot_name)
         print ('\n Plot saved: ', plot_name)
     if show_figs:
@@ -208,7 +207,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     wc_hdulist = fits.open(wc_file_name)
 
     if writefile:
-        # create the fits list to hold the image of pipeline-calculated difference values
+        # create the fits list to hold the calculated flat values for each slit
         hdu0 = fits.PrimaryHDU()
         outfile = fits.HDUList()
         outfile.append(hdu0)
@@ -252,6 +251,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # loop through the wavelengths
         print (" looping through the wavelngth, this may take a little time ... ")
         flat_wave = wave.flatten()
+        wave_shape = np.shape(wave)
         for j in range(1, nw):
             if np.isfinite(flat_wave[j]):   # skip if wavelength is NaN
                 # get the pixel indeces
@@ -389,18 +389,18 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if np.isfinite(delfg_median) and (len(delfg)!=0):
             if (show_figs) or (save_figs):
                 # create histogram
-                t = (file_basename, det, slice_id, "IFUflatcomp_hist")
+                t = (file_basename, det, slice_id, "IFUflatcomp_histogram.pdf")
                 title = ("_".join(t))
                 plot_name = "".join((file_path, title))
                 mk_hist(title, delfg, delfg_median, delfg_std, save_figs, show_figs, plot_name=plot_name)
 
         if writefile:
             # this is the file to hold the image of pipeline-calculated difference values
-            outfile_ext = fits.ImageHDU(flatcor, name=slice_id)
+            outfile_ext = fits.ImageHDU(flatcor.reshape(wave_shape), name=slice_id)
             outfile.append(outfile_ext)
 
             # this is the file to hold the image of pipeline-calculated difference values
-            complfile_ext = fits.ImageHDU(delf, name=slice_id)
+            complfile_ext = fits.ImageHDU(delf.reshape(wave_shape), name=slice_id)
             complfile.append(complfile_ext)
 
 
@@ -425,7 +425,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     if mk_all_slices_plt:
         # create histogram
-        t = (file_basename, det, "all_slices_IFU_flatcomp_hist")
+        t = (file_basename, det, "all_slices_IFU_flatcomp_histogram")
         title = ("_".join(t))
         # calculate median of medians and std_dev of medians
         all_delfg_median_arr = np.array(all_delfg_median)
@@ -440,11 +440,17 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         outfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
         complfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_comp.fits")
 
-        # this is the file to hold the image of pipeline-calculated difference values
+        # create the fits list to hold the calculated flat values for each slit
         outfile.writeto(outfile_name, overwrite=True)
 
         # this is the file to hold the image of pipeline-calculated difference values
         complfile.writeto(complfile_name, overwrite=True)
+
+        print("Fits file with flat values of each slice saved as: ")
+        print(outfile_name)
+
+        print("Fits file with image of pipeline - calculated saved as: ")
+        print(complfile_name)
 
 
     if all(delfg_median == 999.0 for delfg_median in all_delfg_median):
@@ -455,13 +461,17 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         msg = "All slices failed the test."
         median_diff = False
 
-    if any(test_result == "PASSED" for test_result in all_test_result):
-        msg = "Some slice(s) passed the test."
-        median_diff = False
+    for test_result in all_test_result:
+        if "PASSED" in test_result:
+            msg = "Some slice(s) passed the test."
+            median_diff = False
+            break
 
     if all(test_result == "PASSED" for test_result in all_test_result):
         msg = "All slices passed the test."
         median_diff = True
+
+    print("Done.")
 
     return median_diff, msg
 

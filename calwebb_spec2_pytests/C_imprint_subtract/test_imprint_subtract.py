@@ -118,9 +118,8 @@ def check_output_is_zero(output_hdul):
             res = stp.call(step_input_file, msa_imprint_structure)
             res.save(result_to_check)
             # check that the end product of image - image is zero
-            r = fits.getdata(step_output_file)
             c = fits.getdata(result_to_check)
-            substraction = sum((r-c).flatten())
+            substraction = sum(c.flatten())
             result = False
             if substraction == 0.0:
                 result = True

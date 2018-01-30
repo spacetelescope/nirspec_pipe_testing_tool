@@ -38,7 +38,7 @@ strun jwst.barshadow.BarShadowStep fits_file.fits
 strun jwst.photom.PhotomStep fits_file.fits
 
 # Resample (FS and MOS data)
-strun jwst.resample.ResampleStep fits_file
+strun jwst.resample.ResampleSpecStep fits_file
 
 # Cube build (only IFU data)
 strun jwst.cube_build.CubeBuildStep fits_file.fits

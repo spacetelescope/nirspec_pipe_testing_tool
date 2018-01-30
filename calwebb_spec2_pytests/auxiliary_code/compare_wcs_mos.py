@@ -316,7 +316,7 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
         px0 = fits.getval(cwc_fname, "CRVAL1", 1)
         py0 = fits.getval(cwc_fname, "CRVAL2", 1)
         #if debug:
-        print ("px0=",px0, "   py0=", py0)
+        print ("subwindow origin:    px0=",px0, "   py0=", py0)
 
         # get the count rates for this spectrum
         counts = fits.getdata(rate_file, 1)
@@ -374,6 +374,7 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
             ey0 = 2049.0 - (esahdr1["CRPIX2"] - esahdr1["CRVAL2"] + 1)
         ex = np.arange(nex) + ex0
         ey = np.arange(ney) + ey0
+        print("ESA subwindow corner pixel ID: ", ex0, ey0)
         if debug:
             print ("ex0 =", ex0)
             print ("ex0+nex-1 =", ex0+nex-1)
