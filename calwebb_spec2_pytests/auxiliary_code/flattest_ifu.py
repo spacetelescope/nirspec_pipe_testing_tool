@@ -4,7 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from astropy.io import fits
 
-import auxiliary_functions as auxfunc
+from . import auxiliary_functions as auxfunc
 
 
 """
