@@ -8,9 +8,8 @@ from datetime import datetime
 from astropy.io import fits
 from collections import OrderedDict
 
-# import the header keyword dictionaries
-import hdr_keywd_dict as hkwd
-import hdr_keywd_dict_sample as shkvd
+# import the sample header keyword dictionary of level 2b
+import level2b_hdr_keywd_dict_sample as lev2bdict
 
 
 '''
@@ -20,10 +19,10 @@ the primary and science headers.
 Example usage:
     The code works from the terminal.
     To create a NEW FS fits file with the updated header type:
-        > python /path_to_this_script/hdr_keywd_check.py blah.fits mode
+        > python /path_to_this_script/hdr_keywd_check.py blah.fits IFU
 
     To simply update the header of the existing fits file type:
-        > python /path_to_this_script/hdr_keywd_check.py blah.fits mode -u
+        > python /path_to_this_script/hdr_keywd_check.py blah.fits IFU -u
 
 where the mode is either FS, MOS, or IFU. If a mode is not provided, the code will look for a mode_used variable
 in the pytests configuration file.
@@ -31,17 +30,6 @@ in the pytests configuration file.
 '''
 
 ### General functions
-
-def get_modeused_PTT_cfg_file():
-    # get script directory and config name
-    utils_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-    PPT_cfg_file = utils_dir.replace("utils", "calwebb_spec2_pytests/cwspec2_config.cfg")
-    with open(PPT_cfg_file, "r") as cfg:
-        for i, line in enumerate(cfg.readlines()):
-            if "mode_used" in line:
-                mode_used = line.split()[2]
-    return mode_used
-
 
 def read_hdrfits(fits_file_name):
     '''
@@ -274,12 +262,11 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         specific_keys_dict: dictionary with specific keys and values that need to be changed
     """
     ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
-    if mode_used is None:
-        mode_used = get_modeused_PTT_cfg_file()
+    original_header = fits.getheader(ff, 1)
     specific_keys_dict = {}
-    for hkwd_key, hkwd_val in hkwd.keywd_dict.items():
+    for lev2bdict_key, lev2bdict_val in lev2bdict.keywd_dict.items():
         # start by making the warning for each keyword None and assigning key and val
-        key = hkwd_key
+        key = lev2bdict_key
 
         # Check if keyword is in the file, expect for wcs info (these go in the science extension)
         if key != 'wcsinfo':
@@ -289,14 +276,24 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'New keyword added to header')
                 warnings_list.append(warning)
             else:
-                val = file_keywd_dict[hkwd_key]
+                # check if the keyword exists in the science header
+                orig_val = None
+                try:
+                    orig_val = original_header[key]
+                except:
+                    KeyError
+
+                if orig_val is not None:
+                    val = orig_val
+                else:
+                    val = file_keywd_dict[lev2bdict_key]
 
                 # Check simple standard keyword values
-                if val in hkwd_val:
+                if type(val) == type(lev2bdict_val):
                     print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Has correct format'))
                     warning = None
                 else:
-                    warning = check_value_type(key, val, hkwd_val)
+                    warning = check_value_type(key, val, lev2bdict_val)
 
                 # Check for specific keywords
                 if key=='DPSW_VER':
@@ -319,7 +316,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # specific check for VISITYPE, set to GENERIC
                 if key == 'VISITYPE':
-                    if val not in hkwd_val:
+                    if val != lev2bdict_val:
                         # for now always set this keyword to generic
                         print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
                         #fits.setval(ff, key, 0, value='GENERIC')
@@ -328,7 +325,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # specific check for SUBARRAY, set to GENERIC
                 if key == 'SUBARRAY':
-                    if val not in hkwd_val:
+                    if val != lev2bdict_val:
+                        # for now always set this keyword to generic
                         print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
                         #fits.setval(ff, key, 0, value='GENERIC')
                         specific_keys_dict[key] = 'GENERIC'
@@ -341,6 +339,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = 'NRS_FIXEDSLIT'
                     if 'IFU' in mode_used:
                         val = 'NRS_IFU'
+                        missing_keywds.append('DATAMODL')
                     if 'MOS' in mode_used:
                         val = 'NRS_MSASPEC'
                     specific_keys_dict[key] = val
@@ -363,31 +362,12 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         else:
             # add the WCS keywords to science extension
             missing_keywds.append(key)
-            for subkey, _ in hkwd_val.items():
+            for subkey, _ in lev2bdict_val.items():
                 # now add the keyword to in the list to be added into the science extension
                 warning = '{:<15} {:<9} {:<25}'.format(subkey, 'sci', 'New keyword added to header')
                 warnings_list.append(warning)
                 with open(warnings_file_name, "a") as tf:
                     tf.write(warning+'\n')
-
-    """
-    # if the keyword is not in the dictionary remove it
-    for file_key in file_keywd_dict:
-        if (file_key == "RAWDATRT") or (file_key == "MODEUSED"):
-            print (file_key, file_keywd_dict[file_key], " will remain in the header")
-        elif (file_key not in hkwd.keywd_dict):
-            #fits.delval(ff, file_key, 0)
-            specific_keys_dict[key] = 'remove'
-            missing_keywds.append(key)
-            warning = '{:<15} {:<9} {:<25}'.format(file_key, ext, 'Keyword to be removed from header')
-            print (warning)
-
-    # check that the RAWDATRT keyword is present
-    if 'RAWDATRT' not in file_keywd_dict:
-        warning = '*** WARNING ***: keyword RAWDATRT not found in file --> impossible to confirm if ESA intermediary product matches data'
-        warnings_list.append(warning)
-        print (warning)
-    """
 
     print("keywords to be modified: ", list(OrderedDict.fromkeys(missing_keywds)))
     return specific_keys_dict
@@ -428,33 +408,46 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
                 fits.setval(updated_fitsfile, key, value=specific_keys_dict[key])
             continue
         # get the index of the keyword previous to the one you want to add
-        prev_key_idx = list(shkvd.keywd_dict.keys()).index(key) - 1
+        prev_key_idx = list(lev2bdict.keywd_dict.keys()).index(key) - 1
         # add the keyword in the right place from the right dictionary
-        new_value = shkvd.keywd_dict[key]
-        after_key = list(shkvd.keywd_dict.keys())[prev_key_idx]
+        new_value = lev2bdict.keywd_dict[key]
+        after_key = list(lev2bdict.keywd_dict.keys())[prev_key_idx]
         if after_key == 'wcsinfo':
-            after_key = list(shkvd.keywd_dict.keys())[prev_key_idx-1]
+            after_key = list(lev2bdict.keywd_dict.keys())[prev_key_idx-1]
         if key != 'wcsinfo':
             print("adding keyword: ", key, " in extension: primary    after: ", after_key)
+            # the DATAMODL keyword will only be modified if mode is IFU
+            if key == 'DATAMODL' and lev2bdict.keywd_dict['EXP_TYPE']=='NRS_IFU':
+                new_value = 'IFUImageModel'
             fits.setval(updated_fitsfile, key, 0, value=new_value, after=after_key)
         else:
             # go into the subdictionary for WCS keywords
             extname = 'sci'
             sci_hdr = fits.getheader(updated_fitsfile, extname)
             main_hdr = fits.getheader(updated_fitsfile, 0)
-            for subkey, new_value in shkvd.keywd_dict["wcsinfo"].items():
+            for subkey, new_value in lev2bdict.keywd_dict["wcsinfo"].items():
                 # first remove these keywords from the main header
                 if subkey in main_hdr:
                     #val = fits.getval(updated_fitsfile, subkey, 0)
                     #wcs_keywds_from_main_hdr[subkey] = val
-                    fits.delval(updated_fitsfile, subkey, 0)
+                    try:
+                        fits.delval(updated_fitsfile, subkey, 0)
+                    except:
+                        KeyError
                 # following commented lines are not working
                 # uncomment this line if wanting to use the original keyword value given by create_data
                 #new_value = wcs_keywds_from_main_hdr[subkey]
                 if subkey not in sci_hdr:
                     print("adding keyword: ", subkey, " in extension: ", extname, " with value: ", new_value)
                     fits.setval(updated_fitsfile, subkey, 1, value=new_value, after='EXTNAME')
-            print ("Science header has been updated.")
+    # if the keyword is not in the sample dictionary then remove it
+    for key in lev2bdict.keywd_dict:
+        if key != 'wcsinfo':
+            try:
+                fits.delval(updated_fitsfile, subkey, 1)
+            except:
+                KeyError
+    print ("Main and science headers have been updated.")
 
 
 
@@ -498,26 +491,26 @@ if __name__ == '__main__':
                         action='store',
                         default=None,
                         help='Name of fits file, i.e. blah.fits')
+    parser.add_argument("mode_used",
+                        #dest="mode_used",
+                        action='store',
+                        default=None,
+                        help='Observation mode used: FS, MOS, or IFU.')
     parser.add_argument("-u",
                         dest="only_update",
                         action='store_true',
                         default=False,
                         help='Use -u if NOT wanting to create a new file with updated header.')
-    parser.add_argument("-m",
-                        dest="mode_used",
-                        action='store',
-                        default=None,
-                        help='Observation mode used: FS, MOS, or IFU.')
     args = parser.parse_args()
 
     # Set the variables
     fits_file = args.fits_file
-    only_update = args.only_update
     mode_used = args.mode_used
+    only_update = args.only_update
 
     # Perform the keyword check
     perform_check(fits_file, only_update, mode_used)
 
-    print ('\n * Script  hdr_keywd_check.py  finished * \n')
+    print ('\n * Script  level2b_hdr_keywd_check.py  finished * \n')
 
 
