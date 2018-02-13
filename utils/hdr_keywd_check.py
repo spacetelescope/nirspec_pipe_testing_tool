@@ -20,12 +20,12 @@ the primary and science headers.
 Example usage:
     The code works from the terminal.
     To create a NEW FS fits file with the updated header type:
-        > python /path_to_this_script/hdr_keywd_check.py blah.fits mode
+        > python /path_to_this_script/hdr_keywd_check.py blah.fits
 
     To simply update the header of the existing fits file type:
-        > python /path_to_this_script/hdr_keywd_check.py blah.fits mode -u
+        > python /path_to_this_script/hdr_keywd_check.py blah.fits -u -m=FS
 
-where the mode is either FS, MOS, or IFU. If a mode is not provided, the code will look for a mode_used variable
+where the -m flag is the mode used, i.e. FS, MOS, or IFU. If a mode is not provided, the code will look for a mode_used variable
 in the pytests configuration file.
 
 '''
