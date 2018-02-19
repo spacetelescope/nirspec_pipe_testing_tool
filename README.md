@@ -251,20 +251,25 @@ report.
 11. Put final results in the NIRSpec vault. At the end of the testing campaign, please do 
 the following within your working directory: 
 
-a. Create a new directory called ```YourNameMODEresults```, e.g. ```MariaIFUresults```
+a. Create a new directory called ```yourname_MODE_Name_of_the_raw_data_file_results```, 
+e.g. ```maria_IFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_results```.
+(If you already copied a previous version of your results and you want to keep it then add
+a ```_v2``` -or the version number that corresponds- after the word results, e.g. 
+```maria_IFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_results_v2```) 
 
 b. Inside that new direcoty place all the intermediary fits products as well as the html
 report
 
 c. Also inside that directory, create a text file named ```YourNameMODEresults.txt```, 
-e.g. ```MariaIFUresults.txt```. In this text file you will only type the full path where 
-you obtained the testing data, e.g. 
+e.g. ```mariaIFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_results.txt```. 
+In this text file you will only type the full path where you obtained the testing data, 
+e.g. 
 ```
 /grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/
                                                               test_data_suite/IFU_CV3
 ```
 
-d. Finally, place the ```YourNameMODEresults``` directory in the staging directory of the 
+d. Finally, place the results directory you created in the staging directory of the 
 NIRSpec vault, and send Gray an email (gkanarek@stsci.edu). The path of the staging 
 directory is:
 ```/grp/jwst/wit4/nirspec_vault/staging```
