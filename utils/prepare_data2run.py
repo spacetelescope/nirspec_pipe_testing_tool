@@ -150,7 +150,7 @@ if os.path.isfile(uncal_file):
 
     # add the missing header keywords and fix the format to the one the pipeline expects
     uncal_file = glob("*_uncal.fits")[0]
-    hkch.perform_check(uncal_file, only_update)
+    hkch.perform_check(uncal_file, only_update, mode)
 
 else:
     print("The *uncal.fits file does not exist. Exiting the code.")
