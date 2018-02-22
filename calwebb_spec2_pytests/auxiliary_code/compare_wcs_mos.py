@@ -197,7 +197,7 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
     plt.close()
 
 
-def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_code_path=None,
+def compare_wcs(infile_name, msa_conf_name=None, esa_files_path=None, auxiliary_code_path=None,
                 show_figs=True, save_figs=False, plot_names=None, threshold_diff=1.0e-14, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the
@@ -205,7 +205,7 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
 
     Args:
         infile_name: str, name of the output fits file from the 2d_extract step (with full path)
-        msa_conf_root: str, full path of where the MSA configuration fits files exist
+        msa_conf_name: str, full path of where the MSA configuration fits files exist
         esa_files_path: str, full path of where to find all ESA intermediary products to make comparisons for the tests
         auxiliary_code_path: str, path where to find the auxiliary code. If not set the code will assume
                             it is in the the auxiliary code directory
@@ -233,13 +233,12 @@ def compare_wcs(infile_name, msa_conf_root=None, esa_files_path=None, auxiliary_
     print ("rate_file  -->     Grating:", grat, "   Filter:", filt, "   Lamp:", lamp)
 
     # get shutter info from metadata
-    metafile = os.path.join(msa_conf_root, msametfl)
-    shutter_info = fits.getdata(metafile, ext=2)
+    shutter_info = fits.getdata(msa_conf_name, ext=2)
     pslit = shutter_info.field("slitlet_id")
     quad = shutter_info.field("shutter_quadrant")
     row = shutter_info.field("shutter_row")
     col = shutter_info.field("shutter_column")
-    print ('Using this MSA shutter configuration file: ', metafile)
+    print ('Using this MSA shutter configuration file: ', msa_conf_name)
 
     # Run compute_world_coordinates.py in order to produce the necessary file
     # !!! note that the code expects to be in the build environment !!!
@@ -533,7 +532,7 @@ if __name__ == '__main__':
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
     working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/zzzz/first_run_MOSset_prueba/"
     infile_name = working_dir+"jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs_extract_2d.fits"
-    msa_conf_root = working_dir
+    msa_conf_name = working_dir+"/V9621500100101_short_msa.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_MOS/"
     esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/MOS_CV3/ESA_Int_products"
     #raw_data_root_file = NRSV96215001001P0000000002103_1_491_SE_2016-01-24T01h25m07.cts.fits
@@ -545,6 +544,6 @@ if __name__ == '__main__':
     plot_names = None#[hist_name, deltas_name, msacolormap_name]
 
     # Run the principal function of the script
-    median_diff = compare_wcs(infile_name, msa_conf_root=msa_conf_root, esa_files_path=esa_files_path,
+    median_diff = compare_wcs(infile_name, msa_conf_name=msa_conf_name, esa_files_path=esa_files_path,
                               auxiliary_code_path=auxiliary_code_path, plot_names=plot_names,
                               show_figs=False, save_figs=True, threshold_diff=1.0e-14, debug=False)

@@ -35,7 +35,7 @@ def reverse_cols(arr):
     return rev_arr
 
 
-def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, msa_conf_root=None,
+def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, msa_shutter_conf=None,
              writefile=False, show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-14, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the
@@ -46,7 +46,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         dflatref_path: str, path of where the D-flat reference fits files
         sfile_path: str, path of where the S-flat reference fits files
         fflat_path: str, path of where the F-flat reference fits files
-        msa_conf_root: str, path to where the MSA configuration fits file lives
+        msa_shutter_conf: str, full path and name of the MSA configuration fits file
         writefile: boolean, if True writes the fits files of the calculated flat and difference images
         show_figs: boolean, whether to show plots or not
         save_figs: boolean, save the plots (the 3 plots can be saved or not independently with the function call)
@@ -64,7 +64,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # get info from the rate file header
     det = fits.getval(step_input_filename, "DETECTOR", 0)
     print('step_input_filename=', step_input_filename)
-    msametfl = fits.getval(step_input_filename, "MSAMETFL", 0)
     lamp = fits.getval(step_input_filename, "LAMP", 0)
     exptype = fits.getval(step_input_filename, "EXP_TYPE", 0)
     grat = fits.getval(step_input_filename, "GRATING", 0)
@@ -260,8 +259,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
         # get the slitlet info, needed for the F-Flat
         ext_shutter_info = "SHUTTER_INFO"   # this is extension 2 of the msa file, that has the shutter info
-        msafile = os.path.join(msa_conf_root, msametfl)
-        slitlet_info = fits.getdata(msafile, ext_shutter_info)
+        slitlet_info = fits.getdata(msa_shutter_conf, ext_shutter_info)
         sltid = slitlet_info.field("SLITLET_ID")
         for j, s in enumerate(sltid):
             if s == int(slit_id):
@@ -563,7 +561,7 @@ if __name__ == '__main__':
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
     working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/zzzz/first_run_MOSset_prueba/"
     step_input_filename = working_dir+"jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs_extract_2d_flat_field.fits"
-    msa_conf_root = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7/test_data/MOS_CV3/complete_pipeline_testset"
+    msa_shutter_conf = working_dir+"/V9621500100101_short_msa.fits"
     dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
     sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/MOS/nirspec_MOS_sflat"
     fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/MOS/nirspec_MOS_fflat"
@@ -579,6 +577,6 @@ if __name__ == '__main__':
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                           fflat_path=fflat_path, msa_conf_root=msa_conf_root, writefile=writefile,
+                           fflat_path=fflat_path, msa_shutter_conf=msa_shutter_conf, writefile=writefile,
                            show_figs=False, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
 
