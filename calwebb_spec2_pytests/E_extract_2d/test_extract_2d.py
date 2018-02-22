@@ -35,7 +35,7 @@ def output_hdul(set_inandout_filenames, config):
     skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
     stp = Extract2dStep()
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
-    msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
+    msa_conf_name = config.get("esa_intermediary_products", "msa_conf_name")
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
@@ -53,7 +53,7 @@ def output_hdul(set_inandout_filenames, config):
             step_output_file = os.path.join(working_directory, local_step_output_file)
             print ("Step product was saved as: ", step_output_file)
             subprocess.run(["mv", local_step_output_file, step_output_file])
-            return hdul, step_output_file, msa_conf_root, esa_files_path, wcs_threshold_diff, save_wcs_plots
+            return hdul, step_output_file, msa_conf_name, esa_files_path, wcs_threshold_diff, save_wcs_plots
         else:
             if config.getboolean("steps", step):
                 print ("*** Step "+step+" set to True")
@@ -74,7 +74,7 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = True
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                    return hdul, step_output_file, msa_conf_root, esa_files_path, wcs_threshold_diff, save_wcs_plots
+                    return hdul, step_output_file, msa_conf_name, esa_files_path, wcs_threshold_diff, save_wcs_plots
                 else:
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     pytest.skip("Skiping "+step+" because the input file does not exist.")
@@ -94,7 +94,7 @@ def validate_wcs_extract2d(output_hdul):
     # get the input information for the wcs routine
     hdu = output_hdul[0]
     infile_name = output_hdul[1]
-    msa_conf_root = output_hdul[2]
+    msa_conf_name = output_hdul[2]
     esa_files_path = output_hdul[3]
 
     # define the threshold difference between the pipeline output and the ESA files for the pytest to pass or fail
@@ -117,7 +117,7 @@ def validate_wcs_extract2d(output_hdul):
                                                  threshold_diff=threshold_diff)
 
     elif core_utils.check_MOS_true(hdu):
-        median_diff = compare_wcs_mos.compare_wcs(infile_name, msa_conf_root=msa_conf_root,
+        median_diff = compare_wcs_mos.compare_wcs(infile_name, msa_conf_name=msa_conf_name,
                                                   esa_files_path=esa_files_path, auxiliary_code_path=None,
                                                   plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
                                                   threshold_diff=threshold_diff)

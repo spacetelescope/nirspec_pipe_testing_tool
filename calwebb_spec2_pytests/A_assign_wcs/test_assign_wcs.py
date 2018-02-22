@@ -49,9 +49,12 @@ def output_hdul(set_inandout_filenames, config):
     # get the MSA shutter configuration file full path only for MOS data
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if core_utils.check_MOS_true(inhdu):
-        msa_conf_root = config.get("esa_intermediary_products", "msa_conf_root")
+        msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
+        # check if the configuration shutter file name is in the header of the fits file and if not add it
         msametfl = fits.getval(step_input_file, "MSAMETFL", 0)
-        msa_shutter_conf = os.path.join(msa_conf_root, msametfl)
+        if os.path.basename(msa_shutter_conf) != msametfl:
+            msametfl = os.path.basename(msa_shutter_conf)
+            fits.setval(step_input_file, "MSAMETFL", 0, value=msametfl)
     # run the pipeline
     if run_calwebb_spec2:
         print ("*** Will run calwebb_spec2... ")

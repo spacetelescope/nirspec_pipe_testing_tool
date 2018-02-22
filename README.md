@@ -23,9 +23,11 @@ Please use python 3.5
 1. Create the conda environment for testing and get the configuration files.  
 
 a. Conda environment for this testing campaign:
-- Current testing version is 7.1 for release candidate 0.7.9.0
-- Specific instructions to create the build7.1 environment.
-For example, in a terminal type:
+- Current testing version is 7.1 for release candidate 0.7.9.0. However, this version has
+a broken version of the assign WCS step. Hence, we are currently testing with the 
+development version of the pipeline (please see the NOTE below).
+- In case you need to test some specific step of release candidate 0.7.9.0, please
+follow these instructions to create the build7.1 environment. In a terminal type:
 ```bash
 conda create -n jwst_b7.1 --file url_depending_on_your_system python=3.5
 ```
@@ -46,7 +48,7 @@ conda update --override-channels -c http://ssb.stsci.edu/conda-dev -c defaults -
 
 b. Configuration files corresponding to this build. Create a directory (e.g. 
 ```b7.1cfg_files```) somewhere in your testing working space, and ```cd``` into it. Now 
-type the following command within the conda environment you just created.
+type the following command within the conda environment you just created (see step 2).
 ```bash
 collect_pipeline_cfgs .
 ```
@@ -160,12 +162,12 @@ required to run the PTT. In a terminal, go into the directory where the testing 
 (i.e. at the level of the ```calwebb_spec2_pytests``` directory), and make sure that the 
 testing conda environment is on. Now type:
 ```bash
-python ../utils/runcal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits
+python ../utils/run_cal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits -sbs
 ```
-This script will execute the calwebb detector 1 pipeline in a single run, using the 
-configuration file that you have for it in the ```utils``` directory. You can also add 
-a ```-sbs``` to the previous command in order to execute the processing of level 1 
-step-by-step. If everything went well, you will see a text file called 
+This script will execute the calwebb detector 1 pipeline step by step. If you want to run
+it in a single run, using the configuration file that you have for it in the ```utils``` 
+directory, simply remove the ```-sbs``` from previous command. 
+If everything went well, you will see a text file called 
 ```cal_detector1_outputs_and_times.txt```, which contains the steps ran, the name of the 
 output fits file, and the time each step took to run. However, if you chose to run the 
 calwebb detector1 in a single run, you will only see the total running time. This text file,
