@@ -107,7 +107,7 @@ you continue until you move the script(s) to another directory.
 a. Copy the test data you will use from the NIRSpec vault directory. Go to the directory 
 where you want to have the testing data, and from there type:
 ```bash
-cp /grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/
+cp -r /grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/
                                              test_data_suite/the_data_you_want_to_copy .
 ```
 
