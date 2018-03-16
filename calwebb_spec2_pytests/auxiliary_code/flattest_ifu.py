@@ -252,7 +252,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print (" looping through the wavelngth, this may take a little time ... ")
         flat_wave = wave.flatten()
         wave_shape = np.shape(wave)
-        for j in range(1, nw):
+        for j in range(0, nw):
             if np.isfinite(flat_wave[j]):   # skip if wavelength is NaN
                 # get the pixel indeces
                 jwav = flat_wave[j]

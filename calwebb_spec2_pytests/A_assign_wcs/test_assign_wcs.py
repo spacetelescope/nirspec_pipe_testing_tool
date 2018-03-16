@@ -46,6 +46,13 @@ def output_hdul(set_inandout_filenames, config):
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
+    # Check if data is IFU that the Image Model keyword is correct
+    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
+    if mode_used == "IFU":
+        DATAMODL = fits.getval(step_input_file, "DATAMODL", 0)
+        if DATAMODL != "IFUImageModel":
+            fits.setval(step_input_file, "DATAMODL", 0, value="IFUImageModel")
+            print("DATAMODL keyword changed to IFUImageModel.")
     # get the MSA shutter configuration file full path only for MOS data
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if core_utils.check_MOS_true(inhdu):

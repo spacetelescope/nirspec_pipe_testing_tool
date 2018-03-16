@@ -120,9 +120,10 @@ if os.path.isfile(uncal_file):
     fits_file = os.path.basename(fits_file)
 
     # add keywords with the name of the raw data fits file name , and mode used
-    #fits.setval(uncal_file, 'rawdatrt', 0, value=fits_file, after='OBS_ID')
-    #fits.setval(uncal_file, 'modeused', 0, value=mode, after='rawdatrt')
-    modify_PTT_cfg_file(fits_file, mode)
+    try:
+        modify_PTT_cfg_file(fits_file, mode)
+    except:
+        IsADirectoryError
 
     # make sure the lamp, filter, and grating values are correctly propagated
     lamp = fits.getval(fits_file, 'CAA_LAMP')
