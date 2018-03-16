@@ -14,3 +14,7 @@ assets
 *.css
 full_run_map.txt
 cal_detector1_outputs_and_times.txt
+*.pytest_cache
+*/*.pytest_cache
+*/*/*.pytest_cache
+*/*/*/*.pytest_cache

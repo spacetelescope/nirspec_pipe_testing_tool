@@ -404,6 +404,8 @@ def get_time_to_run_pipeline(True_steps_suffix_map):
             if '#' in line:
                 continue
             # this is for "msa_flagging" and "srctype"
+            if "=" in line:
+                line  = line.split("=")[0]
             if len(line.split()) < 4:
                 t=line.split()[2]
             else:

@@ -436,12 +436,13 @@ def compare_wcs(infile_name, msa_conf_name=None, esa_files_path=None, auxiliary_
         pxrg, pyrg, deldy = [], [], []
         flat_pdy, flat_edy = pdy.flatten(), edy.flatten()
         for ig_i in ig:
-            pxrg_i = pxr[imp[ig_i]]
-            pxrg.append(pxrg_i)
-            pyrg_i = pyr[imp[ig_i]]
-            pyrg.append(pyrg_i)
-            deldy_i = flat_pdy[imp[ig_i]] - flat_edy[ime[ig_i]]
-            deldy.append(deldy_i)
+            if np.isfinite(flat_pdy[imp[ig_i]]) and np.isfinite(flat_edy[ime[ig_i]]):
+                pxrg_i = pxr[imp[ig_i]]
+                pxrg.append(pxrg_i)
+                pyrg_i = pyr[imp[ig_i]]
+                pyrg.append(pyrg_i)
+                deldy_i = flat_pdy[imp[ig_i]] - flat_edy[ime[ig_i]]
+                deldy.append(deldy_i)
         pxrg, pyrg, deldy = np.array(pxrg), np.array(pyrg), np.array(deldy)
 
         # get the median and standard deviations

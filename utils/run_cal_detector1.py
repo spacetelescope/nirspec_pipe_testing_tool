@@ -67,8 +67,22 @@ fits_input_uncal_file = args.fits_input_uncal_file
 step_by_step = args.step_by_step
 
 # Get the calwebb_detector1.cfg file
+#try:
 calwebb_detector1_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
 print ("Using this configuration file: ", calwebb_detector1_cfg)
+#except:
+    #KeyError
+    #print ("This script expects to find the calwebb_detector1.cfg file in current directory.")
+    #calwebb_detector1_cfg = "calwebb_detector1.cfg"
+    #working_dir = "."
+    #exp_type = fits.getval(fits_input_uncal_file, 'EXP_TYPE', 0)
+    #if "IFU" in exp_type:
+    #    mode_used = "IFU"
+    #elif "MSA" in exp_type:
+    #    mode_used = "MOS"
+    #elif "FIXED" in exp_type:
+    #    mode_used = "FS"
+    #raw_data_root_file = ""
 
 # create the text file to record the names of the output files and the time the pipeline took to run
 txt_outputs_summary = "cal_detector1_outputs_and_times.txt"

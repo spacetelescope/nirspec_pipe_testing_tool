@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import sys
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -392,18 +391,23 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
 
         for dw in delwave:
             if not np.isfinite(dw):
-                print("Got a NaN!, median and standard deviation will fail.")
+                print("Got a NaN, median and standard deviation will fail for delta_wavelength array.")
 
         pxrg, pyrg, deldy = [], [], []
         flat_pdy, flat_edy = pdy.flatten(), edy.flatten()
         for ig_i in ig:
-            pxrg_i = pxr[imp[ig_i]]
-            pxrg.append(pxrg_i)
-            pyrg_i = pyr[imp[ig_i]]
-            pyrg.append(pyrg_i)
-            deldy_i = flat_pdy[imp[ig_i]] - flat_edy[ime[ig_i]]
-            deldy.append(deldy_i)
+            if np.isfinite(flat_pdy[imp[ig_i]]) and np.isfinite(flat_edy[ime[ig_i]]):
+                pxrg_i = pxr[imp[ig_i]]
+                pxrg.append(pxrg_i)
+                pyrg_i = pyr[imp[ig_i]]
+                pyrg.append(pyrg_i)
+                deldy_i = flat_pdy[imp[ig_i]] - flat_edy[ime[ig_i]]
+                deldy.append(deldy_i)
         pxrg, pyrg, deldy = np.array(pxrg), np.array(pyrg), np.array(deldy)
+
+        for dy_i in deldy:
+            if not np.isfinite(dy_i):
+                print("Got a NaN, median and standard deviation of delta_y array will fail.")
 
         # get the median and standard deviations
         median_diff = False
@@ -423,7 +427,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             print (" *** Result of the test: ",test_result)
 
         # PLOTS
-        if show_figs or save_figs and (len(delwave) != 0):
+        if show_figs or save_figs and (len(delwave) != 0) and np.isfinite(deldy_median):
             print ("\n * Making WCS plots *")
             if plot_names is not None:
                 hist_name, deltas_name, msacolormap_name = plot_names
@@ -481,6 +485,8 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                 print ("NO plots were made because show_figs and save_figs were both set to False. \n")
             if len(delwave) == 0:
                 print ("NO plots were made because the delta_wavelength array is emtpy.  \n")
+            if not np.isfinite(deldy_median):
+                print ("NO plots were made because the median of delta_y array is NaN.  \n")
 
     return median_diff
 
@@ -493,7 +499,8 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part1_JanuaryDeadline/IFU_CV3/PRISM_CLEAR/pipe_testing_files_and_reports/6007022859_491_processing"
+    #working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part1_JanuaryDeadline/IFU_CV3/PRISM_CLEAR/pipe_testing_files_and_reports/6007022859_491_processing"
+    working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part1_JanuaryDeadline/IFU_CV3/G140M_F100LP/pipe_testing_files_and_reports/491_processing"
     infile_name = working_dir+"/gain_scale_assign_wcs.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_IFU/"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/IFU_CV3/ESA_Int_products"
@@ -506,4 +513,4 @@ if __name__ == '__main__':
 
     # Run the principal function of the script
     median_diff = compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=auxiliary_code_path,
-                              plot_names=plot_names, show_figs=False, save_figs=True, threshold_diff=1.0e-14, debug=False)
+                              plot_names=plot_names, show_figs=False, save_figs=True, threshold_diff=9.9e-14, debug=False)

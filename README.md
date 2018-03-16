@@ -271,10 +271,15 @@ e.g.
                                                               test_data_suite/IFU_CV3
 ```
 
-d. Finally, place the results directory you created in the staging directory of the 
+d. Place the results directory you created in the staging directory of the 
 NIRSpec vault, and send Gray an email (gkanarek@stsci.edu). The path of the staging 
 directory is:
 ```/grp/jwst/wit4/nirspec_vault/staging```
+
+e. Finally, change the permissions recursively on all files in your newly created 
+directory, so that the NIRSpec curators team can move the data. To do this type the 
+following command in a terminal:
+```chmod -R 777 /grp/jwst/wit4/nirspec_vault/staging/your_newly_created_directory```
 	
 
 

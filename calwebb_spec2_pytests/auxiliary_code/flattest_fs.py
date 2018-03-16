@@ -227,8 +227,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         flatcor = np.zeros([nw2, nw1]) + 999.0
 
         # loop through the wavelengths
-        for j in range(nw1-1):   # in x
-            for k in range(nw2-1):   # in y
+        for j in range(nw1):   # in x
+            for k in range(nw2):   # in y
                 if np.isfinite(wave[k, j]):   # skip if wavelength is NaN
                     # get thr full-frame pixel indeces for D- and S-flat image components
                     # **** this does not account for subarrays!
