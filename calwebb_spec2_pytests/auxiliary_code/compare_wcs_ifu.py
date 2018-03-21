@@ -307,7 +307,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
             print  ("py0+npy-1 =", py0+npy-1)
 
         # read in the ESA file using raw data root file name
-        #rawdatroot = fits.getval(infile_name, "rawdatrt", 0)
+        #raw_data_root_file = "NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06.fits"
         _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
         specifics = [IFUslice]
         esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "IFU", specifics)

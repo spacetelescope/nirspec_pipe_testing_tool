@@ -97,7 +97,7 @@ def do_idl_rebin(a, *args):
 def get_modeused_and_rawdatrt_PTT_cfg_file():
     # get script directory and config name
     utils_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-    PPT_cfg_file = utils_dir.replace("auxiliary_code", "/cwspec2_config.cfg")
+    PPT_cfg_file = utils_dir.replace("auxiliary_code", "/PTT_config.cfg")
     with open(PPT_cfg_file, "r") as cfg:
         for i, line in enumerate(cfg.readlines()):
             if "#" not in line:
@@ -108,7 +108,7 @@ def get_modeused_and_rawdatrt_PTT_cfg_file():
     return mode_used, raw_data_root_file
 
 
-def get_esafile(esa_files_path, rawdatroot, mode, specifics):
+def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
     """
     This function gets the ESA file corresponding to the input given.
     Args:
@@ -116,6 +116,7 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
         rawdatroot: str, name of the raw data file (the file ran in create_data)
         mode: string, either 'MOS', 'FS', or 'IFU'
         specifics: list, specific parameters needed for each mode
+        nid: string, ESA NID of the raw data file used for the create_data script
 
     Returns:
         esafile: str, full path of the ESA file corresponding to input given
@@ -180,42 +181,61 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics):
     # get all subdirectories within esa_files_path
     subdir_list = glob(esa_files_path+"/*")
     jlab88_list = []
+    same_nid_files = []
     esafile = "ESA file not found"
-    for subdir in subdir_list:
-        #subdir = subdir.split("/")[-1]
-        if esaroot in subdir:
-            jlab88_list.append(subdir)
-    #print("jlab88_list=", jlab88_list)
-    for jlab88_dir in jlab88_list:
-        if mode == "FS":
-            mode = "SLIT"
-        mode_dir = os.path.join(jlab88_dir, jlab88_dir.split("/")[-1]+"_trace_"+mode)
-        esafile_basename = find_esafile_basename(specifics, jlab88_dir.split("/")[-1])
-        print ("Using this ESA file: \n", "Directory =", mode_dir, "\n", "File =", esafile_basename)
-        if not isinstance(esafile_basename, list):
-            esafile = os.path.join(mode_dir, esafile_basename)
-            # check if we got the right esafile
-            root_filename = fits.getval(esafile, "FILENAME", 0)
-            print("root_filename = ", root_filename)
-            print("rawdatroot = ", rawdatroot)
-            if rawdatroot.replace(".fits", "") in root_filename:
-                print (" * File name matches raw file used for create_data.")
-                break
-            else:
-                print (" * WARNING: Raw data file name used for create_data does not match esa root file name.")
+    for item in subdir_list:
+        # check if the file is at the first level using the NID
+        if nid is not None:
+            if ".fits" in item  and  "List" not in item:
+                nid2compare = fits.getval(item, "GS_JOBID", 0).split("_")[1].replace("000", "")
+                #print("NID_raw_data_file =", nid, "    nid2compare =",nid2compare)
+                if nid == nid2compare:
+                    # collect all files with the same NID
+                    same_nid_files.append(item)
         else:
-            esafile = []
-            for esabase in esafile_basename:
-                esaf = os.path.join(mode_dir, esabase)
-                esafile.append(esaf)
+            subdir = item
+            if esaroot in subdir:
+                jlab88_list.append(subdir)
+
+    # get the specific ESA file
+    if mode == "FS":
+        mode = "SLIT"
+    # this is specific code for FS_CV3_cutout ESA direcotry, where some ESA files are at the top level dir
+    if len(same_nid_files) != 0:
+        esafile = same_nid_files
+        #print("len(esafile) = ", len(esafile))
+
+    if len(jlab88_list) != 0  and  nid is None:
+        # If the file is not at the first level go into further directories
+        #print("jlab88_list=", jlab88_list)
+        for jlab88_dir in jlab88_list:
+            mode_dir = os.path.join(jlab88_dir, jlab88_dir.split("/")[-1]+"_trace_"+mode)
+            esafile_basename = find_esafile_basename(specifics, jlab88_dir.split("/")[-1])
+            #print ("Using this ESA file: \n", "Directory =", mode_dir, "\n", "File =", esafile_basename)
+            if not isinstance(esafile_basename, list):
+                esafile = os.path.join(mode_dir, esafile_basename)
                 # check if we got the right esafile
-                root_filename = fits.getval(esaf, "FILENAME", 0)
+                root_filename = fits.getval(esafile, "FILENAME", 0)
                 print("root_filename = ", root_filename)
                 print("rawdatroot = ", rawdatroot)
                 if rawdatroot.replace(".fits", "") in root_filename:
                     print (" * File name matches raw file used for create_data.")
+                    break
                 else:
                     print (" * WARNING: Raw data file name used for create_data does not match esa root file name.")
+            else:
+                esafile = []
+                for esabase in esafile_basename:
+                    esaf = os.path.join(mode_dir, esabase)
+                    esafile.append(esaf)
+                    # check if we got the right esafile
+                    root_filename = fits.getval(esaf, "FILENAME", 0)
+                    print("root_filename = ", root_filename)
+                    print("rawdatroot = ", rawdatroot)
+                    if rawdatroot.replace(".fits", "") in root_filename:
+                        print (" * File name matches raw file used for create_data.")
+                    else:
+                        print (" * WARNING: Raw data file name used for create_data does not match esa root file name.")
 
     return esafile
 

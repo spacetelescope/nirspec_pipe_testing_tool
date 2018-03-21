@@ -34,7 +34,7 @@ def modify_PTT_cfg_file(fits_file, mode):
     """
     # get script directory and config name
     utils_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-    PPT_cfg_file = utils_dir.replace("utils", "calwebb_spec2_pytests/cwspec2_config.cfg")
+    PPT_cfg_file = utils_dir.replace("utils", "calwebb_spec2_pytests/PTT_config.cfg")
     with open(PPT_cfg_file, "r") as cfg:
         cfg_lines = []
         for line in cfg.readlines():
