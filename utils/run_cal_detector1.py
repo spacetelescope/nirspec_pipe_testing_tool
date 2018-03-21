@@ -39,7 +39,7 @@ def get_caldet1cfg_and_workingdir():
         calwebb_detector1_cfg = string, path to where the config file lives
     """
     config = configparser.ConfigParser()
-    config.read(['../calwebb_spec2_pytests/cwspec2_config.cfg'])
+    config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
     pipe_testing_tool_path = config.get("calwebb_spec2_input_file", "pipe_testing_tool_path")
     calwebb_detector1_cfg = os.path.join(pipe_testing_tool_path, "utils/calwebb_detector1.cfg")
     working_dir = config.get("calwebb_spec2_input_file", "working_directory")

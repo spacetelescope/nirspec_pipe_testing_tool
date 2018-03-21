@@ -143,7 +143,7 @@ of this guide to do that.
 
 
 6. Set the PTT configuration file. In a text file editor, you are going to modify the 
-configuration file named ```cwspec2_config.cfg```, which lives at 
+configuration file named ```PTT_config.cfg```, which lives at 
 ```/nirspec_pipetesting_tool/calwebb_spec2_pytests/```. 
 This is the file that controls all the input that the tool needs. Please open it and 
 make sure that:
@@ -204,7 +204,7 @@ https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+par
  
 8. Ready to run PTT. Go back to the directory where PTT lives and into the 
 ```calwebb_spec2_pytests``` directory, copy final output file from calwebb detector1 into 
-the working directory you indicated in the ```cwspec2_config.cfg``` file, and make sure 
+the working directory you indicated in the ```PTT_config.cfg``` file, and make sure 
 that the input file for the PTT matches the file you just copied into the working 
 directory. Now, to ensure that everything is in order, and to see what pytests will be 
 executed and in which order type:
@@ -215,10 +215,10 @@ pytest --collect-only
 9. Do the first PTT run. As an output of the testing tool you will see an html 
 file, ```report.html```, and an intermediary product file name map will appear in the 
 ```calwebb_spec2_pytests``` directory. The fits files of intermediary products will 
-be saved in the path you indicated at the ```cwspec2_config.cfg``` file with the variable
+be saved in the path you indicated at the ```PTT_config.cfg``` file with the variable
  ```working_directory```. In the terminal type:
 ```bash
-pytest -s --config_file=cwspec2_config.cfg --html=report.html
+pytest -s --config_file=PTT_config.cfg --html=report.html
 ```
 The ```-s``` will capture all the print statements in the code on screen.
 

@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import sys
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -302,10 +301,27 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         print  ("Pipeline subwindow corner pixel ID: ", px0, py0)
 
         # read in the ESA file using raw data root file name
-        #rawdatroot = fits.getval(infile_name, "rawdatrt", 0)
+        #raw_data_root_file = "NRSV00300060001P000000000210T_1_491_SE_2016-01-06T06h27m34.fits"  # for testing script
         _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
         specifics = sltname_list
-        esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics)
+        # check if ESA data is not in the regular directories
+        NIDs = ["30055", "30205", "30133"]
+        special_cutout_files = ["NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits",
+                                "NRSSMOS-MOD-G2M-01-5344191938_1_491_SE_2015-12-10T19h29m26.fits",
+                                "NRSSMOS-MOD-G3H-02-5344120942_1_492_SE_2015-12-10T12h18m25.fits"]
+        if raw_data_root_file in special_cutout_files:
+            nid = NIDs[special_cutout_files.index(raw_data_root_file)]
+            print("Using NID = ", nid)
+        else:
+            nid = None
+        esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
+
+        # skip the test if the esafile was not found
+        if esafile == "ESA file not found":
+            print(" * compare_wcs_fs.py is exiting because the corresponding ESA file was not found.")
+            print("   -> The WCS test is now set to skip and no plots will be generated. ")
+            median_diff = "skip"
+            return median_diff
 
         if not isinstance(esafile, list):
             esafile_list = [esafile]
@@ -320,10 +336,14 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
 
         # choose corresponding esa file
         for esafile in esafile_list:
+            #print ("looking for slit: ", slit)
+            #print (" in esafile: ", esafile)
             if slit in esafile:
+                print ("Using this ESA file: \n", esafile)
                 esahdulist = fits.open(esafile)
                 #print ("* ESA file contents ")
                 #esahdulist.info()
+                break
 
         esahdr1 = esahdulist[1].header
         enext = []
@@ -510,7 +530,7 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/Cheryl_test/NRS1/"
+    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140H_opaque/491_results/"
     infile_name = data_dir+"gain_scale_assign_wcs_extract_2d.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
@@ -520,11 +540,11 @@ if __name__ == '__main__':
     # set the names of the resulting plots
     hist_name = "FS_wcs_histogram.pdf"
     deltas_name = "FS_wcs_deltas.pdf"
-    plot_names = [hist_name, deltas_name]
+    plot_names = None#[hist_name, deltas_name]
 
     # Run the principal function of the script
     median_diff = compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=None, plot_names=None,
-                              show_figs=False, save_figs=True, threshold_diff=1.0e-14, debug=False)
+                              show_figs=False, save_figs=True, threshold_diff=9.9e-14, debug=False)
 
 
 

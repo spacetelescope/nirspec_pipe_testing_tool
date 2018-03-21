@@ -35,7 +35,7 @@ in the pytests configuration file.
 def get_modeused_PTT_cfg_file():
     # get script directory and config name
     utils_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-    PPT_cfg_file = utils_dir.replace("utils", "calwebb_spec2_pytests/cwspec2_config.cfg")
+    PPT_cfg_file = utils_dir.replace("utils", "calwebb_spec2_pytests/PTT_config.cfg")
     with open(PPT_cfg_file, "r") as cfg:
         for i, line in enumerate(cfg.readlines()):
             if "mode_used" in line:
