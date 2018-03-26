@@ -4,6 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
+from decimal import Decimal
 
 from jwst.assign_wcs.tools.nirspec import compute_world_coordinates
 from . import auxiliary_functions as auxfunc
@@ -89,16 +90,21 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         idx_blue = np.where((xdelta > mean_minus_1half_std) & (xdelta < mean_minus_half_std))
         idx_lime = np.where((xdelta > mean_minus_half_std) & (xdelta < mean_plus_half_std))
         idx_black = np.where((xdelta > mean_plus_half_std) & (xdelta < mean_plus_1half_std))
-        plt.plot(xarr1[idx_red], yarr1[idx_red], linewidth=7, marker='D', color='red')#, label="")
-        plt.plot(xarr1[idx_fuchsia], yarr1[idx_fuchsia], linewidth=7, marker='D', color='fuchsia')#, label="")
-        plt.plot(xarr1[idx_blue], yarr1[idx_blue], linewidth=7, marker='D', color='blue')#, label="")
-        plt.plot(xarr1[idx_lime], yarr1[idx_lime], linewidth=7, marker='D', color='lime')#, label="")
-        plt.plot(xarr1[idx_black], yarr1[idx_black], linewidth=7, marker='D', color='black')#, label="")
+        plt.plot(xarr1[idx_red], yarr1[idx_red], linewidth=7, marker='D', color='red', label=r"$\Delta x > \mu+1.5\sigma$")
+        plt.plot(xarr1[idx_fuchsia], yarr1[idx_fuchsia], linewidth=7, marker='D', color='fuchsia', label=r"$\Delta x < \mu-1.5\sigma$")
+        plt.plot(xarr1[idx_blue], yarr1[idx_blue], linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta x < \mu-0.5\sigma$")
+        plt.plot(xarr1[idx_lime], yarr1[idx_lime], linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma < \Delta x < \mu+0.5\sigma$")
+        plt.plot(xarr1[idx_black], yarr1[idx_black], linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma < \Delta x < \mu+1.5\sigma$")
         # add legend
-        #box = ax.get_position()
+        box = ax.get_position()
         #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
         #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
-        #plt.plot(xarr1, yarr1, linewidth=7)
+        # shrink plotting space so that the legend is to the right
+        percent = 0.72
+        ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
+        textinfig_mu = r'$\mu$={:<0.3e}    $\sigma$={:<0.3e}'.format(x_median, x_stddev)
+        ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
     plt.minorticks_on()
     if histogram:
         ax.xaxis.set_major_locator(MaxNLocator(6))
@@ -106,7 +112,7 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         def MyFormatter(x, lim):
             if x == 0:
                 return 0
-            return '{0}E{1}'.format(round(x/1e-10, 2), -10)
+            return "%0.3E" % Decimal(x) #'{0}E{1}'.format(round(x/1e-10, 2), -10)
         majorFormatter = FuncFormatter(MyFormatter)
         ax.xaxis.set_major_formatter(majorFormatter)
     plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
@@ -153,16 +159,21 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         idx_blue = np.where((ydelta > mean_minus_1half_std) & (ydelta < mean_minus_half_std))
         idx_lime = np.where((ydelta > mean_minus_half_std) & (ydelta < mean_plus_half_std))
         idx_black = np.where((ydelta > mean_plus_half_std) & (ydelta < mean_plus_1half_std))
-        plt.plot(xarr2[idx_red], yarr2[idx_red], linewidth=7, marker='D', color='red')#, label="")
-        plt.plot(xarr2[idx_fuchsia], yarr2[idx_fuchsia], linewidth=7, marker='D', color='fuchsia')#, label="")
-        plt.plot(xarr2[idx_blue], yarr2[idx_blue], linewidth=7, marker='D', color='blue')#, label="")
-        plt.plot(xarr2[idx_lime], yarr2[idx_lime], linewidth=7, marker='D', color='lime')#, label="")
-        plt.plot(xarr2[idx_black], yarr2[idx_black], linewidth=7, marker='D', color='black')#, label="")
+        plt.plot(xarr2[idx_red], yarr2[idx_red], linewidth=7, marker='D', color='red', label=r"$\Delta y > \mu+1.5\sigma$")
+        plt.plot(xarr2[idx_fuchsia], yarr2[idx_fuchsia], linewidth=7, marker='D', color='fuchsia', label=r"$\Delta y < \mu-1.5\sigma$")
+        plt.plot(xarr2[idx_blue], yarr2[idx_blue], linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$")
+        plt.plot(xarr2[idx_lime], yarr2[idx_lime], linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma < \Delta y < \mu+0.5\sigma$")
+        plt.plot(xarr2[idx_black], yarr2[idx_black], linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma < \Delta y < \mu+1.5\sigma$")
         # add legend
-        #box = ax.get_position()
+        box = ax.get_position()
         #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
         #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
-        #plt.plot(xarr2, yarr2, linewidth=7)
+        # shrink plotting space so that the legend is to the right
+        percent = 0.72
+        ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
+        textinfig_mu = r'$\mu$={:<0.3e}    $\sigma$={:<0.3e}'.format(y_median, y_stddev)
+        ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
         """
         ax = plt.subplot(313)
         title3, xlabel3, ylabel3, xarr3, yarr3, ydelta, y_median, y_stddev = info_fig3
@@ -257,7 +268,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     #cwc_fname = infile_name.replace(".fits", "_world_coordinates.fits")
     # to rename file within the working directory
     cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
-    print (cwc_fname)
+    print ("world_coordinates file = ", cwc_fname)
     cwc_fname = infile_name.replace(basenameinfile_name, cwc_fname)
     os.system("mv "+wcoordfile+" "+cwc_fname)
 
@@ -301,13 +312,16 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         print  ("Pipeline subwindow corner pixel ID: ", px0, py0)
 
         # read in the ESA file using raw data root file name
-        #raw_data_root_file = "NRSV00300060001P000000000210T_1_491_SE_2016-01-06T06h27m34.fits"  # for testing script
-        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
+        raw_data_root_file = "NRSV84600010001P0000000002101_4_491_SE_2016-01-17T17h34m08.fits"  # testing with FS prism FULL
+        #_, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
         specifics = sltname_list
-        # check if ESA data is not in the regular directories
-        NIDs = ["30055", "30205", "30133"]
+        #print ("sltname_list = ", sltname_list)
+        # check if ESA data is not in the regular directory tree
+        NIDs = ["30055", "30055", "30205", "30133", "30133"]
         special_cutout_files = ["NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits",
+                                "NRSSMOS-MOD-G1H-02-5344031756_1_492_SE_2015-12-10T03h25m56.fits",
                                 "NRSSMOS-MOD-G2M-01-5344191938_1_491_SE_2015-12-10T19h29m26.fits",
+                                "NRSSMOS-MOD-G3H-02-5344120942_1_491_SE_2015-12-10T12h18m25.fits",
                                 "NRSSMOS-MOD-G3H-02-5344120942_1_492_SE_2015-12-10T12h18m25.fits"]
         if raw_data_root_file in special_cutout_files:
             nid = NIDs[special_cutout_files.index(raw_data_root_file)]
@@ -371,12 +385,13 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         nex = n_p[1]
         ney = n_p[0]
         # get the origin of the subwindow
+        print ("Detector = ", det)
         if det == "NRS1":
             ex0 = esahdr1["CRVAL1"] - esahdr1["CRPIX1"] + 1
             ey0 = esahdr1["CRVAL2"] - esahdr1["CRPIX2"] + 1
         else:
-            ex0 = 2048.0 - (esahdr1["CRPIX1"] - esahdr1["CRVAL1"])
-            ey0 = 2048.0 - (esahdr1["CRPIX2"] - esahdr1["CRVAL2"])
+            ex0 = 2048.0 - esahdr1["CRPIX1"] + esahdr1["CRVAL1"]
+            ey0 = 2048.0 - esahdr1["CRVAL2"] + esahdr1["CRPIX2"]
         ex = np.arange(nex) + ex0
         ey = np.arange(ney) + ey0
         print("ESA subwindow corner pixel ID: ", ex0, ey0)
@@ -393,6 +408,12 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         subpx, subex = auxfunc.do_idl_match(px, ex)
         subpy, subey = auxfunc.do_idl_match(py, ey)
         print("matched elements in the 2D spectra: ", len(subpx), len(subey))
+        if len(subpx)==0  and  len(subey)==0:
+            print(" * compare_wcs_fs.py is exiting because there are no matching elements in 2D spectra.")
+            print("  -> You may want to check that the variable raw_data_root_file in the PPT_config file has the right file name.")
+            print("  -> The WCS test is now set to skip and no plots will be generated. ")
+            median_diff = "skip"
+            return median_diff
         for sx in subpx:
             if px[sx] not in ex:
                 print("aha! found it!  ", ex[sx])
@@ -489,13 +510,14 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                     title = filt+"   "+grat+"   SLIT="+sltname
                     xmin1 = min(delwave) - (max(delwave)-min(delwave))*0.1
                     xmax1 = max(delwave) + (max(delwave)-min(delwave))*0.1
-                    xlabel1, ylabel1 = r"$\lambda_{pipe}$ - $\lambda_{ESA}$ (10$^{-10}$m)", "N"
+                    exp = int(str(xmax1).split('e')[-1])
+                    xlabel1, ylabel1 = r"$\lambda_{pipe} - \lambda_{ESA}$  (10^"+repr(exp)+"m)", "N"
                     yarr = None
                     bins = 15
                     info_fig1 = [xlabel1, ylabel1, delwave, yarr, xmin1, xmax1, bins, delwave_median, delwave_stddev]
                     xmin2 = min(deldy) - (max(deldy)-min(deldy))*0.1
                     xmax2 = max(deldy) + (max(deldy)-min(deldy))*0.1
-                    xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$ (relative slit position)", "N"
+                    xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$  (relative slit position)", "N"
                     info_fig2 = [xlabel2, ylabel2, deldy, yarr, xmin2, xmax2, bins, deldy_median, deldy_stddev]
                     mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
                              histogram=True, fig_name=hist_name)
@@ -530,7 +552,7 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140H_opaque/491_results/"
+    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results/"
     infile_name = data_dir+"gain_scale_assign_wcs_extract_2d.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"

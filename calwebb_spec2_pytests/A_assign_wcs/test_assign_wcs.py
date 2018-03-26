@@ -23,11 +23,15 @@ from .. auxiliary_code import compare_wcs_ifu
 def set_inandout_filenames(config):
     step = "assign_wcs"
     step_dict = dict(config.items("steps"))
-    initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
     True_steps_suffix_map = config.get("calwebb_spec2_input_file", "True_steps_suffix_map")
+    data_directory = config.get("calwebb_spec2_input_file", "data_directory")
+    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    initial_input_file_basename = config.get("calwebb_spec2_input_file", "input_file")
+    initial_input_file = os.path.join(data_directory, initial_input_file_basename)
+    print("\n Using initial input file: ", initial_input_file , "\n")
     pytests_directory = os.getcwd()
     True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
-    suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, step_dict)
+    suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, step_dict, working_directory)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames
     return step, step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map
 

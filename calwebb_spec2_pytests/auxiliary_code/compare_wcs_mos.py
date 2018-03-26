@@ -4,6 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
+from decimal import Decimal
 from jwst.assign_wcs.tools.nirspec import compute_world_coordinates
 from . import auxiliary_functions as wcsfunc
 
@@ -67,15 +68,15 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
 
             for xd, xi, yi in zip(xdelta, xarr1, yarr1):
                 if xd > mean_plus_1half_std:
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='red')#, label="")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='red', label=r"$\Delta x > \mu+1.5\sigma$")
                 if xd < mean_minus_1half_std:
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia')#, label="")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia', label=r"$\Delta x < \mu-1.5\sigma$")
                 if (xd > mean_minus_1half_std) and (xd < mean_minus_half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='blue')#, label="")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta x < \mu-0.5\sigma$")
                 if (xd > mean_minus_half_std) and (xd < mean_plus_half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='lime')#, label="")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma$ < \Delta x < \mu+0.5\sigma$")
                 if (xd > mean_plus_half_std) and (xd < mean_plus_1half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label="")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma$ < \Delta x < \mu+1.5\sigma$")
             '''
             idx_red = np.where(xdelta > mean_plus_1half_std)
             idx_fuchsia = np.where(xdelta < mean_minus_1half_std)
@@ -89,10 +90,15 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             plt.plot(xarr1[idx_black], yarr1[idx_black], linewidth=7, marker='D', color='black')#, label="")
             '''
             # add legend
-            #box = ax.get_position()
+            box = ax.get_position()
             #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
             #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
-            #plt.plot(xarr1, yarr1, linewidth=7)
+            # shrink plotting space so that the legend is to the right
+            percent = 0.72
+            ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
+            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
+            textinfig_mu = r'$\mu$={:<0.3e}    $\sigma$={:<0.3e}'.format(x_median, x_stddev)
+            ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
         plt.minorticks_on()
         if histogram:
             ax.xaxis.set_major_locator(MaxNLocator(6))
@@ -100,7 +106,7 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             def MyFormatter(x, lim):
                 if x == 0:
                     return 0
-                return '{0}E{1}'.format(round(x/1e-10, 2), -10)
+                return "%0.3E" % Decimal(x)
             majorFormatter = FuncFormatter(MyFormatter)
             ax.xaxis.set_major_formatter(majorFormatter)
         plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
@@ -129,20 +135,25 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             mean_plus_1half_std = y_median + 1.5*y_stddev
             for yd, xi, yi in zip(ydelta, xarr2, yarr2):
                 if yd > mean_plus_1half_std:
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='red')#, label="")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='red', label=r"$\Delta y > \mu+1.5*\sigma$")
                 if yd < mean_minus_1half_std:
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia')#, label="")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia', label=r"$\Delta y < \mu-1.5\sigma$")
                 if (yd > mean_minus_1half_std) and (yd < mean_minus_half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='blue')#, label="")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$")
                 if (yd > mean_minus_half_std) and (yd < mean_plus_half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='lime')#, label="")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma$ < \Delta y < \mu+0.5\sigma$")
                 if (yd > mean_plus_half_std) and (yd < mean_plus_1half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label=r"$\mu+0.5*\sigma$ > $\mu+1.5*\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma$ < \Delta y < \mu+1.5\sigma$")
             # add legend
-            #box = ax.get_position()
+            box = ax.get_position()
             #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
             #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
-            #plt.plot(xarr2, yarr2, linewidth=7)
+            # shrink plotting space so that the legend is to the right
+            percent = 0.72
+            ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
+            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
+            textinfig_mu = r'$\mu$={:<0.3e}    $\sigma$={:<0.3e}'.format(y_median, y_stddev)
+            ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
         plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
         plt.minorticks_on()
     else:
@@ -161,22 +172,22 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         #plt.yticks(np.arange(min(yarr), max(yarr), 0.000005))
         for xd, xi, yi in zip(xdelta, xarr, yarr):
             if xd > lim_d:
-                plt.plot(xi, yi, linewidth=7, marker='D', color='red')#, label="")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='red', label=r"$ \Delta x > 5.0e-13 $")
             if xd < lim_a:
-                plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia')#, label="")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia', label=r"$\Delta x < -5.0e-13 $")
             if (xd > lim_a) and (xd < lim_b):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='blue')#, label="")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='blue', label=r"$ -5.0e-13 < \Delta x < -1.0e-15 $")
             if (xd > lim_b) and (xd < lim_c):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='lime')#, label="")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='lime', label=r"$ -1.0e-15 < \Delta x < 1.0e-13 $")
             if (xd > lim_c) and (xd < lim_d):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label="")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='black', label=r"$ 1.0e-15 < \Delta x < 5.0e-13 $$")
         # Shrink current axis
-        box = ax.get_position()
+        #box = ax.get_position()
         #percent = 0.85
         #ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
         plt.gca().xaxis.set_major_locator(MaxNLocator(prune='lower'))
         plt.tight_layout()
-        #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
         plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
         plt.minorticks_on()
     if save_figs:
@@ -480,13 +491,14 @@ def compare_wcs(infile_name, msa_conf_name=None, esa_files_path=None, auxiliary_
             title = filt+"   "+grat+"   Slitlet ID: "+slitlet_id
             xmin1 = min(delwave) - (max(delwave)-min(delwave))*0.1
             xmax1 = max(delwave) + (max(delwave)-min(delwave))*0.1
-            xlabel1, ylabel1 = r"$\lambda_{pipe}$ - $\lambda_{ESA}$ (10$^{-10}$m)", "N"
+            exp = int(str(xmax1).split('e')[-1])
+            xlabel1, ylabel1 = r"$\lambda_{pipe} - \lambda_{ESA}$  (10^"+repr(exp)+"m)", "N"
             yarr = None
             bins = 15
             info_fig1 = [xlabel1, ylabel1, delwave, yarr, xmin1, xmax1, bins, delwave_median, delwave_stddev]
             xmin2 = min(deldy) - (max(deldy)-min(deldy))*0.1
             xmax2 = max(deldy) + (max(deldy)-min(deldy))*0.1
-            xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$ (relative slit position)", "N"
+            xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$  (relative slit position)", "N"
             info_fig2 = [xlabel2, ylabel2, deldy, yarr, xmin2, xmax2, bins, deldy_median, deldy_stddev]
             mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
                      histogram=True, fig_name=hist_name)

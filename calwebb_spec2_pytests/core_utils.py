@@ -93,7 +93,7 @@ def get_sci_extensions(fits_file_name):
     return sci_list
 
 
-def get_step_inandout_filename(step, initial_input_file, steps_dict):
+def get_step_inandout_filename(step, initial_input_file, steps_dict, working_directory):
     """
     This function determines the corresponding input file name for the step (i.e. the pipeline expects a specific
     format and name for each step). This is according to which steps where set to True  in the configuration file.
@@ -101,6 +101,7 @@ def get_step_inandout_filename(step, initial_input_file, steps_dict):
         step: string, pipeline step to be ran
         initial_input_file: the base name of the input file for calwebb_spec2
         steps_dict: dictionary, pipeline steps listed in the input configuration file
+        working_directory: string, path where the output files will be saved at
 
     Returns:
         step_input_filename: string, the base name of the input file for the specified step
@@ -140,10 +141,12 @@ def get_step_inandout_filename(step, initial_input_file, steps_dict):
 
     # get the right input and output name according to the steps set to True in the configuration file
     step_input_filename, step_output_filename, in_file_suffix, out_file_suffix = initial_input_file, "", "", ""
+    initial_input_file_basename = os.path.basename(initial_input_file)
     for i, stp in enumerate(ordered_steps_set_to_True):
         if stp == step:
             out_file_suffix = step_string_dict[stp]
-            step_output_filename = initial_input_file.replace(".fits", out_file_suffix+".fits")
+            step_output_filename = initial_input_file_basename.replace(".fits", out_file_suffix+".fits")
+            step_output_filename = os.path.join(working_directory, step_output_filename)
             break
         else:
             in_file_suffix = step_string_dict[ordered_steps_set_to_True[i]]

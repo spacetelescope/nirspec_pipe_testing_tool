@@ -147,8 +147,9 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
             esafiles = []
             for sltname in sltname_list:
                 # change the format of the string to match the ESA trace
+                #print("sltname = ", sltname)
                 sltname = sltname.replace("S", "")
-                print("sltname after removing S: ", sltname)
+                #print("sltname after removing S: ", sltname)
                 if ("A" in sltname) and ("200" in sltname):
                     sltname = "A_"+sltname.split("A")[0]+"_1_"
                     esafiles.append(sltname)
@@ -210,6 +211,7 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
         #print("jlab88_list=", jlab88_list)
         for jlab88_dir in jlab88_list:
             mode_dir = os.path.join(jlab88_dir, jlab88_dir.split("/")[-1]+"_trace_"+mode)
+            #print("using these specifics: ", specifics)
             esafile_basename = find_esafile_basename(specifics, jlab88_dir.split("/")[-1])
             #print ("Using this ESA file: \n", "Directory =", mode_dir, "\n", "File =", esafile_basename)
             if not isinstance(esafile_basename, list):
