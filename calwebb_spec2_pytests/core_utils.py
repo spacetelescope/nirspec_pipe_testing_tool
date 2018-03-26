@@ -93,7 +93,7 @@ def get_sci_extensions(fits_file_name):
     return sci_list
 
 
-def get_step_inandout_filename(step, initial_input_file, steps_dict, working_directory):
+def get_step_inandout_filename(step, initial_input_file, steps_dict, working_directory=None):
     """
     This function determines the corresponding input file name for the step (i.e. the pipeline expects a specific
     format and name for each step). This is according to which steps where set to True  in the configuration file.
@@ -141,12 +141,15 @@ def get_step_inandout_filename(step, initial_input_file, steps_dict, working_dir
 
     # get the right input and output name according to the steps set to True in the configuration file
     step_input_filename, step_output_filename, in_file_suffix, out_file_suffix = initial_input_file, "", "", ""
-    initial_input_file_basename = os.path.basename(initial_input_file)
     for i, stp in enumerate(ordered_steps_set_to_True):
         if stp == step:
             out_file_suffix = step_string_dict[stp]
-            step_output_filename = initial_input_file_basename.replace(".fits", out_file_suffix+".fits")
-            step_output_filename = os.path.join(working_directory, step_output_filename)
+            if working_directory is not None  and  stp=="assign_wcs":
+                initial_input_file_basename = os.path.basename(initial_input_file)
+                step_output_filename = initial_input_file_basename.replace(".fits", out_file_suffix+".fits")
+                step_output_filename = os.path.join(working_directory, step_output_filename)
+            else:
+                step_output_filename = initial_input_file.replace(".fits", out_file_suffix+".fits")
             break
         else:
             in_file_suffix = step_string_dict[ordered_steps_set_to_True[i]]

@@ -69,15 +69,22 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
 
             for xd, xi, yi in zip(xdelta, xarr1, yarr1):
                 if xd > mean_plus_1half_std:
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='red', label=r"$\Delta x > \mu+1.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='red')#, label=r"$\Delta x > \mu+1.5\sigma$")
                 if xd < mean_minus_1half_std:
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia', label=r"$\Delta x < \mu-1.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia')#, label=r"$\Delta x < \mu-1.5\sigma$")
                 if (xd > mean_minus_1half_std) and (xd < mean_minus_half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta x < \mu-0.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='blue')#, label=r"$\mu-1.5\sigma < \Delta x < \mu-0.5\sigma$")
                 if (xd > mean_minus_half_std) and (xd < mean_plus_half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma$ < \Delta x < \mu+0.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='lime')#, label=r"$\mu-0.5\sigma$ < \Delta x < \mu+0.5\sigma$")
                 if (xd > mean_plus_half_std) and (xd < mean_plus_1half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma$ < \Delta x < \mu+1.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label=r"$\mu+0.5\sigma$ < \Delta x < \mu+1.5\sigma$")
+            plt.xlim(min(xarr1), max(xarr1))
+            plt.ylim(min(yarr1), max(yarr1))
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='red', label=r"$\Delta x > \mu+1.5\sigma$")
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='fuchsia', label=r"$\Delta x < \mu-1.5\sigma$")
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta x < \mu-0.5\sigma$")
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma < \Delta x < \mu+0.5\sigma$")
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma < \Delta x < \mu+1.5\sigma$")
             '''
             idx_red = np.where(xdelta > mean_plus_1half_std)
             idx_fuchsia = np.where(xdelta < mean_minus_1half_std)
@@ -136,15 +143,22 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             mean_plus_1half_std = y_median + 1.5*y_stddev
             for yd, xi, yi in zip(ydelta, xarr2, yarr2):
                 if yd > mean_plus_1half_std:
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='red', label=r"$\Delta y > \mu+1.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='red')#, label=r"$\Delta y > \mu+1.5\sigma$")
                 if yd < mean_minus_1half_std:
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia', label=r"$\Delta y < \mu-1.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia')#, label=r"$\Delta y < \mu-1.5\sigma$")
                 if (yd > mean_minus_1half_std) and (yd < mean_minus_half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='blue')#, label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$")
                 if (yd > mean_minus_half_std) and (yd < mean_plus_half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma$ < \Delta y < \mu+0.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='lime')#, label=r"$\mu-0.5\sigma$ < \Delta y < \mu+0.5\sigma$")
                 if (yd > mean_plus_half_std) and (yd < mean_plus_1half_std):
-                    plt.plot(xi, yi, linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma$ < \Delta y < \mu+1.5\sigma$")
+                    plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label=r"$\mu+0.5\sigma$ < \Delta y < \mu+1.5\sigma$")
+            plt.xlim(min(xarr2), max(xarr2))
+            plt.ylim(min(yarr2), max(yarr2))
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='red', label=r"$\Delta y > \mu+1.5\sigma$")
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='fuchsia', label=r"$\Delta y < \mu-1.5\sigma$")
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$")
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma < \Delta y < \mu+0.5\sigma$")
+            plt.plot(-10.0, -10.0, linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma < \Delta y < \mu+1.5\sigma$")
             # add legend
             box = ax.get_position()
             #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
@@ -173,22 +187,32 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         #plt.yticks(np.arange(min(yarr), max(yarr), 0.000005))
         for xd, xi, yi in zip(xdelta, xarr, yarr):
             if xd > lim_d:
-                plt.plot(xi, yi, linewidth=7, marker='D', color='red', label=r"$ \Delta x > 5.0e-13 $")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='red')#, label=r"$ \Delta x > 5.0e-13 $")
             if xd < lim_a:
-                plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia', label=r"$\Delta x < -5.0e-13 $")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia')#, label=r"$\Delta x < -5.0e-13 $")
             if (xd > lim_a) and (xd < lim_b):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='blue', label=r"$ -5.0e-13 < \Delta x < -1.0e-15 $")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='blue')#, label=r"$ -5.0e-13 < \Delta x < -1.0e-15 $")
             if (xd > lim_b) and (xd < lim_c):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='lime', label=r"$ -1.0e-15 < \Delta x < 1.0e-13 $")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='lime')#, label=r"$ -1.0e-15 < \Delta x < 1.0e-13 $")
             if (xd > lim_c) and (xd < lim_d):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='black', label=r"$ 1.0e-15 < \Delta x < 5.0e-13 $")
+                plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label=r"$ 1.0e-15 < \Delta x < 5.0e-13 $")
+        plt.plot(-10.0, 10.0, linewidth=7, marker='D', color='red', label=r"$\Delta x > 5.0e-13")
+        plt.plot(-10.0, 10.0, linewidth=7, marker='D', color='fuchsia', label=r"$$\Delta x < -5.0e-13$")
+        plt.plot(-10.0, 10.0, linewidth=7, marker='D', color='blue', label=r"$ -5.0e-13 < \Delta x < -1.0e-15 $")
+        plt.plot(-10.0, 10.0, linewidth=7, marker='D', color='lime', label=r"$ -1.0e-15 < \Delta x < 1.0e-13 $")
+        plt.plot(-10.0, 10.0, linewidth=7, marker='D', color='black', label=r"$ 1.0e-15 < \Delta x < 5.0e-13 $")
         # Shrink current axis
-        #box = ax.get_position()
-        #percent = 0.85
-        #ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
+        box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
+        #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
+        # shrink plotting space so that the legend is to the right
+        percent = 0.72
+        ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
+        textinfig_mu = r'$\mu$={:<0.3e}    $\sigma$={:<0.3e}'.format(np.median(xdelta), np.std(xdelta))
+        ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
         plt.gca().xaxis.set_major_locator(MaxNLocator(prune='lower'))
         plt.tight_layout()
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
         plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
         plt.minorticks_on()
     if save_figs:
