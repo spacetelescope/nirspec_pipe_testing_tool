@@ -127,6 +127,9 @@ if os.path.isfile(uncal_file):
 
     # make sure the lamp, filter, and grating values are correctly propagated
     lamp = fits.getval(fits_file, 'CAA_LAMP')
+    filt = fits.getval(fits_file, "FWA_POS")
+    """
+    Commenting out this section as the pipeline is now able to run with FILTER=OPAQUE.
     if "NO_LAMP" in lamp:
         try:
             filt = fits.getval(fits_file, "FWA_POS")
@@ -146,6 +149,7 @@ if os.path.isfile(uncal_file):
         filt = 'CLEAR'
     elif 'FLAT4' in lamp:
         filt = 'F070LP'
+    """
     fits.setval(uncal_file, 'LAMP', 0, value=lamp)
     fits.setval(uncal_file, 'FILTER', 0, value=filt, after='DETECTOR')
 
