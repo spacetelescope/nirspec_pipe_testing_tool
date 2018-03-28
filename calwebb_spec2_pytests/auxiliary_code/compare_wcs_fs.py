@@ -90,11 +90,11 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         idx_blue = np.where((xdelta > mean_minus_1half_std) & (xdelta < mean_minus_half_std))
         idx_lime = np.where((xdelta > mean_minus_half_std) & (xdelta < mean_plus_half_std))
         idx_black = np.where((xdelta > mean_plus_half_std) & (xdelta < mean_plus_1half_std))
-        plt.plot(xarr1[idx_red], yarr1[idx_red], linewidth=7, marker='D', color='red', label=r"$\Delta x > \mu+1.5\sigma$")
-        plt.plot(xarr1[idx_fuchsia], yarr1[idx_fuchsia], linewidth=7, marker='D', color='fuchsia', label=r"$\Delta x < \mu-1.5\sigma$")
-        plt.plot(xarr1[idx_blue], yarr1[idx_blue], linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta x < \mu-0.5\sigma$")
-        plt.plot(xarr1[idx_lime], yarr1[idx_lime], linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma < \Delta x < \mu+0.5\sigma$")
-        plt.plot(xarr1[idx_black], yarr1[idx_black], linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma < \Delta x < \mu+1.5\sigma$")
+        plt.plot(xarr1[idx_red], yarr1[idx_red], linewidth=7, marker='D', color='red', label=r"$\Delta \lambda > \mu+1.5\sigma$")
+        plt.plot(xarr1[idx_fuchsia], yarr1[idx_fuchsia], linewidth=7, marker='D', color='fuchsia', label=r"$\Delta \lambda < \mu-1.5\sigma$")
+        plt.plot(xarr1[idx_blue], yarr1[idx_blue], linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta \lambda < \mu-0.5\sigma$")
+        plt.plot(xarr1[idx_lime], yarr1[idx_lime], linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma < \Delta \lambda < \mu+0.5\sigma$")
+        plt.plot(xarr1[idx_black], yarr1[idx_black], linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma < \Delta \lambda < \mu+1.5\sigma$")
         # add legend
         box = ax.get_position()
         #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
@@ -103,7 +103,7 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         percent = 0.72
         ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
-        textinfig_mu = r'$\mu$={:<0.3e}    $\sigma$={:<0.3e}'.format(x_median, x_stddev)
+        textinfig_mu = r'$\mu_{\lambda}$={:<0.3e}    $\sigma_{\lambda}$={:<0.3e}'.format(x_median, x_stddev)
         ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
     plt.minorticks_on()
     if histogram:
@@ -172,7 +172,7 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         percent = 0.72
         ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
-        textinfig_mu = r'$\mu$={:<0.3e}    $\sigma$={:<0.3e}'.format(y_median, y_stddev)
+        textinfig_mu = r'$\mu_y$={:<0.3e}    $\sigma_y$={:<0.3e}'.format(y_median, y_stddev)
         ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
         """
         ax = plt.subplot(313)
@@ -190,11 +190,11 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         idx_blue = np.where((ydelta > mean_minus_1half_std) & (ydelta < mean_minus_half_std))
         idx_lime = np.where((ydelta > mean_minus_half_std) & (ydelta < mean_plus_half_std))
         idx_black = np.where((ydelta > mean_plus_half_std) & (ydelta < mean_plus_1half_std))
-        plt.plot(xarr3[idx_red], yarr3[idx_red], linewidth=7, marker='D', color='red')#, label="ydelta > median_plus_1half_std")
-        plt.plot(xarr3[idx_fuchsia], yarr3[idx_fuchsia], linewidth=7, marker='D', color='fuchsia')#, label="ydelta < median_minus_1half_std")
-        plt.plot(xarr3[idx_blue], yarr3[idx_blue], linewidth=7, marker='D', color='blue')#, label="median_plus_1half_std > ydelta > median_minus_1half_std")
-        plt.plot(xarr3[idx_lime], yarr3[idx_lime], linewidth=7, marker='D', color='lime')#, label="median_plus_half_std > ydelta > median_minus_half_std")
-        plt.plot(xarr3[idx_black], yarr3[idx_black], linewidth=7, marker='D', color='black')#, label="median_plus_1half_std > ydelta > median_minus_half_std")
+        plt.plot(xarr3[idx_red], yarr3[idx_red], linewidth=7, marker='D', color='red', label="ydelta > median_plus_1half_std")
+        plt.plot(xarr3[idx_fuchsia], yarr3[idx_fuchsia], linewidth=7, marker='D', color='fuchsia', label="ydelta < median_minus_1half_std")
+        plt.plot(xarr3[idx_blue], yarr3[idx_blue], linewidth=7, marker='D', color='blue', label="median_plus_1half_std > ydelta > median_minus_1half_std")
+        plt.plot(xarr3[idx_lime], yarr3[idx_lime], linewidth=7, marker='D', color='lime', label="median_plus_half_std > ydelta > median_minus_half_std")
+        plt.plot(xarr3[idx_black], yarr3[idx_black], linewidth=7, marker='D', color='black', label="median_plus_1half_std > ydelta > median_minus_half_std")
         # add legend
         #box = ax.get_position()
         #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
