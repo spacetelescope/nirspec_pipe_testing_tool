@@ -90,11 +90,11 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             idx_blue = np.where((xdelta > mean_minus_1half_std) & (xdelta < mean_minus_half_std))
             idx_lime = np.where((xdelta > mean_minus_half_std) & (xdelta < mean_plus_half_std))
             idx_black = np.where((xdelta > mean_plus_half_std) & (xdelta < mean_plus_1half_std))
-            plt.plot(xarr1[idx_red], yarr1[idx_red], linewidth=7, marker='D', color='red', label=r"$\Delta x > \mu+1.5\sigma$")
-            plt.plot(xarr1[idx_fuchsia], yarr1[idx_fuchsia], linewidth=7, marker='D', color='fuchsia', label=r"$\Delta x < \mu-1.5\sigma$")
-            plt.plot(xarr1[idx_blue], yarr1[idx_blue], linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta x < \mu-0.5\sigma$")
-            plt.plot(xarr1[idx_lime], yarr1[idx_lime], linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma < \Delta x < \mu+0.5\sigma$")
-            plt.plot(xarr1[idx_black], yarr1[idx_black], linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma < \Delta x < \mu+1.5\sigma$")
+            plt.plot(xarr1[idx_lime], yarr1[idx_lime], linewidth=2, marker='.', color='lime', label=r"$\mu-0.5\sigma < \Delta \lambda < \mu+0.5\sigma$", alpha=0.7)
+            plt.plot(xarr1[idx_black], yarr1[idx_black], linewidth=2, marker='.', color='black', label=r"$\mu+0.5\sigma < \Delta \lambda < \mu+1.5\sigma$", alpha=alpha)
+            plt.plot(xarr1[idx_blue], yarr1[idx_blue], linewidth=2, marker='.', color='blue', label=r"$\mu-1.5\sigma < \Delta \lambda < \mu-0.5\sigma$", alpha=alpha)
+            plt.plot(xarr1[idx_red], yarr1[idx_red], linewidth=2, marker='.', color='red', label=r"$\Delta \lambda > \mu+1.5\sigma$", alpha=alpha)
+            plt.plot(xarr1[idx_fuchsia], yarr1[idx_fuchsia], linewidth=2, marker='.', color='fuchsia', label=r"$\Delta \lambda < \mu-1.5\sigma$", alpha=alpha)
 
             # add legend
             box = ax.get_position()
@@ -165,11 +165,11 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             idx_blue = np.where((ydelta > mean_minus_1half_std) & (ydelta < mean_minus_half_std))[0]
             idx_lime = np.where((ydelta > mean_minus_half_std) & (ydelta < mean_plus_half_std))[0]
             idx_black = np.where((ydelta > mean_plus_half_std) & (ydelta < mean_plus_1half_std))[0]
-            plt.plot(xarr2[idx_red], yarr2[idx_red], linewidth=7, marker='D', color='red', label=r"$\Delta y > \mu+1.5\sigma$")
-            plt.plot(xarr2[idx_fuchsia], yarr2[idx_fuchsia], linewidth=7, marker='D', color='fuchsia', label=r"$\Delta y < \mu-1.5\sigma$")
-            plt.plot(xarr2[idx_blue], yarr2[idx_blue], linewidth=7, marker='D', color='blue', label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$")
-            plt.plot(xarr2[idx_lime], yarr2[idx_lime], linewidth=7, marker='D', color='lime', label=r"$\mu-0.5\sigma < \Delta y < \mu+0.5\sigma$")
-            plt.plot(xarr2[idx_black], yarr2[idx_black], linewidth=7, marker='D', color='black', label=r"$\mu+0.5\sigma < \Delta y < \mu+1.5\sigma$")
+            plt.plot(xarr2[idx_lime], yarr2[idx_lime], linewidth=2, marker='.', color='lime', label=r"$\mu-0.5\sigma < \Delta y < \mu+0.5\sigma$", alpha=0.7)
+            plt.plot(xarr2[idx_black], yarr2[idx_black], linewidth=2, marker='.', color='black', label=r"$\mu+0.5\sigma < \Delta y < \mu+1.5\sigma$", alpha=alpha)
+            plt.plot(xarr2[idx_blue], yarr2[idx_blue], linewidth=2, marker='.', color='blue', label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$", alpha=alpha)
+            plt.plot(xarr2[idx_red], yarr2[idx_red], linewidth=2, marker='.', color='red', label=r"$\Delta y > \mu+1.5\sigma$", alpha=alpha)
+            plt.plot(xarr2[idx_fuchsia], yarr2[idx_fuchsia], linewidth=2, marker='.', color='fuchsia', label=r"$\Delta y < \mu-1.5\sigma$", alpha=alpha)
             # add legend
             box = ax.get_position()
             #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
@@ -219,11 +219,11 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         idx_blue = np.where((xdelta > lim_a) & (xdelta < lim_b))[0]
         idx_lime = np.where((xdelta > lim_b) & (xdelta < lim_c))[0]
         idx_black = np.where((xdelta > lim_c) & (xdelta < lim_d))[0]
-        plt.plot(xarr[idx_red], yarr[idx_red], linewidth=7, marker='D', color='red', label=r" $ \Delta \lambda$ > 5.0e-13 ")
-        plt.plot(xarr[idx_fuchsia], yarr[idx_fuchsia], linewidth=7, marker='D', color='fuchsia', label=r"$\Delta \lambda$ < -5.0e-13 ")
-        plt.plot(xarr[idx_blue], yarr[idx_blue], linewidth=7, marker='D', color='blue', label=r" -5.0e-13 < $\Delta \lambda$ < -1.0e-15 ")
-        plt.plot(xarr[idx_lime], yarr[idx_lime], linewidth=7, marker='D', color='lime', label=r" -1.0e-15 < $\Delta \lambda$ < 1.0e-13 ")
-        plt.plot(xarr[idx_black], yarr[idx_black], linewidth=7, marker='D', color='black', label=r" 1.0e-15 < $\Delta \lambda$ < 5.0e-13 ")
+        plt.plot(xarr[idx_lime], yarr[idx_lime], linewidth=2, marker='.', color='lime', label=r" -1.0e-15 < $\Delta \lambda$ < 1.0e-13 ", alpha=0.7)
+        plt.plot(xarr[idx_black], yarr[idx_black], linewidth=2, marker='.', color='black', label=r" 1.0e-15 < $\Delta \lambda$ < 5.0e-13 ", alpha=alpha)
+        plt.plot(xarr[idx_blue], yarr[idx_blue], linewidth=2, marker='.', color='blue', label=r" -5.0e-13 < $\Delta \lambda$ < -1.0e-15 ", alpha=alpha)
+        plt.plot(xarr[idx_red], yarr[idx_red], linewidth=2, marker='.', color='red', label=r" $ \Delta \lambda$ > 5.0e-13 ", alpha=alpha)
+        plt.plot(xarr[idx_fuchsia], yarr[idx_fuchsia], linewidth=2, marker='.', color='fuchsia', label=r"$\Delta \lambda$ < -5.0e-13 ", alpha=alpha)
 
         # Shrink current axis
         box = ax.get_position()

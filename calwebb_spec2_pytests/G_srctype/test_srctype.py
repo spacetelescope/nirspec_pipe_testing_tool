@@ -3,14 +3,16 @@
 py.test module for unit testing the srctype step.
 """
 
-import pytest
 import os
-import time
 import subprocess
+import time
 
+import pytest
 from jwst.srctype.srctype_step import SourceTypeStep
-from .. import core_utils
+
 from . import srctype_utils
+from .. import core_utils
+from .. auxiliary_code import change_filter_opaque2science
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -34,6 +36,16 @@ def output_hdul(set_inandout_filenames, config):
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
+
+    # check if the filter is to be changed
+    change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
+    if change_filter_opaque:
+        is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
+        if is_filter_opaque:
+            print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip.")
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
+
     if run_calwebb_spec2:
         # read the assign wcs fits file
         local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)

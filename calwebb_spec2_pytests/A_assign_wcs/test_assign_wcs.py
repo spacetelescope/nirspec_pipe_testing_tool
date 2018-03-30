@@ -3,17 +3,18 @@
 py.test module for unit testing the assign_wcs step.
 """
 
-import pytest
 import os
-import time
 import subprocess
+import time
+import pytest
 from astropy.io import fits
-from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
 from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
+from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
 
-from .. import core_utils
 from . import assign_wcs_utils
+from .. import core_utils
 from .. auxiliary_code import compare_wcs_ifu
+from .. auxiliary_code import change_filter_opaque2science
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -41,6 +42,13 @@ def set_inandout_filenames(config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
+
+    # check if the filter is to be changed
+    change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
+    if change_filter_opaque:
+        _, step_input_file = change_filter_opaque2science.change_filter_opaque(step_input_file)
+        print (" * With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Further steps will be skipped. \n")
+
     stp = AssignWcsStep()
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
