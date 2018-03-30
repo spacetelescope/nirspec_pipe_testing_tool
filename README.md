@@ -88,6 +88,8 @@ the ```b7.1cfg_files``` directory and the ```nirspec_testing_tool``` directory c
 the same level, but the ```b7.1cfg_files``` directory cannot be inside the 
 ```nirspec_testing_tool``` directory because otherwise the .cfg files
 will be picked up by Git and it will try to put them in your space.
+Remember you are in the GitHub repository page so go all the way to the top of the page,
+click on the green button and copy the ulr that appears there.
 ```bash
 git clone the_ulr_you_copied
 ```
@@ -174,8 +176,20 @@ calwebb detector1 in a single run, you will only see the total running time. Thi
 along with the intermediary products will be located in the path you set for the 
 ```working_directory``` variable in the configuration file of the PTT.
 
-You now are able to run the MESA calwebb 
-detector 1 testing tool. Steps to obtain the MESA testing tool:
+NOTE:
+- If you were not able to get the file to run though cal detector1 due to an error saying 
+that the pipeline was not able to find a best reference for dark or superbias, it is 
+possible this is due to the filter keyword  in the main header set to OPAQUE. 
+- In this case, you can use an auxiliary script named ```change_filter_opaque2science```, 
+which lives at ```/nirspec_pipetesting_tool/calwebb_spec2_pytests/auxiliary_code```. 
+- You can run the script from a terminal in any directory by typing:
+```bash
+python ../calwebb_spec2_pytests/auxiliary_code/change_filter_opaque2science.py 
+                                                                   /path_to_the_file.fits 
+```
+
+If all went well and you have a gain_scale.fits file, you now are able to run the MESA 
+calwebb detector 1 testing tool. Steps to obtain the MESA testing tool:
 
 a. At the same level as the top directory of the PTT (i.e. the ```nirspec_pipe_testing_tool``` 
 directory), create a new directory called ```MESA_cal_detector1```.
@@ -197,9 +211,11 @@ d. Run the MESA testing tool with the following command:
 ```bash
 test_pipeline --config ./cal_detector1_input.json
 ```
-Please record your progress. Make a PDF export of the html report, and place it in 
-the corresponding column of Table 2 of our testing campaign Confluence page:
-https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
+Please record your progress in our testing campaign Confluence page:
+https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+2. 
+
+Please remember to make a PDF export of the html report, so that it does not
+get corrupted when you move it to another directory. 
 
  
 8. Ready to run PTT. Go back to the directory where PTT lives and into the 
@@ -229,7 +245,7 @@ products that appeared in the working directory. Each section of the report spec
 what tests passed or failed, and, if there were any errors, the report will tell you 
 (with the name of the script where the error occurred) if it is a pipeline error or a 
 PTT error. Keep updating your testing progress in our testing campaign Confluence page:
-https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
+https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+2
 
 Please follow these actions for reporting your progress, depending on the outcome:
 - Do not place the html file in the Confluence page because it will get corrupted. 

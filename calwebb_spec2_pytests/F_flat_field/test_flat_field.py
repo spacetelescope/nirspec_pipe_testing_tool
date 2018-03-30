@@ -3,18 +3,19 @@
 py.test module for unit testing the flat field step.
 """
 
-import pytest
 import os
-import time
 import subprocess
-from astropy.io import fits
+import time
 
+import pytest
 from jwst.flatfield.flat_field_step import FlatFieldStep
-from .. import core_utils
+
 from . import flat_field_utils
-from .. auxiliary_code import flattest_mos
+from .. import core_utils
 from .. auxiliary_code import flattest_fs
 from .. auxiliary_code import flattest_ifu
+from .. auxiliary_code import flattest_mos
+from .. auxiliary_code import change_filter_opaque2science
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -48,6 +49,16 @@ def output_hdul(set_inandout_filenames, config):
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
+
+    # check if the filter is to be changed
+    change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
+    if change_filter_opaque:
+        is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
+        if is_filter_opaque:
+            print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip.")
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
+
     # get the MSA shutter configuration file full path only for MOS data
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if run_calwebb_spec2:
