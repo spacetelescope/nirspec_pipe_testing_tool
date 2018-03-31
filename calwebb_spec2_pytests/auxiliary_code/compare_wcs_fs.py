@@ -64,7 +64,8 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
     if deltas_plt:
         ax = plt.subplot(211)
         title1, xlabel1, ylabel1, xarr1, yarr1, xdelta, x_median, x_stddev = info_fig1
-        xarr1, yarr1 = xarr1[0], yarr1[0]
+        #print(title1, xlabel1, ylabel1, xarr1, yarr1, xdelta, x_median, x_stddev)
+        #xarr1, yarr1 = xarr1[0], yarr1[0]
         plt.title(title1)
         plt.xlabel(xlabel1)
         plt.ylabel(ylabel1)
@@ -85,16 +86,18 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             if (xd > mean_plus_half_std) and (xd < mean_plus_1half_std):
                 plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label="")
         '''
-        idx_red = np.where(xdelta > mean_plus_1half_std)
-        idx_fuchsia = np.where(xdelta < mean_minus_1half_std)
-        idx_blue = np.where((xdelta > mean_minus_1half_std) & (xdelta < mean_minus_half_std))
-        idx_lime = np.where((xdelta > mean_minus_half_std) & (xdelta < mean_plus_half_std))
-        idx_black = np.where((xdelta > mean_plus_half_std) & (xdelta < mean_plus_1half_std))
-        plt.plot(xarr1[idx_red], yarr1[idx_red], linewidth=2, marker='.', color='red', label=r"$\Delta \lambda > \mu+1.5\sigma$", alpha=0.7)
-        plt.plot(xarr1[idx_fuchsia], yarr1[idx_fuchsia], linewidth=2, marker='.', color='fuchsia', label=r"$\Delta \lambda < \mu-1.5\sigma$", alpha=alpha)
-        plt.plot(xarr1[idx_blue], yarr1[idx_blue], linewidth=2, marker='.', color='blue', label=r"$\mu-1.5\sigma < \Delta \lambda < \mu-0.5\sigma$", alpha=alpha)
-        plt.plot(xarr1[idx_lime], yarr1[idx_lime], linewidth=2, marker='.', color='lime', label=r"$\mu-0.5\sigma < \Delta \lambda < \mu+0.5\sigma$", alpha=alpha)
+        idx_red = np.where(xdelta > mean_plus_1half_std)[0]
+        idx_fuchsia = np.where(xdelta < mean_minus_1half_std)[0]
+        idx_blue = np.where((xdelta > mean_minus_1half_std) & (xdelta < mean_minus_half_std))[0]
+        idx_lime = np.where((xdelta > mean_minus_half_std) & (xdelta < mean_plus_half_std))[0]
+        idx_black = np.where((xdelta > mean_plus_half_std) & (xdelta < mean_plus_1half_std))[0]
+        #print(len(idx_red), len(idx_fuchsia), len(idx_blue), len(idx_lime), len(idx_black))
+        #print(len(xarr1), len(yarr1))
+        plt.plot(xarr1[idx_lime], yarr1[idx_lime], linewidth=2, marker='.', color='lime', label=r"$\mu-0.5\sigma < \Delta \lambda < \mu+0.5\sigma$", alpha=0.7)
         plt.plot(xarr1[idx_black], yarr1[idx_black], linewidth=2, marker='.', color='black', label=r"$\mu+0.5\sigma < \Delta \lambda < \mu+1.5\sigma$", alpha=alpha)
+        plt.plot(xarr1[idx_blue], yarr1[idx_blue], linewidth=2, marker='.', color='blue', label=r"$\mu-1.5\sigma < \Delta \lambda < \mu-0.5\sigma$", alpha=alpha)
+        plt.plot(xarr1[idx_red], yarr1[idx_red], linewidth=2, marker='.', color='red', label=r"$\Delta \lambda > \mu+1.5\sigma$", alpha=alpha)
+        plt.plot(xarr1[idx_fuchsia], yarr1[idx_fuchsia], linewidth=2, marker='.', color='fuchsia', label=r"$\Delta \lambda < \mu-1.5\sigma$", alpha=alpha)
         # add legend
         box = ax.get_position()
         #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
@@ -103,7 +106,7 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
         percent = 0.72
         ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
-        textinfig_mu = r'$\mu_{\lambda}$={:<0.3e}    $\sigma_{\lambda}$={:<0.3e}'.format(x_median, x_stddev)
+        textinfig_mu = r'$\mu \lambda $={:<0.3e}    $\sigma \lambda $={:<0.3e}'.format(x_median, x_stddev)
         ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
     plt.minorticks_on()
     if histogram:
@@ -133,7 +136,7 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
     if deltas_plt:
         ax = plt.subplot(212)
         title2, xlabel2, ylabel2, xarr2, yarr2, ydelta, y_median, y_stddev = info_fig2
-        xarr2, yarr2 = xarr2[0], yarr2[0]
+        #xarr2, yarr2 = xarr2[0], yarr2[0]
         plt.title(title2)
         plt.xlabel(xlabel2)
         plt.ylabel(ylabel2)
@@ -154,16 +157,17 @@ def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=N
             if (yd > mean_plus_half_std) and (yd < mean_plus_1half_std):
                 plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label=r"$\mu+0.5*\sigma$ > $\mu+1.5*\sigma$")
         '''
-        idx_red = np.where(ydelta > mean_plus_1half_std)
-        idx_fuchsia = np.where(ydelta < mean_minus_1half_std)
-        idx_blue = np.where((ydelta > mean_minus_1half_std) & (ydelta < mean_minus_half_std))
-        idx_lime = np.where((ydelta > mean_minus_half_std) & (ydelta < mean_plus_half_std))
-        idx_black = np.where((ydelta > mean_plus_half_std) & (ydelta < mean_plus_1half_std))
-        plt.plot(xarr2[idx_red], yarr2[idx_red], linewidth=2, marker='.', color='red', label=r"$\Delta y > \mu+1.5\sigma$", alpha=0.7)
-        plt.plot(xarr2[idx_fuchsia], yarr2[idx_fuchsia], linewidth=2, marker='.', color='fuchsia', label=r"$\Delta y < \mu-1.5\sigma$", alpha=alpha)
-        plt.plot(xarr2[idx_blue], yarr2[idx_blue], linewidth=2, marker='.', color='blue', label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$", alpha=alpha)
-        plt.plot(xarr2[idx_lime], yarr2[idx_lime], linewidth=2, marker='.', color='lime', label=r"$\mu-0.5\sigma < \Delta y < \mu+0.5\sigma$", alpha=alpha)
+        idx_red = np.where(ydelta > mean_plus_1half_std)[0]
+        idx_fuchsia = np.where(ydelta < mean_minus_1half_std)[0]
+        idx_blue = np.where((ydelta > mean_minus_1half_std) & (ydelta < mean_minus_half_std))[0]
+        idx_lime = np.where((ydelta > mean_minus_half_std) & (ydelta < mean_plus_half_std))[0]
+        idx_black = np.where((ydelta > mean_plus_half_std) & (ydelta < mean_plus_1half_std))[0]
+        #print(len(idx_red), len(idx_fuchsia), len(idx_blue), len(idx_lime), len(idx_black))
+        plt.plot(xarr2[idx_lime], yarr2[idx_lime], linewidth=2, marker='.', color='lime', label=r"$\mu-0.5\sigma < \Delta y < \mu+0.5\sigma$", alpha=0.7)
         plt.plot(xarr2[idx_black], yarr2[idx_black], linewidth=2, marker='.', color='black', label=r"$\mu+0.5\sigma < \Delta y < \mu+1.5\sigma$", alpha=alpha)
+        plt.plot(xarr2[idx_blue], yarr2[idx_blue], linewidth=2, marker='.', color='blue', label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$", alpha=alpha)
+        plt.plot(xarr2[idx_red], yarr2[idx_red], linewidth=2, marker='.', color='red', label=r"$\Delta y > \mu+1.5\sigma$", alpha=alpha)
+        plt.plot(xarr2[idx_fuchsia], yarr2[idx_fuchsia], linewidth=2, marker='.', color='fuchsia', label=r"$\Delta y < \mu-1.5\sigma$", alpha=alpha)
         # add legend
         box = ax.get_position()
         #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
@@ -436,10 +440,15 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         # get the elements with index imp and ime
         #print('flat_pwave=', len(flat_pwave), '  flat_ewave=', len(flat_ewave))
 
-        try:
-            ig = np.where((flat_pwave[imp]!=0.0) & (flat_ewave[ime]!=0.0) & (np.isfinite(flat_pwave[imp])) & (np.isfinite(flat_ewave[imp])))
-        except:
-            IndexError
+        #try:
+        #    ig = np.where((flat_pwave[imp]!=0.0) & (flat_ewave[ime]!=0.0) & (np.isfinite(flat_pwave[imp])) & (np.isfinite(flat_ewave[imp])))
+        #except:
+        #    IndexError
+        #print('ig = ', np.shape(ig))
+        ig = []
+        for ip, ie, ig_i in zip(imp, ime, range(len(imp))):
+            if all( [flat_pwave[ip] != 0 and flat_ewave[ie].size != 0 and np.isfinite(flat_pwave[ip]) and np.isfinite(flat_ewave[ip])] ):
+                ig.append(ig_i)
         #print('ig = ', np.shape(ig))
 
         pxr, pyr = np.array([]), np.array([])
@@ -452,30 +461,33 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                 pyr = np.concatenate((pyr, rpy_i))
         pyr = pyr.astype(int)
 
-        pxrg, pyrg, deldy = [], [], []
+        pxrg, pyrg, deldy, delwave = [], [], [], []
         flat_pdy, flat_edy = pdy.flatten(), edy.flatten()
-        try:
-            for ig_i in ig:
+
+        for ig_i in ig:
+            if (flat_pdy[imp[ig_i]]!=0.0) and (flat_edy[ime[ig_i]]!=0.0) and np.isfinite(flat_pdy[imp[ig_i]]) and np.isfinite(flat_edy[ime[ig_i]]):
                 pxrg_i = pxr[imp[ig_i]]
                 pxrg.append(pxrg_i)
                 pyrg_i = pyr[imp[ig_i]]
                 pyrg.append(pyrg_i)
                 deldy_i = flat_pdy[imp[ig_i]] - flat_edy[ime[ig_i]]
                 deldy.append(deldy_i)
-            pxrg, pyrg, deldy = np.array(pxrg), np.array(pyrg), np.array(deldy)
+                delw = flat_pwave[imp[ig_i]]*1.0e-6 -flat_ewave[ime[ig_i]]
+                delwave.append(delw)
 
-            igy = np.where((flat_pdy[imp]!=0.0) & (flat_edy[ime]!=0.0) & (np.isfinite(flat_pdy[imp])) & (np.isfinite(flat_edy[imp])))
-            #print('igy = ', np.shape(igy))
+        pxrg, pyrg, deldy, delwave = np.array(pxrg), np.array(pyrg), np.array(deldy), np.array(delwave)
 
-            delwave = (flat_pwave[imp[ig]]*1.0e-6 -flat_ewave[ime[ig]])
-            deldy = flat_pdy[imp[igy]] - flat_edy[ime[igy]]
-            #delflx = flat_pdy[imp[ig]] - flat_edy[ime[ig]]
-            #print (flat_pdy[imp[ig]], flat_edy[ime[ig]])
 
-            #print('np.shape(delwave) = ', np.shape(delwave))
-            #print('np.shape(deldy) = ', np.shape(deldy))
-        except:
-            IndexError
+        #igy = np.where((flat_pdy[imp]!=0.0) & (flat_edy[ime]!=0.0) & (np.isfinite(flat_pdy[imp])) & (np.isfinite(flat_edy[imp])))
+        #print('igy = ', np.shape(igy))
+
+        #delwave = (flat_pwave[imp[ig]]*1.0e-6 -flat_ewave[ime[ig]])
+        #deldy = flat_pdy[imp[igy]] - flat_edy[ime[igy]]
+        #delflx = flat_pdy[imp[ig]] - flat_edy[ime[ig]]
+        #print (flat_pdy[imp[ig]], flat_edy[ime[ig]])
+
+        #print('np.shape(delwave) = ', np.shape(delwave))
+        #print('np.shape(deldy) = ', np.shape(deldy))
 
         # get the median and standard deviations
         median_diff = False
@@ -526,6 +538,7 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
                     title = ""
                     title1, xlabel1, ylabel1 = r"$\Delta \lambda$", "x (pixels)", "y (pixels)"
                     info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
+                    #print(title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev)
                     title2, xlabel2, ylabel2 = "Relative slit position", "x (pixels)", "y (pixels)"
                     info_fig2 = [title2, xlabel2, ylabel2, pxrg, pyrg, deldy, deldy_median, deldy_stddev]
                     #title3, xlabel3, ylabel3 = r"$\Delta$ Flux", "x (pixels)", "y (pixels)"
@@ -552,8 +565,9 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results/"
-    infile_name = data_dir+"gain_scale_assign_wcs_extract_2d.fits"
+    #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G235H_opaque/491_results"
+    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results"
+    infile_name = data_dir+"/gain_scale_assign_wcs_extract_2d.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
     # if a specific file needs to be used
