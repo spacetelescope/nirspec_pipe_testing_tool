@@ -20,6 +20,28 @@ https://astroconda.readthedocs.io/en/latest/
 Please use python 3.5
 
 
+* A COUPLE OF THINGS BEFORE STARTING
+
+- You may want to clean your PYTHONPATH so that you do not get mysterious failures. To do
+this simply type the following command in the terminal:
+```
+bash
+unset PYTHONPATH
+```
+You can do this every time you run the pytests, or when you start getting strange 
+failures. Another option is not to define PYTHONPATH at all in the .profile (or 
+equivalent: .bashrc, .bash_profile, .cshrc, .login, etc.) file.
+
+- If you work outside the internal network, i.e. in the visitors network or at home, you
+also want to set the following environment variables in the terminal or add them to your
+.profile file:
+```
+bash
+export CRDS_SERVER_URL=https://jwst-crds.stsci.edu
+export CRDS_PATH=${HOME}/crds_cache
+```
+
+
 1. Create the conda environment for testing and get the configuration files.  
 
 a. Conda environment for this testing campaign:
@@ -236,7 +258,13 @@ be saved in the path you indicated at the ```PTT_config.cfg``` file with the var
 ```bash
 pytest -s --config_file=PTT_config.cfg --html=report.html
 ```
-The ```-s``` will capture all the print statements in the code on screen.
+The ```-s``` will capture all the print statements in the code on screen. If you want to
+save the on-screen output into a text file simply do:
+```bash
+pytest -s --config_file=PTT_config.cfg --html=report.html > screen_output.txt
+```
+and this will create the ```screen_output.txt``` file in the ```calweb_spec2_pytests``` 
+directory.
 
 
 10. Report your findings. If all went well, you should have the html report in the 
