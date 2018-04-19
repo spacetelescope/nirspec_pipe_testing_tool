@@ -316,8 +316,8 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         print  ("Pipeline subwindow corner pixel ID: ", px0, py0)
 
         # read in the ESA file using raw data root file name
-        raw_data_root_file = "NRSV84600010001P0000000002101_4_491_SE_2016-01-17T17h34m08.fits"  # testing with FS prism FULL
-        #_, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
+        #raw_data_root_file = "NRSV84600010001P0000000002101_4_491_SE_2016-01-17T17h34m08.fits"  # testing with FS FULL
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
         specifics = sltname_list
         #print ("sltname_list = ", sltname_list)
         # check if ESA data is not in the regular directory tree
@@ -566,7 +566,7 @@ if __name__ == '__main__':
     # input parameters that the script expects
     auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
     #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G235H_opaque/491_results"
-    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results"
+    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140H_opaque/491_results"
     infile_name = data_dir+"/gain_scale_assign_wcs_extract_2d.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"

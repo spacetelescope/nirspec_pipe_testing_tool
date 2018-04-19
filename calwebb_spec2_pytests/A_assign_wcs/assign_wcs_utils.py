@@ -607,4 +607,6 @@ def wavran_rfile_is_correct(output_hdul):
     return result
 
 
+#from .. auxiliary_code.reffile_testing import create_rfile_testing
+#wavran_rfile_is_correct = create_rfile_testing("R_WAVRAN", "typical wavelength ranges")
 
