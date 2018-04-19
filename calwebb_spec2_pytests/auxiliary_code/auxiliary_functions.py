@@ -122,6 +122,32 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
         esafile: str, full path of the ESA file corresponding to input given
     """
 
+    def convert_sltname2esaformat(specifics, esafiles=None):
+        sltname_list = specifics
+        for sltname in sltname_list:
+            sltname = sltname.replace("S", "")
+            if ("A1" in sltname) and ("200" in sltname):
+                sltname = "A_"+sltname.split("A")[0]+"_1_"
+                if esafiles is not None:
+                    esafiles.append(sltname)
+            if ("A2" in sltname) and ("200" in sltname):
+                sltname = "A_"+sltname.split("A")[0]+"_2_"
+                if esafiles is not None:
+                    esafiles.append(sltname)
+            if ("400" in sltname) or ("1600" in sltname):
+                sltname = "A_"+sltname.split("A")[0]+"_"
+                if esafiles is not None:
+                    esafiles.append(sltname)
+            if "B" in sltname:
+                sltname = "B_"+sltname.split("B")[0]+"_"
+                if esafiles is not None:
+                    esafiles.append(sltname)
+        if esafiles is not None:
+            return esafiles
+        else:
+            return sltname
+
+
     def find_esafile_basename(specifics, jlab88_dir):
         """
         This function simply avoids code repetition.
@@ -143,25 +169,8 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
             esafile_basename = "Trace_MOS_"+repr(quad)+"_"+row+"_"+col+"_"+jlab88_dir+".fits"
             print ("esafile_basename = ", esafile_basename)
         if "SLIT" in mode:
-            sltname_list = specifics
             esafiles = []
-            for sltname in sltname_list:
-                # change the format of the string to match the ESA trace
-                #print("sltname = ", sltname)
-                sltname = sltname.replace("S", "")
-                #print("sltname after removing S: ", sltname)
-                if ("A" in sltname) and ("200" in sltname):
-                    sltname = "A_"+sltname.split("A")[0]+"_1_"
-                    esafiles.append(sltname)
-                if ("A2" in sltname) and ("200" in sltname):
-                    sltname = "A_"+sltname.split("A")[0]+"_2_"
-                    esafiles.append(sltname)
-                if ("400" in sltname) or ("1600" in sltname):
-                    sltname = "A_"+sltname.split("A")[0]+"_"
-                    esafiles.append(sltname)
-                if "B" in sltname:
-                    sltname = "B_"+sltname.split("B")[0]+"_"
-                    esafiles.append(sltname)
+            esafiles = convert_sltname2esaformat(specifics, esafiles=esafiles)
             # to match current ESA intermediary files naming convention
             esafile_basename_list = []
             for sltname in esafiles:
@@ -201,10 +210,17 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
     # get the specific ESA file
     if mode == "FS":
         mode = "SLIT"
+
     # this is specific code for FS_CV3_cutout ESA direcotry, where some ESA files are at the top level dir
     if len(same_nid_files) != 0:
-        esafile = same_nid_files
-        #print("len(esafile) = ", len(esafile))
+        esafiles = same_nid_files
+        #print("len(esafiles) = ", len(esafiles))
+        #print("esafiles = ", esafiles)
+        if mode == "SLIT"  and  nid is not None:
+            sltname = convert_sltname2esaformat(specifics, esafiles=None)
+            for esaf in esafiles:
+                if sltname in esaf:
+                    esafile = esaf
 
     if len(jlab88_list) != 0  and  nid is None:
         # If the file is not at the first level go into further directories
