@@ -20,12 +20,11 @@ https://astroconda.readthedocs.io/en/latest/
 Please use python 3.5
 
 
-* A COUPLE OF THINGS BEFORE STARTING
+A COUPLE OF THINGS BEFORE STARTING
 
 - You may want to clean your PYTHONPATH so that you do not get mysterious failures. To do
 this simply type the following command in the terminal:
-```
-bash
+```bash
 unset PYTHONPATH
 ```
 You can do this every time you run the pytests, or when you start getting strange 
@@ -35,8 +34,7 @@ equivalent: .bashrc, .bash_profile, .cshrc, .login, etc.) file.
 - If you work outside the internal network, i.e. in the visitors network or at home, you
 also want to set the following environment variables in the terminal or add them to your
 .profile file:
-```
-bash
+```bash
 export CRDS_SERVER_URL=https://jwst-crds.stsci.edu
 export CRDS_PATH=${HOME}/crds_cache
 ```
