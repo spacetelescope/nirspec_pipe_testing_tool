@@ -25,7 +25,7 @@ Example usage:
         > python /path_to_this_script/hdr_keywd_check.py blah.fits IFU -u
 
 where the mode is either FS, MOS, or IFU. If a mode is not provided, the code will look for a mode_used variable
-in the pytests configuration file.
+in the pytests configuration file, and it will crash if this config file does not exist.
 
 '''
 
@@ -419,6 +419,10 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
             # the DATAMODL keyword will only be modified if mode is IFU
             if key == 'DATAMODL' and lev2bdict.keywd_dict['EXP_TYPE']=='NRS_IFU':
                 new_value = 'IFUImageModel'
+            if key == 'GRATING':
+                new_value = fits.getval(updated_fitsfile, 'GWA_POS', 0)
+            if key == 'FILTER':
+                new_value = fits.getval(updated_fitsfile, 'FWA_POS', 0)
             fits.setval(updated_fitsfile, key, 0, value=new_value, after=after_key)
         else:
             # go into the subdictionary for WCS keywords
@@ -444,7 +448,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
     for key in lev2bdict.keywd_dict:
         if key != 'wcsinfo':
             try:
-                fits.delval(updated_fitsfile, subkey, 1)
+                fits.delval(updated_fitsfile, key, 1)
             except:
                 KeyError
     print ("Main and science headers have been updated.")
