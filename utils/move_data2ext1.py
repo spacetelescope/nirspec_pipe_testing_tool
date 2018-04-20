@@ -10,6 +10,7 @@ Example usage:
     The code works from the terminal.
     To create a NEW fits file with the updated header type:
         > python /path_to_this_script/hdr_keywd_check.py blah.fits NRS1
+        NRS1 (491) is the detector for which the data is being extracted, NRS2 (492) can also be used.
 
 
 '''

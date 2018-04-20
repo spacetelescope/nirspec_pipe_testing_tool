@@ -40,6 +40,7 @@ bash
 export CRDS_SERVER_URL=https://jwst-crds.stsci.edu
 export CRDS_PATH=${HOME}/crds_cache
 ```
+These changes will not affect your work while working with the internal network at ST.
 
 
 1. Create the conda environment for testing and get the configuration files.  

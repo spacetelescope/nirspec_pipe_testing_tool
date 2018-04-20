@@ -25,7 +25,7 @@ Example usage:
         > python /path_to_this_script/hdr_keywd_check.py blah.fits IFU -u
 
 where the mode is either FS, MOS, or IFU. If a mode is not provided, the code will look for a mode_used variable
-in the pytests configuration file.
+in the pytests configuration file, and it will crash if this config file does not exist.
 
 '''
 
