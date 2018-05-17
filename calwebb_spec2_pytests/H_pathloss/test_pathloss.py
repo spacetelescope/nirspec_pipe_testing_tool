@@ -95,4 +95,5 @@ def test_r_pthlos_exists(output_hdul):
     assert pathloss_utils.r_pthlos_exists(output_hdul), "The keyword R_PTHLOS was not added to the header --> Not sure what reference file was used."
 
 def test_pthlos_rfile(output_hdul):
-    assert pathloss_utils.pthlos_rfile_is_correct(output_hdul)
+    result = pathloss_utils.pthlos_rfile_is_correct(output_hdul)
+    assert not result, result

@@ -171,11 +171,14 @@ def test_validate_flat_field(output_hdul):
     assert validate_flat_field(output_hdul), "Output value from flattest.py is greater than threshold."
 
 def test_fflat_rfile(output_hdul):
-    assert flat_field_utils.fflat_rfile_is_correct(output_hdul[0])
+    result = flat_field_utils.fflat_rfile_is_correct(output_hdul)
+    assert not result, result
 
 def test_sflat_sfile(output_hdul):
-    assert flat_field_utils.sflat_rfile_is_correct(output_hdul[0])
+    result = flat_field_utils.sflat_rfile_is_correct(output_hdul)
+    assert not result, result
 
 def test_dflat_dfile(output_hdul):
-    assert flat_field_utils.dflat_rfile_is_correct(output_hdul[0])
+    result = flat_field_utils.dflat_rfile_is_correct(output_hdul)
+    assert not result, result
 
