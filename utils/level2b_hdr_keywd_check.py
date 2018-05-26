@@ -24,7 +24,7 @@ Example usage:
     To simply update the header of the existing fits file type:
         > python /path_to_this_script/hdr_keywd_check.py blah.fits IFU -u
 
-where the mode is either FS, MOS, or IFU. If a mode is not provided, the code will look for a mode_used variable
+where the mode is either FS, MOS, IFU, BOTS. If a mode is not provided, the code will look for a mode_used variable
 in the pytests configuration file, and it will crash if this config file does not exist.
 
 '''
@@ -342,6 +342,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         missing_keywds.append('DATAMODL')
                     if 'MOS' in mode_used:
                         val = 'NRS_MSASPEC'
+                    if mode_used == "BOTS":
+                        val = 'NRS_BRIGHTOBJ'
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
                     print('     Setting value of ', key, ' to ', val)

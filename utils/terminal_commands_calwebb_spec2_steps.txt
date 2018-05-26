@@ -23,7 +23,7 @@ strun jwst.msaflagopen.MSAFlagOpenStep fits_file.fits
 strun jwst.extract_2d.Extract2dStep fits_file.fits
 
 # Flat field
-strun jwst.flatfield.FlatFieldStep fits_file.fits
+strun jwst.flatfield.FlatFieldStep fits_file.fits --flat_suffix="intflat"
 
 # Source type 
 strun jwst.srctype.SourceTypeStep fits_file.fits

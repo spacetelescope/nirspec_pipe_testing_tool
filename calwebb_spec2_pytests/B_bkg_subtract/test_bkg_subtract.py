@@ -37,8 +37,12 @@ def output_hdul(set_inandout_filenames, config):
     end_time = '0.0'
     if run_calwebb_spec2:
         # read the assign wcs fits file
-        local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
-        hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
+        input_file = config.get("calwebb_spec2_input_file", "input_file")
+        local_step_output_file = input_file.replace(".fits", "_bkg_substract.fits")
+        if os.path.isfile(local_step_output_file):
+            hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
+        else:
+            pytest.skip("Skipping "+step+" because the output file does not exist.")
         # move the output file into the working directory
         working_directory = config.get("calwebb_spec2_input_file", "working_directory")
         step_output_file = os.path.join(working_directory, local_step_output_file)

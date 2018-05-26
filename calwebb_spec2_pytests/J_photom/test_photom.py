@@ -48,7 +48,8 @@ def output_hdul(set_inandout_filenames, config):
 
     if run_calwebb_spec2:
         # read the assign wcs fits file
-        local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
+        input_file = config.get("calwebb_spec2_input_file", "input_file")
+        local_step_output_file = input_file.replace(".fits", "_photom.fits")
         hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
         # move the output file into the working directory
         working_directory = config.get("calwebb_spec2_input_file", "working_directory")

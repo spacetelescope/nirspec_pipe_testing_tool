@@ -4,6 +4,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 from astropy.io import fits
 
+from gwcs import wcstools
+from jwst import datamodels
+
 from . import auxiliary_functions as auxfunc
 
 
@@ -36,7 +39,7 @@ def reverse_cols(arr):
 
 
 def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, writefile=False,
-             show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-14, debug=False):
+             show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-7, debug=False):
     """
     This function calculates the difference between the pipeline and the calculated flat field values.
     The functions uses the output of the compute_world_coordinates.py script.
@@ -78,6 +81,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     dfile = "_".join(t)
     if det == "NRS2":
         dfile = dfile.replace("nrs1", "nrs2")
+    print("Using D-flat: ", dfile)
     dfim = fits.getdata(dfile, 1)
     dfimdq = fits.getdata(dfile, 4)
     # need to flip/rotate the image into science orientation
@@ -138,6 +142,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     if det == "NRS2":
         sfile = sfile.replace("nrs1", "nrs2")
+    print("Using S-flat: ", sfile)
     sfim = fits.getdata(sfile, 1)
     sfimdq = fits.getdata(sfile, 3)
 
@@ -154,12 +159,12 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print("np.shape(sfimdq) = ", np.shape(sfimdq))
 
     if det == "NRS1":
-        sfv_a2001 = fits.getdata(sfile, 5)
-        sfv_a2002 = fits.getdata(sfile, 6)
-        sfv_a400 = fits.getdata(sfile, 7)
-        sfv_a1600 = fits.getdata(sfile, 8)
+        sfv_a2001 = fits.getdata(sfile, "SLIT_A_200_1")#5)
+        sfv_a2002 = fits.getdata(sfile, "SLIT_A_200_2")#6)
+        sfv_a400 = fits.getdata(sfile, "SLIT_A_400")#7)
+        sfv_a1600 = fits.getdata(sfile, "SLIT_A_1600")#8)
     elif det == "NRS2":
-        sfv_b200 = fits.getdata(sfile, 5)
+        sfv_b200 = fits.getdata(sfile, "SLIT_B_200")#5)
 
     # F-Flat
     fflat_ending = "01.01.fits"
@@ -171,11 +176,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         median_diff = "skip"
         return median_diff
 
+    print("Using F-flat: ", ffile)
     ffv = fits.getdata(ffile, 1)
 
     # now go through each pixel in the test data
-    wc_file_name = step_input_filename.replace("_flat_field.fits", "_world_coordinates.fits")
-    wc_hdulist = fits.open(wc_file_name)
+
+    # get the datamodel from the assign_wcs output file
+    extract2d_wcs_file = step_input_filename.replace("_extract2d_flat_field.fits", ".fits")
+    model = datamodels.MultiSlitModel(extract2d_wcs_file)
 
     if writefile:
         # create the fits list to hold the calculated flat values for each slit
@@ -188,14 +196,23 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         complfile = fits.HDUList()
         complfile.append(hdu0)
 
+    # list to determine if pytest is passed or not
+    total_test_result = []
+
     # loop over the slits
+    sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1", "S200B1"]
     print ("Now looping through the slits. This may take a while... ")
-    for i, _ in enumerate(wc_hdulist):
-        ext = i+1
-        if ext >= len(wc_hdulist):
-            break
-        slit_id = fits.getval(wc_file_name, "SLIT", ext)
-        print("\n Working with slit: ", slit_id)
+    if det != "NRS2":
+        sltname_list.pop(len(sltname_list)-1)
+
+    # but check if data is BOTS
+    if fits.getval(step_input_filename, "EXP_TYPE", 0) == "NRS_BRIGHTOBJ":
+        sltname_list = ["S1600A1"]
+
+    for i, slit in enumerate(model.slits):
+        slit_id = sltname_list[i]
+        print ("\nWorking with slit: ", slit_id)
+        ext = i+1   # this is for getting the correct extension in the pipeline calculated flat
 
         # select the appropriate S-flat fast vector
         if slit_id == "S200A1":
@@ -210,23 +227,31 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             sfv = sfv_b200
 
         # get the wavelength
-        wc_data = fits.getdata(wc_file_name, ext)
-        wave = wc_data[0, :, :]
+        # slit.x(y)start are 1-based, turn them to 0-based for extraction
+        # xstart, xend = slit.xstart - 1, slit.xstart -1 + slit.xsize
+        # ystart, yend = slit.ystart - 1, slit.ystart -1 + slit.ysize
+        # y, x = np.mgrid[ystart: yend, xstart: xend]
+        x, y = wcstools.grid_from_bounding_box(slit.meta.wcs.bounding_box, step=(1, 1), center=True)
+        ra, dec, wave = slit.meta.wcs(x, y)   # wave is in microns
+        #detector2slit = slit.meta.wcs.get_transform('detector', 'slit_frame')
+        #sx, sy, ls = detector2slit(x, y)
+        #world_coordinates = np.array([wave, ra, dec, sy])#, x, y])
 
         # get the subwindow origin
-        px0 = int(fits.getval(wc_file_name, "CRVAL1", ext))
-        py0 = int(fits.getval(wc_file_name, "CRVAL2", ext))
+        px0 = slit.xstart - 1 + model.meta.subarray.xstart
+        py0 = slit.ystart - 1 + model.meta.subarray.ystart
+        print (" Subwindow origin:   px0=",px0, "   py0=", py0)
         n_p = np.shape(wave)
         nw = n_p[0]*n_p[1]
         nw1, nw2 = n_p[1], n_p[0]   # remember that x=nw1 and y=nw2 are reversed  in Python
         if debug:
-            print ("subwindow origin:   px0=",px0, "   py0=", py0)
-            print ("nw1, nw2, nw = ", nw1, nw2, nw)
+            print (" nw1, nw2, nw = ", nw1, nw2, nw)
 
         delf = np.zeros([nw2, nw1]) + 999.0
         flatcor = np.zeros([nw2, nw1]) + 999.0
 
         # loop through the wavelengths
+        print (" Looping through the wavelengths... ")
         for j in range(nw1):   # in x
             for k in range(nw2):   # in y
                 if np.isfinite(wave[k, j]):   # skip if wavelength is NaN
@@ -362,9 +387,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     except:
                         IndexError
 
-        delfg = delf[np.where((delf != 999.0) & (delf < 0.1) & (delf > -0.1))]   # ignore outliers
-        delfg_median, delfg_std = np.median(delfg), np.std(delfg)
-        print ("median, stdev in flat value differences: ", delfg_median, delfg_std)
 
         if debug:
             no_999 = delf[np.where(delf != 999.0)]
@@ -377,56 +399,85 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             print ("np.shape(delf) = ", np.shape(delf))
             print ("np.shape(delfg) = ", np.shape(delfg))
 
-        # This is the key argument for the assert pytest function
-        median_diff = False
-        if abs(delfg_median) <= float(threshold_diff):
-            median_diff = True
-        if median_diff:
-            test_result = "PASSED"
-        else:
+
+        nanind = np.isnan(delf)   # get all the nan indexes
+        notnan = ~nanind   # get all the not-nan indexes
+        delf = delf[notnan]   # get rid of NaNs
+        if delf.size == 0:
+            print (" * Unable to calculate statistics because difference array has all values as NaN.")
+            print ("   Test will be set to FAILED and NO plots will be made.")
             test_result = "FAILED"
-        print (" *** Result of the test: ",test_result)
+            delfg_median = np.nan
+        else:
+            print ("Calculating statistics... ")
+            delfg = delf[np.where((delf != 999.0) & (delf < 0.1) & (delf > -0.1))]   # ignore outliers
+            if delfg.size == 0:
+                print (" * Unable to calculate statistics because difference array has all outlier values.")
+                print ("   Test will be set to FAILED and NO plots will be made.")
+                test_result = "FAILED"
+                delfg_median = np.nan
+            else:
+                stats = auxfunc.print_stats(delfg, "Flat Difference", float(threshold_diff), abs=True)
+                delfg_mean, delfg_median, delfg_std = stats
+
+                # This is the key argument for the assert pytest function
+                median_diff = False
+                if abs(delfg_median) <= float(threshold_diff):
+                    median_diff = True
+                if median_diff:
+                    test_result = "PASSED"
+                else:
+                    test_result = "FAILED"
+
+        print (" *** Result of the test: ", test_result, "\n")
+        total_test_result.append(test_result)
 
         # make histogram
-        if np.isfinite(delfg_median):
-            print ("Making the plots...")
-            font = {#'family' : 'normal',
-                    'weight' : 'normal',
-                    'size'   : 16}
-            matplotlib.rc('font', **font)
-            alpha = 0.2
-            fontsize = 15
-            fig = plt.figure(1, figsize=(8, 6))
-            plt.subplots_adjust(hspace=.4)
-            ax = plt.subplot(111)
-            t = (filt, grat, slit_id)
-            plt.title("_".join(t))
-            plt.xlabel("flat$_{pipe}$ - flat$_{calc}$")
-            plt.ylabel("N")
-            xmin = delfg_median - delfg_std*5
-            xmax = delfg_median + delfg_std*5
-            plt.xlim(xmin, xmax)
-            x_median = "median = {:0.3}".format(delfg_median)
-            x_stddev = "stddev = {:0.3}".format(delfg_std)
-            ax.text(0.65, 0.9, x_median, transform=ax.transAxes, fontsize=fontsize)
-            ax.text(0.65, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
-            plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
-            binwidth = (xmax-xmin)/40.
-            _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        if show_figs or save_figs:
+            if np.isfinite(delfg_median):
+                print ("Making the plot for this slit...")
+                font = {#'family' : 'normal',
+                        'weight' : 'normal',
+                        'size'   : 16}
+                matplotlib.rc('font', **font)
+                alpha = 0.2
+                fontsize = 15
+                fig = plt.figure(1, figsize=(10, 8))
+                plt.subplots_adjust(hspace=.4)
+                ax = plt.subplot(111)
+                t = (filt, grat, slit_id)
+                plt.title("_".join(t))
+                plt.xlabel("flat$_{pipe}$ - flat$_{calc}$")
+                plt.ylabel("N")
+                xmin = delfg_median - delfg_std*5
+                xmax = delfg_median + delfg_std*5
+                plt.xlim(xmin, xmax)
+                x_stddev = "stddev = {:0.3}".format(delfg_std)
+                # add vertical line at mean and median
+                plt.axvline(delfg_mean, label="mean = %0.3e"%(delfg_mean), color="g")
+                plt.axvline(delfg_median, label="median = %0.3e"%(delfg_median), linestyle="-.", color="b")
+                plt.legend()
+                # add standard deviation
+                ax.text(0.62, 0.78, x_stddev, transform=ax.transAxes, fontsize=fontsize)
+                plt.tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+                binwidth = (xmax-xmin)/40.
+                _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
 
-            if save_figs:
-                #if plot_name is None:
-                file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
-                file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
-                t = (file_basename, "FS_flattest_"+slit_id+"_histogram.pdf")
-                plot_name = "_".join(t)
-                plt.savefig("/".join((file_path, plot_name)))
-                print ('\n Plot saved: ', plot_name)
-            if show_figs:
-                plt.show()
-            plt.close()
-        else:
-            print ("Not making plots because delfg_median is NaN.")
+                if save_figs:
+                    #if plot_name is None:
+                    file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
+                    file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
+                    t = (file_basename, "FS_flattest_"+slit_id+"_histogram.pdf")
+                    plot_name = "_".join(t)
+                    plt.savefig("/".join((file_path, plot_name)))
+                    print ('\n Plot saved: ', plot_name)
+                if show_figs:
+                    plt.show()
+                plt.close()
+        elif not save_figs and not show_figs:
+            print ("Not making plots because both show_figs and save_figs were set to False.")
+        elif not save_figs:
+            print ("Not saving plots because save_figs was set to False.")
 
 
         # create fits file to hold the calculated flat for each slit
@@ -442,7 +493,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             complfile.append(complfile_ext)
 
 
-    wc_hdulist.close()
 
     if writefile:
         outfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
@@ -461,21 +511,38 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print(complfile_name)
 
 
+    # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
+    FINAL_TEST_RESULT = True
+    for t in total_test_result:
+        if t == "FAILED":
+            FINAL_TEST_RESULT = False
+            break
+    if FINAL_TEST_RESULT:
+        print("\n *** Final result for flat_field test will be reported as PASSED *** \n")
+        msg = "All slits PASSED flat_field test."
+    else:
+        print("\n *** Final result for flat_field test will be reported as FAILED *** \n")
+        msg = "One or more slits FAILED flat_field test."
+
     print("Done. ")
-    msg = ""
-    return median_diff, msg
+
+    return FINAL_TEST_RESULT, msg
 
 
 
 if __name__ == '__main__':
 
+    # print pipeline version
+    import jwst
+    print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
+
     # This is a simple test of the code
     pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
 
     # input parameters that the script expects
-    auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
-    working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/Cheryl_test/NRS1/"
-    step_input_filename = working_dir+"jwdata0010010_11010_0001_NRS1_assign_wcs_extract_2d_flat_field.fits"
+    working_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results"
+    step_input_filename = working_dir+"/gain_scale_assign_wcs_extract_2d_flat_field.fits"
+
     dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
     sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/FS/nirspec_FS_sflat"
     fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/FS/nirspec_FS_fflat"
@@ -491,6 +558,6 @@ if __name__ == '__main__':
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                           fflat_path=fflat_path, writefile=writefile, show_figs=False, save_figs=True,
-                           plot_name=plot_name, threshold_diff=1.0e-14, debug=False)
+                           fflat_path=fflat_path, writefile=writefile, show_figs=True, save_figs=True,
+                           plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
 

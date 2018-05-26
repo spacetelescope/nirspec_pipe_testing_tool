@@ -44,17 +44,20 @@ def output_hdul(set_inandout_filenames, config):
         if is_filter_opaque:
             print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip.")
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            core_utils.convert_html2pdf()   # convert the html report into a pdf file
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
     if run_calwebb_spec2:
         # read the assign wcs fits file
-        local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
+        input_file = config.get("calwebb_spec2_input_file", "input_file")
+        local_step_output_file = input_file.replace(".fits", "_x1d.fits")
         hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
         # move the output file into the working directory
         working_directory = config.get("calwebb_spec2_input_file", "working_directory")
         step_output_file = os.path.join(working_directory, local_step_output_file)
         print ("Step product was saved as: ", step_output_file)
         subprocess.run(["mv", local_step_output_file, step_output_file])
+        #core_utils.convert_html2pdf()   # convert the html report into a pdf file
         return hdul
     else:
         if config.getboolean("steps", step):
@@ -85,12 +88,18 @@ def output_hdul(set_inandout_filenames, config):
                 print (line2write)
                 with open(txt_name, "a") as tf:
                     tf.write(line2write+"\n")
+
+                # convert the html report into a pdf file
+                #core_utils.convert_html2pdf()
+
                 return hdul
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                #core_utils.convert_html2pdf()   # convert the html report into a pdf file
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
         else:
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            #core_utils.convert_html2pdf()   # convert the html report into a pdf file
             pytest.skip("Skipping "+step+". Step set to False in configuration file.")
 
 

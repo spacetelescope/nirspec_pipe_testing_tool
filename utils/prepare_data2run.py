@@ -18,7 +18,7 @@ Example usage:
     The code works from the terminal within the pipeline conda environment.
     In the directory where you want to store the uncalibrated data, type:
         > python /path_to_this_script/prepare_data2run.py blah.fits MODE
-    where MODE is either FS, IFU, or MOS
+    where MODE is either FS, IFU, MOS, BOTS
 """
 
 
@@ -27,7 +27,7 @@ def modify_PTT_cfg_file(fits_file, mode):
     This function reads and modifies the config file with the mode used and the raw data file name.
     Args:
         fits_file: string, basename of the raw data file.fits
-        mode: string, either FS, MOS, or IFU
+        mode: string, either FS, MOS, IFU, BOTS
 
     Returns:
         nothing
@@ -59,7 +59,7 @@ parser.add_argument("fits_file",
 parser.add_argument("mode",
                     action='store',
                     default=None,
-                    help='Mode in which the data was taken, i.e. FS, MOS, IFU')
+                    help='Mode in which the data was taken, i.e. FS, MOS, IFU, BOTS')
 parser.add_argument("-rm",
                     dest="rm_prep_data",
                     action='store_true',
@@ -127,9 +127,8 @@ if os.path.isfile(uncal_file):
 
     # make sure the lamp, filter, and grating values are correctly propagated
     lamp = fits.getval(fits_file, 'CAA_LAMP')
-    filt = fits.getval(fits_file, "FWA_POS")
-    """
-    Commenting out this section as the pipeline is now able to run with FILTER=OPAQUE.
+    #filt = fits.getval(fits_file, "FWA_POS")
+
     if "NO_LAMP" in lamp:
         try:
             filt = fits.getval(fits_file, "FWA_POS")
@@ -149,7 +148,7 @@ if os.path.isfile(uncal_file):
         filt = 'CLEAR'
     elif 'FLAT4' in lamp:
         filt = 'F070LP'
-    """
+
     fits.setval(uncal_file, 'LAMP', 0, value=lamp)
     fits.setval(uncal_file, 'FILTER', 0, value=filt, after='DETECTOR')
 

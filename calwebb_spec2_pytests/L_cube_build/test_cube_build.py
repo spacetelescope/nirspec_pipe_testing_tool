@@ -53,7 +53,8 @@ def output_hdul(set_inandout_filenames, config):
 
         if run_calwebb_spec2:
             # read the assign wcs fits file
-            local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
+            input_file = config.get("calwebb_spec2_input_file", "input_file")
+            local_step_output_file = input_file.replace(".fits", "_s3d.fits")
             hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
             # move the output file into the working directory
             working_directory = config.get("calwebb_spec2_input_file", "working_directory")
@@ -81,7 +82,7 @@ def output_hdul(set_inandout_filenames, config):
                     # determine the specific output of the cube step
                     filt = fits.getval(step_input_file, 'filter')
                     grat = fits.getval(step_input_file, 'grating')
-                    gratfilt = '-'.join((grat,filt))
+                    gratfilt = grat+"-"+filt+"_s3d"
                     specific_output_file = glob(step_output_file.replace('cube.fits', (gratfilt+'*.fits').lower()))[0]
                     cube_suffix = specific_output_file.split('photom_')[-1].replace('.fits', '')
                     # record info

@@ -48,7 +48,8 @@ def output_hdul(set_inandout_filenames, config):
 
     if run_calwebb_spec2:
         # read the assign wcs fits file
-        local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
+        input_file = config.get("calwebb_spec2_input_file", "input_file")
+        local_step_output_file = input_file.replace(".fits", "_pathloss.fits")
         hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
         # move the output file into the working directory
         working_directory = config.get("calwebb_spec2_input_file", "working_directory")
@@ -57,32 +58,37 @@ def output_hdul(set_inandout_filenames, config):
         subprocess.run(["mv", local_step_output_file, step_output_file])
         return hdul
     else:
-        if config.getboolean("steps", step):
-            print ("*** Step "+step+" set to True")
-            if os.path.isfile(step_input_file):
-                if not skip_runing_pipe_step:
-                    # get the right configuration files to run the step
-                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
-                    # start the timer to compute the step running time
-                    start_time = time.time()
-                    if local_pipe_cfg_path == "pipe_source_tree_code":
-                        result = stp.call(step_input_file)
-                    else:
-                        result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/pathloss.cfg')
-                    result.save(step_output_file)
-                    # end the timer to compute calwebb_spec2 running time
-                    end_time = repr(time.time() - start_time)   # this is in seconds
-                    print(" * calwebb_spec2 took "+end_time+" seconds to finish.")
-                step_completed = True
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul
+        # only run this step if data is not BOTS
+        inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+        if not core_utils.check_BOTS_true(inhdu):
+            if config.getboolean("steps", step):
+                print ("*** Step "+step+" set to True")
+                if os.path.isfile(step_input_file):
+                    if not skip_runing_pipe_step:
+                        # get the right configuration files to run the step
+                        local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                        # start the timer to compute the step running time
+                        start_time = time.time()
+                        if local_pipe_cfg_path == "pipe_source_tree_code":
+                            result = stp.call(step_input_file)
+                        else:
+                            result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/pathloss.cfg')
+                        result.save(step_output_file)
+                        # end the timer to compute calwebb_spec2 running time
+                        end_time = repr(time.time() - start_time)   # this is in seconds
+                        print(" * calwebb_spec2 took "+end_time+" seconds to finish.")
+                    step_completed = True
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    return hdul
+                else:
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip("Skipping "+step+" because the input file does not exist.")
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
+                pytest.skip("Skipping "+step+". Step set to False in configuration file.")
         else:
-            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            pytest.skip("Skipping "+step+". Step set to False in configuration file.")
+            pytest.skip("Skipping "+step+" because data is BOTS.")
 
 
 

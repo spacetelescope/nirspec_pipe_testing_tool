@@ -191,18 +191,16 @@ with open(txt_outputs_summary, "a") as tf:
     tf.write(total_time+"\n")
 print ("\n ** Calwebb_detector 1 took "+repr(tot_time_min)+" minutes to complete **")
 
-# add a keyword with the name of the raw data fits file name
-#fits.setval(final_out, 'rawdatrt', 0, value=rawdatrt, after='OBS_ID')
-
-# add a keyword with the mode used for the data set
-#fits.setval(final_out, 'modeused', 0, value=mode_used, after='rawdatrt')
-
 # Move fits products to working dir
 fits_list = glob("*.fits")
 if len(fits_list) >= 1:
     print("Output fits files are located at: ", working_dir)
     for ff in fits_list:
-        subprocess.run(["mv", ff, working_dir])
+        if "step_" in ff:
+            ff_newname = os.path.join(working_dir, ff.replace("step_", ""))
+        else:
+            ff_newname = working_dir
+        subprocess.run(["mv", ff, ff_newname])
     # move the text file too
     subprocess.run(["mv", txt_outputs_summary, working_dir])
 else:

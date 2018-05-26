@@ -33,14 +33,15 @@ def output_hdul(set_inandout_filenames, config):
     # Only run step if data is MOS
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
-    print ("Is data FS?", core_utils.check_FS_true(inhdu))
-    if not core_utils.check_FS_true(inhdu):
+    print ("Is data FS or BOTS?", core_utils.check_FS_true(inhdu), core_utils.check_BOTS_true(inhdu))
+    if not core_utils.check_FS_true(inhdu) and not core_utils.check_BOTS_true(inhdu):
         stp = MSAFlagOpenStep()
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
         if run_calwebb_spec2:
             # read the assign wcs fits file
-            local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
+            input_file = config.get("calwebb_spec2_input_file", "input_file")
+            local_step_output_file = input_file.replace(".fits", "_msa_flagging.fits")
             hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
             # move the output file into the working directory
             working_directory = config.get("calwebb_spec2_input_file", "working_directory")
@@ -75,7 +76,7 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+". Step set to False in configuration file.")
     else:
-        pytest.skip("Skipping "+step+" because data is FS.")
+        pytest.skip("Skipping "+step+" because data is FS or BOTS.")
 
 
 
