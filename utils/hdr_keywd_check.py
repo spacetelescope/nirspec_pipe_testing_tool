@@ -25,7 +25,7 @@ Example usage:
     To simply update the header of the existing fits file type:
         > python /path_to_this_script/hdr_keywd_check.py blah.fits -u -m=FS
 
-where the -m flag is the mode used, i.e. FS, MOS, or IFU. If a mode is not provided, the code will look for a mode_used variable
+where the -m flag is the mode used, i.e. FS, MOS, IFU, BOTS. If a mode is not provided, the code will look for a mode_used variable
 in the pytests configuration file.
 
 '''
@@ -313,6 +313,19 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 elif key=='DATE-OBS':
                     warning = check_datetimeformat(key, val, check_date=True, check_datetime=False,
                                                    check_time=False)
+                    # check that for IFU data date is later than 2016-5-11, this is so that the latest IFU_post
+                    # file is used, otherwise assign_wcs will crash
+                    if mode_used == "IFU":
+                        yr = val.split("-")[0]
+                        mo = val.split("-")[1]
+                        if int(yr) < 2016:
+                            val = "2016-06-11"
+                            specific_keys_dict[key] = val
+                            missing_keywds.append(key)
+                        elif int(mo) < 5:
+                            val = "2016-06-11"
+                            specific_keys_dict[key] = val
+                            missing_keywds.append(key)
                 elif key=='TIME-OBS':
                     warning = check_datetimeformat(key, val, check_date=False, check_datetime=False,
                                                    check_time=True)
@@ -343,6 +356,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = 'NRS_IFU'
                     if 'MOS' in mode_used:
                         val = 'NRS_MSASPEC'
+                    if mode_used == "BOTS":
+                        val = 'NRS_BRIGHTOBJ'
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
                     print('     Setting value of ', key, ' to ', val)

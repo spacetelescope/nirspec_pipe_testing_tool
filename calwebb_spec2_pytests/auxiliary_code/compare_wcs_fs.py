@@ -1,248 +1,35 @@
 import numpy as np
 import os
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
-from decimal import Decimal
+from astropy import wcs
 
-from jwst.assign_wcs.tools.nirspec import compute_world_coordinates
+from jwst.assign_wcs import nirspec
+from jwst import datamodels
 from . import auxiliary_functions as auxfunc
 
 
 """
 This script compares pipeline WCS info with ESA results for FIXED SLIT.
 
-slit = 'S200A1', 'S200A2', 'S400A1', 'S1600A1', 'S200B1'
-det = 'NRS1' or 'NRS2'
-subarray_origin = [SUBSTRT1, SUBSTRT2] from original image; needed since SUBSTRT in
-                    world_coordinates file is not in full frame reference
 """
 
 
-def mk_plots(title, show_figs=True, save_figs=False, info_fig1=None, info_fig2=None,
-             histogram=False, deltas_plt=False, fig_name=None):
-    """
-    This function makes all the plots of the script.
-    Args:
-        title: str, title of the plot
-        show_figs: boolean, show figures on screen or not
-        save_figs: boolean, save figures or not
-        info_fig1: list, arrays, number of bins, and limits for the first figure in the plot
-        info_fig2: list, arrays, number of bins, and limits for the second figure in the plot
-        info_fig3: list, arrays, number of bins, and limits for the second figure in the plot
-        histogram: boolean, are the figures in the plot histograms
-        deltas_plt: boolean, regular plot
-        fig_name: str, name of plot
-
-    Returns:
-        It either shows the resulting figure on screen and saves it, or one of the two.
-    """
-    font = {#'family' : 'normal',
-            'weight' : 'normal',
-            'size'   : 16}
-    matplotlib.rc('font', **font)
-    fig = plt.figure(1, figsize=(12, 10))
-    plt.subplots_adjust(hspace=.4)
-    alpha = 0.2
-    fontsize = 15
-
-    # FIGURE 1
-    # number in the parenthesis are nrows, ncols, and plot number, numbering in next row starts at left
-    if histogram:
-        ax = plt.subplot(211)
-        xlabel1, ylabel1, xarr1, yarr1, xmin, xmax, bins, x_median, x_stddev = info_fig1
-        x_median = "median = {:0.3}".format(x_median)
-        x_stddev = "stddev = {:0.3}".format(x_stddev)
-        plt.title(title)
-        plt.xlabel(xlabel1)
-        plt.ylabel(ylabel1)
-        plt.xlim(xmin, xmax)
-        ax.text(0.7, 0.9, x_median, transform=ax.transAxes, fontsize=fontsize)
-        ax.text(0.7, 0.83, x_stddev, transform=ax.transAxes, fontsize=fontsize)
-        n, bins, patches = ax.hist(xarr1, bins=bins, histtype='bar', ec='k', facecolor="red", alpha=alpha)
-    if deltas_plt:
-        ax = plt.subplot(211)
-        title1, xlabel1, ylabel1, xarr1, yarr1, xdelta, x_median, x_stddev = info_fig1
-        #print(title1, xlabel1, ylabel1, xarr1, yarr1, xdelta, x_median, x_stddev)
-        #xarr1, yarr1 = xarr1[0], yarr1[0]
-        plt.title(title1)
-        plt.xlabel(xlabel1)
-        plt.ylabel(ylabel1)
-        mean_minus_1half_std = x_median - 1.5*x_stddev
-        mean_minus_half_std = x_median - 0.5*x_stddev
-        mean_plus_half_std = x_median + 0.5*x_stddev
-        mean_plus_1half_std = x_median + 1.5*x_stddev
-        '''
-        for xd, xi, yi in zip(xdelta, xarr1, yarr1):
-            if xd > mean_plus_1half_std:
-                plt.plot(xi, yi, linewidth=7, marker='D', color='red')#, label="")
-            if xd < mean_minus_1half_std:
-                plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia')#, label="")
-            if (xd > mean_minus_1half_std) and (xd < mean_minus_half_std):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='blue')#, label="")
-            if (xd > mean_minus_half_std) and (xd < mean_plus_half_std):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='lime')#, label="")
-            if (xd > mean_plus_half_std) and (xd < mean_plus_1half_std):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label="")
-        '''
-        idx_red = np.where(xdelta > mean_plus_1half_std)[0]
-        idx_fuchsia = np.where(xdelta < mean_minus_1half_std)[0]
-        idx_blue = np.where((xdelta > mean_minus_1half_std) & (xdelta < mean_minus_half_std))[0]
-        idx_lime = np.where((xdelta > mean_minus_half_std) & (xdelta < mean_plus_half_std))[0]
-        idx_black = np.where((xdelta > mean_plus_half_std) & (xdelta < mean_plus_1half_std))[0]
-        #print(len(idx_red), len(idx_fuchsia), len(idx_blue), len(idx_lime), len(idx_black))
-        #print(len(xarr1), len(yarr1))
-        plt.plot(xarr1[idx_lime], yarr1[idx_lime], linewidth=2, marker='.', color='lime', label=r"$\mu-0.5\sigma < \Delta \lambda < \mu+0.5\sigma$", alpha=0.7)
-        plt.plot(xarr1[idx_black], yarr1[idx_black], linewidth=2, marker='.', color='black', label=r"$\mu+0.5\sigma < \Delta \lambda < \mu+1.5\sigma$", alpha=alpha)
-        plt.plot(xarr1[idx_blue], yarr1[idx_blue], linewidth=2, marker='.', color='blue', label=r"$\mu-1.5\sigma < \Delta \lambda < \mu-0.5\sigma$", alpha=alpha)
-        plt.plot(xarr1[idx_red], yarr1[idx_red], linewidth=2, marker='.', color='red', label=r"$\Delta \lambda > \mu+1.5\sigma$", alpha=alpha)
-        plt.plot(xarr1[idx_fuchsia], yarr1[idx_fuchsia], linewidth=2, marker='.', color='fuchsia', label=r"$\Delta \lambda < \mu-1.5\sigma$", alpha=alpha)
-        # add legend
-        box = ax.get_position()
-        #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
-        #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
-        # shrink plotting space so that the legend is to the right
-        percent = 0.72
-        ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
-        textinfig_mu = r'$\mu \lambda $={:<0.3e}    $\sigma \lambda $={:<0.3e}'.format(x_median, x_stddev)
-        ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
-    plt.minorticks_on()
-    if histogram:
-        ax.xaxis.set_major_locator(MaxNLocator(6))
-        from matplotlib.ticker import FuncFormatter
-        def MyFormatter(x, lim):
-            if x == 0:
-                return 0
-            return "%0.3E" % Decimal(x) #'{0}E{1}'.format(round(x/1e-10, 2), -10)
-        majorFormatter = FuncFormatter(MyFormatter)
-        ax.xaxis.set_major_formatter(majorFormatter)
-    plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
-
-    # FIGURE 2
-    # number in the parenthesis are nrows, ncols, and plot number, numbering in next row starts at left
-    if histogram:
-        ax = plt.subplot(212)
-        xlabel2, ylabel2, xarr2, yarr2, xmin, xmax, bins, y_median, y_stddev = info_fig2
-        y_median = "median = {:0.3}".format(y_median)
-        y_stddev = "stddev = {:0.3}".format(y_stddev)
-        plt.xlabel(xlabel2)
-        plt.ylabel(ylabel2)
-        plt.xlim(xmin, xmax)
-        ax.text(0.7, 0.9, y_median, transform=ax.transAxes, fontsize=fontsize)
-        ax.text(0.7, 0.83, y_stddev, transform=ax.transAxes, fontsize=fontsize)
-        n, bins, patches = ax.hist(xarr2, bins=bins, histtype='bar', ec='k', facecolor="red", alpha=alpha)
-    if deltas_plt:
-        ax = plt.subplot(212)
-        title2, xlabel2, ylabel2, xarr2, yarr2, ydelta, y_median, y_stddev = info_fig2
-        #xarr2, yarr2 = xarr2[0], yarr2[0]
-        plt.title(title2)
-        plt.xlabel(xlabel2)
-        plt.ylabel(ylabel2)
-        mean_minus_1half_std = y_median - 1.5*y_stddev
-        mean_minus_half_std = y_median - 0.5*y_stddev
-        mean_plus_half_std = y_median + 0.5*y_stddev
-        mean_plus_1half_std = y_median + 1.5*y_stddev
-        '''
-        for yd, xi, yi in zip(ydelta, xarr2, yarr2):
-            if yd > mean_plus_1half_std:
-                plt.plot(xi, yi, linewidth=7, marker='D', color='red')#, label="")
-            if yd < mean_minus_1half_std:
-                plt.plot(xi, yi, linewidth=7, marker='D', color='fuchsia')#, label="")
-            if (yd > mean_minus_1half_std) and (yd < mean_minus_half_std):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='blue')#, label="")
-            if (yd > mean_minus_half_std) and (yd < mean_plus_half_std):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='lime')#, label="")
-            if (yd > mean_plus_half_std) and (yd < mean_plus_1half_std):
-                plt.plot(xi, yi, linewidth=7, marker='D', color='black')#, label=r"$\mu+0.5*\sigma$ > $\mu+1.5*\sigma$")
-        '''
-        idx_red = np.where(ydelta > mean_plus_1half_std)[0]
-        idx_fuchsia = np.where(ydelta < mean_minus_1half_std)[0]
-        idx_blue = np.where((ydelta > mean_minus_1half_std) & (ydelta < mean_minus_half_std))[0]
-        idx_lime = np.where((ydelta > mean_minus_half_std) & (ydelta < mean_plus_half_std))[0]
-        idx_black = np.where((ydelta > mean_plus_half_std) & (ydelta < mean_plus_1half_std))[0]
-        #print(len(idx_red), len(idx_fuchsia), len(idx_blue), len(idx_lime), len(idx_black))
-        plt.plot(xarr2[idx_lime], yarr2[idx_lime], linewidth=2, marker='.', color='lime', label=r"$\mu-0.5\sigma < \Delta y < \mu+0.5\sigma$", alpha=0.7)
-        plt.plot(xarr2[idx_black], yarr2[idx_black], linewidth=2, marker='.', color='black', label=r"$\mu+0.5\sigma < \Delta y < \mu+1.5\sigma$", alpha=alpha)
-        plt.plot(xarr2[idx_blue], yarr2[idx_blue], linewidth=2, marker='.', color='blue', label=r"$\mu-1.5\sigma < \Delta y < \mu-0.5\sigma$", alpha=alpha)
-        plt.plot(xarr2[idx_red], yarr2[idx_red], linewidth=2, marker='.', color='red', label=r"$\Delta y > \mu+1.5\sigma$", alpha=alpha)
-        plt.plot(xarr2[idx_fuchsia], yarr2[idx_fuchsia], linewidth=2, marker='.', color='fuchsia', label=r"$\Delta y < \mu-1.5\sigma$", alpha=alpha)
-        # add legend
-        box = ax.get_position()
-        #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
-        #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
-        # shrink plotting space so that the legend is to the right
-        percent = 0.72
-        ax.set_position([box.x0, box.y0, box.width * percent, box.height * percent])
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))   # put legend out of the plot box
-        textinfig_mu = r'$\mu_y$={:<0.3e}    $\sigma_y$={:<0.3e}'.format(y_median, y_stddev)
-        ax.annotate(textinfig_mu, xy=(1.02, 0.95), xycoords='axes fraction' )
-        """
-        ax = plt.subplot(313)
-        title3, xlabel3, ylabel3, xarr3, yarr3, ydelta, y_median, y_stddev = info_fig3
-        xarr3, yarr3 = xarr3[0], yarr3[0]
-        plt.title(title3)
-        plt.xlabel(xlabel3)
-        plt.ylabel(ylabel3)
-        mean_minus_1half_std = y_median - 1.5*y_stddev
-        mean_minus_half_std = y_median - 0.5*y_stddev
-        mean_plus_half_std = y_median + 0.5*y_stddev
-        mean_plus_1half_std = y_median + 1.5*y_stddev
-        idx_red = np.where(ydelta > mean_plus_1half_std)
-        idx_fuchsia = np.where(ydelta < mean_minus_1half_std)
-        idx_blue = np.where((ydelta > mean_minus_1half_std) & (ydelta < mean_minus_half_std))
-        idx_lime = np.where((ydelta > mean_minus_half_std) & (ydelta < mean_plus_half_std))
-        idx_black = np.where((ydelta > mean_plus_half_std) & (ydelta < mean_plus_1half_std))
-        plt.plot(xarr3[idx_red], yarr3[idx_red], linewidth=7, marker='D', color='red', label="ydelta > median_plus_1half_std")
-        plt.plot(xarr3[idx_fuchsia], yarr3[idx_fuchsia], linewidth=7, marker='D', color='fuchsia', label="ydelta < median_minus_1half_std")
-        plt.plot(xarr3[idx_blue], yarr3[idx_blue], linewidth=7, marker='D', color='blue', label="median_plus_1half_std > ydelta > median_minus_1half_std")
-        plt.plot(xarr3[idx_lime], yarr3[idx_lime], linewidth=7, marker='D', color='lime', label="median_plus_half_std > ydelta > median_minus_half_std")
-        plt.plot(xarr3[idx_black], yarr3[idx_black], linewidth=7, marker='D', color='black', label="median_plus_1half_std > ydelta > median_minus_half_std")
-        # add legend
-        #box = ax.get_position()
-        #ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
-        #ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
-        #plt.plot(xarr3, yarr3, linewidth=7)
-        """
-    plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
-    plt.minorticks_on()
-    if save_figs:
-        type_fig = "pdf"
-        if histogram:
-            if fig_name is None:
-                fig_name = ".".join(("FS_wcs_histogram", type_fig))
-        if deltas_plt:
-            if fig_name is None:
-                fig_name = ".".join(("FS_wcs_Deltas", type_fig))
-        plt.savefig(fig_name)
-        print ('\n Plot saved: ', fig_name)
-    if show_figs:
-        plt.show()
-    plt.close()
-
-
-def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
-                show_figs=True, save_figs=False, plot_names=None, threshold_diff=1.0e-14, debug=False):
+def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=False, threshold_diff=1.0e-7, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the
     compute_world_coordinates.py script with the ESA files. The function calls that script.
 
     Args:
-        infile_name: str, name of the output fits file from the 2d_extract step (with full path)
+        infile_name: str, name of the output fits file from the assign_wcs step (with full path)
         esa_files_path: str, full path of where to find all ESA intermediary products to make comparisons for the tests
-        auxiliary_code_path: str, path where to find the auxiliary code. If not set the code will assume
-                            it is in the the auxiliary code directory
         show_figs: boolean, whether to show plots or not
-        save_figs: boolean, save the plots (the 3 plots can be saved or not independently with the function call)
-        plot_names: list of 3 strings, desired names (if names are not given, the plot function will name the plots by
-                    default)
+        save_figs: boolean, save the plots or not
         threshold_diff: float, threshold difference between pipeline output and ESA file
         debug: boolean, if true a series of print statements will show on-screen
 
     Returns:
-        - 2 plots, if told to save and/or show them.
-        - median_diff: Boolean, True if smaller or equal to 1e-14
+        - plots, if told to save and/or show them.
+        - median_diff: Boolean, True if smaller or equal to threshold
 
     """
 
@@ -252,75 +39,45 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
     lamp = fits.getval(infile_name, "LAMP", 0)
     grat = fits.getval(infile_name, "GRATING", 0)
     filt = fits.getval(infile_name, "FILTER", 0)
-    print ("extract_2d  -->     Detector:", det, "   Grating:", grat, "   Filter:", filt, "   Lamp:", lamp)
+    print ("from assign_wcs file  -->     Detector:", det, "   Grating:", grat, "   Filter:", filt, "   Lamp:", lamp)
 
-
-    # Run compute_world_coordinates.py in order to produce the necessary file
-    # !!! note that the code expects to be in the build environment !!!
-    if auxiliary_code_path is None:
-        auxiliary_code_path = "./"
-
-    compute_world_coordinates.compute_world_coordinates(infile_name)
-
-    # The world coordinate file was created but it needs to be renamed
-    basenameinfile_name = os.path.basename(infile_name)
-    fileID = basenameinfile_name.split("_")[0]   # obtain the id of the file
-    working_dir_path = os.getcwd()
-    wcoordfile = working_dir_path+"/"+fileID+"_world_coordinates.fits"
-    #print (wcoordfile)
-    # to move file to location of infile
-    #cwc_fname = infile_name.replace(".fits", "_world_coordinates.fits")
-    # to rename file within the working directory
-    cwc_fname = basenameinfile_name.replace(".fits", "_world_coordinates.fits")
-    print ("world_coordinates file = ", cwc_fname)
-    cwc_fname = infile_name.replace(basenameinfile_name, cwc_fname)
-    os.system("mv "+wcoordfile+" "+cwc_fname)
+    # get the datamodel from the assign_wcs output file
+    img = datamodels.ImageModel(infile_name)
 
     # loop over the slits
-    sltname_list = []
-    wchdu = fits.open(cwc_fname)
-    #n_ext = len(wchdu)
+    sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1", "S200B1"]
     sci_ext_list = auxfunc.get_sci_extensions(infile_name)
     print ('sci_ext_list=', sci_ext_list, '\n')
 
-    for i, s_ext in enumerate(sci_ext_list):
-        print("-> opening extension =", i+1, "  in ", cwc_fname)
-        print("   which corresponds to science ext:", s_ext, " of file:", infile_name)
-        hdr = wchdu[i+1].header
+    # mapping the ESA slit names to pipeline names
+    map_slit_names = {'SLIT_A_1600' : 'S1600A1',
+                      'SLIT_A_200_1': 'S200A1',
+                      'SLIT_A_200_2': 'S200A2',
+                      'SLIT_A_400':   'S400A1',
+                      'SLIT_B_200':   'S200B1',
+                      }
 
-        # what is the slit of this exposure
-        pslit = hdr["SLIT"]
-        print("SLIT = ", pslit)
+    # list to determine if pytest is passed or not
+    total_test_result = []
 
-        # for matched spectrum, get the wavelength and Delta_Y values
-        fdata = fits.getdata(cwc_fname, ext=i+1)
-        pwave = fdata[0,:,:]
-        pdy = fdata[3,:,:]
-        pskyx = fdata[1,:,:]
-        pskyy = fdata[2,:,:]
-        #print('pskyx=', pskyx)
-        #print('pskyy=', pskyy)
-        #print('np.shape(fdata) = ', np.shape(fdata))
+    # loop over the slits
+    if det != "NRS2":
+        sltname_list.pop(len(sltname_list)-1)
 
-        # get the origin of the subwindow
-        px0 = fits.getval(infile_name, "SLTSTRT1", ext=s_ext)+fits.getval(infile_name, "SUBSTRT1", ext=0)-1
-        py0 = fits.getval(infile_name, "SLTSTRT2", ext=s_ext)+fits.getval(infile_name, "SUBSTRT2", ext=0)-1
-        sltname = fits.getval(infile_name, "SLTNAME", ext=s_ext)
-        sltname_list.append(sltname)
-        n_p = np.shape(fdata)
-        npx = n_p[2]
-        npy = n_p[1]
-        #print("npx=", npx, "npy=", npy)
-        px = np.arange(npx)+np.array(px0)
-        py = np.arange(npy)+np.array(py0)
-        print  ("Pipeline subwindow corner pixel ID: ", px0, py0)
+    # check if data is BOTS
+    if fits.getval(infile_name, "EXP_TYPE", 0) == "NRS_BRIGHTOBJ":
+        sltname_list = ["S1600A1"]
 
-        # read in the ESA file using raw data root file name
-        #raw_data_root_file = "NRSV84600010001P0000000002101_4_491_SE_2016-01-17T17h34m08.fits"  # testing with FS FULL
+    for pipeslit in sltname_list:
+        print ("\nWorking with slit: ", pipeslit)
+
+        # Get the ESA trace
+        #raw_data_root_file = "NRSV84600010001P0000000002101_4_491_SE_2016-01-17T17h34m08.fits"  # for testing with G140M
+        #raw_data_root_file = "NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits"  # for testing with G140H
         _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
-        specifics = sltname_list
-        #print ("sltname_list = ", sltname_list)
-        # check if ESA data is not in the regular directory tree
+        specifics = [pipeslit]
+
+        # check if ESA data is not in the regular directory tree, these files are exceptions
         NIDs = ["30055", "30055", "30205", "30133", "30133"]
         special_cutout_files = ["NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits",
                                 "NRSSMOS-MOD-G1H-02-5344031756_1_492_SE_2015-12-10T03h25m56.fits",
@@ -338,223 +95,241 @@ def compare_wcs(infile_name, esa_files_path=None, auxiliary_code_path=None,
         if esafile == "ESA file not found":
             print(" * compare_wcs_fs.py is exiting because the corresponding ESA file was not found.")
             print("   -> The WCS test is now set to skip and no plots will be generated. ")
-            median_diff = "skip"
-            return median_diff
+            FINAL_TEST_RESULT = "skip"
+            return FINAL_TEST_RESULT
 
-        if not isinstance(esafile, list):
-            esafile_list = [esafile]
-        else:
-            esafile_list = esafile
+        # Open the trace in the esafile
+        print ("Using this ESA file: \n", esafile)
+        with fits.open(esafile) as esahdulist:
+            #print ("* ESA file contents ")
+            #esahdulist.info()
+            esa_slit_id = map_slit_names[esahdulist[0].header['SLITID']]
+            # first check is esa_slit == to pipe_slit?
+            if pipeslit == esa_slit_id:
+                print("\n -> Same slit found for pipeline and ESA data: ", pipeslit, "\n")
+            else:
+                print("\n -> Missmatch of slits for pipeline and ESA data: ", pipeslit, esa_slit_id, "\n")
 
-        slit = sltname.replace("S", "")
-        if "A" in slit:
-            slit = "_"+slit.split("A")[0]+"_"
-        if "B" in slit:
-            slit = "_"+slit.split("B")[0]+"_"
+            # Assign variables according to detector
+            if det == "NRS1":
+                esa_flux = fits.getdata(esafile, "DATA1")
+                esa_wave = fits.getdata(esafile, "LAMBDA1")
+                esa_slity = fits.getdata(esafile, "SLITY1")
+                esa_msax = fits.getdata(esafile, "MSAX1")
+                esa_msay = fits.getdata(esafile, "MSAY1")
+                pyw = wcs.WCS(esahdulist['LAMBDA1'].header)
+            if det == "NRS2":
+                try:
+                    esa_flux = fits.getdata(esafile, "DATA2")
+                    esa_wave = fits.getdata(esafile, "LAMBDA2")
+                    esa_slity = fits.getdata(esafile, "SLITY2")
+                    esa_msax = fits.getdata(esafile, "MSAX2")
+                    esa_msay = fits.getdata(esafile, "MSAY2")
+                    pyw = wcs.WCS(esahdulist['LAMBDA2'].header)
+                except:
+                    IndexError
+                    print("\n * compare_wcs_fs.py is exiting because there are no extensions that match detector NRS2 in the ESA file.")
+                    print("   -> The WCS test is now set to skip and no plots will be generated. \n")
+                    FINAL_TEST_RESULT = "skip"
+                    return FINAL_TEST_RESULT
 
-        # choose corresponding esa file
-        for esafile in esafile_list:
-            #print ("looking for slit: ", slit)
-            #print (" in esafile: ", esafile)
-            if slit in esafile:
-                print ("Using this ESA file: \n", esafile)
-                esahdulist = fits.open(esafile)
-                #print ("* ESA file contents ")
-                #esahdulist.info()
-                break
 
-        esahdr1 = esahdulist[1].header
-        enext = []
-        for ext in esahdulist:
-            enext.append(ext)
-        if det == "NRS1":
-            eflux = fits.getdata(esafile, 1)
-            ewave = fits.getdata(esafile, 4)
-            edy = fits.getdata(esafile, 5)
-        if det == "NRS2":
-            try:
-                eflux = fits.getdata(esafile, 6)
-                ewave = fits.getdata(esafile, 9)
-                edy = fits.getdata(esafile, 10)
-            except:
-                IndexError
-                print(" * compare_wcs_fs.py is exiting because there are no extensions that match detector NRS2 in the ESA file.")
-                print("   -> The WCS test is now set to skip and no plots will be generated. ")
-                median_diff = "skip"
-                return median_diff
+        # get the WCS object for this particular slit
+        wcs_slit = nirspec.nrs_wcs_set_input(img, pipeslit)
 
-        esahdulist.close()
-        n_p = np.shape(eflux)
-        #print("eflux=", eflux.flatten())
-        nex = n_p[1]
-        ney = n_p[0]
-        # get the origin of the subwindow
-        print ("Detector = ", det)
-        if det == "NRS1":
-            ex0 = esahdr1["CRVAL1"] - esahdr1["CRPIX1"] + 1
-            ey0 = esahdr1["CRVAL2"] - esahdr1["CRPIX2"] + 1
-        else:
-            ex0 = 2048.0 - esahdr1["CRPIX1"] + esahdr1["CRVAL1"]
-            ey0 = 2048.0 - esahdr1["CRVAL2"] + esahdr1["CRPIX2"]
-        ex = np.arange(nex) + ex0
-        ey = np.arange(ney) + ey0
-        print("ESA subwindow corner pixel ID: ", ex0, ey0)
+        # if we want to print all available transforms, uncomment line below
+        #print(wcs_slit)
+
+        # The WCS object attribute bounding_box shows all valid inputs, i.e. the actual area of the data according
+        # to the slit. Inputs outside of the bounding_box return NaN values.
+        #bbox = wcs_slit.bounding_box
+        #print('wcs_slit.bounding_box: ', wcs_slit.bounding_box)
+
+        # In different observing modes the WCS may have different coordinate frames. To see available frames
+        # uncomment line below.
+        #print("Avalable frames: ", wcs_slit.available_frames)
+
         if debug:
-            print("From ESA file: ")
-            #print("   ex0 =", ex0)
-            print("   ex0+nex-1 =", ex0+nex-1)
-            #print("   ey0 =", ey0)
-            print("   ey0+ney-1 =", ey0+ney-1)
-            print("   ex=", len(ex), "   ey=", len(ey))
-            print("   px=", len(px), "   py=", len(py))
+            # To get specific pixel values use following syntax:
+            det2slit = wcs_slit.get_transform('detector', 'slit_frame')
+            slitx, slity, lam = det2slit(700, 1080)
+            print("slitx: " , slitx)
+            print("slity: " , slity)
+            print("lambda: " , lam)
 
-        # match up the correct elements in each data set
-        subpx, subex = auxfunc.do_idl_match(px, ex)
-        subpy, subey = auxfunc.do_idl_match(py, ey)
-        print("matched elements in the 2D spectra: ", len(subpx), len(subey))
-        if len(subpx)==0  and  len(subey)==0:
-            print(" * compare_wcs_fs.py is exiting because there are no matching elements in 2D spectra.")
-            print("  -> You may want to check that the variable raw_data_root_file in the PPT_config file has the right file name.")
-            print("  -> The WCS test is now set to skip and no plots will be generated. ")
-            median_diff = "skip"
-            return median_diff
-        for sx in subpx:
-            if px[sx] not in ex:
-                print("aha! found it!  ", ex[sx])
-        imp, ime = [], []
-        for spy in subpy:
-            im0 = subpx + npx * spy
-            imp.append(im0)
-        for sey in subey:
-            im0 = subex + nex * sey
-            ime.append(im0)
-        imp, ime = np.array(imp), np.array(ime)
-        imp, ime  = imp.flatten(), ime.flatten()
+        if debug:
+            # The number of inputs and outputs in each frame can vary. This can be checked with:
+            print('Number on inputs: ', det2slit.n_inputs)
+            print('Number on outputs: ', det2slit.n_outputs)
 
-        #print('ime = ', np.shape(ime), '   imp =', np.shape(imp))
-        #print('ime[0:9] = ', ime[0:10])
+        # Create x, y indices using the Trace WCS
+        pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
+        esax, esay = pyw.all_pix2world(pipex, pipey, 0)
 
-        # get the difference between the two in units of resels
-        # do not include pixels where one or the other solution is 0 or NaN
-        flat_pwave, flat_ewave = pwave.flatten(), ewave.flatten()
-        # get the elements with index imp and ime
-        #print('flat_pwave=', len(flat_pwave), '  flat_ewave=', len(flat_ewave))
+        # Compute pipeline RA, DEC, and lambda
+        pra, pdec, pwave = wcs_slit(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
+        pwave *= 10**-6
+        # calculate and print statistics for slit-y and x relative differences
+        tested_quantity = "Wavelength Difference"
+        rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
+        rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats = rel_diff_pwave_data
+        test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
+        total_test_result.append(test_result)
 
-        #try:
-        #    ig = np.where((flat_pwave[imp]!=0.0) & (flat_ewave[ime]!=0.0) & (np.isfinite(flat_pwave[imp])) & (np.isfinite(flat_ewave[imp])))
-        #except:
-        #    IndexError
-        #print('ig = ', np.shape(ig))
-        ig = []
-        for ip, ie, ig_i in zip(imp, ime, range(len(imp))):
-            if all( [flat_pwave[ip] != 0 and flat_ewave[ie].size != 0 and np.isfinite(flat_pwave[ip]) and np.isfinite(flat_ewave[ip])] ):
-                ig.append(ig_i)
-        #print('ig = ', np.shape(ig))
+        # get the transforms for pipeline slit-y
+        det2slit = wcs_slit.get_transform('detector', 'slit_frame')
+        slitx, slity, _ = det2slit(esax-1, esay-1)
+        # calculate and print statistics for slit-y and x relative differences
+        tested_quantity = "Slit-Y Difference"
+        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
+        rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
+        test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
+        total_test_result.append(test_result)
 
-        pxr, pyr = np.array([]), np.array([])
-        for _ in range(npy):
-            pxr = np.concatenate((pxr, px))
-        pxr = pxr.astype(int)
-        reshaped_py = py.reshape(npy, 1)
-        for rpy_i in reshaped_py:
-            for _ in range(npx):
-                pyr = np.concatenate((pyr, rpy_i))
-        pyr = pyr.astype(int)
+        # do the same for MSA x, y and V2, V3
+        detector2msa = wcs_slit.get_transform("detector", "msa_frame")
+        pmsax, pmsay, _ = detector2msa(esax-1, esay-1)   # => RETURNS: msaX, msaY, LAMBDA (lam *= 10**-6 to convert to microns)
+        # MSA-x
+        tested_quantity = "MSA_X Difference"
+        reldiffpmsax_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msax, pmsax, tested_quantity)
+        reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats = reldiffpmsax_data
+        test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsax_stats[1], threshold_diff)
+        total_test_result.append(test_result)
+        # MSA-y
+        tested_quantity = "MSA_Y Difference"
+        reldiffpmsay_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msay, pmsay, tested_quantity)
+        reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats = reldiffpmsay_data
+        test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsay_stats[1], threshold_diff)
+        total_test_result.append(test_result)
 
-        pxrg, pyrg, deldy, delwave = [], [], [], []
-        flat_pdy, flat_edy = pdy.flatten(), edy.flatten()
+        # V2 and V3
+        detector2v2v3 = wcs_slit.get_transform("detector", "v2v3")
+        pv2, pv3, _ = detector2v2v3(esax-1, esay-1)   # => RETURNS: v2, v3, LAMBDA (lam *= 10**-6 to convert to microns)
+        # get the corresponding ESA arr of interest
+        #esav2, esav3 = ct.coords_transf("forward", det, filter_input, avgx3, avgy3, tilt, arcsecs, debug)
+        #restricted_ev2, restricted_ev3 = [], []
+        tested_quantity = "V2 difference"
+        #reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, restricted_esav2, pv2, tested_quantity)
+        #reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats = reldiffpv2_data
+        #test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
+        #total_test_result.append(test_result)
+        tested_quantity = "V3 difference"
+        #reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, restricted_esav3, pv3, tested_quantity)
+        #reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats = reldiffpv3_data
+        #test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
+        #total_test_result.append(test_result)
 
-        for ig_i in ig:
-            if (flat_pdy[imp[ig_i]]!=0.0) and (flat_edy[ime[ig_i]]!=0.0) and np.isfinite(flat_pdy[imp[ig_i]]) and np.isfinite(flat_edy[ime[ig_i]]):
-                pxrg_i = pxr[imp[ig_i]]
-                pxrg.append(pxrg_i)
-                pyrg_i = pyr[imp[ig_i]]
-                pyrg.append(pyrg_i)
-                deldy_i = flat_pdy[imp[ig_i]] - flat_edy[ime[ig_i]]
-                deldy.append(deldy_i)
-                delw = flat_pwave[imp[ig_i]]*1.0e-6 -flat_ewave[ime[ig_i]]
-                delwave.append(delw)
+        # PLOTS
+        if show_figs or save_figs:
+            # set the common variables
+            basenameinfile_name = os.path.basename(infile_name)
+            main_title = filt+"   "+grat+"   SLIT="+pipeslit+"\n"
+            bins = 15   # binning for the histograms
+            #             lolim_x, uplim_x, lolim_y, uplim_y
+            plt_origin = None
 
-        pxrg, pyrg, deldy, delwave = np.array(pxrg), np.array(pyrg), np.array(deldy), np.array(delwave)
+            # Wavelength
+            title = main_title+r"Relative wavelength difference = $\Delta \lambda$"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta \lambda$ = ($\lambda_{pipe} - \lambda_{ESA}) / \lambda_{ESA}$", "N"
+            info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pwave_stats]
+            plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_wave_diffs.jpg")
+            auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
+                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
+            # Slit-y
+            title = main_title+r"Relative slit position = $\Delta$slit_y"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta$slit_y = (slit_y$_{pipe}$ - slit_y$_{ESA}$)/slit_y$_{ESA}$", "N"
+            info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pslity_stats]
+            plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_slitY_diffs.jpg")
+            auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
+                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
-        #igy = np.where((flat_pdy[imp]!=0.0) & (flat_edy[ime]!=0.0) & (np.isfinite(flat_pdy[imp])) & (np.isfinite(flat_edy[imp])))
-        #print('igy = ', np.shape(igy))
+            # MSA-x
+            title = main_title+r"Relative MSA-x Difference = $\Delta$MSA_x"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta$MSA_x = (MSA_x$_{pipe}$ - MSA_x$_{ESA}$)/MSA_x$_{ESA}$", "N"
+            info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsax_stats]
+            plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAx_diffs.jpg")
+            auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
+                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
-        #delwave = (flat_pwave[imp[ig]]*1.0e-6 -flat_ewave[ime[ig]])
-        #deldy = flat_pdy[imp[igy]] - flat_edy[ime[igy]]
-        #delflx = flat_pdy[imp[ig]] - flat_edy[ime[ig]]
-        #print (flat_pdy[imp[ig]], flat_edy[ime[ig]])
+            # MSA-y
+            title = main_title+r"Relative MSA-y Difference = $\Delta$MSA_y"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta$MSA_y = (MSA_y$_{pipe}$ - MSA_y$_{ESA}$)/MSA_y$_{ESA}$", "N"
+            info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
+            plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAy_diffs.jpg")
+            auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
+                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+            """
+            # V2
+            title = main_title+r"Relative V2 Difference = $\Delta$V2"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta$V2 = (V2$_{pipe}$ - V2$_{ESA}$)/V2$_{ESA}$", "N"
+            hist_data = notnan_reldiffpv2
+            info_hist = [xlabel, ylabel, bins, notnan_reldiffpv2_stats]
+            plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V2_diffs.jpg")
+            auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
+                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
-        #print('np.shape(delwave) = ', np.shape(delwave))
-        #print('np.shape(deldy) = ', np.shape(deldy))
+            # V3
+            title = main_title+r"Relative V3 Difference = $\Delta$V3"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta$V3 = (V3$_{pipe}$ - V3$_{ESA}$)/V3$_{ESA}$", "N"
+            hist_data = notnan_reldiffpv3
+            info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
+            plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V3_diffs.jpg")
+            auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
+                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+            """
 
-        # get the median and standard deviations
-        median_diff = False
-        if (len(delwave) != 0) and (len(deldy) != 0):
-            delwave_median, delwave_stddev = np.median(delwave), np.std(delwave)
-            deldy_median, deldy_stddev = np.median(deldy), np.std(deldy)
-            print("\n  delwave:   median =", delwave_median, "   stdev =", delwave_stddev)
-            print("\n    deldy:   median =", deldy_median, "   stdev =", deldy_stddev)
-
-            # This is the key argument for the assert pytest function
-            if abs(delwave_median) <= threshold_diff:
-                median_diff = True
-            if median_diff:
-                test_result = "PASSED"
-            else:
-                test_result = "FAILED"
-            print (" *** Result of the test: ",test_result)
-
-            # PLOTS
-            if np.isfinite(delwave_median):
-                print ("Making WCS plots...")
-                #if plot_names is not None:
-                #    hist_name, deltas_name = plot_names
-                #else:
-                #    #hist_name, deltas_name = None, None
-                hist_name = infile_name.replace(".fits", "_"+sltname+"_wcs_histogram.pdf")
-                deltas_name = infile_name.replace(".fits", "_"+sltname+"_wcs_Deltas.pdf")
-
-
-                # HISTOGRAM
-                if show_figs or save_figs:
-                    title = filt+"   "+grat+"   SLIT="+sltname
-                    xmin1 = min(delwave) - (max(delwave)-min(delwave))*0.1
-                    xmax1 = max(delwave) + (max(delwave)-min(delwave))*0.1
-                    exp = int(str(xmax1).split('e')[-1])
-                    xlabel1, ylabel1 = r"$\lambda_{pipe} - \lambda_{ESA}$  (10^"+repr(exp)+"m)", "N"
-                    yarr = None
-                    bins = 15
-                    info_fig1 = [xlabel1, ylabel1, delwave, yarr, xmin1, xmax1, bins, delwave_median, delwave_stddev]
-                    xmin2 = min(deldy) - (max(deldy)-min(deldy))*0.1
-                    xmax2 = max(deldy) + (max(deldy)-min(deldy))*0.1
-                    xlabel2, ylabel2 = r"$\Delta y_{pipe}$ - $\Delta y_{ESA}$  (relative slit position)", "N"
-                    info_fig2 = [xlabel2, ylabel2, deldy, yarr, xmin2, xmax2, bins, deldy_median, deldy_stddev]
-                    mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2, show_figs=show_figs, save_figs=save_figs,
-                             histogram=True, fig_name=hist_name)
-
-                    # DELTAS PLOT
-                    title = ""
-                    title1, xlabel1, ylabel1 = r"$\Delta \lambda$", "x (pixels)", "y (pixels)"
-                    info_fig1 = [title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev]
-                    #print(title1, xlabel1, ylabel1, pxrg, pyrg, delwave, delwave_median, delwave_stddev)
-                    title2, xlabel2, ylabel2 = "Relative slit position", "x (pixels)", "y (pixels)"
-                    info_fig2 = [title2, xlabel2, ylabel2, pxrg, pyrg, deldy, deldy_median, deldy_stddev]
-                    #title3, xlabel3, ylabel3 = r"$\Delta$ Flux", "x (pixels)", "y (pixels)"
-                    #info_fig3 = [title3, xlabel3, ylabel3, pxrg, pyrg, delflx, deldy_median, deldy_stddev]
-                    mk_plots(title, info_fig1=info_fig1, info_fig2=info_fig2,
-                             show_figs=show_figs, save_figs=save_figs, deltas_plt=True, fig_name=deltas_name)
-
-                    print("Done.")
-
-                else:
-                    print ("compare_wcs.py ran but NO plots were made because show_figs and save_figs were both set to False. \n")
-            else:
-                print("Not making plots because median is NaN.")
+        else:
+            print ("NO plots were made because show_figs and save_figs were both set to False. \n")
 
 
-    return median_diff
+    # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
+    FINAL_TEST_RESULT = "PASSED"
+    slittests = ["Wavelength", "Slit-y", "MSA-X", "MSA-Y"]#, "V2", "V3"]
+    for i, tr in enumerate(total_test_result):
+        if tr == "FAILED":
+            FINAL_TEST_RESULT = "FAILED"
+            # 4 tests per slit, and there are 4 slits, total of 16 results for det=NRS1
+            if i < 4:#6:
+                failedslit = sltname_list[0]
+                failedtest = slittests[i]
+            elif (i>3) and (i<8):#(i>5) and (i<12):
+                failedslit = sltname_list[1]
+                j = i - 4
+                failedtest = slittests[j]
+            elif (i>7) and (i<12):#(i>11) and (i<18):
+                failedslit = sltname_list[2]
+                j = i - 8
+                failedtest = slittests[j]
+            elif (i>11) and (i<16):#(i>17) and (i<24):
+                failedslit = sltname_list[3]
+                j = i - 12
+                failedtest = slittests[j]
+            if det == "NRS2":
+                # 4 tests per slit, and there are 5 slits, total of 20 results
+                if i > 15:#i > 23:
+                    failedslit = sltname_list[4]
+                    j = i - 16
+                    failedtest = slittests[j]
+            print("\n * Test of", failedtest, "FAILED for slit", failedslit)
+
+    if FINAL_TEST_RESULT == "PASSED":
+        print("\n *** Final result for assign_wcs test will be reported as PASSED *** \n")
+    else:
+        print("\n *** Final result for assign_wcs test will be reported as FAILED *** \n")
+
+
+    return FINAL_TEST_RESULT
+
+
+
+
 
 
 
@@ -564,23 +339,19 @@ if __name__ == '__main__':
     pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
 
     # input parameters that the script expects
-    auxiliary_code_path = pipeline_path+"/src/pytests/calwebb_spec2_pytests/auxiliary_code"
     #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G235H_opaque/491_results"
-    data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140H_opaque/491_results"
-    infile_name = data_dir+"/gain_scale_assign_wcs_extract_2d.fits"
+    data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results"
+    infile_name = data_dir+"/gain_scale_assign_wcs.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
-    # if a specific file needs to be used
-    #esa_files_path = pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/V84600003001P0000000002104_39528_JLAB88/V84600003001P0000000002104_39528_JLAB88_trace_SLIT/Trace_SLIT_A_200_1_V84600003001P0000000002104_39528_JLAB88.fits"
 
-    # set the names of the resulting plots
-    hist_name = "FS_wcs_histogram.pdf"
-    deltas_name = "FS_wcs_deltas.pdf"
-    plot_names = None#[hist_name, deltas_name]
+    # print pipeline version
+    import jwst
+    print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script
-    median_diff = compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=None, plot_names=None,
-                              show_figs=False, save_figs=True, threshold_diff=9.9e-14, debug=False)
+    result = compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=False, save_figs=True,
+                         threshold_diff=1.0e-7, debug=False)
 
 
 

@@ -4,6 +4,10 @@ from scipy import integrate
 from scipy import interpolate
 from astropy.io import fits
 from glob import glob
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+from decimal import Decimal
 
 
 """
@@ -124,6 +128,7 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
 
     def convert_sltname2esaformat(specifics, esafiles=None):
         sltname_list = specifics
+        #print("specifics: ", specifics)
         for sltname in sltname_list:
             sltname = sltname.replace("S", "")
             if ("A1" in sltname) and ("200" in sltname):
@@ -142,6 +147,8 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
                 sltname = "B_"+sltname.split("B")[0]+"_"
                 if esafiles is not None:
                     esafiles.append(sltname)
+        #print("the slit name used is: ", sltname)
+        #print(esafiles)
         if esafiles is not None:
             return esafiles
         else:
@@ -167,7 +174,7 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
                 row = repr(row)
             # to match current ESA intermediary files naming convention
             esafile_basename = "Trace_MOS_"+repr(quad)+"_"+row+"_"+col+"_"+jlab88_dir+".fits"
-            print ("esafile_basename = ", esafile_basename)
+            #print ("esafile_basename = ", esafile_basename)
         if "SLIT" in mode:
             esafiles = []
             esafiles = convert_sltname2esaformat(specifics, esafiles=esafiles)
@@ -176,7 +183,8 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
             for sltname in esafiles:
                 esafile_basename = "Trace_SLIT_"+sltname+jlab88_dir+".fits"
                 esafile_basename_list.append(esafile_basename)
-            esafile_basename = esafile_basename_list
+            esafile_basename = esafile_basename_list[-1]
+            #print ("esafile_basename = ", esafile_basename)
         if "IFU" in mode:
             IFUslice = specifics[0]
             # to match current ESA intermediary files naming convention
@@ -234,8 +242,8 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
                 esafile = os.path.join(mode_dir, esafile_basename)
                 # check if we got the right esafile
                 root_filename = fits.getval(esafile, "FILENAME", 0)
-                print("root_filename = ", root_filename)
-                print("rawdatroot = ", rawdatroot)
+                #print("root_filename = ", root_filename)
+                #print("rawdatroot = ", rawdatroot)
                 if rawdatroot.replace(".fits", "") in root_filename:
                     print (" * File name matches raw file used for create_data.")
                     break
@@ -290,8 +298,11 @@ def idl_tabulate(x, f, p=5):
         return (x[-1] - x[0]) / (x.shape[0] - 1) * dot_wf
 
     ret = 0
-    for idx in range(0, x.shape[0], p - 1) :
-        ret += newton_cotes(x[idx:idx + p], f[idx:idx + p])
+    try:
+        for idx in range(0, x.shape[0], p - 1) :
+            ret += newton_cotes(x[idx:idx + p], f[idx:idx + p])
+    except:
+        IndexError
     return ret
 
 
@@ -340,3 +351,228 @@ def interp_spline(x,y, atx):
     """
     t = interpolate.splrep(x, y)
     return interpolate.splev(atx, t)
+
+
+def construct_reldiff_img(x_size, y_size, forced_nan_idxs, edy_not_restricted, restricted_ig, relative_diff_arr):
+    """
+    This function constructs an image of the relative differences of the pipeline with respect to ESA.
+    Args:
+        x_size: integer, dimension of relative difference image in x-direction
+        y_size: integer, dimension of relative difference image in y-direction
+        forced_nan_idxs: numpy array, indeces of all those values that have to be set to NaNs
+        edy_not_restricted: numpy array, indeces of values in the slit-y array that are outside of the restriction zone
+        restricted_ig: numpy array, indeces of values in the slit-y array that are inside of the restriction zone
+        relative_diff_arr: numpy array, values of the relative differences (e.g. lambdas, msax1, etc.)
+
+    Returns:
+        reshaped_rel_diff = numpy array, image ready to be plotted with matplotlib.pyplot.plot.imshow
+    """
+    # Reconstructing the relative difference images
+    ones_arr = np.ones((y_size, x_size))
+    #print("np.shape(ones_arr) =", np.shape(ones_arr))
+    # convert to nan everything else but the comparison region
+    ones_arr[ones_arr==1.]=np.nan
+    flatten_ones_arr = ones_arr.flatten()
+    #print("len(flatten_ones_arr) =", len(flatten_ones_arr))
+    #print("added lengths = forced_nan_idxs+edy_not_restricted+restricted_ig =", len(forced_nan_idxs)+len(edy_not_restricted)+len(restricted_ig))
+    for fni in forced_nan_idxs:
+        flatten_ones_arr[fni] = np.nan
+    # add nans where the matched esa slit-y values are outside of the restriction
+    for enr in edy_not_restricted:
+        flatten_ones_arr[enr] = np.nan
+    # add the relative difference velues
+    for idx, rig_i in enumerate(restricted_ig):
+        flatten_ones_arr[rig_i] = relative_diff_arr[idx]
+    # reshape to dimensions of matched wavelengths
+    reshaped_rel_diff = np.reshape(flatten_ones_arr, (y_size, x_size))
+    return reshaped_rel_diff
+
+
+def compute_percentage(values, threshold):
+    """
+    This function computes the percentage of pixels above certain threshold.
+
+    Args:
+        values: numpy array of quantities to be evaluated
+        threshold: float, threshold value to evaluate against
+
+    Returns:
+        res: list of float percentages of values above the threshold
+    """
+    values = values[~np.isnan(values)]
+    n_total = values.size
+
+    thresh = [threshold, 3*threshold, 5*threshold]
+    res = []
+    for i in thresh:
+        n = np.logical_or(values > i, values< -i).nonzero()[0].size
+        res.append((n / n_total) * 100)
+    return res
+
+
+def print_stats(arrX, xname, threshold_diff, abs=False):
+    """
+    This function prints the statistics for the given arrays.
+    Args:
+        arrX: numpy array
+        xname: string, name of arrX to be printed in legend of statistics
+        threshold_diff: float, threshold value to determine if test failed or passed
+        abs: boolean, if True then legend will read 'absolute', otherwise it will read 'relative'
+
+    Returns:
+        x_stats: list, all quantities calculated for arrX
+    """
+    if abs:
+        type_of_calculations = "  Absolute"
+        type_of_percentages = "absolute differences"
+    else:
+        type_of_calculations = "  Relative"
+        type_of_percentages = "relative differences"
+    # calculate statistics
+    arrX_mean, arrX_median, arrX_stdev = np.mean(arrX), np.median(arrX), np.std(arrX)
+    print("\n", type_of_calculations, xname, " :   mean = %0.3e"%(arrX_mean), "   median = %0.3e"%(arrX_median),
+          "   stdev = %0.3e"%(arrX_stdev))
+    rel_max = np.max(arrX)
+    rel_min = np.min(arrX)
+    percentage_results = compute_percentage(arrX, threshold_diff)
+    print ("    Maximum", type_of_calculations, xname, " = %0.3e"%(rel_max))
+    print ("    Minimum", type_of_calculations, xname, " = %0.3e"%(rel_min))
+    print ("    Percentage of pixels where median of", type_of_percentages, "is greater than: ")
+    print ("                            ->  1xtheshold = ", int(round(percentage_results[0], 0)), "%")
+    print ("                            ->  3xtheshold = ", int(round(percentage_results[1], 0)), "%")
+    print ("                            ->  5xtheshold = ", int(round(percentage_results[2], 0)), "%")
+    x_stats = [arrX_mean, arrX_median, arrX_stdev]
+    return x_stats
+
+
+def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name):
+    """
+    This functions performs all the steps necessary to obtain the relative difference image and the corresponding
+    statistics, considering only non-NaN elements.
+    Args:
+        threshold_diff: float, threshold value used to calculate statistics
+        edy: numpy array, the array of the ESA slit-y positions
+        esa_arr: numpy array, array of the ESA quantity to be investigated
+        arr: numpy array, the array of the quantity to be investigated
+        arr_name: string, name of the array to be printed in statistics
+
+    Returns:
+        DATAMODEL_rel_diff: numpy array, 2D array ready for plotting (image)
+        DATAMODEL_rel_diff[notnan]: numpy array, flat array of the relative differences for the restricted, not-nan values
+        notnan_reldiffarr_stats: list, calculated statistics
+
+    """
+    # get rid of nans and restrict according to slit-y
+    in_slit = np.logical_and(edy<.5, edy>-.5)
+    arr[~in_slit] = np.nan   # Set lam values outside the slit to NaN
+    nanind = np.isnan(arr)   # get all the nan indexes
+    notnan = ~nanind   # get all the not-nan indexes
+    arr[nanind] = np.nan   # set all nan indexes to have a value of nan
+    # Set the values to NaN in the ESA lambda extension
+    esa_arr[nanind] = np.nan
+    # Compute the difference in wavelength
+    DATAMODEL_rel_diff = (arr - esa_arr) / esa_arr
+    # calculate and print stats
+    notnan_reldiffarr_stats = print_stats(DATAMODEL_rel_diff[notnan], arr_name, threshold_diff, abs=False)
+    return DATAMODEL_rel_diff, DATAMODEL_rel_diff[notnan], notnan_reldiffarr_stats
+
+
+def does_median_pass_tes(tested_quantity, arr_median, threshold_diff):
+    """
+    This function determines if the given median is less than or equal to the given threshold
+    Args:
+        tested_quantity: string, name of the calculated median
+        arr_median: float, calculated median
+        threshold_diff: float, threshold to compare against
+
+    Returns:
+        test_result: string, result of the test, i.e. PASSED or FAILED
+    """
+    if abs(arr_median) <= threshold_diff:
+        median_diff = True
+    if median_diff:
+        test_result = "PASSED"
+    else:
+        test_result = "FAILED"
+    print ("\n * Result of the test for", tested_quantity, ":  ", test_result, "\n")
+    return test_result
+
+
+def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt_origin=None,
+                         show_figs=False, save_figs=False):
+    """
+    This function creates and shows/saves one figure with the 2D plot for the given array and the
+    corresponding histogram.
+    Args:
+        img: nunpy array to be ploted in top figure
+        hist_data: numpy array to be plotted in bottom figure
+        info_img: list, contains title, label_x, and label_y information for top figure
+        info_hist: list, contains xlabel, ylabel, bins, and stats information for bottom figure, where stats is
+                    also a list containing the mean, median, and standard deviation for hist_data
+        plt_name: None or string, if not None the string is the full path and name with which the figure will be saved
+        plt_origin: None or list, if not None, code is expecting a list with the following content,
+                    plt_origin = title, label_x, and label_y info
+        show_figs: boolean, if True the plot will be showed on-screen
+        save_figs: boolean, if True the figure will be saved using the plt_name input
+
+    Returns:
+        Nothing.
+    """
+    # set up generals
+    font = {#'family' : 'normal',
+            'weight' : 'normal',
+            'size'   : 16}
+    matplotlib.rc('font', **font)
+    fig = plt.figure(1, figsize=(12, 10))
+    plt.subplots_adjust(hspace=.4)
+    alpha = 0.2
+    fontsize = 15
+
+    # Top figure - 2D plot
+    ax = plt.subplot(211)
+    if plt_origin is None:
+        im = ax.imshow(img, aspect="auto", origin='lower')
+    else:
+        lolim_x, uplim_x, lolim_y, uplim_y = plt_origin
+        im = ax.imshow(img, aspect="auto", origin='lower', extent=[lolim_x, uplim_x, lolim_y, uplim_y])
+    plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
+    plt.minorticks_on()
+    plt.colorbar(im, ax=ax)
+    title, label_x, label_y = info_img
+    plt.title(title)
+    plt.xlabel(label_x)
+    plt.ylabel(label_y)
+
+    # Bottom figure - histogram
+    ax = plt.subplot(212)
+    xlabel, ylabel, bins, stats = info_hist
+    x_mean, x_median, x_stddev = stats
+    str_x_stddev = "stddev = {:0.3e}".format(x_stddev)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    ax.text(0.73, 0.67, str_x_stddev, transform=ax.transAxes, fontsize=fontsize)
+    n, bins, patches = ax.hist(hist_data, bins=bins, histtype='bar', ec='k', facecolor="red", alpha=alpha)
+    ax.xaxis.set_major_locator(MaxNLocator(6))
+    from matplotlib.ticker import FuncFormatter
+    def MyFormatter(x, lim):
+        if x == 0:
+            return 0
+        return "%0.3E" % Decimal(x)
+    majorFormatter = FuncFormatter(MyFormatter)
+    ax.xaxis.set_major_formatter(majorFormatter)
+    # add vertical line at mean and median
+    plt.axvline(x_mean, label="mean = %0.3e"%(x_mean), color="g")
+    plt.axvline(x_median, label="median = %0.3e"%(x_median), linestyle="-.", color="b")
+    plt.legend()
+
+    # Show and/or save figures
+    if save_figs:
+        if plt_name is not None:
+            plt.savefig(plt_name)
+        else:
+            print(" * The figure was given no name. Please set the plt_name variable in the call to the function")
+            print("   named plt_two_2Dimgs. FIGURE WILL NOT BE SAVED.")
+    if show_figs:
+        plt.show()
+
+    plt.close()

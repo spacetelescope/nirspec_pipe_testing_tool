@@ -12,8 +12,6 @@ from astropy.io import fits
 from jwst.extract_2d.extract_2d_step import Extract2dStep
 from .. import core_utils
 from . import extract_2d_utils
-from .. auxiliary_code import compare_wcs_fs
-from .. auxiliary_code import compare_wcs_mos
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -46,12 +44,14 @@ def output_hdul(set_inandout_filenames, config):
     if not core_utils.check_IFU_true(inhdu):
         if run_calwebb_spec2:
             # read the assign wcs fits file
-            local_step_output_file = core_utils.read_completion_to_full_run_map("full_run_map.txt", step)
+            input_file = config.get("calwebb_spec2_input_file", "input_file")
+            local_step_output_file = input_file.replace(".fits", "_extract_2d.fits")
             hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
             # move the output file into the working directory
             working_directory = config.get("calwebb_spec2_input_file", "working_directory")
             step_output_file = os.path.join(working_directory, local_step_output_file)
             print ("Step product was saved as: ", step_output_file)
+            print("******   local_step_output_file, step_output_file: ", local_step_output_file, step_output_file)
             subprocess.run(["mv", local_step_output_file, step_output_file])
             return hdul, step_output_file, msa_conf_name, esa_files_path, wcs_threshold_diff, save_wcs_plots
         else:
@@ -106,29 +106,19 @@ def validate_wcs_extract2d(output_hdul):
     # show the figures
     show_figs = False
 
-    if core_utils.check_FS_true(hdu):
-        # Find what slit the data corresponds to and populate the keyword
-        #sltname_list = []
-        #sltname = fits.getval(infile_name, "SLTNAME", extname="SCI")
-        #fits.setval(infile_name, "FXD_SLIT", extname="SCI", value=sltname)
-        median_diff = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path,
-                                                 auxiliary_code_path=None, plot_names=None,
-                                                 show_figs=show_figs, save_figs=save_wcs_plots,
-                                                 threshold_diff=threshold_diff)
+    #if core_utils.check_FS_true(hdu):
+    #    result = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path,
+    #                                             auxiliary_code_path=None, plot_names=None,
+    #                                             show_figs=show_figs, save_figs=save_wcs_plots,
+    #                                             threshold_diff=threshold_diff)
 
-    elif core_utils.check_MOS_true(hdu):
-        median_diff = compare_wcs_mos.compare_wcs(infile_name, msa_conf_name=msa_conf_name,
-                                                  esa_files_path=esa_files_path, auxiliary_code_path=None,
-                                                  plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
-                                                  threshold_diff=threshold_diff)
+    #else:
+    #    pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")
 
-    else:
-        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")
+    #if result == "skip":
+    #    pytest.skip("Extract_2d validation will be skipped.")
 
-    if median_diff == "skip":
-        pytest.skip("WCS validation quit because there are no extensions that match detector NRS2 in the ESA file.")
-
-    return median_diff
+    #return result
 
 
 
@@ -138,5 +128,5 @@ def test_s_ext2d_exists(output_hdul):
     assert extract_2d_utils.s_ext2d_exists(output_hdul[0]), "The keyword S_EXTR2D was not added to the header --> extract_2d step was not completed."
 
 
-def test_validate_wcs_extract2d(output_hdul):
-    assert validate_wcs_extract2d(output_hdul), "Output value from compare_wcs.py is greater than threshold."
+#def test_validate_extract2d(output_hdul):
+#    assert validate_extract2d(output_hdul), "Box is not of expected size."

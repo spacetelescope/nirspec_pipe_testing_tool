@@ -1,6 +1,8 @@
 import collections
 import os
 import numpy as np
+import glob
+import pdfkit
 from astropy.io import fits
 
 '''
@@ -329,6 +331,22 @@ def check_FS_true(output_hdul):
     return result
 
 
+def check_BOTS_true(output_hdul):
+    """
+    This function checks if the fits file is a Bright Object Time Series, BOTS.
+    Args:
+        output_hdul: the HDU list of the output header keywords
+
+    Returns:
+        result: boolean, if true, the file is assumed to be BOTS
+    """
+    result = False
+    if "EXP_TYPE" in output_hdul:
+        if output_hdul["EXP_TYPE"] == "NRS_BRIGHTOBJ":
+            result = True
+    return result
+
+
 def check_MOS_true(output_hdul):
     """
     This function checks if the fits file is Multi-Object Spectroscopy (MOS).
@@ -371,7 +389,7 @@ def find_which_slit(output_hdul):
         s: string, slit used or is None if not in the list
     """
     # the order of this list corresponds to the
-    slits = ["S200A1", "S200A2", "S200B1", "S400A1", "S1600A1"]
+    slits = ["S200A1", "S200A2", "S200B1", "S400A1", "S1600A1", ]
     if "FXD_SLIT" in output_hdul:
         for i, s in enumerate(slits):
             print("slit: ", s, i)
@@ -450,3 +468,22 @@ def get_reffile_used(output_hdul):
             print ("Keyword: ", reffile_key, "  not found in main header.")
 
     return ref_files_used_so_far
+
+
+def convert_html2pdf():
+    """
+    This function converts the latest html file into a pdf.
+    In order to work it needs this plugin (https://pypi.org/project/pdfkit/#description):
+    pip install pdfkit
+    and the OSX 64-bit download from: https://wkhtmltopdf.org/downloads.html
+    """
+    # get a list of all the html files in the calwebb_spec2_pytests dir
+    list_of_htmlfiles = glob.glob('*.html')
+    # find the latest of the html files
+    latest_htmlfile = max(list_of_htmlfiles, key=os.path.getctime)
+    # create the pdf output name
+    pdf_file = latest_htmlfile.replace(".html", ".pdf")
+    # convert the html report into a pdf file
+    pdfkit.from_file(latest_htmlfile, pdf_file)
+    print ("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
+

@@ -13,9 +13,15 @@ from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
 
 from . import assign_wcs_utils
 from .. import core_utils
-from .. auxiliary_code import compare_wcs_ifu
 from .. auxiliary_code import change_filter_opaque2science
+from .. auxiliary_code import compare_wcs_ifu
+from .. auxiliary_code import compare_wcs_fs
+from .. auxiliary_code import compare_wcs_mos
 
+
+# print pipeline version
+import jwst
+print("\n*** Using jwst pipeline version: ", jwst.__version__, " *** \n")
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
@@ -53,6 +59,7 @@ def output_hdul(set_inandout_filenames, config):
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
+    msa_conf_name = config.get("esa_intermediary_products", "msa_conf_name")
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
@@ -82,10 +89,10 @@ def output_hdul(set_inandout_filenames, config):
         assign_wcs_utils.create_map_from_full_run(full_run_map, step_input_file)
         # get the name of the configuration file and run the pipeline
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
-        input_file_basename_list = step_input_file.split("_")[:4]
-        input_file_basename = "_".join((input_file_basename_list))
-        final_output_name = "_".join((input_file_basename, "cal.fits"))
-        final_output_name_basename = os.path.basename(final_output_name)
+        input_file = config.get("calwebb_spec2_input_file", "input_file")
+        final_output_name = input_file.replace(".fits", "_cal.fits")
+        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+        workingdir_final_output = os.path.join(working_directory, final_output_name)
         if core_utils.check_MOS_true(inhdu):
             # copy the MSA shutter configuration file into the pytest directory
             subprocess.run(["cp", msa_shutter_conf, "."])
@@ -100,12 +107,14 @@ def output_hdul(set_inandout_filenames, config):
             subprocess.run(["rm", msametfl])
         # move the output file into the working directory
         print ("The final calwebb_spec2 product was saved in: ", final_output_name)
-        subprocess.run(["mv", final_output_name_basename, final_output_name])
+        subprocess.run(["mv", final_output_name, workingdir_final_output])
+        local_step_output_file = input_file.replace(".fits", "_assign_wcs.fits")
+        step_output_file = os.path.join(working_directory, local_step_output_file)
+        subprocess.run(["mv", local_step_output_file, step_output_file])
         # read the assign wcs fits file
-        step_output_file = core_utils.read_completion_to_full_run_map(full_run_map, step)
         hdul = core_utils.read_hdrfits(step_output_file, info=True, show_hdr=True)
         scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-        return hdul, scihdul, step_output_file, esa_files_path, wcs_threshold_diff, save_wcs_plots
+        return hdul, step_output_file, msa_conf_name, esa_files_path, wcs_threshold_diff, save_wcs_plots
     else:
         # create the Map of file names
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
@@ -135,7 +144,7 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
                 scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-                return hdul, scihdul, step_output_file, esa_files_path, wcs_threshold_diff, save_wcs_plots
+                return hdul, step_output_file, msa_conf_name, esa_files_path, wcs_threshold_diff, save_wcs_plots
             else:
                 print("Skipping step. Intput file "+step_input_file+" does not exit.")
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
@@ -146,14 +155,15 @@ def output_hdul(set_inandout_filenames, config):
 
 
 
-### THESE FUNCTIONS ARE TO VALIDATE BOTH THE WCS STEP FOR IFU DATA (since extract_2d is not ran for that step)
+### THESE FUNCTIONS ARE TO VALIDATE THE WCS STEP
 
-# fixture to validate the WCS and extract 2d steps
+# fixture to validate the WCS
 @pytest.fixture(scope="module")
-def validate_wcs_IFU(output_hdul):
+def validate_wcs(output_hdul):
     # get the input information for the wcs routine
     hdu = output_hdul[0]
-    infile_name = output_hdul[2]
+    infile_name = output_hdul[1]
+    msa_conf_name = output_hdul[2]
     esa_files_path = output_hdul[3]
 
     # define the threshold difference between the pipeline output and the ESA files for the pytest to pass or fail
@@ -165,14 +175,22 @@ def validate_wcs_IFU(output_hdul):
     # show the figures
     show_figs = False
 
-    if core_utils.check_IFU_true(hdu):
-        median_diff = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, auxiliary_code_path=None,
-                                                  plot_names=None, show_figs=show_figs, save_figs=save_wcs_plots,
-                                                  threshold_diff=threshold_diff)
-    else:
-        pytest.skip("Skipping pytest: Validation of WCS step for non IFU data will be done after the extract_2d step.")
+    if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
+        result = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
+                                            save_figs=save_wcs_plots, threshold_diff=threshold_diff, debug=False)
 
-    return median_diff
+    elif core_utils.check_MOS_true(hdu):
+        result = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
+                                             show_figs=show_figs, save_figs=save_wcs_plots,
+                                             threshold_diff=threshold_diff, debug=False)
+
+    elif core_utils.check_IFU_true(hdu):
+        result = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
+                                            save_figs=save_wcs_plots, threshold_diff=threshold_diff, debug=False)
+    else:
+        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. PTT does not yet include the routine to verify this kind of file.")
+
+    return result
 
 
 # Unit tests
@@ -264,7 +282,7 @@ def test_sporder_exists(output_hdul):
 def test_s_wcs_exists(output_hdul):
     assert assign_wcs_utils.s_wcs_exists(output_hdul[0]), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
 
-def test_validate_wcs_IFU(output_hdul):
-    assert validate_wcs_IFU(output_hdul), "Output value from compare_wcs.py is greater than threshold."
+def test_validate_wcs(output_hdul):
+    assert validate_wcs(output_hdul), "Output value from compare_wcs.py is greater than threshold."
 
 

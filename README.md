@@ -5,7 +5,7 @@
 Simply put, a Pytest is a pass or fail Python test. For instance, with the WCS step, we 
 have Python scripts (which we are calling auxiliary code within the frame of the testing 
 tool) that compare the pipeline product with the ESA corresponding intermediary file, and 
-calculates a difference. The Pytest is to asses if that difference is less than or equal 
+calculates a difference. The Pytest is to assert if that difference is less than or equal 
 to an X threshold value. Hence, a failed test means that the condition was not met. If an
 error should occur with the pipeline, the test will be flagged as an error.
 
@@ -20,10 +20,10 @@ https://astroconda.readthedocs.io/en/latest/
 Please use python 3.5
 
 
-A COUPLE OF THINGS BEFORE STARTING
+THREE THINGS BEFORE STARTING
 
-- You may want to clean your PYTHONPATH so that you do not get mysterious failures. To do
-this simply type the following command in the terminal:
+I.- You may want to clean your PYTHONPATH so that you do not get mysterious failures. To 
+do this simply type the following command in the terminal:
 ```bash
 unset PYTHONPATH
 ```
@@ -31,31 +31,41 @@ You can do this every time you run the pytests, or when you start getting strang
 failures. Another option is not to define PYTHONPATH at all in the .profile (or 
 equivalent: .bashrc, .bash_profile, .cshrc, .login, etc.) file.
 
-- If you work outside the internal network, i.e. in the visitors network or at home, you
-also want to set the following environment variables in the terminal or add them to your
-.profile file:
+II.- If you work outside the internal network, i.e. in the visitors network or at home, 
+you also want to set the following environment variables in the terminal or add them to 
+your .profile (or equivalent) file:
 ```bash
 export CRDS_SERVER_URL=https://jwst-crds.stsci.edu
 export CRDS_PATH=${HOME}/crds_cache
 ```
 These changes will not affect your work while working with the internal network at ST.
 
+III.- A brief description of what each pipeline step does, as well as a brief description
+of all the pytests implemented in the tool, the tests that are still in concept phase, and 
+the tests that are still needed, can be found in the Confluence space for PTT. You can 
+get to it from the main page of NIRSpec/NIRSpec JWST Pipeline/NIRSpec Calibration
+Pipeline Testing Tool (PTT), or by clicking in the following link:
+https://confluence.stsci.edu/pages/viewpage.action?pageId=123011558
+
+
 
 1. Create the conda environment for testing and get the configuration files.  
 
 a. Conda environment for this testing campaign:
-- Current testing version is 7.1 for release candidate 0.7.9.0. However, this version has
-a broken version of the assign WCS step. Hence, we are currently testing with the 
-development version of the pipeline (please see the NOTE below).
-- In case you need to test some specific step of release candidate 0.7.9.0, please
-follow these instructions to create the build7.1 environment. In a terminal type:
+- Current testing version is 7.1.3. Please install this version by typing the following 
+command in a terminal:
 ```bash
-conda create -n jwst_b7.1 --file url_depending_on_your_system python=3.5
+conda create -n jwst_b713 --file url_depending_on_your_system python=3.5
 ```
 for the current release candidate, the ulr options are:
-- Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-linux
-- OS X: http://ssb.stsci.edu/releases/jwstdp/0.9.x/latest-osx
+- Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.3/latest-linux
+- OS X: http://ssb.stsci.edu/releases/jwstdp/0.9.3/latest-osx
 
+As bugfixes are announced your current pipeline software may be updated by issuing the 
+command:
+```bash
+conda update -n jwstdp-0.9.3rc1 --file http://ssb.stsci.edu/releases/jwstdp/0.9.3/latest-linux
+```
 
 NOTE:
 If you need to use the development version of the pipeline then do the following:
@@ -66,6 +76,19 @@ Then, to update the development environment, activate the environment and then t
 ```bash
 conda update --override-channels -c http://ssb.stsci.edu/conda-dev -c defaults --all
 ```
+To get a specific version of the pipeline you need to do 2 steps:
+i) Find the version you want with (newest at the bottom)
+```bash
+conda search -c http://ssb.stsci.edu/astroconda-dev jwst
+```
+ii) Install the version you want
+```bash
+conda install --override-channels -c https://ssb.stsci.edu/astroconda-dev -c 
+                                                          defaults jwst=version_you_want
+```
+where ```jwst=version_you_want``` is usually something like ```jwst=1.2.3dev456```.
+
+
 
 b. Configuration files corresponding to this build. Create a directory (e.g. 
 ```b7.1cfg_files```) somewhere in your testing working space, and ```cd``` into it. Now 
@@ -93,11 +116,13 @@ conda env remove -n name_of_your_old_environment
 ```
 
 
-3. Install the pytest html plugin. Within the conda testing environment, type:
+3. Install the following plugins for the pytests to work properly. Within the conda 
+testing environment, type:
 ```bash
+pip install msgpack
 pip install pytest-html
 ```
-NOTE: Every time you create a new conda environment you need to install html plugin.
+NOTE: Every time you create a new conda environment you need to install these plugins.
 
 
 4. Clone the repository so you have the PTT. To do this click at the top right 
@@ -193,8 +218,8 @@ directory, simply remove the ```-sbs``` from previous command.
 If everything went well, you will see a text file called 
 ```cal_detector1_outputs_and_times.txt```, which contains the steps ran, the name of the 
 output fits file, and the time each step took to run. However, if you chose to run the 
-calwebb detector1 in a single run, you will only see the total running time. This text file,
-along with the intermediary products will be located in the path you set for the 
+calwebb detector1 in a single run, you will only see the total running time. This text 
+file, along with the intermediary products will be located in the path you set for the 
 ```working_directory``` variable in the configuration file of the PTT.
 
 NOTE:
@@ -255,12 +280,13 @@ file, ```report.html```, and an intermediary product file name map will appear i
 be saved in the path you indicated at the ```PTT_config.cfg``` file with the variable
  ```working_directory```. In the terminal type:
 ```bash
-pytest -s --config_file=PTT_config.cfg --html=report.html
+pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html
 ```
 The ```-s``` will capture all the print statements in the code on screen. If you want to
 save the on-screen output into a text file simply do:
 ```bash
-pytest -s --config_file=PTT_config.cfg --html=report.html > screen_output.txt
+pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html 
+                                                                      > screen_output.txt
 ```
 and this will create the ```screen_output.txt``` file in the ```calweb_spec2_pytests``` 
 directory.
@@ -275,20 +301,26 @@ PTT error. Keep updating your testing progress in our testing campaign Confluenc
 https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+2
 
 Please follow these actions for reporting your progress, depending on the outcome:
-- Do not place the html file in the Confluence page because it will get corrupted. 
-Instead, please create a PDF export from the report and use that file for the 
-Confluence page and for any sharing purposes.
+* The html file is now portable, i.e. it will not get corrupted if you move it to another
+directory. 
+- Place the html file in the Confluence page. You can also create a PDF export from the 
+report and use that file for the Confluence page and for any sharing purposes.
 - If there are no testing tool errors and some of the pytests failed, you can check  
 off the steps and please put that report in Table 2 of the Confluence page.
 - If there are testing tool errors please place your report in the Confluence page, 
 add a small comment in the "Testing Tool" column of Table 2 in the Confluence page, and 
 send an email to Maria Pena-Guerrero (pena@stsci.edu), so that the 
 PTT error can be addressed as soon as possible.
-- If there are errors with the pipeline, please create a Basecamp message 
-(https://stsci-ins.basecamphq.com/projects/11477312-jwst-pipeline/posts), following the 
-NIRSpec guidelines for doing so, which you can find at:
+- If there are errors with the pipeline, please do the following:
+i) Look up if there are any JIRA issues already filed related to the error.
+ii) If there are JIRA issues open you can add a comment that you also encountered the
+problem for your data.
+iii) If there are closed JIRA issues you can re-open them and report in the comments 
+section.
+iv) If there is no JIRA issue for the problem please go ahead and create one. You can find
+the NIRSpec guidelines for doing so at:
 https://confluence.stsci.edu/display/JWST/NIRSpec+Guidelines+for+Pipeline+Issue+Reporting
-and copy the link in the corresponding column of Table 2 of the Confluence page.
+and copy the link (or JIRA issue number) next to your report.
 - Keep updating the html report as you continue with the testing, and including the final
 report.
 
