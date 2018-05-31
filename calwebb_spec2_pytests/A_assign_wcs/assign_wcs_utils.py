@@ -1,4 +1,3 @@
-from .. import core_utils
 from .. auxiliary_code.reffile_test import create_rfile_test
 
 """
@@ -7,6 +6,15 @@ of the JWST Calibration Pipeline.
 
 Selected keywords are checked to verify that the step ran through successfully.
 """
+
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero & Gray Kanarek"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Gray added routine to generalize reference file check
 
 
 def create_completed_steps_txtfile(True_steps_suffix_map, step_input_file):

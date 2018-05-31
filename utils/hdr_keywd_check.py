@@ -11,6 +11,8 @@ from collections import OrderedDict
 # import the header keyword dictionaries
 import hdr_keywd_dict as hkwd
 import hdr_keywd_dict_sample as shkvd
+# import subarray dictionary
+import subarray_dict as subdict
 
 
 '''
@@ -29,6 +31,15 @@ where the -m flag is the mode used, i.e. FS, MOS, IFU, BOTS. If a mode is not pr
 in the pytests configuration file.
 
 '''
+
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
 
 ### General functions
 
@@ -339,13 +350,31 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         specific_keys_dict[key] = 'GENERIC'
                         missing_keywds.append(key)
 
-                # specific check for SUBARRAY, set to GENERIC
+                # specific check for SUBARRAY
                 if key == 'SUBARRAY':
-                    if val not in hkwd_val:
-                        print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
-                        #fits.setval(ff, key, 0, value='GENERIC')
-                        specific_keys_dict[key] = 'GENERIC'
-                        missing_keywds.append(key)
+                    if 'IFU' in mode_used  or  "MOS" in mode_used:
+                        if val not in hkwd_val:
+                            print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
+                            #fits.setval(ff, key, 0, value='GENERIC')
+                            specific_keys_dict[key] = 'GENERIC'
+                            missing_keywds.append(key)
+                    elif mode_used == "FS"  or  mode_used == "BOTS":
+                        # set the subarray according to size
+                        substrt1 = fits.getval(ff, "SUBSTRT1", 0)
+                        substrt2 = fits.getval(ff, "SUBSTRT2", 0)
+                        subsize1 = fits.getval(ff, "SUBSIZE1", 0)
+                        subsize2 = fits.getval(ff, "SUBSIZE2", 0)
+                        for subarrd_key, subarrd_vals_dir in subdict.subarray_dict.items():
+                            sst1 = subarrd_vals_dir["substrt1"]
+                            sst2_list = subarrd_vals_dir["substrt2"]
+                            ssz1 = subarrd_vals_dir["subsize1"]
+                            ssz2 = subarrd_vals_dir["subsize2"]
+                            if substrt1 == sst1  and  subsize1 == ssz1  and  subsize2 == ssz2:
+                                for sst2 in sst2_list:
+                                    if substrt2 == sst2:
+                                        specific_keys_dict[key] = subarrd_key
+                                        print ("changing subarray keyword to ", subarrd_key)
+                                        missing_keywds.append(key)
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
@@ -384,25 +413,6 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 warnings_list.append(warning)
                 with open(warnings_file_name, "a") as tf:
                     tf.write(warning+'\n')
-
-    """
-    # if the keyword is not in the dictionary remove it
-    for file_key in file_keywd_dict:
-        if (file_key == "RAWDATRT") or (file_key == "MODEUSED"):
-            print (file_key, file_keywd_dict[file_key], " will remain in the header")
-        elif (file_key not in hkwd.keywd_dict):
-            #fits.delval(ff, file_key, 0)
-            specific_keys_dict[key] = 'remove'
-            missing_keywds.append(key)
-            warning = '{:<15} {:<9} {:<25}'.format(file_key, ext, 'Keyword to be removed from header')
-            print (warning)
-
-    # check that the RAWDATRT keyword is present
-    if 'RAWDATRT' not in file_keywd_dict:
-        warning = '*** WARNING ***: keyword RAWDATRT not found in file --> impossible to confirm if ESA intermediary product matches data'
-        warnings_list.append(warning)
-        print (warning)
-    """
 
     print("keywords to be modified: ", list(OrderedDict.fromkeys(missing_keywds)))
     return specific_keys_dict

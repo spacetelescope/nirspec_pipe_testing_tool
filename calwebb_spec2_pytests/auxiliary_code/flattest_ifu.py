@@ -18,6 +18,18 @@ This script tests the pipeline flat field step output for IFU data. It is the py
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
+#                         script, and added new routines for statistics calculations.
+
+
+
+
 def reverse_cols(arr):
     """
     This function permutates the last column of the array with the first, e.g. a = [4,5,6]

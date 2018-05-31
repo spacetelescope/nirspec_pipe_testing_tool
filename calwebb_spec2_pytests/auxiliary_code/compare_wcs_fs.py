@@ -14,6 +14,16 @@ This script compares pipeline WCS info with ESA results for FIXED SLIT.
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
+#                         script, and added new routines for plot making and statistics calculations.
+
+
 def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=False, threshold_diff=1.0e-7, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the
@@ -72,8 +82,8 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         print ("\nWorking with slit: ", pipeslit)
 
         # Get the ESA trace
-        #raw_data_root_file = "NRSV84600010001P0000000002101_4_491_SE_2016-01-17T17h34m08.fits"  # for testing with G140M
-        #raw_data_root_file = "NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits"  # for testing with G140H
+        #raw_data_root_file = "NRSV84600010001P0000000002101_4_491_SE_2016-01-17T17h34m08.fits"  # for testing with G140M FULLFRAME
+        #raw_data_root_file = "NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits"  # for testing with G140H FULLFRAME
         _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
         specifics = [pipeslit]
 
@@ -340,10 +350,12 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G235H_opaque/491_results"
-    data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results"
+    #data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results"
+    data_dir = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G140M_F070LP/491_results"
     infile_name = data_dir+"/gain_scale_assign_wcs.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
-    esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
+    #esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
+    esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3/ESA_Int_products"
 
     # print pipeline version
     import jwst

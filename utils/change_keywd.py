@@ -24,6 +24,14 @@ Usage:
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 def keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, value):
     if keyword in sample_kyewd_dict:
         # obtain the type of the sample value and convert the input value

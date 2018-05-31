@@ -91,7 +91,7 @@ where ```jwst=version_you_want``` is usually something like ```jwst=1.2.3dev456`
 
 
 b. Configuration files corresponding to this build. Create a directory (e.g. 
-```b7.1cfg_files```) somewhere in your testing working space, and ```cd``` into it. Now 
+```b713cfg_files```) somewhere in your testing working space, and ```cd``` into it. Now 
 type the following command within the conda environment you just created (see step 2).
 ```bash
 collect_pipeline_cfgs .
@@ -100,7 +100,7 @@ collect_pipeline_cfgs .
 
 2. Activate the conda environment for testing the pipeline, e.g. type:
 ```bash
-source activate jwst_b7.1
+source activate jwst_b713
 ```
 From here on, every step of this guide should happen within the conda testig environment.
 
@@ -130,8 +130,8 @@ of this page, in the dropdown button that says clone or download, then copy the 
 appears there. Now, within the conda testing environment, go to or create the directory 
 where you want the PTT to "live" in. However, make sure that the configuration files 
 directory is at least at the top level of the directory tree where the PTT will live, e.g. 
-the ```b7.1cfg_files``` directory and the ```nirspec_testing_tool``` directory can be at 
-the same level, but the ```b7.1cfg_files``` directory cannot be inside the 
+the ```b713cfg_files``` directory and the ```nirspec_testing_tool``` directory can be at 
+the same level, but the ```b713cfg_files``` directory cannot be inside the 
 ```nirspec_testing_tool``` directory because otherwise the .cfg files
 will be picked up by Git and it will try to put them in your space.
 Remember you are in the GitHub repository page so go all the way to the top of the page,
@@ -169,9 +169,9 @@ terminal type:
 python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/
                                         prepare_data2run.py fits_file.fits MODE -u
 ```
-where the MODE is expected to be one of: FS, MOS, IFU. This command will update the uncal 
-keyword header without creating a new file, and will also keep the subdirectory. To 
-remove it, simply add ```-rm``` at the end. To save the keyword changes in a new fits 
+where the MODE is expected to be one of: FS, MOS, IFU, or BOTS. This command will update 
+the uncal keyword header without creating a new file, and will also keep the subdirectory. 
+To remove it, simply add ```-rm``` at the end. To save the keyword changes in a new fits 
 file (instead of updating), remove the ```-u```. The new uncal fits file is now ready 
 for pipeline ingest.
 
@@ -276,9 +276,10 @@ pytest --collect-only
 
 9. Do the first PTT run. As an output of the testing tool you will see an html 
 file, ```report.html```, and an intermediary product file name map will appear in the 
-```calwebb_spec2_pytests``` directory. The fits files of intermediary products will 
-be saved in the path you indicated at the ```PTT_config.cfg``` file with the variable
- ```working_directory```. In the terminal type:
+```calwebb_spec2_pytests``` directory, and at the end it will be moved to the path you 
+indicated at the ```PTT_config.cfg``` file with the variable ```working_directory```. The 
+output fits files of intermediary products will also be saved in the working directory. 
+In the terminal type:
 ```bash
 pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html
 ```
@@ -289,16 +290,17 @@ pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html
                                                                       > screen_output.txt
 ```
 and this will create the ```screen_output.txt``` file in the ```calweb_spec2_pytests``` 
-directory.
+directory, and at the end this file will also be moved to the working directory.
 
 
 10. Report your findings. If all went well, you should have the html report in the 
-```calwebb_spec2_pytests``` directory, along with the file name map of intermediary 
-products that appeared in the working directory. Each section of the report specifies 
-what tests passed or failed, and, if there were any errors, the report will tell you 
-(with the name of the script where the error occurred) if it is a pipeline error or a 
-PTT error. Keep updating your testing progress in our testing campaign Confluence page:
-https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+2
+working directory, along with the file name map of intermediary products. Each section 
+of the report specifies what tests passed or failed, and, if there were any errors, the 
+report will tell you (with the name of the script where the error occurred) if it is a 
+pipeline error or a PTT error. Keep updating your testing progress in the Confluence page
+where you obtained the name of your testing data sets, in the column named Test reports 
+(if there is none, please go ahead and add it). In this column place a copy of your html
+report and the text file of the screen output. 
 
 Please follow these actions for reporting your progress, depending on the outcome:
 * The html file is now portable, i.e. it will not get corrupted if you move it to another

@@ -9,6 +9,15 @@ Selected keywords are checked to verify that the step ran through successfully.
 """
 
 
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 ### VERIFICATION FUNCTIONS
 
 def s_flat_exists(output_hdul):

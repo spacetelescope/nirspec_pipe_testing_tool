@@ -1,4 +1,13 @@
 
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 """
 This script uses the input raw fits file name to look for the right reference file that the pipeline should have
 selected.

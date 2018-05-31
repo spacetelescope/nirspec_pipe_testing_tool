@@ -15,6 +15,15 @@ from . import extract_1d_utils
 from .. import core_utils
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero & Gray Kanarek"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Gray added routine to generalize reference file check
+
+
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
 # Default names of pipeline input and output files
@@ -33,6 +42,7 @@ def output_hdul(set_inandout_filenames, config):
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
     stp = Extract1dStep()
+    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -53,7 +63,6 @@ def output_hdul(set_inandout_filenames, config):
         local_step_output_file = input_file.replace(".fits", "_x1d.fits")
         hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
         # move the output file into the working directory
-        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
         step_output_file = os.path.join(working_directory, local_step_output_file)
         print ("Step product was saved as: ", step_output_file)
         subprocess.run(["mv", local_step_output_file, step_output_file])
@@ -91,6 +100,9 @@ def output_hdul(set_inandout_filenames, config):
 
                 # convert the html report into a pdf file
                 #core_utils.convert_html2pdf()
+
+                # move the final reporting files to the working directory
+                core_utils.move_latest_report_and_txt_2workdir(working_directory)
 
                 return hdul
             else:

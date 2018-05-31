@@ -17,9 +17,14 @@ Example usage:
 
 """
 
-# Header
+
+# HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.0"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
 
 # Get arguments to run script
 parser = argparse.ArgumentParser(description='')

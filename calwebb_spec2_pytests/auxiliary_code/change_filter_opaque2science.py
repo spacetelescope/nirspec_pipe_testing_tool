@@ -20,6 +20,16 @@ Example usage:
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# April 2018 - Version 1.0: initial version completed
+
+
+
+
 def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, step=None, force_filter_change=False):
     """
     This function  checks that the filter was indeed set to opaque in the final output file from

@@ -15,6 +15,16 @@ from .. import core_utils
 from .. auxiliary_code import change_filter_opaque2science
 
 
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero & Gray Kanarek"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Gray added routine to generalize reference file check
+
+
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
 # Default names of pipeline input and output files

@@ -16,6 +16,17 @@ This script tests the pipeline flat field step output for MOS data. It is the py
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
+#                         script, and added new routines for statistics calculations.
+
+
+
 def reverse_cols(arr):
     """
     This function permutates the last column of the array with the first, e.g. a = [4,5,6]
@@ -233,8 +244,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # y, x = np.mgrid[ystart: yend, xstart: xend]
         x, y = wcstools.grid_from_bounding_box(slit.meta.wcs.bounding_box, step=(1, 1), center=True)
         ra, dec, wave = slit.meta.wcs(x, y)   # wave is in microns
-        #detector2slit = slit.meta.wcs.get_transform('detector', 'slit_frame')
-        #sx, sy, ls = detector2slit(x, y)
+        detector2slit = slit.meta.wcs.get_transform('detector', 'slit_frame')
+        sx, sy, ls = detector2slit(x, y)
         #world_coordinates = np.array([wave, ra, dec, sy])#, x, y])
 
         # get the subwindow origin

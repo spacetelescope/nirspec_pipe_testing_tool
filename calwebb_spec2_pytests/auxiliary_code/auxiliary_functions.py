@@ -15,6 +15,16 @@ This script contains the auxiliary functions that the wcs FS, MOS, and IFU WCS s
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Added routines for plot making and statistics calculations for assign_wcs with using
+#                         the datamodel instead of the compute_world_coordinates script.
+
+
 def find_nearest(arr, value):
     '''
     This function gives the content and the index in the array of the number that is closest to
@@ -198,22 +208,47 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
     # go into the esa_files_path directory and enter the the mode to get the right esafile
     # get all subdirectories within esa_files_path
     subdir_list = glob(esa_files_path+"/*")
-    jlab88_list = []
-    same_nid_files = []
-    esafile = "ESA file not found"
-    for item in subdir_list:
-        # check if the file is at the first level using the NID
-        if nid is not None:
-            if ".fits" in item  and  "List" not in item:
-                nid2compare = fits.getval(item, "GS_JOBID", 0).split("_")[1].replace("000", "")
-                #print("NID_raw_data_file =", nid, "    nid2compare =",nid2compare)
-                if nid == nid2compare:
-                    # collect all files with the same NID
-                    same_nid_files.append(item)
+    # check if there are subdirectories or not
+    dirs_not_in_list = []
+    for i, item in enumerate(subdir_list):
+        #print(i, item)
+        if "List" in item:
+            subdir_list.pop(i)
+            continue
+        if ".fits" in item:
+            item_not_dir = True
         else:
-            subdir = item
-            if esaroot in subdir:
-                jlab88_list.append(subdir)
+            item_not_dir = False
+        dirs_not_in_list.append(item_not_dir)
+
+    same_nid_files = []
+    jlab88_list = []
+    esafile = "ESA file not found"
+    if all(item_not_dir==True for item_not_dir in dirs_not_in_list):
+        raw_file_name = rawdatroot.split("_")[0].replace("NRS", "")
+        #print("raw_file_name = ", raw_file_name)
+        for item in subdir_list:
+            if raw_file_name in item:
+                if "List" not in item:
+                    nidrawfile = fits.getval(item, "GS_JOBID", 0).split("_")[1].replace("000", "")
+                    #print("nidrawfile =", nidrawfile)
+                    same_nid_files.append(item)
+        nid = nidrawfile
+    else:
+        same_nid_files = []
+        for item in subdir_list:
+            # check if the file is at the first level using the NID
+            if nid is not None:
+                if ".fits" in item  and  "List" not in item:
+                    nid2compare = fits.getval(item, "GS_JOBID", 0).split("_")[1].replace("000", "")
+                    #print("NID_raw_data_file =", nid, "    nid2compare =", nid2compare)
+                    if nid == nid2compare:
+                        # collect all files with the same NID
+                        same_nid_files.append(item)
+            else:
+                subdir = item
+                if esaroot in subdir:
+                    jlab88_list.append(subdir)
 
     # get the specific ESA file
     if mode == "FS":

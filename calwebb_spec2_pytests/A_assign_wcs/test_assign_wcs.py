@@ -23,6 +23,16 @@ from .. auxiliary_code import compare_wcs_mos
 import jwst
 print("\n*** Using jwst pipeline version: ", jwst.__version__, " *** \n")
 
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero & Gray Kanarek"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Gray added routine to generalize reference file check
+
+
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
 # Default names of pipeline input and output files
@@ -175,7 +185,7 @@ def validate_wcs(output_hdul):
     # show the figures
     show_figs = False
 
-    if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
+    if core_utils.check_FS_true(hdu):
         result = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
                                             save_figs=save_wcs_plots, threshold_diff=threshold_diff, debug=False)
 
@@ -187,6 +197,8 @@ def validate_wcs(output_hdul):
     elif core_utils.check_IFU_true(hdu):
         result = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
                                             save_figs=save_wcs_plots, threshold_diff=threshold_diff, debug=False)
+    elif core_utils.check_BOTS_true(hdu):
+        pytest.skip("Skipping pytest: BOTS files at the moment are not being compared against an ESA intermediary product.")
     else:
         pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. PTT does not yet include the routine to verify this kind of file.")
 
