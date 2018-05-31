@@ -64,7 +64,7 @@ for the current release candidate, the ulr options are:
 As bugfixes are announced your current pipeline software may be updated by issuing the 
 command:
 ```bash
-conda update -n jwstdp-0.9.3rc1 --file http://ssb.stsci.edu/releases/jwstdp/0.9.3/latest-linux
+conda update --file http://ssb.stsci.edu/releases/jwstdp/0.9.3/latest-osx
 ```
 
 NOTE:

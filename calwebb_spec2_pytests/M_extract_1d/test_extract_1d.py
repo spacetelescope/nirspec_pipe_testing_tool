@@ -23,7 +23,6 @@ __version__ = "2.0"
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
 
-
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
 # Default names of pipeline input and output files
@@ -54,7 +53,7 @@ def output_hdul(set_inandout_filenames, config):
         if is_filter_opaque:
             print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip.")
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            core_utils.convert_html2pdf()   # convert the html report into a pdf file
+            #core_utils.convert_html2pdf()   # convert the html report into a pdf file
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
     if run_calwebb_spec2:

@@ -510,7 +510,8 @@ def convert_html2pdf():
     pdf_file = latest_htmlfile.replace(".html", ".pdf")
     # convert the html report into a pdf file
     #import pdfkit
-    #pdfkit.from_file(latest_htmlfile, pdf_file)
+    #options = {'dpi': 96}
+    #pdfkit.from_file(latest_htmlfile, pdf_file, options=options)
     print ("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
 
 
@@ -525,11 +526,13 @@ def move_latest_report_and_txt_2workdir(working_dir):
     """
     # get a list of all the html and txt files in the calwebb_spec2_pytests dir
     latest_htmlfile = get_latest_file("*.html")   # this will pick up the report.html just created/modified
+    latest_pdffile = latest_htmlfile.replace(".html", ".pdf")   # this will pick up the report.html converted to pdf
     latest_screenoutputtxtfile = get_latest_file("*.txt")   # this should pick up the output_screen.txt
     latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map.txt")
     latest_fullrunmaptxtfile = get_latest_file("full_run_map.txt")
     # move these files into the working directory
-    files2move = [latest_htmlfile, latest_screenoutputtxtfile, latest_suffixmaptxtfile, latest_fullrunmaptxtfile]
+    files2move = [latest_htmlfile, latest_pdffile, latest_screenoutputtxtfile,
+                  latest_suffixmaptxtfile, latest_fullrunmaptxtfile]
     for f in files2move:
         if os.path.isfile(f):
             subprocess.run(["mv", f, working_dir])
