@@ -8,6 +8,15 @@ of the JWST Calibration Pipeline.
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero & Gray Kanarek"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Gray added routine to generalize reference file check
+
+
 ### VERIFICATION FUNCTIONS
 
 def s_photom_exists(output_hdul):

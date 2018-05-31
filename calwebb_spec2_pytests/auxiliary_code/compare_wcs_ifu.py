@@ -15,6 +15,17 @@ This script compares pipeline WCS info with ESA results for Integral Field Unit 
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "2.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+# May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
+#                         script, and added new routines for plot making and statistics calculations.
+
+
+
 def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=False, threshold_diff=1.0e-7, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the

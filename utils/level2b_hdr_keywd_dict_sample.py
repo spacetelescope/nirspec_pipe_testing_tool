@@ -16,6 +16,14 @@ https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+R
 
 '''
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 # define dictionary
 keywd_dict = collections.OrderedDict()
 

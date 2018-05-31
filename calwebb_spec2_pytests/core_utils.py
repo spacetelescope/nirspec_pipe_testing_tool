@@ -2,12 +2,22 @@ import collections
 import os
 import numpy as np
 import glob
-import pdfkit
+import subprocess
 from astropy.io import fits
 
 '''
 This script contains functions frequently used in the test suite.
 '''
+
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 
 def getlist(option, sep=',', chars=None):
     """Return a list from a ConfigParser option. By default,
@@ -470,6 +480,23 @@ def get_reffile_used(output_hdul):
     return ref_files_used_so_far
 
 
+def get_latest_file(filetype):
+    """
+    This function gets the latest modified file of filetype. This function will look into the calwebb_spec2_pytests
+    directory for the given file.
+    Args:
+        filetype: string, name/type of file type, e.g. *.txt, *.html, full_run_map.txt
+
+    Returns:
+        latest_filetypefile: string, name of the latest file modified of type filetype
+    """
+    # get a list of all the filetype files in the calwebb_spec2_pytests dir
+    list_of_filetypefiles = glob.glob(filetype)
+    # find the latest of the filetype files
+    latest_filetypefile = max(list_of_filetypefiles, key=os.path.getctime)
+    return latest_filetypefile
+
+
 def convert_html2pdf():
     """
     This function converts the latest html file into a pdf.
@@ -478,12 +505,36 @@ def convert_html2pdf():
     and the OSX 64-bit download from: https://wkhtmltopdf.org/downloads.html
     """
     # get a list of all the html files in the calwebb_spec2_pytests dir
-    list_of_htmlfiles = glob.glob('*.html')
-    # find the latest of the html files
-    latest_htmlfile = max(list_of_htmlfiles, key=os.path.getctime)
+    latest_htmlfile = get_latest_file("*.html")
     # create the pdf output name
     pdf_file = latest_htmlfile.replace(".html", ".pdf")
     # convert the html report into a pdf file
-    pdfkit.from_file(latest_htmlfile, pdf_file)
+    #import pdfkit
+    #options = {'dpi': 96}
+    #pdfkit.from_file(latest_htmlfile, pdf_file, options=options)
     print ("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
+
+
+def move_latest_report_and_txt_2workdir(working_dir):
+    """
+    This function moves the PTT output reporting files into the working directory.
+    Args:
+        working_dir: string, path to the working directory.
+
+    Returns:
+        Nothing.
+    """
+    # get a list of all the html and txt files in the calwebb_spec2_pytests dir
+    latest_htmlfile = get_latest_file("*.html")   # this will pick up the report.html just created/modified
+    latest_pdffile = latest_htmlfile.replace(".html", ".pdf")   # this will pick up the report.html converted to pdf
+    latest_screenoutputtxtfile = get_latest_file("*.txt")   # this should pick up the output_screen.txt
+    latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map.txt")
+    latest_fullrunmaptxtfile = get_latest_file("full_run_map.txt")
+    # move these files into the working directory
+    files2move = [latest_htmlfile, latest_pdffile, latest_screenoutputtxtfile,
+                  latest_suffixmaptxtfile, latest_fullrunmaptxtfile]
+    for f in files2move:
+        if os.path.isfile(f):
+            subprocess.run(["mv", f, working_dir])
+
 

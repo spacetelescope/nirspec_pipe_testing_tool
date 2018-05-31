@@ -32,6 +32,14 @@ This script will perform calwebb_detector1 in one single run, outputing intermed
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 def get_caldet1cfg_and_workingdir():
     """
     This function gets the path to where the pipeline testing tool lives
@@ -94,7 +102,7 @@ with open(txt_outputs_summary, "w+") as tf:
     tf.write(line1+"\n")
 
 final_out = "gain_scale.fits"
-output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits", "rscd.fits",
+output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits",
                 "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits", final_out]
 
 # Get and save the value of the raw data root name to add at the end of calwebb_detector1
@@ -115,9 +123,9 @@ if not step_by_step:
             tf.write(line2write+"\n")
 else:
     # steps to be ran, in order
-    steps_to_run = [GroupScaleStep(), DQInitStep(), SaturationStep(), SuperBiasStep(), RefPixStep(), RSCD_Step(),
+    steps_to_run = [GroupScaleStep(), DQInitStep(), SaturationStep(), SuperBiasStep(), RefPixStep(),
                     LastFrameStep(), LinearityStep(), DarkCurrentStep(), JumpStep(), RampFitStep(), GainScaleStep()]
-    comp_keys = ["S_GRPSCL", "S_DQINIT", "S_SATURA", "S_SUPERB", "S_REFPIX", "S_RSCD", "S_LASTFR", "S_LINEAR",
+    comp_keys = ["S_GRPSCL", "S_DQINIT", "S_SATURA", "S_SUPERB", "S_REFPIX", "S_LASTFR", "S_LINEAR",
                  "S_DARK", "S_JUMP", "S_RAMP", "S_GANSCL"]
 
     # run the pipeline step by step

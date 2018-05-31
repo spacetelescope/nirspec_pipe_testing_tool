@@ -19,6 +19,13 @@ Example usage:
 
 """
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
 
 def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, step=None, force_filter_change=False):
     """

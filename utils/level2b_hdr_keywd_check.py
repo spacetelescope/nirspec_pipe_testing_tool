@@ -10,6 +10,8 @@ from collections import OrderedDict
 
 # import the sample header keyword dictionary of level 2b
 import level2b_hdr_keywd_dict_sample as lev2bdict
+# import subarray dictionary
+import subarray_dict as subdict
 
 
 '''
@@ -28,6 +30,14 @@ where the mode is either FS, MOS, IFU, BOTS. If a mode is not provided, the code
 in the pytests configuration file, and it will crash if this config file does not exist.
 
 '''
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
 
 ### General functions
 
@@ -323,14 +333,31 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         specific_keys_dict[key] = 'GENERIC'
                         missing_keywds.append(key)
 
-                # specific check for SUBARRAY, set to GENERIC
+                # specific check for SUBARRAY
                 if key == 'SUBARRAY':
-                    if val != lev2bdict_val:
-                        # for now always set this keyword to generic
-                        print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
-                        #fits.setval(ff, key, 0, value='GENERIC')
-                        specific_keys_dict[key] = 'GENERIC'
-                        missing_keywds.append(key)
+                    if 'IFU' in mode_used  or  "MOS" in mode_used:
+                        if val != lev2bdict_val:
+                            print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
+                            #fits.setval(ff, key, 0, value='GENERIC')
+                            specific_keys_dict[key] = 'GENERIC'
+                            missing_keywds.append(key)
+                    elif mode_used == "FS"  or  mode_used == "BOTS":
+                        # set the subarray according to size
+                        substrt1 = fits.getval(ff, "SUBSTRT1", 0)
+                        substrt2 = fits.getval(ff, "SUBSTRT2", 0)
+                        subsize1 = fits.getval(ff, "SUBSIZE1", 0)
+                        subsize2 = fits.getval(ff, "SUBSIZE2", 0)
+                        for subarrd_key, subarrd_vals_dir in subdict.subarray_dict.items():
+                            sst1 = subarrd_vals_dir["substrt1"]
+                            sst2_list = subarrd_vals_dir["substrt2"]
+                            ssz1 = subarrd_vals_dir["subsize1"]
+                            ssz2 = subarrd_vals_dir["subsize2"]
+                            if substrt1 == sst1  and  subsize1 == ssz1  and  subsize2 == ssz2:
+                                for sst2 in sst2_list:
+                                    if substrt2 == sst2:
+                                        specific_keys_dict[key] = subarrd_key
+                                        print ("changing subarray keyword to ", subarrd_key)
+                                        missing_keywds.append(key)
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':

@@ -8,6 +8,15 @@ import pytest
 import configparser
 
 
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 def pytest_addoption(parser):
     """
     Specifies the files used for certain tests

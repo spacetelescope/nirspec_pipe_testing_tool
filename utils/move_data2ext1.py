@@ -15,6 +15,14 @@ Example usage:
 
 '''
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 ### General functions
 
 def move_data(input_fits_file, detector='NRS1'):

@@ -18,6 +18,15 @@ from .. auxiliary_code import flattest_mos
 from .. auxiliary_code import change_filter_opaque2science
 
 
+
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
 # Default names of pipeline input and output files

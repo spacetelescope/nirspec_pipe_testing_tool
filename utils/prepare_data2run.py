@@ -22,6 +22,14 @@ Example usage:
 """
 
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.0"
+
+# HISTORY
+# Nov 2017 - Version 1.0: initial version completed
+
+
 def modify_PTT_cfg_file(fits_file, mode):
     """
     This function reads and modifies the config file with the mode used and the raw data file name.
@@ -128,6 +136,7 @@ if os.path.isfile(uncal_file):
     # make sure the lamp, filter, and grating values are correctly propagated
     lamp = fits.getval(fits_file, 'CAA_LAMP')
     #filt = fits.getval(fits_file, "FWA_POS")
+    filt = ""
 
     if "NO_LAMP" in lamp:
         try:
@@ -135,7 +144,6 @@ if os.path.isfile(uncal_file):
         except:
             print (" *** Unable to determine what was the FILTER used...  :(  ")
             print (" The FILTER keyword has to be set up manually in order for the pipeline to be able to process data.")
-            filt = ""
             KeyError
 
     elif 'LINE1' in lamp:
