@@ -480,20 +480,31 @@ def get_reffile_used(output_hdul):
     return ref_files_used_so_far
 
 
-def get_latest_file(filetype):
+def get_latest_file(filetype, disregard_known_files=False):
     """
     This function gets the latest modified file of filetype. This function will look into the calwebb_spec2_pytests
     directory for the given file.
     Args:
         filetype: string, name/type of file type, e.g. *.txt, *.html, full_run_map.txt
+        disregard_known_files: boolean, if True function will not look for True_steps_suffix_map.txt or full_run_map.txt
 
     Returns:
         latest_filetypefile: string, name of the latest file modified of type filetype
     """
     # get a list of all the filetype files in the calwebb_spec2_pytests dir
     list_of_filetypefiles = glob.glob(filetype)
-    # find the latest of the filetype files
-    latest_filetypefile = max(list_of_filetypefiles, key=os.path.getctime)
+    # find the latest of the filetype files but exclude known file names
+    if disregard_known_files:
+        if "True_steps_suffix_map.txt" in list_of_filetypefiles:
+            idx = list_of_filetypefiles.index("True_steps_suffix_map.txt")
+            list_of_filetypefiles.pop(idx)
+        if "full_run_map.txt" in list_of_filetypefiles:
+            idx = list_of_filetypefiles.index("full_run_map.txt")
+            list_of_filetypefiles.pop(idx)
+    latest_filetypefile = "File not found."
+    if len(list_of_filetypefiles) > 0:
+        latest_filetypefile = max(list_of_filetypefiles, key=os.path.getctime)
+    #print("filetype, latest_filetypefile = ", filetype, latest_filetypefile)
     return latest_filetypefile
 
 
@@ -527,14 +538,15 @@ def move_latest_report_and_txt_2workdir(working_dir):
     # get a list of all the html and txt files in the calwebb_spec2_pytests dir
     latest_htmlfile = get_latest_file("*.html")   # this will pick up the report.html just created/modified
     latest_pdffile = latest_htmlfile.replace(".html", ".pdf")   # this will pick up the report.html converted to pdf
-    latest_screenoutputtxtfile = get_latest_file("*.txt")   # this should pick up the output_screen.txt
+    latest_screenoutputtxtfile = get_latest_file("*.txt", disregard_known_files=True) # this should pick up the output_screen.txt
     latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map.txt")
     latest_fullrunmaptxtfile = get_latest_file("full_run_map.txt")
     # move these files into the working directory
     files2move = [latest_htmlfile, latest_pdffile, latest_screenoutputtxtfile,
                   latest_suffixmaptxtfile, latest_fullrunmaptxtfile]
     for f in files2move:
-        if os.path.isfile(f):
+        if f != "File not found."  and  os.path.isfile(f):
             subprocess.run(["mv", f, working_dir])
+            print(f, " moved to ", working_dir)
 
 
