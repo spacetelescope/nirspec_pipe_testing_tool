@@ -2,6 +2,7 @@ import numpy as np
 import os
 from astropy.io import fits
 from astropy import wcs
+from collections import OrderedDict
 
 from jwst.assign_wcs import nirspec
 from jwst import datamodels
@@ -68,7 +69,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                       }
 
     # list to determine if pytest is passed or not
-    total_test_result = []
+    total_test_result = OrderedDict()
 
     # loop over the slits
     if det != "NRS2":
@@ -200,7 +201,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
         rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats = rel_diff_pwave_data
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
-        total_test_result.append(test_result)
+        total_test_result[pipeslit] = {tested_quantity : test_result}
 
         # get the transforms for pipeline slit-y
         det2slit = wcs_slit.get_transform('detector', 'slit_frame')
@@ -210,7 +211,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
-        total_test_result.append(test_result)
+        total_test_result[pipeslit] = {tested_quantity : test_result}
 
         # do the same for MSA x, y and V2, V3
         detector2msa = wcs_slit.get_transform("detector", "msa_frame")
@@ -220,13 +221,13 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         reldiffpmsax_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msax, pmsax, tested_quantity)
         reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats = reldiffpmsax_data
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsax_stats[1], threshold_diff)
-        total_test_result.append(test_result)
+        total_test_result[pipeslit] = {tested_quantity : test_result}
         # MSA-y
         tested_quantity = "MSA_Y Difference"
         reldiffpmsay_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msay, pmsay, tested_quantity)
         reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats = reldiffpmsay_data
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsay_stats[1], threshold_diff)
-        total_test_result.append(test_result)
+        total_test_result[pipeslit] = {tested_quantity : test_result}
 
         # V2 and V3
         if not skipv2v3test:
@@ -236,12 +237,12 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3x, pv2, tested_quantity)
             reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats = reldiffpv2_data
             test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
-            total_test_result.append(test_result)
+            total_test_result[pipeslit] = {tested_quantity : test_result}
             tested_quantity = "V3 difference"
             reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
             reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats = reldiffpv3_data
             test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
-            total_test_result.append(test_result)
+            total_test_result[pipeslit] = {tested_quantity : test_result}
 
         # PLOTS
         if show_figs or save_figs:
@@ -334,33 +335,11 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = "PASSED"
-    slittests = ["Wavelength", "Slit-y", "MSA-X", "MSA-Y"]#, "V2", "V3"]
-    for i, tr in enumerate(total_test_result):
-        if tr == "FAILED":
-            FINAL_TEST_RESULT = "FAILED"
-            # 4 tests per slit, and there are 4 slits, total of 16 results for det=NRS1
-            if i < 4:#6:
-                failedslit = sltname_list[0]
-                failedtest = slittests[i]
-            elif (i>3) and (i<8):#(i>5) and (i<12):
-                failedslit = sltname_list[1]
-                j = i - 4
-                failedtest = slittests[j]
-            elif (i>7) and (i<12):#(i>11) and (i<18):
-                failedslit = sltname_list[2]
-                j = i - 8
-                failedtest = slittests[j]
-            elif (i>11) and (i<16):#(i>17) and (i<24):
-                failedslit = sltname_list[3]
-                j = i - 12
-                failedtest = slittests[j]
-            if det == "NRS2":
-                # 4 tests per slit, and there are 5 slits, total of 20 results
-                if i > 15:#i > 23:
-                    failedslit = sltname_list[4]
-                    j = i - 16
-                    failedtest = slittests[j]
-            print("\n * Test of", failedtest, "FAILED for slit", failedslit)
+    for sl, testdir in total_test_result.items():
+        for t, tr in testdir.items():
+            if tr == "FAILED":
+                FINAL_TEST_RESULT = "FAILED"
+                print("\n * The test of", t, "for slit", sl, " FAILED.")
 
     if FINAL_TEST_RESULT == "PASSED":
         print("\n *** Final result for assign_wcs test will be reported as PASSED *** \n")

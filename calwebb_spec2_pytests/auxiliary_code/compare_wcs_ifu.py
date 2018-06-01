@@ -216,12 +216,12 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3x, pv2, tested_quantity)
             reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats = reldiffpv2_data
             test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
-            total_test_result.append(test_result)
+            total_test_result["slice"+pslice] = {tested_quantity : result}
             tested_quantity = "V3 difference"
             reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
             reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats = reldiffpv3_data
             test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
-            total_test_result.append(test_result)
+            total_test_result["slice"+pslice] = {tested_quantity : result}
 
         # PLOTS
         if show_figs or save_figs:

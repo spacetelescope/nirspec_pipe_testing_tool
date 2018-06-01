@@ -248,12 +248,12 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3x, pv2, tested_quantity)
             reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats = reldiffpv2_data
             test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
-            total_test_result.append(test_result)
+            total_test_result[slitlet_name] = {tested_quantity : result}
             tested_quantity = "V3 difference"
             reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
             reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats = reldiffpv3_data
             test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
-            total_test_result.append(test_result)
+            total_test_result[slitlet_name] = {tested_quantity : result}
 
         # PLOTS
         if show_figs or save_figs:
@@ -322,7 +322,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 if notnan_reldiffpv2_stats[1] is np.nan:
                     print("Unable to create plot of relative V2 difference.")
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_V2_diffs.jpg")
+                    plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_rel_V2_diffs.jpg")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -335,7 +335,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 if notnan_reldiffpv3_stats[1] is np.nan:
                     print("Unable to create plot of relative V3 difference.")
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_V3_diffs.jpg")
+                    plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_rel_V3_diffs.jpg")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -349,7 +349,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         for t, tr in testdir.items():
             if tr == "FAILED":
                 FINAL_TEST_RESULT = "FAILED"
-                print("\n * The test of", t, "for slice", sl, " FAILED.")
+                print("\n * The test of", t, "for slitlet", sl, " FAILED.")
 
     if FINAL_TEST_RESULT == "PASSED":
         print("\n *** Final result for assign_wcs test will be reported as PASSED *** \n")
