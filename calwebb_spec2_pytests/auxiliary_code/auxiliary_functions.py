@@ -507,8 +507,12 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name):
     esa_arr[nanind] = np.nan
     # Compute the difference in wavelength
     DATAMODEL_rel_diff = (arr - esa_arr) / esa_arr
-    # calculate and print stats
-    notnan_reldiffarr_stats = print_stats(DATAMODEL_rel_diff[notnan], arr_name, threshold_diff, abs=False)
+    if arr[notnan].size == 0:
+        print(arr_name, " has all NaN values. Differences array will also be NaNs and statistics calculations will fail.")
+        notnan_reldiffarr_stats = np.nan, np.nan, np.nan
+    else:
+        # calculate and print stats
+        notnan_reldiffarr_stats = print_stats(DATAMODEL_rel_diff[notnan], arr_name, threshold_diff, abs=False)
     return DATAMODEL_rel_diff, DATAMODEL_rel_diff[notnan], notnan_reldiffarr_stats
 
 
@@ -523,6 +527,7 @@ def does_median_pass_tes(tested_quantity, arr_median, threshold_diff):
     Returns:
         test_result: string, result of the test, i.e. PASSED or FAILED
     """
+    median_diff = False
     if abs(arr_median) <= threshold_diff:
         median_diff = True
     if median_diff:
