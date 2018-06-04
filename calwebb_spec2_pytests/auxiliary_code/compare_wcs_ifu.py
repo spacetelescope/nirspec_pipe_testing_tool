@@ -92,8 +92,8 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         # Open the trace in the esafile
         print ("Using this ESA file: \n", esafile)
         with fits.open(esafile) as esahdulist:
-            #print ("* ESA file contents ")
-            #esahdulist.info()
+            print ("* ESA file contents ")
+            esahdulist.info()
             esa_slice_id = esahdulist[0].header['SLICEID']
             # first check is esa_slice == to pipe_slice?
             if slice == esa_slice_id:
@@ -102,6 +102,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print("\n -> Missmatch of slices for pipeline and ESA data: ", slice, esa_slice_id, "\n")
 
             # Assign variables according to detector
+            skipv2v3test = True
             if det == "NRS1":
                 esa_flux = fits.getdata(esafile, "DATA1")
                 esa_wave = fits.getdata(esafile, "LAMBDA1")
@@ -109,6 +110,13 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 esa_msax = fits.getdata(esafile, "MSAX1")
                 esa_msay = fits.getdata(esafile, "MSAY1")
                 pyw = wcs.WCS(esahdulist['LAMBDA1'].header)
+                try:
+                    esa_v2v3x = fits.getdata(esafile, "V2V3X1")
+                    esa_v2v3y = fits.getdata(esafile, "V2V3Y1")
+                    skipv2v3test = False
+                except:
+                    KeyError
+                    print("Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions.")
             if det == "NRS2":
                 try:
                     esa_flux = fits.getdata(esafile, "DATA2")
@@ -117,8 +125,15 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     esa_msax = fits.getdata(esafile, "MSAX2")
                     esa_msay = fits.getdata(esafile, "MSAY2")
                     pyw = wcs.WCS(esahdulist['LAMBDA2'].header)
+                    try:
+                        esa_v2v3x = fits.getdata(esafile, "V2V3X2")
+                        esa_v2v3y = fits.getdata(esafile, "V2V3Y2")
+                        skipv2v3test = False
+                    except:
+                        KeyError
+                        print("Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions.")
                 except:
-                    IndexError
+                    KeyError
                     print("\n * compare_wcs_fs.py is exiting because there are no extensions that match detector NRS2 in the ESA file.")
                     print("   -> The WCS test is now set to skip and no plots will be generated. \n")
                     FINAL_TEST_RESULT = "skip"
@@ -194,21 +209,19 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         total_test_result["slice"+pslice] = {tested_quantity : result}
 
         # V2 and V3
-        #detector2v2v3 = wcs_slice.get_transform("detector", "v2v3")
-        #pv2, pv3, _ = detector2v2v3(esax-1, esay-1)   # => RETURNS: v2, v3, LAMBDA (lam *= 10**-6 to convert to microns)
-        # get the corresponding ESA arr of interest
-        #esav2, esav3 = ct.coords_transf("forward", det, filter_input, avgx3, avgy3, tilt, arcsecs, debug)
-        #restricted_ev2, restricted_ev3 = [], []
-        #tested_quantity = "Relative V2 Difference"
-        #reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, restricted_esav2, pv2, tested_quantity)
-        #reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats = reldiffpv2_data
-        #result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
-        #total_test_result["slice"+pslice] = {tested_quantity : result}
-        #tested_quantity = "Relative V3 Difference"
-        #reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, restricted_esav3, pv3, tested_quantity)
-        #reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats = reldiffpv3_data
-        #result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
-        #total_test_result["slice"+pslice] = {tested_quantity : result}
+        if not skipv2v3test:
+            detector2v2v3 = wcs_slice.get_transform("detector", "v2v3")
+            pv2, pv3, _ = detector2v2v3(esax-1, esay-1)   # => RETURNS: v2, v3, LAMBDA (lam *= 10**-6 to convert to microns)
+            tested_quantity = "V2 difference"
+            reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3x, pv2, tested_quantity)
+            reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats = reldiffpv2_data
+            test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
+            total_test_result["slice"+pslice] = {tested_quantity : result}
+            tested_quantity = "V3 difference"
+            reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
+            reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats = reldiffpv3_data
+            test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
+            total_test_result["slice"+pslice] = {tested_quantity : result}
 
         # PLOTS
         if show_figs or save_figs:
@@ -224,57 +237,75 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             info_img = [title, "x (pixels)", "y (pixels)"]
             xlabel, ylabel = r"Relative $\Delta \lambda$ = ($\lambda_{pipe} - \lambda_{ESA}) / \lambda_{ESA}$", "N"
             info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pwave_stats]
-            plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_wave_diffs.jpg")
-            auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
-                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+            if notnan_rel_diff_pwave_stats[1] is np.nan:
+                print("Unable to create plot of relative wavelength difference.")
+            else:
+                plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_wave_diffs.jpg")
+                auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
+                                             plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
             # Slit-y
             title = main_title+r"Relative slit position = $\Delta$slit_y"+"\n"
             info_img = [title, "x (pixels)", "y (pixels)"]
             xlabel, ylabel = r"Relative $\Delta$slit_y = (slit_y$_{pipe}$ - slit_y$_{ESA}$)/slit_y$_{ESA}$", "N"
             info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pslity_stats]
-            plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_slitY_diffs.jpg")
-            auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
-                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+            if notnan_rel_diff_pslity_stats[1] is np.nan:
+                print("Unable to create plot of relative slit-y difference.")
+            else:
+                plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_slitY_diffs.jpg")
+                auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
+                                             plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
             # MSA-x
             title = main_title+r"Relative MSA-x Difference = $\Delta$MSA_x"+"\n"
             info_img = [title, "x (pixels)", "y (pixels)"]
             xlabel, ylabel = r"Relative $\Delta$MSA_x = (MSA_x$_{pipe}$ - MSA_x$_{ESA}$)/MSA_x$_{ESA}$", "N"
             info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsax_stats]
-            plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_MSAx_diffs.jpg")
-            auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
-                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+            if notnan_reldiffpmsax_stats[1] is np.nan:
+                print("Unable to create plot of relative MSA-x difference.")
+            else:
+                plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_MSAx_diffs.jpg")
+                auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
+                                             plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
             # MSA-y
             title = main_title+r"Relative MSA-y Difference = $\Delta$MSA_y"+"\n"
             info_img = [title, "x (pixels)", "y (pixels)"]
             xlabel, ylabel = r"Relative $\Delta$MSA_y = (MSA_y$_{pipe}$ - MSA_y$_{ESA}$)/MSA_y$_{ESA}$", "N"
             info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
-            plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_MSAy_diffs.jpg")
-            auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
-                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
-            """
-            # V2
-            title = main_title+r"Relative V2 Difference = $\Delta$V2"+"\n"
-            info_img = [title, "x (pixels)", "y (pixels)"]
-            xlabel, ylabel = r"Relative $\Delta$V2 = (V2$_{pipe}$ - V2$_{ESA}$)/V2$_{ESA}$", "N"
-            hist_data = notnan_reldiffpv2
-            info_hist = [xlabel, ylabel, bins, notnan_reldiffpv2_stats]
-            plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_V2_diffs.jpg")
-            auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
-                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+            if notnan_reldiffpmsay_stats[1] is np.nan:
+                print("Unable to create plot of relative MSA-y difference.")
+            else:
+                plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_MSAy_diffs.jpg")
+                auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
+                                             plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
-            # V3
-            title = main_title+r"Relative V3 Difference = $\Delta$V3"+"\n"
-            info_img = [title, "x (pixels)", "y (pixels)"]
-            xlabel, ylabel = r"Relative $\Delta$V3 = (V3$_{pipe}$ - V3$_{ESA}$)/V3$_{ESA}$", "N"
-            hist_data = notnan_reldiffpv3
-            info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
-            plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_V3_diffs.jpg")
-            auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
-                                         plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
-            """
+            if not skipv2v3test:
+                # V2
+                title = main_title+r"Relative V2 Difference = $\Delta$V2"+"\n"
+                info_img = [title, "x (pixels)", "y (pixels)"]
+                xlabel, ylabel = r"Relative $\Delta$V2 = (V2$_{pipe}$ - V2$_{ESA}$)/V2$_{ESA}$", "N"
+                hist_data = notnan_reldiffpv2
+                info_hist = [xlabel, ylabel, bins, notnan_reldiffpv2_stats]
+                if notnan_reldiffpv2_stats[1] is np.nan:
+                    print("Unable to create plot of relative V2 difference.")
+                else:
+                    plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_V2_diffs.jpg")
+                    auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
+                                                 plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+
+                # V3
+                title = main_title+r"Relative V3 Difference = $\Delta$V3"+"\n"
+                info_img = [title, "x (pixels)", "y (pixels)"]
+                xlabel, ylabel = r"Relative $\Delta$V3 = (V3$_{pipe}$ - V3$_{ESA}$)/V3$_{ESA}$", "N"
+                hist_data = notnan_reldiffpv3
+                info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
+                if notnan_reldiffpv3_stats[1] is np.nan:
+                    print("Unable to create plot of relative V3 difference.")
+                else:
+                    plt_name = infile_name.replace(basenameinfile_name, pslice+"_rel_V3_diffs.jpg")
+                    auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
+                                                 plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
         else:
             print ("NO plots were made because show_figs and save_figs were both set to False. \n")
