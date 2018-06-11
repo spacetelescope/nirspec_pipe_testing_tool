@@ -211,7 +211,7 @@ def create_rfile_test(step, doc_insert):
     """
     
     def rfile_test_step(output_hdul):
-        output_file = output_hdul[2]
+        output_file = output_hdul[1]
         return reffile_test(output_file, step)
     
     rfile_test_step.__doc__ = """

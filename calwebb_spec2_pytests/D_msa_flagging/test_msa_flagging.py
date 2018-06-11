@@ -56,7 +56,7 @@ def output_hdul(set_inandout_filenames, config):
             step_output_file = os.path.join(working_directory, local_step_output_file)
             print ("Step product was saved as: ", step_output_file)
             subprocess.run(["mv", local_step_output_file, step_output_file])
-            return hdul
+            return hdul, step_output_file
         else:
             if config.getboolean("steps", step):
                 print ("*** Step "+step+" set to True")
@@ -76,7 +76,7 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = True
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                    return hdul
+                    return hdul, step_output_file
                 else:
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     pytest.skip("Skipping "+step+" because the input file does not exist.")
@@ -91,4 +91,4 @@ def output_hdul(set_inandout_filenames, config):
 # Unit tests
 
 def test_msa_failed_open_exists(output_hdul):
-    assert msa_flagging_utils.msa_failed_open_exists(output_hdul), "The keyword S_MSAFLG was not added to the header --> msa_flagging step was not completed."
+    assert msa_flagging_utils.msa_failed_open_exists(output_hdul[0]), "The keyword S_MSAFLG was not added to the header --> msa_flagging step was not completed."

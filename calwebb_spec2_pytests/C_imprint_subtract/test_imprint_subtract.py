@@ -63,7 +63,7 @@ def output_hdul(set_inandout_filenames, config):
             step_output_file = os.path.join(working_directory, local_step_output_file)
             print ("Step product was saved as: ", step_output_file)
             subprocess.run(["mv", local_step_output_file, step_output_file])
-            return hdul, run_step, step_input_file, step_output_file
+            return hdul, step_output_file, run_step, step_input_file
         else:
             if run_step:
                 print ("*** Step "+step+" set to True")
@@ -99,7 +99,7 @@ def output_hdul(set_inandout_filenames, config):
                             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                             step_completed = True
                         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                        return hdul, run_step, step_input_file, step_output_file
+                        return hdul, step_output_file, run_step, step_input_file
                 else:
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     pytest.skip("Skipping "+step+" because the input file does not exist.")
@@ -116,9 +116,9 @@ def output_hdul(set_inandout_filenames, config):
 # fixture to validate the subtraction works fine: re-run the step with the same file as msa_imprint file
 @pytest.fixture(scope="module")
 def check_output_is_zero(output_hdul):
-    run_step = output_hdul[1]
-    step_input_file = output_hdul[2]
-    step_output_file = output_hdul[3]
+    run_step = output_hdul[2]
+    step_input_file = output_hdul[3]
+    step_output_file = output_hdul[1]
     # Only run test if data is IFU or MSA
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if core_utils.check_IFU_true(inhdu) or core_utils.check_MOS_true(inhdu):

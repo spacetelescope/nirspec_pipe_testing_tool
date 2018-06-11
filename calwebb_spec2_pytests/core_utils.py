@@ -1,6 +1,6 @@
 import collections
 import os
-import numpy as np
+import configparser
 import glob
 import subprocess
 from astropy.io import fits
@@ -235,6 +235,46 @@ def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_c
     print (line2write)
     with open(True_steps_suffix_map, "a") as tf:
         tf.write(line2write+"\n")
+
+
+def start_end_PTT_time(txt_name, start_time=None, end_time=None):
+    """
+    This function calculates and prints the starting/ending PTT running time in the True_steps_suffix_map.txt or
+    full_run_map.txt file.
+    Args:
+        txt_name: string, path and name of the text file
+        start_time: float, starting time
+        end_time: float, ending time
+
+    Returns:
+        Nothing.
+    """
+    if start_time is not None:
+        # start the timer to compute the step running time of PTT
+        print("PTT starting time: ", repr(start_time), "\n")
+        line2write = "{:<20} {:<20}".format('# Starting PTT running time: ', repr(start_time))
+        with open(txt_name, "a") as tf:
+            tf.write(line2write+"\n")
+
+    if end_time is not None:
+        # get the start time from the file
+        with open(txt_name, "r") as tf:
+            for line in tf.readlines():
+                if "Starting PTT running time" in line:
+                    PTT_start_time = float(line.split(":")[-1])
+                    break
+        # compute end the timer to compute PTT running time
+        PTT_total_time = end_time - PTT_start_time   # this is in seconds
+        PTT_total_time_min = round(PTT_total_time / 60.0, 2)
+        print ("The total time for PTT to run (including pipeline) was "+repr(PTT_total_time)+" seconds.")
+        if "full_run_map" not in txt_name:
+            line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'PTT_total_run_time  ', repr(PTT_total_time)+'  ='+repr(PTT_total_time_min)+'min')
+        else:
+            line2write = "{:<20} {:<20}".format('PTT_total_run_time  ', repr(PTT_total_time)+'  ='+repr(PTT_total_time_min)+'min')
+        print (line2write)
+        with open(txt_name, "a") as tf:
+            tf.write(line2write+"\n")
+
 
 
 def get_correct_input_step_filename(initial_input_file, steps_list, suffix_list, completion_list):
@@ -526,15 +566,19 @@ def convert_html2pdf():
     print ("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
 
 
-def move_latest_report_and_txt_2workdir(working_dir):
+def move_latest_report_and_txt_2workdir():
     """
     This function moves the PTT output reporting files into the working directory.
     Args:
-        working_dir: string, path to the working directory.
+        Nothing
 
     Returns:
-        Nothing.
+        Nothing
     """
+    # get the working directory
+    config = configparser.ConfigParser()
+    config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
+    working_dir = config.get("calwebb_spec2_input_file", "working_directory")
     # get a list of all the html and txt files in the calwebb_spec2_pytests dir
     latest_htmlfile = get_latest_file("*.html")   # this will pick up the report.html just created/modified
     latest_pdffile = latest_htmlfile.replace(".html", ".pdf")   # this will pick up the report.html converted to pdf
