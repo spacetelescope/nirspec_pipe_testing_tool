@@ -33,6 +33,7 @@ __version__ = "2.0"
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
 
 
+
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
 # Default names of pipeline input and output files
@@ -59,6 +60,9 @@ def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
 
+    # start the timer to compute the step running time of PTT
+    PTT_start_time = time.time()
+
     # check if the filter is to be changed
     change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
     if change_filter_opaque:
@@ -69,9 +73,14 @@ def output_hdul(set_inandout_filenames, config):
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
-    msa_conf_name = config.get("esa_intermediary_products", "msa_conf_name")
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
+    # get the MSA shutter configuration file full path only for MOS data
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    if core_utils.check_MOS_true(inhdu):
+        msa_conf_name = config.get("esa_intermediary_products", "msa_conf_name")
+    else:
+        msa_conf_name = "No shutter configuration file will be used."
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -82,8 +91,6 @@ def output_hdul(set_inandout_filenames, config):
         if DATAMODL != "IFUImageModel":
             fits.setval(step_input_file, "DATAMODL", 0, value="IFUImageModel")
             print("DATAMODL keyword changed to IFUImageModel.")
-    # get the MSA shutter configuration file full path only for MOS data
-    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if core_utils.check_MOS_true(inhdu):
         msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
         # check if the configuration shutter file name is in the header of the fits file and if not add it
@@ -94,9 +101,14 @@ def output_hdul(set_inandout_filenames, config):
     # run the pipeline
     if run_calwebb_spec2:
         print ("*** Will run calwebb_spec2... ")
+
         # create the map
         full_run_map = "full_run_map.txt"
         assign_wcs_utils.create_map_from_full_run(full_run_map, step_input_file)
+
+        # start the timer to compute the step running time of PTT
+        core_utils.start_end_PTT_time(full_run_map, start_time=PTT_start_time, end_time=None)
+
         # get the name of the configuration file and run the pipeline
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
         input_file = config.get("calwebb_spec2_input_file", "input_file")
@@ -109,18 +121,21 @@ def output_hdul(set_inandout_filenames, config):
         # start the timer to compute the step running time
         start_time = time.time()
         Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
+
         # end the timer to compute calwebb_spec2 running time
         end_time = repr(time.time() - start_time)   # this is in seconds
         print(" * calwebb_spec2 took "+end_time+" seconds to finish.")
         if core_utils.check_MOS_true(inhdu):
             # remove the copy of the MSA shutter configuration file
             subprocess.run(["rm", msametfl])
+
         # move the output file into the working directory
         print ("The final calwebb_spec2 product was saved in: ", final_output_name)
         subprocess.run(["mv", final_output_name, workingdir_final_output])
         local_step_output_file = input_file.replace(".fits", "_assign_wcs.fits")
         step_output_file = os.path.join(working_directory, local_step_output_file)
         subprocess.run(["mv", local_step_output_file, step_output_file])
+
         # read the assign wcs fits file
         hdul = core_utils.read_hdrfits(step_output_file, info=True, show_hdr=True)
         scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
@@ -128,6 +143,10 @@ def output_hdul(set_inandout_filenames, config):
     else:
         # create the Map of file names
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
+
+        # start the timer to compute the step running time of PTT
+        core_utils.start_end_PTT_time(txt_name, start_time=PTT_start_time, end_time=None)
+
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):

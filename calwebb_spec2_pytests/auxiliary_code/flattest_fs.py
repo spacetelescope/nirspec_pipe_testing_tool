@@ -169,12 +169,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print("np.shape(sfim) = ", np.shape(sfim))
         print("np.shape(sfimdq) = ", np.shape(sfimdq))
 
-    if det == "NRS1":
-        sfv_a2001 = fits.getdata(sfile, "SLIT_A_200_1")#5)
-        sfv_a2002 = fits.getdata(sfile, "SLIT_A_200_2")#6)
-        sfv_a400 = fits.getdata(sfile, "SLIT_A_400")#7)
-        sfv_a1600 = fits.getdata(sfile, "SLIT_A_1600")#8)
-    elif det == "NRS2":
+    sfv_a2001 = fits.getdata(sfile, "SLIT_A_200_1")#5)
+    sfv_a2002 = fits.getdata(sfile, "SLIT_A_200_2")#6)
+    sfv_a400 = fits.getdata(sfile, "SLIT_A_400")#7)
+    sfv_a1600 = fits.getdata(sfile, "SLIT_A_1600")#8)
+    if det == "NRS2":
         sfv_b200 = fits.getdata(sfile, "SLIT_B_200")#5)
 
     # F-Flat

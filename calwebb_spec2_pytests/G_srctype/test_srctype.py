@@ -63,7 +63,7 @@ def output_hdul(set_inandout_filenames, config):
         local_step_output_file = os.path.join(working_directory, local_step_output_file)
         hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
         print ("Step srctype does not produce an output product.")
-        return hdul
+        return hdul, step_output_file
     else:
         # only run this step if data is not BOTS
         inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
@@ -87,7 +87,7 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = True
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                    return hdul
+                    return hdul, step_output_file
                 else:
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     pytest.skip("Skipping "+step+" because the input file does not exist.")
@@ -102,5 +102,5 @@ def output_hdul(set_inandout_filenames, config):
 # Unit tests
 
 def test_s_srctype_exists(output_hdul):
-    assert srctype_utils.s_srctype_exists(output_hdul), "The keyword SRCTYPE was not added to the header --> Srctype step was not completed."
+    assert srctype_utils.s_srctype_exists(output_hdul[0]), "The keyword SRCTYPE was not added to the header --> Srctype step was not completed."
 

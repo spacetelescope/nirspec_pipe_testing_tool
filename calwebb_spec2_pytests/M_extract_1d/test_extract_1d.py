@@ -54,6 +54,8 @@ def output_hdul(set_inandout_filenames, config):
             print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip.")
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             #core_utils.convert_html2pdf()   # convert the html report into a pdf file
+            # move the final reporting files to the working directory
+            core_utils.move_latest_report_and_txt_2workdir()
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
     if run_calwebb_spec2:
@@ -66,7 +68,12 @@ def output_hdul(set_inandout_filenames, config):
         print ("Step product was saved as: ", step_output_file)
         subprocess.run(["mv", local_step_output_file, step_output_file])
         #core_utils.convert_html2pdf()   # convert the html report into a pdf file
-        return hdul
+        # end the timer to compute the step running time of PTT
+        PTT_end_time = time.time()
+        core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
+        # move the final reporting files to the working directory
+        core_utils.move_latest_report_and_txt_2workdir()
+        return hdul, step_output_file
     else:
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
@@ -100,17 +107,34 @@ def output_hdul(set_inandout_filenames, config):
                 # convert the html report into a pdf file
                 #core_utils.convert_html2pdf()
 
-                # move the final reporting files to the working directory
-                core_utils.move_latest_report_and_txt_2workdir(working_directory)
 
-                return hdul
+                # end the timer to compute the step running time of PTT
+                PTT_end_time = time.time()
+                core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
+
+                # move the final reporting files to the working directory
+                core_utils.move_latest_report_and_txt_2workdir()
+
+                return hdul, step_output_file
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 #core_utils.convert_html2pdf()   # convert the html report into a pdf file
+                # end the timer to compute the step running time of PTT
+                PTT_end_time = time.time()
+                core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
+                # move the final reporting files to the working directory
+                core_utils.move_latest_report_and_txt_2workdir()
+                # skip the test if input file does not exist
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
         else:
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             #core_utils.convert_html2pdf()   # convert the html report into a pdf file
+            # end the timer to compute the step running time of PTT
+            PTT_end_time = time.time()
+            core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
+            # move the final reporting files to the working directory
+            core_utils.move_latest_report_and_txt_2workdir()
+            # skip the test if step set to False
             pytest.skip("Skipping "+step+". Step set to False in configuration file.")
 
 
@@ -118,8 +142,10 @@ def output_hdul(set_inandout_filenames, config):
 # Unit tests
 
 def test_s_extr1d_exists(output_hdul):
-    assert extract_1d_utils.s_extr1d_exists(output_hdul), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
+    assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
 
 def test_extract1d_rfile(output_hdul):
     result = extract_1d_utils.extract1d_rfile_is_correct(output_hdul)
     assert not result, result
+
+

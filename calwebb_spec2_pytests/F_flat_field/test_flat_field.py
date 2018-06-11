@@ -83,7 +83,7 @@ def output_hdul(set_inandout_filenames, config):
         subprocess.run(["mv", intflat, intflat_file])
         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
         flattest_paths = [step_output_file, msa_shutter_conf, dflat_path, sflat_path, fflat_path]
-        return hdul, flattest_paths, flattest_switches
+        return hdul, step_output_file, flattest_paths, flattest_switches
     else:
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
@@ -125,7 +125,7 @@ def output_hdul(set_inandout_filenames, config):
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul, flattest_paths, flattest_switches
+                return hdul, step_output_file, flattest_paths, flattest_switches
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
@@ -142,8 +142,8 @@ def output_hdul(set_inandout_filenames, config):
 def validate_flat_field(output_hdul):
     # get the input information for the wcs routine
     hdu = output_hdul[0]
-    step_output_file, msa_shutter_conf, dflatref_path, sfile_path, fflat_path = output_hdul[1]
-    flattest_threshold_diff, save_flattest_plot, write_flattest_files = output_hdul[2]
+    step_output_file, msa_shutter_conf, dflatref_path, sfile_path, fflat_path = output_hdul[2]
+    flattest_threshold_diff, save_flattest_plot, write_flattest_files = output_hdul[3]
 
     # show the figures
     show_figs = False
