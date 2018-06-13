@@ -48,6 +48,7 @@ Pipeline Testing Tool (PTT), or by clicking in the following link:
 https://confluence.stsci.edu/pages/viewpage.action?pageId=123011558
 
 
+Quick Start Guide
 
 1. Create the conda environment for testing and get the configuration files.  
 
@@ -155,9 +156,25 @@ you continue until you move the script(s) to another directory.
 a. Copy the test data you will use from the NIRSpec vault directory. Go to the directory 
 where you want to have the testing data, and from there type:
 ```bash
-cp -r /grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/
-                                             test_data_suite/the_data_you_want_to_copy .
+cp -r /grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/the_data_you_want_to_copy .
 ```
+
+NOTE:
+You can start with the FS benchmark data to make sure you are doing the right thing. To 
+get the data go to 
+```bash
+/grp/jwst/wit4/nirspec_vault/pipe_testing_tool/PTT_FS_benchmark_run
+```
+There you will find a FS raw file, a ```PTT_config.cfg``` file, and a directory called
+```results_491```, which contains all the intermediary fits products obtained from running
+```calwebb_detector1```, the output text files from running the corresponding script 
+(which include the ```cal_detector1_outputs_and_times.txt``` and the added keywords to 
+the ```_uncal``` file), the all the intermediary fits products obtained from running 
+```calwebb_spec2```, all the plots created with the PTT, the ```report.html```, and the 
+PTT text file outputs (```screen_output.txt``` and ```True_steps_suffix_map.txt```). 
+You can use the ```PTT_config.cfg``` (changing the paths appropriately) provided to make 
+sure you obtain the same results from the PTT run.
+
 
 b. In the directory where you copied the test data, you will need to run a script PER
 fits file you want to test. Do not worry, this will only be done once. This script will
@@ -166,8 +183,7 @@ that converts raw data into uncal type files. You can choose to either keep this
 subdirectory, or tell the script to remove it after the operation is done. In the 
 terminal type:
 ```bash
-python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/
-                                        prepare_data2run.py fits_file.fits MODE -u
+python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/prepare_data2run.py fits_file.fits MODE -u
 ```
 where the MODE is expected to be one of: FS, MOS, IFU, or BOTS. This command will update 
 the uncal keyword header without creating a new file, and will also keep the subdirectory. 
@@ -179,8 +195,7 @@ c. Optional. If you want to see the header of any file, you can use the another 
 in the ```utils``` directory of the PTT. If you just want to see on-screen the 
 header, go where your fits file "lives" and type:
 ```bash
-python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/
-                                                        read_hdr.py fits_file.fits
+python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/read_hdr.py fits_file.fits
 ```
 This command will show the main header. To save the header to a text file add a ```-s``` 
 at the end. If you want to see/save a different extension add at the end ```-e=1``` for 

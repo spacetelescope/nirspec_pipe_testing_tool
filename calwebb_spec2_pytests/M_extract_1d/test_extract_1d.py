@@ -107,7 +107,6 @@ def output_hdul(set_inandout_filenames, config):
                 # convert the html report into a pdf file
                 #core_utils.convert_html2pdf()
 
-
                 # end the timer to compute the step running time of PTT
                 PTT_end_time = time.time()
                 core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
@@ -139,13 +138,31 @@ def output_hdul(set_inandout_filenames, config):
 
 
 
-# Unit tests
+"""
+# Move the files at the end of the pytests
+@pytest.fixture(scope="function", autouse=True)
+def move_output_files(request):
+    def fin():
+        #core_utils.convert_html2pdf()
+        # move the final reporting files to the working directory
+        core_utils.move_latest_report_and_txt_2workdir()
+        print("Output report files have been moved to the working_directory path indicated in the PTT_config file.")
+    request.addfinalizer(fin)
 
-def test_s_extr1d_exists(output_hdul):
-    assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
+### This function is commented out because it only executes after the test, but not if it is skipped. The way to call
+### the fixture is for instance:
+###      def test_s_extr1d_exists(output_hdul, move_output_files):
+### it will seem that move_output_files is not used, but it is called under the hood.
+"""
+
+
+# Unit tests
 
 def test_extract1d_rfile(output_hdul):
     result = extract_1d_utils.extract1d_rfile_is_correct(output_hdul)
     assert not result, result
+
+def test_s_extr1d_exists(output_hdul):
+    assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
 
 

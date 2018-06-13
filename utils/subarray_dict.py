@@ -20,7 +20,7 @@ subarray_dict["SUB1024A"] = {"substrt1" : 1, "substrt2" : [946, 963, 1072, 1055]
 subarray_dict["SUB1024B"] = {"substrt1" : 1025, "substrt2" : [946, 963, 1072, 1055], "subsize1" : 1024, "subsize2" : 32}
 subarray_dict["SUB2048"]  = {"substrt1" : 1, "substrt2" : [967, 946, 963, 1051, 1072, 1055], "subsize1" : 2048, "subsize2" : 32}
 subarray_dict["SUB32"]    = {"substrt1" : 1399, "substrt2" : [975], "subsize1" : 32, "subsize2" : 32}
-subarray_dict["SUB512"]   = {"substrt1" : 1025, "substrt2" : [957], "subsize1" : 32, "subsize2" : 512}
-subarray_dict["SUB512S"]  = {"substrt1" : 1025, "substrt2" : [965], "subsize1" : 16, "subsize2" : 512}
+subarray_dict["SUB512"]   = {"substrt1" : 1025, "substrt2" : [957], "subsize1" : 512, "subsize2" : 32}
+subarray_dict["SUB512S"]  = {"substrt1" : 1025, "substrt2" : [965], "subsize1" : 512, "subsize2" : 16}
 
 

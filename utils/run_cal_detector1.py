@@ -50,10 +50,11 @@ def get_caldet1cfg_and_workingdir():
     config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
     pipe_testing_tool_path = config.get("calwebb_spec2_input_file", "pipe_testing_tool_path")
     calwebb_detector1_cfg = os.path.join(pipe_testing_tool_path, "utils/calwebb_detector1.cfg")
+    calwebb_tso1_cfg = os.path.join(pipe_testing_tool_path, "utils/calwebb_tso1.cfg")
     working_dir = config.get("calwebb_spec2_input_file", "working_directory")
     mode_used = config.get("calwebb_spec2_input_file", "mode_used")
     raw_data_root_file = config.get("calwebb_spec2_input_file", "raw_data_root_file")
-    return calwebb_detector1_cfg, working_dir, mode_used, raw_data_root_file
+    return calwebb_detector1_cfg, calwebb_tso1_cfg, working_dir, mode_used, raw_data_root_file
 
 
 
@@ -74,23 +75,13 @@ args = parser.parse_args()
 fits_input_uncal_file = args.fits_input_uncal_file
 step_by_step = args.step_by_step
 
-# Get the calwebb_detector1.cfg file
-#try:
-calwebb_detector1_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
-print ("Using this configuration file: ", calwebb_detector1_cfg)
-#except:
-    #KeyError
-    #print ("This script expects to find the calwebb_detector1.cfg file in current directory.")
-    #calwebb_detector1_cfg = "calwebb_detector1.cfg"
-    #working_dir = "."
-    #exp_type = fits.getval(fits_input_uncal_file, 'EXP_TYPE', 0)
-    #if "IFU" in exp_type:
-    #    mode_used = "IFU"
-    #elif "MSA" in exp_type:
-    #    mode_used = "MOS"
-    #elif "FIXED" in exp_type:
-    #    mode_used = "FS"
-    #raw_data_root_file = ""
+# Get the cfg file
+calwebb_detector1_cfg, calwebb_tso1_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
+if mode_used != "BOTS":
+    cfg_file = calwebb_detector1_cfg
+else:
+    cfg_file = calwebb_tso1_cfg
+print ("Using this configuration file: ", cfg_file)
 
 # create the text file to record the names of the output files and the time the pipeline took to run
 txt_outputs_summary = "cal_detector1_outputs_and_times.txt"
@@ -111,7 +102,7 @@ output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbia
 if not step_by_step:
     # start the timer to compute the step running time
     start_time = time.time()
-    Detector1Pipeline.call(fits_input_uncal_file, config_file=calwebb_detector1_cfg)
+    Detector1Pipeline.call(fits_input_uncal_file, config_file=cfg_file)
     # end the timer to compute calwebb_spec2 running time
     end_time = time.time() - start_time  # this is in seconds
     print(" * calwebb_detector1 took "+repr(end_time)+" seconds to finish *")
