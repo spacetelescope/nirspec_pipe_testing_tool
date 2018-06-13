@@ -245,8 +245,7 @@ possible this is due to the filter keyword  in the main header set to OPAQUE.
 which lives at ```/nirspec_pipetesting_tool/calwebb_spec2_pytests/auxiliary_code```. 
 - You can run the script from a terminal in any directory by typing:
 ```bash
-python ../calwebb_spec2_pytests/auxiliary_code/change_filter_opaque2science.py 
-                                                                   /path_to_the_file.fits 
+python ../calwebb_spec2_pytests/auxiliary_code/change_filter_opaque2science.py file.fits 
 ```
 
 If all went well and you have a gain_scale.fits file, you now are able to run the MESA 
@@ -296,22 +295,17 @@ indicated at the ```PTT_config.cfg``` file with the variable ```working_director
 output fits files of intermediary products will also be saved in the working directory. 
 In the terminal type:
 ```bash
-pytest -s --config_file=PTT_config.cfg --self-contained-html
+pytest -s --config_file=PTT_config.cfg  --html=report.html --self-contained-html
 ```
 The ```-s``` will capture all the print statements in the code on screen. If you want to
 save the on-screen output into a text file simply do:
 ```bash
-pytest -s --config_file=PTT_config.cfg --self-contained-html > screen_output.txt
+pytest -s --config_file=PTT_config.cfg  --html=report.html --self-contained-html > screen_output.txt
 ```
 and this will create the ```screen_output.txt``` file in the ```calweb_spec2_pytests``` 
 directory, and at the end this file will also be moved to the working directory.
-If you want the html report in any other directory, then you need to specify the location 
-with the flagg ```--html=/desired_new_path/report.html```, e.g.
-```bash
-pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html
-```
-will create the report in the directory where the pytests are being run, the the 
-```calweb_spec2_pytests``` directory.
+For now, the report will always be saved in the working directory, regardless of the path
+you choose with the ```--html=``` flag.
 
 
 10. Report your findings. If all went well, you should have the html report in the 
@@ -365,8 +359,7 @@ e.g. ```mariaIFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_resu
 In this text file you will only type the full path where you obtained the testing data, 
 e.g. 
 ```
-/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/
-                                                              test_data_suite/IFU_CV3
+/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/IFU_CV3
 ```
 
 d. Place the results directory you created in the staging directory of the 
