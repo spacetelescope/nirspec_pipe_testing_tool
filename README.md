@@ -48,7 +48,7 @@ Pipeline Testing Tool (PTT), or by clicking in the following link:
 https://confluence.stsci.edu/pages/viewpage.action?pageId=123011558
 
 
-Quick Start Guide
+QUICK START GUIDE
 
 1. Create the conda environment for testing and get the configuration files.  
 
@@ -84,11 +84,9 @@ conda search -c http://ssb.stsci.edu/astroconda-dev jwst
 ```
 ii) Install the version you want
 ```bash
-conda install --override-channels -c https://ssb.stsci.edu/astroconda-dev -c 
-                                                          defaults jwst=version_you_want
+conda install --override-channels -c https://ssb.stsci.edu/astroconda-dev -c defaults jwst=version_you_want
 ```
 where ```jwst=version_you_want``` is usually something like ```jwst=1.2.3dev456```.
-
 
 
 b. Configuration files corresponding to this build. Create a directory (e.g. 
