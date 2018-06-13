@@ -137,7 +137,6 @@ def output_hdul(set_inandout_filenames, config):
             pytest.skip("Skipping "+step+". Step set to False in configuration file.")
 
 
-
 """
 # Move the files at the end of the pytests
 @pytest.fixture(scope="function", autouse=True)
@@ -152,7 +151,7 @@ def move_output_files(request):
 ### This function is commented out because it only executes after the test, but not if it is skipped. The way to call
 ### the fixture is for instance:
 ###      def test_s_extr1d_exists(output_hdul, move_output_files):
-### it will seem that move_output_files is not used, but it is called under the hood.
+### it will seem that move_output_files is not used, but it is called under the hood within the pytest framework.
 """
 
 
