@@ -49,7 +49,7 @@ def reverse_cols(arr):
     return rev_arr
 
 
-def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, writefile=False,
+def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, writefile=True,
              show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-7, debug=False):
     """
     This function calculates the difference between the pipeline and the calculated flat field values.
@@ -210,10 +210,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     total_test_result = []
 
     # loop over the slits
-    sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1", "S200B1"]
+    sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1"]
     print ("Now looping through the slits. This may take a while... ")
-    if det != "NRS2":
-        sltname_list.pop(len(sltname_list)-1)
+    if det == "NRS2":
+        sltname_list.append("S200B1")
 
     # but check if data is BOTS
     if fits.getval(step_input_filename, "EXP_TYPE", 0) == "NRS_BRIGHTOBJ":
@@ -505,8 +505,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
 
     if writefile:
-        outfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_calc.fits")
-        complfile_name = step_input_filename.replace("2d_flat_field.fits", det+"_flat_comp.fits")
+        outfile_name = step_input_filename.replace("flat_field.fits", det+"_flat_calc.fits")
+        complfile_name = step_input_filename.replace("flat_field.fits", det+"_flat_comp.fits")
 
         # create the fits list to hold the calculated flat values for each slit
         outfile.writeto(outfile_name, overwrite=True)
