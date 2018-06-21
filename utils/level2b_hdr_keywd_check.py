@@ -303,6 +303,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Has correct format'))
                     warning = None
                 else:
+                    if not isinstance(lev2bdict_val, list):
+                        lev2bdict_val = [lev2bdict_val]
                     warning = check_value_type(key, val, lev2bdict_val)
 
                 # Check for specific keywords
