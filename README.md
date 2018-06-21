@@ -340,20 +340,22 @@ and copy the link (or JIRA issue number) next to your report.
 report.
 
 
-11. Put final results in the NIRSpec vault. At the end of the testing campaign, please do 
-the following within your working directory: 
+11. Put final results in the NIRSpec vault. There are two stages of putting results in the
+vault: (i) After running ```calwebb_detector1``` and (ii) after running ```calwebb_spec2```
+and at the end of the testing campaign. For either stage please do the following within 
+your working directory:
 
-a. Create a new directory called ```yourname_MODE_Name_of_the_raw_data_file_results```, 
-e.g. ```maria_IFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_results```.
+a. Create a new directory called ```yourname_MODE_Name_of_the_raw_data_file_caldetector1```
+for stage (i), and ```yourname_MODE_Name_of_the_raw_data_file_calwebbspec2``` for stage 
+(ii), e.g. ```maria_IFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_calwebbspec2```.
 (If you already copied a previous version of your results and you want to keep it then add
 a ```_v2``` -or the version number that corresponds- after the word results, e.g. 
-```maria_IFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_results_v2```) 
+```maria_IFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_calwebbspec2_v2```) 
 
 b. Inside that new direcoty place all the intermediary fits products as well as the html
-report
+report, and other report text files.
 
-c. Also inside that directory, create a text file named ```YourNameMODEresults.txt```, 
-e.g. ```mariaIFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_results.txt```. 
+c. Also inside that directory, create a text file named ```path2results.txt```. 
 In this text file you will only type the full path where you obtained the testing data, 
 e.g. 
 ```
