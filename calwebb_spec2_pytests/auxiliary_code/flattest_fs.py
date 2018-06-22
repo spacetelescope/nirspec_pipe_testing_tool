@@ -192,7 +192,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # now go through each pixel in the test data
 
     # get the datamodel from the assign_wcs output file
-    extract2d_wcs_file = step_input_filename.replace("_extract2d_flat_field.fits", ".fits")
+    extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", ".fits")
     model = datamodels.MultiSlitModel(extract2d_wcs_file)
 
     if writefile:
@@ -219,10 +219,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     if fits.getval(step_input_filename, "EXP_TYPE", 0) == "NRS_BRIGHTOBJ":
         sltname_list = ["S1600A1"]
 
+    # get all the science extensions in the flatfile
+    sci_ext_list = auxfunc.get_sci_extensions(flatfile)
+
+    # do the loop over the slits
     for i, slit in enumerate(model.slits):
         slit_id = sltname_list[i]
         print ("\nWorking with slit: ", slit_id)
-        ext = i+1   # this is for getting the correct extension in the pipeline calculated flat
+        ext = sci_ext_list[i]   # this is for getting the science extension in the pipeline calculated flat
 
         # select the appropriate S-flat fast vector
         if slit_id == "S200A1":
@@ -375,7 +379,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         print ("flatcor[k, j] = ", flatcor[k, j])
 
                     # read the pipeline-calculated flat image
-                    pipeflat = fits.getdata(flatfile, ext+(ext-1)*2)
+                    # there are four extensions in the flatfile: SCI, DQ, ERR, WAVELENGTH
+                    pipeflat = fits.getdata(flatfile, ext)
                     #print ("np.shape(pipeflat) = ", np.shape(pipeflat))
 
                     try:

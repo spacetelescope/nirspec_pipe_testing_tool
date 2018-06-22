@@ -6,7 +6,7 @@ from astropy.io import fits
 from gwcs import wcstools
 from jwst import datamodels
 
-from . import auxiliary_functions as auxfunc
+import auxiliary_functions as auxfunc
 
 
 """
@@ -86,7 +86,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # read in the on-the-fly flat image
     flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")
-    pipeflat = fits.getdata(flatfile, 1)
 
     # get the reference files
     # D-Flat
@@ -252,14 +251,18 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     total_test_result = []
 
     # get the datamodel from the assign_wcs output file
-    extract2d_wcs_file = step_input_filename.replace("_extract2d_flat_field.fits", ".fits")
+    extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", ".fits")
     model = datamodels.MultiSlitModel(extract2d_wcs_file)
+
+    # get all the science extensions in the flatfile
+    sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
     # loop over the 2D subwindows and read in the WCS values
     for i, slit in enumerate(model.slits):
         slit_id = slit.name
         print ("\nWorking with slit: ", slit_id)
-        ext = i+1   # this is for getting the correct extension in the pipeline calculated flat
+        ext = sci_ext_list[i]   # this is for getting the science extension in the pipeline calculated flat
+        pipeflat = fits.getdata(flatfile, ext)
 
         # get the wavelength
         # slit.x(y)start are 1-based, turn them to 0-based for extraction
