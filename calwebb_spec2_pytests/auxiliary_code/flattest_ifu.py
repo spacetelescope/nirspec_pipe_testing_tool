@@ -139,7 +139,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # read in the on-the-fly flat image
     flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")
-    pipeflat = fits.getdata(flatfile, 1)
+    pipeflat = fits.getdata(flatfile, "SCI")
 
     # get the reference files
     print ("Getting and reading the D-, S-, and F-flats for this specific IFU configuration... ")
