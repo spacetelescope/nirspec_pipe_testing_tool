@@ -6,7 +6,7 @@ from astropy.io import fits
 from gwcs import wcstools
 from jwst import datamodels
 
-import auxiliary_functions as auxfunc
+from . import auxiliary_functions as auxfunc
 
 
 """
