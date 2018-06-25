@@ -7,7 +7,7 @@ from astropy import wcs
 
 from jwst.assign_wcs import nirspec
 from jwst import datamodels
-import auxiliary_functions as auxfunc
+from . import auxiliary_functions as auxfunc
 
 
 """
@@ -97,8 +97,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
         print("Using this raw data file to find the corresponding ESA file: ", raw_data_root_file)
         q, r, c = quad[slitlet_idx], row[slitlet_idx], col[slitlet_idx]
-        if debug:
-            print("Pipeline shutter info:   quadrant=", q, "   row=", r, "   col=", c)
+        print("Pipeline shutter info:   quadrant=", q, "   row=", r, "   col=", c)
         specifics = [q, r, c]
         esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "MOS", specifics)
 
