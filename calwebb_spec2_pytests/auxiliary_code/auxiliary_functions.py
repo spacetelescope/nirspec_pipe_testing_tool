@@ -176,17 +176,13 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
             # add a 0 if necessary for convention purposes
             if col < 10:
                 col = "00"+repr(col)
+            elif col < 100:
+                col = "0"+repr(col)
             else:
                 col = repr(col)
             if row < 10:
                 row = "00"+repr(row)
-            else:
-                row = repr(row)
-            if col < 100:
-                col = "0"+repr(col)
-            else:
-                col = repr(col)
-            if row < 100:
+            elif row < 100:
                 row = "0"+repr(row)
             else:
                 row = repr(row)
