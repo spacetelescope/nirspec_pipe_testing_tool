@@ -174,11 +174,19 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
         if "MOS" in mode:
             quad, row, col = specifics
             # add a 0 if necessary for convention purposes
-            if col < 99:
+            if col < 10:
+                col = "00"+repr(col)
+            else:
+                col = repr(col)
+            if row < 10:
+                row = "00"+repr(row)
+            else:
+                row = repr(row)
+            if col < 100:
                 col = "0"+repr(col)
             else:
                 col = repr(col)
-            if row < 99:
+            if row < 100:
                 row = "0"+repr(row)
             else:
                 row = repr(row)
@@ -276,6 +284,9 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
             if not isinstance(esafile_basename, list):
                 esafile = os.path.join(mode_dir, esafile_basename)
                 # check if we got the right esafile
+                if not os.path.isfile(esafile):
+                    esafile = "ESA file not found"
+                    break
                 root_filename = fits.getval(esafile, "FILENAME", 0)
                 #print("root_filename = ", root_filename)
                 #print("rawdatroot = ", rawdatroot)

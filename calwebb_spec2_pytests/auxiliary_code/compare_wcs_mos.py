@@ -1,12 +1,13 @@
 import numpy as np
 import os
+import subprocess
 from collections import OrderedDict
 from astropy.io import fits
 from astropy import wcs
 
 from jwst.assign_wcs import nirspec
 from jwst import datamodels
-from . import auxiliary_functions as auxfunc
+import auxiliary_functions as auxfunc
 
 
 """
@@ -55,6 +56,10 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
     msametfl = fits.getval(infile_name, "MSAMETFL", 0)
     print ("from assign_wcs file  -->     Detector:", det, "   Grating:", grat, "   Filter:", filt, "   Lamp:", lamp)
 
+    # check that shutter configuration file in header is the same as given in PTT_config file
+    if msametfl != os.path.basename(msa_conf_name):
+        print ("WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.")
+
     # get shutter info from metadata
     shutter_info = fits.getdata(msa_conf_name, ext=2)
     pslit = shutter_info.field("slitlet_id")
@@ -86,7 +91,6 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
     for slitlet_idx, slit in enumerate(slits_list):
         name = slit.name
         print ("\nWorking with slit: ", name)
-        #print ('pslit=', pslit, "   quad=", quad, "   row=", row, "   col=", col, "   slitlet_id=", slitlet_id)
 
         # Get the ESA trace
         #raw_data_root_file = "NRSV96215001001P0000000002103_1_491_SE_2016-01-24T01h25m07.cts.fits" # testing only
@@ -123,13 +127,13 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             else:
                 print("\n -> Missmatch of quadrant for pipeline and ESA data: ", q, esa_quadrant)
             if r == esa_shutter_i:
-                print("\n -> Same quadrant for pipeline and ESA data: ", r)
+                print("\n -> Same row for pipeline and ESA data: ", r)
             else:
-                print("\n -> Missmatch of quadrant for pipeline and ESA data: ", r, esa_shutter_i)
+                print("\n -> Missmatch of row for pipeline and ESA data: ", r, esa_shutter_i)
             if c == esa_shutter_j:
-                print("\n -> Same quadrant for pipeline and ESA data: ", c, "\n")
+                print("\n -> Same column for pipeline and ESA data: ", c, "\n")
             else:
-                print("\n -> Missmatch of quadrant for pipeline and ESA data: ", c, esa_shutter_j, "\n")
+                print("\n -> Missmatch of column for pipeline and ESA data: ", c, esa_shutter_j, "\n")
 
             # Assign variables according to detector
             skipv2v3test = True
@@ -367,13 +371,23 @@ if __name__ == '__main__':
     pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
 
     # input parameters that the script expects
-    working_dir = pipeline_path+"/src/sandbox/zzzz/first_run_MOSset_prueba/"
-    infile_name = working_dir+"jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs.fits"
-    msa_conf_name = working_dir+"V9621500100101_short_msa.fits"
-    print("msa_conf_name = ", msa_conf_name)
+    #working_dir = pipeline_path+"/src/sandbox/zzzz/first_run_MOSset_prueba/"
+    #infile_name = working_dir+"jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs.fits"
+    #msa_conf_name = working_dir+"V9621500100101_short_msa.fits"
+    working_dir = pipeline_path+"/src/sandbox/MOS_G395M_test/"
+    infile_name = working_dir+"g395m_nrs1_gain_scale_assign_wcs.fits"
+    msa_conf_name = working_dir+"V9621500100101_msa.fits"
+
+    # move msa config file to auxiliary code directory
+    subprocess.run(["cp", msa_conf_name, "."])
+    print("usning msa_conf_name = ", msa_conf_name)
+
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_MOS/"
     esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/MOS_CV3/ESA_Int_products"
 
     # Run the principal function of the script
     result = compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
-                         show_figs=True, save_figs=True, threshold_diff=1.0e-7, debug=False)
+                         show_figs=False, save_figs=True, threshold_diff=1.0e-7, debug=False)
+
+    # remove msa config file from auxiliary code directory
+    subprocess.run(["rm", os.path.basename(msa_conf_name)])
