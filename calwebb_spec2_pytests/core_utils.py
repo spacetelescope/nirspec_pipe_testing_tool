@@ -265,12 +265,17 @@ def start_end_PTT_time(txt_name, start_time=None, end_time=None):
                     break
         # compute end the timer to compute PTT running time
         PTT_total_time = end_time - PTT_start_time   # this is in seconds
-        PTT_total_time_min = round(PTT_total_time / 60.0, 2)
+        if PTT_total_time > 60.0:
+            PTT_total_time_not_in_sec = round(PTT_total_time / 60.0, 2)   # in minutes
+            PTT_total_run_time = repr(PTT_total_time_not_in_sec)+"min"
+        if PTT_total_time_not_in_sec > 60.0:
+            PTT_total_time_not_in_sec = round(PTT_total_time / 60.0, 2)   # in hrs
+            PTT_total_run_time = repr(PTT_total_time_not_in_sec)+"hrs"
         print ("The total time for PTT to run (including pipeline) was "+repr(PTT_total_time)+" seconds.")
         if "full_run_map" not in txt_name:
-            line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'PTT_total_run_time  ', repr(PTT_total_time)+'  ='+repr(PTT_total_time_min)+'min')
+            line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'PTT_total_run_time  ', repr(PTT_total_time)+'  ='+PTT_total_run_time)
         else:
-            line2write = "{:<20} {:<20}".format('PTT_total_run_time  ', repr(PTT_total_time)+'  ='+repr(PTT_total_time_min)+'min')
+            line2write = "{:<20} {:<20}".format('PTT_total_run_time  ', repr(PTT_total_time)+'  ='+PTT_total_run_time)
         print (line2write)
         with open(txt_name, "a") as tf:
             tf.write(line2write+"\n")
