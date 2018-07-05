@@ -4,7 +4,6 @@ from astropy.io import fits
 from astropy import wcs
 from collections import OrderedDict
 
-from gwcs import wcstools
 from jwst.assign_wcs import nirspec
 from jwst import datamodels
 from . import auxiliary_functions as auxfunc
@@ -172,7 +171,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
         # The WCS object attribute bounding_box shows all valid inputs, i.e. the actual area of the data according
         # to the slit. Inputs outside of the bounding_box return NaN values.
-        bbox = wcs_slit.bounding_box
+        #bbox = wcs_slit.bounding_box
         #print('bounding_box: ', bbox)
 
         # In different observing modes the WCS may have different coordinate frames. To see available frames
@@ -196,27 +195,11 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         # wcs_slit.x(y)start are 1-based, turn them to 0-based for extraction
         xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + img.meta.subarray.xsize
         ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + img.meta.subarray.ysize
-        print("ystart: yend, xstart: xend  = ", ystart, yend, xstart, xend)
-        xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + esa_wave.shape[1]
-        ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + esa_wave.shape[0]
-        pipey, pipex = np.mgrid[ystart: yend, xstart: xend]
-        print("ystart: yend, xstart: xend  = ", ystart, yend, xstart, xend)
-        #print("pipey, pipex = ", pipey[0], pipex[0])
-        print("shape of pipey, pipex = ", np.shape(pipey), np.shape(pipex))
 
-        pipex, pipey = wcstools.grid_from_bounding_box(wcs_slit.bounding_box, step=(1, 1), center=True)
-        #print("wcs_slit.bounding_box = ", wcs_slit.bounding_box)
-        #print("shpaes of pipex, pipey = ", np.shape(pipex), np.shape(pipey))
-        #pipey, pipex = np.mgrid[:img.data.shape[0], :img.data.shape[1]]
-        #print("shpaes of pipex, pipey = ", np.shape(pipex), np.shape(pipey))
-
-        #pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
+        pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
         esax, esay = pyw.all_pix2world(pipex, pipey, 0)
-        #subarray_esawave = esa_wave[0][esay]
-        print("esa_wave.shape[0], esa_wave.shape[1] = ", esa_wave.shape[0], esa_wave.shape[1])
-        #print("pyw = ", pyw)
-        #print("esax.shape, esay.shape = ", esax.shape, esay.shape)
-        #print("esax, esay = ", esax, esay)
+        # subtract xstart and ystart values in order to get subarray coords instead of full frame
+        esax, esay = esax - xstart, esay - ystart
 
         # Compute pipeline RA, DEC, and lambda
         pra, pdec, pwave = wcs_slit(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
@@ -224,7 +207,6 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         # calculate and print statistics for slit-y and x relative differences
         tested_quantity = "Wavelength Difference"
         rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
-        exit()
         rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats = rel_diff_pwave_data
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
         total_test_result[pipeslit] = {tested_quantity : test_result}
