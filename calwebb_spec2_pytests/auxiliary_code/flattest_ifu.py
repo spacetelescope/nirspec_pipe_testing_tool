@@ -150,8 +150,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     if det == "NRS2":
         dfile = dfile.replace("nrs1", "nrs2")
     print("Using D-flat: ", dfile)
-    dfim = fits.getdata(dfile, 1)
-    dfimdq = fits.getdata(dfile, 4)
+    dfim = fits.getdata(dfile,  "SCI")#1)
+    dfimdq = fits.getdata(dfile, "DQ")#4)
     # need to flip/rotate the image into science orientation
     ns = np.shape(dfim)
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
@@ -161,13 +161,13 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         dfim = dfim[::-1]
         dfimdq = reverse_cols(dfimdq)
         dfimdq = dfimdq[::-1]
-    naxis3 = fits.getval(dfile, "NAXIS3", 1)
+    naxis3 = fits.getval(dfile, "NAXIS3", "SCI")#1)
 
     # get the wavelength values
     dfwave = np.array([])
     for i in range(naxis3):
         keyword = "PFLAT_"+str(i+1)
-        dfwave = np.append(dfwave, fits.getval(dfile, keyword, 1))
+        dfwave = np.append(dfwave, fits.getval(dfile, keyword, "SCI"))#1))
     dfrqe = fits.getdata(dfile, 2)
 
     # S-flat
@@ -201,8 +201,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     if det == "NRS2":
         sfile = sfile.replace("nrs1", "nrs2")
     print("Using S-flat: ", sfile)
-    sfim = fits.getdata(sfile, 1)
-    sfimdq = fits.getdata(sfile, 3)
+    sfim = fits.getdata(sfile, "SCI")#1)
+    sfimdq = fits.getdata(sfile, "DQ")#3)
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim)
@@ -226,7 +226,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         return median_diff, msg
 
     print("Using F-flat: ", ffile)
-    ffv = fits.getdata(ffile, 1)
+    ffv = fits.getdata(ffile, "SCI")#1)
 
     # now go through each pixel in the test data
 

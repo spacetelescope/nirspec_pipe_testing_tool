@@ -93,8 +93,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     if det == "NRS2":
         dfile = dfile.replace("nrs1", "nrs2")
     print("Using D-flat: ", dfile)
-    dfim = fits.getdata(dfile, 1)
-    dfimdq = fits.getdata(dfile, 4)
+    dfim = fits.getdata(dfile, "SCI")#1)
+    dfimdq = fits.getdata(dfile, "DQ")#4)
     # need to flip/rotate the image into science orientation
     ns = np.shape(dfim)
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
@@ -154,8 +154,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     if det == "NRS2":
         sfile = sfile.replace("nrs1", "nrs2")
     print("Using S-flat: ", sfile)
-    sfim = fits.getdata(sfile, 1)
-    sfimdq = fits.getdata(sfile, 3)
+    sfim = fits.getdata(sfile, "SCI")#1)
+    sfimdq = fits.getdata(sfile, "DQ")#3)
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim)

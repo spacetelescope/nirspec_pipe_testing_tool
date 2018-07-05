@@ -4,9 +4,10 @@ from astropy.io import fits
 from astropy import wcs
 from collections import OrderedDict
 
+from gwcs import wcstools
 from jwst.assign_wcs import nirspec
 from jwst import datamodels
-from . import auxiliary_functions as auxfunc
+import auxiliary_functions as auxfunc
 
 
 """
@@ -162,191 +163,216 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
 
         # make sure that the slit name is in the data model
-        try:
-            # get the WCS object for this particular slit
-            wcs_slit = nirspec.nrs_wcs_set_input(img, pipeslit)
+        #try:
+        # get the WCS object for this particular slit
+        wcs_slit = nirspec.nrs_wcs_set_input(img, pipeslit)
 
+        # if we want to print all available transforms, uncomment line below
+        #print(wcs_slit)
 
-            # if we want to print all available transforms, uncomment line below
-            #print(wcs_slit)
+        # The WCS object attribute bounding_box shows all valid inputs, i.e. the actual area of the data according
+        # to the slit. Inputs outside of the bounding_box return NaN values.
+        bbox = wcs_slit.bounding_box
+        #print('bounding_box: ', bbox)
 
-            # The WCS object attribute bounding_box shows all valid inputs, i.e. the actual area of the data according
-            # to the slit. Inputs outside of the bounding_box return NaN values.
-            #bbox = wcs_slit.bounding_box
-            #print('wcs_slit.bounding_box: ', wcs_slit.bounding_box)
+        # In different observing modes the WCS may have different coordinate frames. To see available frames
+        # uncomment line below.
+        #print("Avalable frames: ", wcs_slit.available_frames)
 
-            # In different observing modes the WCS may have different coordinate frames. To see available frames
-            # uncomment line below.
-            #print("Avalable frames: ", wcs_slit.available_frames)
-
-            if debug:
-                # To get specific pixel values use following syntax:
-                det2slit = wcs_slit.get_transform('detector', 'slit_frame')
-                slitx, slity, lam = det2slit(700, 1080)
-                print("slitx: " , slitx)
-                print("slity: " , slity)
-                print("lambda: " , lam)
-
-            if debug:
-                # The number of inputs and outputs in each frame can vary. This can be checked with:
-                print('Number on inputs: ', det2slit.n_inputs)
-                print('Number on outputs: ', det2slit.n_outputs)
-
-            # Create x, y indices using the Trace WCS
-            pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
-            esax, esay = pyw.all_pix2world(pipex, pipey, 0)
-
-            # Compute pipeline RA, DEC, and lambda
-            pra, pdec, pwave = wcs_slit(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
-            pwave *= 10**-6
-            # calculate and print statistics for slit-y and x relative differences
-            tested_quantity = "Wavelength Difference"
-            rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
-            rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats = rel_diff_pwave_data
-            test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
-            total_test_result[pipeslit] = {tested_quantity : test_result}
-
-            # get the transforms for pipeline slit-y
+        if debug:
+            # To get specific pixel values use following syntax:
             det2slit = wcs_slit.get_transform('detector', 'slit_frame')
-            slitx, slity, _ = det2slit(esax-1, esay-1)
-            # calculate and print statistics for slit-y and x relative differences
-            tested_quantity = "Slit-Y Difference"
-            rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
-            rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
-            test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
+            slitx, slity, lam = det2slit(700, 1080)
+            print("slitx: " , slitx)
+            print("slity: " , slity)
+            print("lambda: " , lam)
+
+        if debug:
+            # The number of inputs and outputs in each frame can vary. This can be checked with:
+            print('Number on inputs: ', det2slit.n_inputs)
+            print('Number on outputs: ', det2slit.n_outputs)
+
+        # Create x, y indices using the Trace WCS
+        # wcs_slit.x(y)start are 1-based, turn them to 0-based for extraction
+        xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + img.meta.subarray.xsize
+        ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + img.meta.subarray.ysize
+        print("ystart: yend, xstart: xend  = ", ystart, yend, xstart, xend)
+        xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + esa_wave.shape[1]
+        ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + esa_wave.shape[0]
+        pipey, pipex = np.mgrid[ystart: yend, xstart: xend]
+        print("ystart: yend, xstart: xend  = ", ystart, yend, xstart, xend)
+        #print("pipey, pipex = ", pipey[0], pipex[0])
+        print("shape of pipey, pipex = ", np.shape(pipey), np.shape(pipex))
+
+        pipex, pipey = wcstools.grid_from_bounding_box(wcs_slit.bounding_box, step=(1, 1), center=True)
+        #print("wcs_slit.bounding_box = ", wcs_slit.bounding_box)
+        #print("shpaes of pipex, pipey = ", np.shape(pipex), np.shape(pipey))
+        #pipey, pipex = np.mgrid[:img.data.shape[0], :img.data.shape[1]]
+        #print("shpaes of pipex, pipey = ", np.shape(pipex), np.shape(pipey))
+
+        #pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
+        esax, esay = pyw.all_pix2world(pipex, pipey, 0)
+        #subarray_esawave = esa_wave[0][esay]
+        print("esa_wave.shape[0], esa_wave.shape[1] = ", esa_wave.shape[0], esa_wave.shape[1])
+        #print("pyw = ", pyw)
+        #print("esax.shape, esay.shape = ", esax.shape, esay.shape)
+        #print("esax, esay = ", esax, esay)
+
+        # Compute pipeline RA, DEC, and lambda
+        pra, pdec, pwave = wcs_slit(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
+        pwave *= 10**-6
+        # calculate and print statistics for slit-y and x relative differences
+        tested_quantity = "Wavelength Difference"
+        rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
+        exit()
+        rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats = rel_diff_pwave_data
+        test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
+        total_test_result[pipeslit] = {tested_quantity : test_result}
+
+        # get the transforms for pipeline slit-y
+        det2slit = wcs_slit.get_transform('detector', 'slit_frame')
+        slitx, slity, _ = det2slit(esax-1, esay-1)
+        # calculate and print statistics for slit-y and x relative differences
+        tested_quantity = "Slit-Y Difference"
+        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
+        rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
+        test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
+        total_test_result[pipeslit] = {tested_quantity : test_result}
+
+        # do the same for MSA x, y and V2, V3
+        detector2msa = wcs_slit.get_transform("detector", "msa_frame")
+        pmsax, pmsay, _ = detector2msa(esax-1, esay-1)   # => RETURNS: msaX, msaY, LAMBDA (lam *= 10**-6 to convert to microns)
+        # MSA-x
+        tested_quantity = "MSA_X Difference"
+        reldiffpmsax_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msax, pmsax, tested_quantity)
+        reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats = reldiffpmsax_data
+        test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsax_stats[1], threshold_diff)
+        total_test_result[pipeslit] = {tested_quantity : test_result}
+        # MSA-y
+        tested_quantity = "MSA_Y Difference"
+        reldiffpmsay_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msay, pmsay, tested_quantity)
+        reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats = reldiffpmsay_data
+        test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsay_stats[1], threshold_diff)
+        total_test_result[pipeslit] = {tested_quantity : test_result}
+
+        # V2 and V3
+        if not skipv2v3test:
+            detector2v2v3 = wcs_slit.get_transform("detector", "v2v3")
+            pv2, pv3, _ = detector2v2v3(esax-1, esay-1)   # => RETURNS: v2, v3, LAMBDA (lam *= 10**-6 to convert to microns)
+            tested_quantity = "V2 difference"
+            reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3x, pv2, tested_quantity)
+            reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats = reldiffpv2_data
+            test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
+            total_test_result[pipeslit] = {tested_quantity : test_result}
+            tested_quantity = "V3 difference"
+            reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
+            reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats = reldiffpv3_data
+            test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
             total_test_result[pipeslit] = {tested_quantity : test_result}
 
-            # do the same for MSA x, y and V2, V3
-            detector2msa = wcs_slit.get_transform("detector", "msa_frame")
-            pmsax, pmsay, _ = detector2msa(esax-1, esay-1)   # => RETURNS: msaX, msaY, LAMBDA (lam *= 10**-6 to convert to microns)
-            # MSA-x
-            tested_quantity = "MSA_X Difference"
-            reldiffpmsax_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msax, pmsax, tested_quantity)
-            reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats = reldiffpmsax_data
-            test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsax_stats[1], threshold_diff)
-            total_test_result[pipeslit] = {tested_quantity : test_result}
-            # MSA-y
-            tested_quantity = "MSA_Y Difference"
-            reldiffpmsay_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msay, pmsay, tested_quantity)
-            reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats = reldiffpmsay_data
-            test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsay_stats[1], threshold_diff)
-            total_test_result[pipeslit] = {tested_quantity : test_result}
+        # PLOTS
+        if show_figs or save_figs:
+            # set the common variables
+            basenameinfile_name = os.path.basename(infile_name)
+            main_title = filt+"   "+grat+"   SLIT="+pipeslit+"\n"
+            bins = 15   # binning for the histograms
+            #             lolim_x, uplim_x, lolim_y, uplim_y
+            plt_origin = None
 
-            # V2 and V3
-            if not skipv2v3test:
-                detector2v2v3 = wcs_slit.get_transform("detector", "v2v3")
-                pv2, pv3, _ = detector2v2v3(esax-1, esay-1)   # => RETURNS: v2, v3, LAMBDA (lam *= 10**-6 to convert to microns)
-                tested_quantity = "V2 difference"
-                reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3x, pv2, tested_quantity)
-                reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats = reldiffpv2_data
-                test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
-                total_test_result[pipeslit] = {tested_quantity : test_result}
-                tested_quantity = "V3 difference"
-                reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
-                reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats = reldiffpv3_data
-                test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
-                total_test_result[pipeslit] = {tested_quantity : test_result}
-
-            # PLOTS
-            if show_figs or save_figs:
-                # set the common variables
-                basenameinfile_name = os.path.basename(infile_name)
-                main_title = filt+"   "+grat+"   SLIT="+pipeslit+"\n"
-                bins = 15   # binning for the histograms
-                #             lolim_x, uplim_x, lolim_y, uplim_y
-                plt_origin = None
-
-                # Wavelength
-                title = main_title+r"Relative wavelength difference = $\Delta \lambda$"+"\n"
-                info_img = [title, "x (pixels)", "y (pixels)"]
-                xlabel, ylabel = r"Relative $\Delta \lambda$ = ($\lambda_{pipe} - \lambda_{ESA}) / \lambda_{ESA}$", "N"
-                info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pwave_stats]
-                if notnan_rel_diff_pwave_stats[1] is np.nan:
-                    print("Unable to create plot of relative wavelength difference.")
-                else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_wave_diffs.jpg")
-                    auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
-                                                 plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
-
-                # Slit-y
-                title = main_title+r"Relative slit position = $\Delta$slit_y"+"\n"
-                info_img = [title, "x (pixels)", "y (pixels)"]
-                xlabel, ylabel = r"Relative $\Delta$slit_y = (slit_y$_{pipe}$ - slit_y$_{ESA}$)/slit_y$_{ESA}$", "N"
-                info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pslity_stats]
-                if notnan_rel_diff_pslity_stats[1] is np.nan:
-                    print("Unable to create plot of relative slit position.")
-                else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_slitY_diffs.jpg")
-                    auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
-                                                 plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
-
-                # MSA-x
-                title = main_title+r"Relative MSA-x Difference = $\Delta$MSA_x"+"\n"
-                info_img = [title, "x (pixels)", "y (pixels)"]
-                xlabel, ylabel = r"Relative $\Delta$MSA_x = (MSA_x$_{pipe}$ - MSA_x$_{ESA}$)/MSA_x$_{ESA}$", "N"
-                info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsax_stats]
-                if notnan_reldiffpmsax_stats[1] is np.nan:
-                    print("Unable to create plot of relative MSA-x difference.")
-                else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAx_diffs.jpg")
-                    auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
-                                                 plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
-
-                # MSA-y
-                title = main_title+r"Relative MSA-y Difference = $\Delta$MSA_y"+"\n"
-                info_img = [title, "x (pixels)", "y (pixels)"]
-                xlabel, ylabel = r"Relative $\Delta$MSA_y = (MSA_y$_{pipe}$ - MSA_y$_{ESA}$)/MSA_y$_{ESA}$", "N"
-                info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
-                if notnan_reldiffpmsay_stats[1] is np.nan:
-                    print("Unable to create plot of relative MSA-y difference.")
-                else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAy_diffs.jpg")
-                    auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
-                                                 plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
-
-                if not skipv2v3test:
-                    # V2
-                    title = main_title+r"Relative V2 Difference = $\Delta$V2"+"\n"
-                    info_img = [title, "x (pixels)", "y (pixels)"]
-                    xlabel, ylabel = r"Relative $\Delta$V2 = (V2$_{pipe}$ - V2$_{ESA}$)/V2$_{ESA}$", "N"
-                    hist_data = notnan_reldiffpv2
-                    info_hist = [xlabel, ylabel, bins, notnan_reldiffpv2_stats]
-                    if notnan_reldiffpv2_stats[1] is np.nan:
-                        print("Unable to create plot of relative V2 difference.")
-                    else:
-                        plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V2_diffs.jpg")
-                        auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
-                                                     plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
-
-                    # V3
-                    title = main_title+r"Relative V3 Difference = $\Delta$V3"+"\n"
-                    info_img = [title, "x (pixels)", "y (pixels)"]
-                    xlabel, ylabel = r"Relative $\Delta$V3 = (V3$_{pipe}$ - V3$_{ESA}$)/V3$_{ESA}$", "N"
-                    hist_data = notnan_reldiffpv3
-                    info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
-                    if notnan_reldiffpv3_stats[1] is np.nan:
-                        print("Unable to create plot of relative V3 difference.")
-                    else:
-                        plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V3_diffs.jpg")
-                        auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
-                                                     plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
-
-
+            # Wavelength
+            title = main_title+r"Relative wavelength difference = $\Delta \lambda$"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta \lambda$ = ($\lambda_{pipe} - \lambda_{ESA}) / \lambda_{ESA}$", "N"
+            info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pwave_stats]
+            if notnan_rel_diff_pwave_stats[1] is np.nan:
+                print("Unable to create plot of relative wavelength difference.")
             else:
-                print ("NO plots were made because show_figs and save_figs were both set to False. \n")
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_wave_diffs.jpg")
+                auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
+                                             plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
-        except:
-            ValueError
-            print("Slit ", pipeslit, " not in list of datamodel.")
+            # Slit-y
+            title = main_title+r"Relative slit position = $\Delta$slit_y"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta$slit_y = (slit_y$_{pipe}$ - slit_y$_{ESA}$)/slit_y$_{ESA}$", "N"
+            info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pslity_stats]
+            if notnan_rel_diff_pslity_stats[1] is np.nan:
+                print("Unable to create plot of relative slit position.")
+            else:
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_slitY_diffs.jpg")
+                auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
+                                             plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+
+            # MSA-x
+            title = main_title+r"Relative MSA-x Difference = $\Delta$MSA_x"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta$MSA_x = (MSA_x$_{pipe}$ - MSA_x$_{ESA}$)/MSA_x$_{ESA}$", "N"
+            info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsax_stats]
+            if notnan_reldiffpmsax_stats[1] is np.nan:
+                print("Unable to create plot of relative MSA-x difference.")
+            else:
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAx_diffs.jpg")
+                auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
+                                             plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+
+            # MSA-y
+            title = main_title+r"Relative MSA-y Difference = $\Delta$MSA_y"+"\n"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = r"Relative $\Delta$MSA_y = (MSA_y$_{pipe}$ - MSA_y$_{ESA}$)/MSA_y$_{ESA}$", "N"
+            info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
+            if notnan_reldiffpmsay_stats[1] is np.nan:
+                print("Unable to create plot of relative MSA-y difference.")
+            else:
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAy_diffs.jpg")
+                auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
+                                             plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+
+            if not skipv2v3test:
+                # V2
+                title = main_title+r"Relative V2 Difference = $\Delta$V2"+"\n"
+                info_img = [title, "x (pixels)", "y (pixels)"]
+                xlabel, ylabel = r"Relative $\Delta$V2 = (V2$_{pipe}$ - V2$_{ESA}$)/V2$_{ESA}$", "N"
+                hist_data = notnan_reldiffpv2
+                info_hist = [xlabel, ylabel, bins, notnan_reldiffpv2_stats]
+                if notnan_reldiffpv2_stats[1] is np.nan:
+                    print("Unable to create plot of relative V2 difference.")
+                else:
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V2_diffs.jpg")
+                    auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
+                                                 plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+
+                # V3
+                title = main_title+r"Relative V3 Difference = $\Delta$V3"+"\n"
+                info_img = [title, "x (pixels)", "y (pixels)"]
+                xlabel, ylabel = r"Relative $\Delta$V3 = (V3$_{pipe}$ - V3$_{ESA}$)/V3$_{ESA}$", "N"
+                hist_data = notnan_reldiffpv3
+                info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
+                if notnan_reldiffpv3_stats[1] is np.nan:
+                    print("Unable to create plot of relative V3 difference.")
+                else:
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V3_diffs.jpg")
+                    auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
+                                                 plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+
+
+        else:
+            print ("NO plots were made because show_figs and save_figs were both set to False. \n")
+
+        #except:
+        #    ValueError
+        #    print("Slit ", pipeslit, " not in list of datamodel.")
 
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
-    FINAL_TEST_RESULT = "PASSED"
+    FINAL_TEST_RESULT = "FAILED"
     for sl, testdir in total_test_result.items():
         for t, tr in testdir.items():
             if tr == "FAILED":
                 FINAL_TEST_RESULT = "FAILED"
                 print("\n * The test of", t, "for slit", sl, " FAILED.")
+            else:
+                FINAL_TEST_RESULT = "PASSED"
+                print("\n * The test of", t, "for slit", sl, " PASSED.")
 
     if FINAL_TEST_RESULT == "PASSED":
         print("\n *** Final result for assign_wcs test will be reported as PASSED *** \n")
@@ -369,12 +395,12 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G235H_opaque/491_results"
-    data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140H_opaque/491_results"
-    #data_dir = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G140M_F070LP/491_results"
+    #data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140H_opaque/491_results"
+    data_dir = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G140M_F070LP/491_results"
     infile_name = data_dir+"/gain_scale_assign_wcs.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
-    esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
-    #esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3/ESA_Int_products"
+    #esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
+    esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3/ESA_Int_products"
 
     # print pipeline version
     import jwst

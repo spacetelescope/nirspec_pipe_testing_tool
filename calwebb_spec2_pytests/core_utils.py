@@ -271,6 +271,8 @@ def start_end_PTT_time(txt_name, start_time=None, end_time=None):
             if PTT_total_time_min > 60.0:
                 PTT_total_time_hr = round(PTT_total_time_min / 60.0, 2)   # in hrs
                 PTT_total_run_time = (PTT_total_time_hr)+"hr"
+        else:
+            PTT_total_run_time = repr(PTT_total_time)+"sec"
 
         print ("The total time for PTT to run (including pipeline) was "+repr(PTT_total_time)+" seconds.")
         if "full_run_map" not in txt_name:
