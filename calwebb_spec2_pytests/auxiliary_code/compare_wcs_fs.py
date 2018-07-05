@@ -7,7 +7,7 @@ from collections import OrderedDict
 from gwcs import wcstools
 from jwst.assign_wcs import nirspec
 from jwst import datamodels
-import auxiliary_functions as auxfunc
+from . import auxiliary_functions as auxfunc
 
 
 """
