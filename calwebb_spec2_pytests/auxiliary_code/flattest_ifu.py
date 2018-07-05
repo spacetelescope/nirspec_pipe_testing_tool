@@ -20,12 +20,13 @@ This script tests the pipeline flat field step output for IFU data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.0"
+__version__ = "2.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
 #                         script, and added new routines for statistics calculations.
+# Jun 2018 - Version 2.1: Changed extension numbers for the name of the extension in the D-, F-, and S-flats.
 
 
 

@@ -17,12 +17,13 @@ This script compares pipeline WCS info with ESA results for FIXED SLIT.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.0"
+__version__ = "2.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
 #                         script, and added new routines for plot making and statistics calculations.
+# Jun 2018 - Version 2.1: Fixed code to work for subarrays too.
 
 
 def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=False, threshold_diff=1.0e-7, debug=False):
@@ -161,8 +162,6 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     return FINAL_TEST_RESULT
 
 
-        # make sure that the slit name is in the data model
-        #try:
         # get the WCS object for this particular slit
         wcs_slit = nirspec.nrs_wcs_set_input(img, pipeslit)
 
@@ -192,14 +191,19 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             print('Number on outputs: ', det2slit.n_outputs)
 
         # Create x, y indices using the Trace WCS
-        # wcs_slit.x(y)start are 1-based, turn them to 0-based for extraction
-        xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + img.meta.subarray.xsize
-        ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + img.meta.subarray.ysize
-
         pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
         esax, esay = pyw.all_pix2world(pipex, pipey, 0)
-        # subtract xstart and ystart values in order to get subarray coords instead of full frame
-        esax, esay = esax - xstart, esay - ystart
+
+        # check if subarray is not FULL FRAME
+        subarray = fits.getval(infile_name, "SUBARRAY", 0)
+        if "FULL" not in subarray:
+            # subtract xstart and ystart values in order to get subarray coords instead of full frame
+            # wcs_slit.x(y)start are 1-based, turn them to 0-based for extraction
+            #xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + img.meta.subarray.xsize
+            #ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + img.meta.subarray.ysize
+            xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + esa_wave.shape[1]
+            ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + esa_wave.shape[0]
+            esax, esay = esax - xstart, esay - ystart
 
         # Compute pipeline RA, DEC, and lambda
         pra, pdec, pwave = wcs_slit(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
@@ -340,10 +344,6 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         else:
             print ("NO plots were made because show_figs and save_figs were both set to False. \n")
 
-        #except:
-        #    ValueError
-        #    print("Slit ", pipeslit, " not in list of datamodel.")
-
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = "FAILED"
@@ -363,8 +363,6 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
 
     return FINAL_TEST_RESULT
-
-
 
 
 
