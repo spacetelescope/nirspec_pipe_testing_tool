@@ -20,37 +20,15 @@ This script tests the pipeline flat field step output for IFU data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.1"
+__version__ = "2.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
 #                         script, and added new routines for statistics calculations.
-# Jun 2018 - Version 2.1: Changed extension numbers for the name of the extension in the D-, F-, and S-flats.
+# Jun 2018 - Version 2.2: Removed function reverse_cols because it was not behaving as expected.
 
 
-
-
-def reverse_cols(arr):
-    """
-    This function permutates the last column of the array with the first, e.g. a = [4,5,6]
-    b = reverse_cols(a) = [6,5,4].
-    Args:
-        arr: numpy array
-
-    Returns:
-        rev_arr: numpy array with first and last columns reversed
-    """
-    last_idx = np.shape(arr)[-1]-1
-    permutation = [last_idx]
-    for i, a in enumerate(arr):
-        if (i != 0) and (i != last_idx):
-            permutation.append(i)
-        if i == last_idx:
-            permutation.append(0)
-    p = np.argsort(permutation)
-    rev_arr = arr[:, p]
-    return rev_arr
 
 
 def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name):
@@ -158,10 +136,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
     dfimdq = np.transpose(dfimdq)
     if det == "NRS2":
-        dfim = reverse_cols(dfim)
-        dfim = dfim[::-1]
-        dfimdq = reverse_cols(dfimdq)
-        dfimdq = dfimdq[::-1]
+        dfimdq = dfimdq[:, ::-1, ::-1]
     naxis3 = fits.getval(dfile, "NAXIS3", "SCI")#1)
 
     # get the wavelength values
@@ -209,10 +184,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     sfim = np.transpose(sfim)
     sfimdq = np.transpose(sfimdq)
     if det == "NRS2":
-        sfim = reverse_cols(sfim)
-        sfim = sfim[::-1]
-        sfimdq = reverse_cols(sfimdq)
-        sfimdq = sfimdq[::-1]
+        sfim = sfim[:, ::-1, ::-1]
     sfv = fits.getdata(sfile, 5)
 
     # F-Flat
