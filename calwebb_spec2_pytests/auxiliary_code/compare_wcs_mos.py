@@ -61,7 +61,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         print ("WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.")
 
     # get shutter info from metadata
-    shutter_info = fits.getdata(msa_conf_name, ext="SHUTTER_INFO") # this is generally extension 2
+    shutter_info = fits.getdata(msa_conf_name, extname="SHUTTER_INFO") # this is generally ext=2
     pslit = shutter_info.field("slitlet_id")
     quad = shutter_info.field("shutter_quadrant")
     row = shutter_info.field("shutter_row")
@@ -82,7 +82,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
 
     # loop over the slits
     slits_list = nirspec.get_open_slits(img)
-    #print ('Open slits: ', slits, '\n')
+    #print ('Open slits: ', slits_list, '\n')
 
     # list to determine if pytest is passed or not
     total_test_result = OrderedDict()

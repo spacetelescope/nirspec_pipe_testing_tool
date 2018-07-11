@@ -188,6 +188,7 @@ def output_hdul(set_inandout_filenames, config):
 # fixture to validate the WCS
 @pytest.fixture(scope="module")
 def validate_wcs(output_hdul):
+    print("\nStarting validation test: ")
     # get the input information for the wcs routine
     hdu = output_hdul[0]
     infile_name = output_hdul[1]
