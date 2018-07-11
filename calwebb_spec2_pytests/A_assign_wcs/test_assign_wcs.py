@@ -75,12 +75,8 @@ def output_hdul(set_inandout_filenames, config):
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
-    # get the MSA shutter configuration file full path only for MOS data
+    # get main header from input file
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
-    if core_utils.check_MOS_true(inhdu):
-        msa_conf_name = config.get("esa_intermediary_products", "msa_conf_name")
-    else:
-        msa_conf_name = "No shutter configuration file will be used."
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -91,6 +87,8 @@ def output_hdul(set_inandout_filenames, config):
         if DATAMODL != "IFUImageModel":
             fits.setval(step_input_file, "DATAMODL", 0, value="IFUImageModel")
             print("DATAMODL keyword changed to IFUImageModel.")
+    # get the shutter configuration file for MOS data only
+    msa_shutter_conf = "No shutter configuration file will be used."
     if core_utils.check_MOS_true(inhdu):
         msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
         # check if the configuration shutter file name is in the header of the fits file and if not add it
@@ -98,6 +96,7 @@ def output_hdul(set_inandout_filenames, config):
         if os.path.basename(msa_shutter_conf) != msametfl:
             msametfl = os.path.basename(msa_shutter_conf)
             fits.setval(step_input_file, "MSAMETFL", 0, value=msametfl)
+
     # run the pipeline
     if run_calwebb_spec2:
         print ("*** Will run calwebb_spec2... ")
@@ -139,7 +138,7 @@ def output_hdul(set_inandout_filenames, config):
         # read the assign wcs fits file
         hdul = core_utils.read_hdrfits(step_output_file, info=True, show_hdr=True)
         scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-        return hdul, step_output_file, msa_conf_name, esa_files_path, wcs_threshold_diff, save_wcs_plots
+        return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots
     else:
         # create the Map of file names
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
@@ -173,7 +172,7 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
                 scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-                return hdul, step_output_file, msa_conf_name, esa_files_path, wcs_threshold_diff, save_wcs_plots
+                return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots
             else:
                 print("Skipping step. Intput file "+step_input_file+" does not exit.")
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
