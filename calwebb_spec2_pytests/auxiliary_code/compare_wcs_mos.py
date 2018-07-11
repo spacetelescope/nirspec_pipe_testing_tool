@@ -61,7 +61,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         print ("WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.")
 
     # get shutter info from metadata
-    shutter_info = fits.getdata(msa_conf_name, ext=2)
+    shutter_info = fits.getdata(msa_conf_name, ext="SHUTTER_INFO") # this is generally extension 2
     pslit = shutter_info.field("slitlet_id")
     quad = shutter_info.field("shutter_quadrant")
     row = shutter_info.field("shutter_row")
