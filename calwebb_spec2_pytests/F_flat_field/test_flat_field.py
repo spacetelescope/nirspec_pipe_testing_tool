@@ -54,7 +54,8 @@ def output_hdul(set_inandout_filenames, config):
     write_flattest_files = config.getboolean("additional_arguments", "write_flattest_files")
     flattest_paths = [step_output_file, msa_shutter_conf, dflat_path, sflat_path, fflat_path]
     flattest_switches = [flattest_threshold_diff, save_flattest_plot, write_flattest_files]
-    skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
+    run_pipe_step = config.getboolean("run_pipe_steps", step)
+    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -71,24 +72,17 @@ def output_hdul(set_inandout_filenames, config):
     # get the MSA shutter configuration file full path only for MOS data
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if run_calwebb_spec2:
-        input_file = config.get("calwebb_spec2_input_file", "input_file")
-        local_step_output_file = input_file.replace(".fits", "_flat_field.fits")
-        # move the output file into the working directory
-        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-        step_output_file = os.path.join(working_directory, local_step_output_file)
-        intflat = input_file.replace(".fits", "_intflat.fits")
-        intflat_file = os.path.join(working_directory, intflat)
-        print ("Step product was saved as: ", step_output_file)
-        subprocess.run(["mv", local_step_output_file, step_output_file])
-        subprocess.run(["mv", intflat, intflat_file])
         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
         flattest_paths = [step_output_file, msa_shutter_conf, dflat_path, sflat_path, fflat_path]
-        return hdul, step_output_file, flattest_paths, flattest_switches
+        return hdul, step_output_file, flattest_paths, flattest_switches, run_pytests
     else:
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
-                if not skip_runing_pipe_step:
+                if run_pipe_step:
+                    # check that previous pipeline steps were run up to this point
+                    core_utils.check_completed_steps(step, step_input_file)
+
                     flat_suffix = "intflat"
                     if core_utils.check_MOS_true(inhdu):
                         # copy the MSA shutter configuration file into the pytest directory
@@ -125,7 +119,7 @@ def output_hdul(set_inandout_filenames, config):
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul, step_output_file, flattest_paths, flattest_switches
+                return hdul, step_output_file, flattest_paths, flattest_switches, run_pytests
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
@@ -184,20 +178,55 @@ def validate_flat_field(output_hdul):
 # Unit tests
 
 def test_s_flat_exists(output_hdul):
-    assert flat_field_utils.s_flat_exists(output_hdul[0]), "The keyword S_FLAT was not added to the header --> flat_field step was not completed."
+    # want to run this pytest?
+    run_pytests = output_hdul[4]
+    if not run_pytests:
+        msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+        assert flat_field_utils.s_flat_exists(output_hdul[0]), "The keyword S_FLAT was not added to the header --> flat_field step was not completed."
 
 def test_validate_flat_field(output_hdul):
-    assert validate_flat_field(output_hdul), "Output value from flattest.py is greater than threshold."
+    # want to run this pytest?
+    run_pytests = output_hdul[4]
+    if not run_pytests:
+        msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+        assert validate_flat_field(output_hdul), "Output value from flattest.py is greater than threshold."
 
 def test_fflat_rfile(output_hdul):
-    result = flat_field_utils.fflat_rfile_is_correct(output_hdul)
-    assert not result, result
+    # want to run this pytest?
+    run_pytests = output_hdul[4]
+    if not run_pytests:
+        msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+        result = flat_field_utils.fflat_rfile_is_correct(output_hdul)
+        assert not result, result
 
 def test_sflat_sfile(output_hdul):
-    result = flat_field_utils.sflat_rfile_is_correct(output_hdul)
-    assert not result, result
+    # want to run this pytest?
+    run_pytests = output_hdul[4]
+    if not run_pytests:
+        msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+        result = flat_field_utils.sflat_rfile_is_correct(output_hdul)
+        assert not result, result
 
 def test_dflat_dfile(output_hdul):
-    result = flat_field_utils.dflat_rfile_is_correct(output_hdul)
-    assert not result, result
+    # want to run this pytest?
+    run_pytests = output_hdul[4]
+    if not run_pytests:
+        msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+        result = flat_field_utils.dflat_rfile_is_correct(output_hdul)
+        assert not result, result
 

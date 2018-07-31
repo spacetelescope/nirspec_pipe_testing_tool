@@ -283,14 +283,15 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
                 if not os.path.isfile(esafile):
                     esafile = "ESA file not found"
                     break
-                root_filename = fits.getval(esafile, "FILENAME", 0)
-                #print("root_filename = ", root_filename)
-                #print("rawdatroot = ", rawdatroot)
-                if rawdatroot.replace(".fits", "") in root_filename:
-                    print (" * File name matches raw file used for create_data.")
-                    break
-                else:
-                    print (" * WARNING: Raw data file name used for create_data does not match esa root file name.")
+                try:
+                    root_filename = fits.getval(esafile, "FILENAME", 0)
+                    if rawdatroot.replace(".fits", "") in root_filename:
+                        print (" * File name matches raw file used for create_data.")
+                    else:
+                        print (" * WARNING: Raw data file name used for create_data does not match esa root file name.")
+                        break
+                except KeyError:
+                    print("* WARNING: PTT is unable to confirm the raw file name used matches the esa file root name.")
             else:
                 esafile = []
                 for esabase in esafile_basename:

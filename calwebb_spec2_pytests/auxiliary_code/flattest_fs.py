@@ -166,7 +166,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # now go through each pixel in the test data
 
     # get the datamodel from the assign_wcs output file
-    extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", ".fits")
+    extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
     model = datamodels.MultiSlitModel(extract2d_wcs_file)
 
     if writefile:
@@ -221,9 +221,11 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # y, x = np.mgrid[ystart: yend, xstart: xend]
         x, y = wcstools.grid_from_bounding_box(slit.meta.wcs.bounding_box, step=(1, 1), center=True)
         ra, dec, wave = slit.meta.wcs(x, y)   # wave is in microns
-        detector2slit = slit.meta.wcs.get_transform('detector', 'slit_frame')
-        sx, sy, ls = detector2slit(x, y)
+        #detector2slit = slit.meta.wcs.get_transform('detector', 'slit_frame')
+        #sx, sy, ls = detector2slit(x, y)
         #world_coordinates = np.array([wave, ra, dec, sy])#, x, y])
+
+        print("wavelength array: ", wave[19, 483])
 
         # get the subwindow origin
         px0 = slit.xstart - 1 + model.meta.subarray.xstart
@@ -244,7 +246,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             for k in range(nw2):   # in y
                 if np.isfinite(wave[k, j]):   # skip if wavelength is NaN
                     # get thr full-frame pixel indeces for D- and S-flat image components
-                    # **** this does not account for subarrays!
                     pind = [k+py0-1, j+px0-1]
                     #print ("pind = ", pind)
                     #print ("j, k = ", j, k)
@@ -351,6 +352,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         print ("np.shape(ffv_dat) = ", np.shape(ffv_dat))
                         print ("fff = ", fff)
                         print ("flatcor[k, j] = ", flatcor[k, j])
+                        print("dff, dfs, sff, sfs, fff:", dff, dfs, sff, sfs, fff)
 
                     # read the pipeline-calculated flat image
                     # there are four extensions in the flatfile: SCI, DQ, ERR, WAVELENGTH
@@ -367,7 +369,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         # Remove all pixels with values=1 (outside slit boundaries) for statistics
                         if pipeflat[k, j] == 1:
                             delf[k, j] = 999.0
-                        else:
+                        if np.isnan(wave[k, j]):
                             flatcor[k, j] = 1.0   # no correction if no wavelength
 
                         if debug:
@@ -547,6 +549,6 @@ if __name__ == '__main__':
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                           fflat_path=fflat_path, writefile=writefile, show_figs=True, save_figs=True,
+                           fflat_path=fflat_path, writefile=writefile, show_figs=False, save_figs=False,
                            plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
 

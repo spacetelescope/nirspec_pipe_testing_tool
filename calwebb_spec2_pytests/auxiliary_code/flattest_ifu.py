@@ -215,7 +215,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         complfile.append(hdu0)
 
     # get the datamodel from the assign_wcs output file
-    assign_wcs_file = step_input_filename.replace("_flat_field.fits", ".fits")
+    assign_wcs_file = step_input_filename.replace("_flat_field.fits", "_assign_wcs.fits")
     model = datamodels.ImageModel(assign_wcs_file)
     ifu_slits = nirspec.nrs_ifu_wcs(model)
 
@@ -373,7 +373,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 # Remove all pixels with values=1 (mainly inter-slit pixels) for statistics
                 if pipeflat[pind[0], pind[1]] == 1:
                     delf[j] = 999.0
-                else:
+                if np.isnan(jwav):
                     flatcor[j] = 1.0   # no correction if no wavelength
 
                 if debug:
