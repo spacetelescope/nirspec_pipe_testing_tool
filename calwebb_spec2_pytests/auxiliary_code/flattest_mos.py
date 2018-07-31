@@ -219,7 +219,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     total_test_result = []
 
     # get the datamodel from the assign_wcs output file
-    extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", ".fits")
+    extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
     model = datamodels.MultiSlitModel(extract2d_wcs_file)
 
     # get all the science extensions in the flatfile
@@ -262,7 +262,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         row = slitlet_info.field("SHUTTER_ROW")[im]
         col = slitlet_info.field("SHUTTER_COLUMN")[im]
         slitlet_id = repr(row)+"_"+repr(col)
-        print ('sltid=', sltid, "   quad=", quad, "   row=", row, "   col=", col, "   slitlet_id=", slitlet_id)
+        print ('silt_id=', slit_id, "   quad=", quad, "   row=", row, "   col=", col, "   slitlet_id=", slitlet_id)
 
         # get the relevant F-flat reference data
         if quad == 1:
@@ -459,7 +459,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         # Remove all pixels with values=1 (outside slit boundaries) for statistics
                         if pipeflat[k, j] == 1:
                             delf[k, j] = 999.0
-                        else:
+                        if np.isnan(wave[k, j]):
                             flatcor[k, j] = 1.0   # no correction if no wavelength
 
                         if debug:
@@ -600,9 +600,16 @@ if __name__ == '__main__':
     pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
 
     # input parameters that the script expects
-    working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/zzzz/first_run_MOSset_prueba/"
-    step_input_filename = working_dir+"jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs_extract_2d_flat_field.fits"
-    msa_shutter_conf = working_dir+"/V9621500100101_short_msa.fits"
+
+    # short MOS data
+    #working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/zzzz/first_run_MOSset_prueba/"
+    #step_input_filename = working_dir+"jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs_extract_2d_flat_field.fits"
+    #msa_shutter_conf = working_dir+"/V9621500100101_short_msa.fits"
+    # simulated data
+    working_dir = pipeline_path+"/src/sandbox/simulation_test/491_results/"
+    step_input_filename = working_dir+"F170LP-G235M_MOS_observation-6-c0e0_001_DN_NRS1_mod_updatedHDR_flat_field.fits"
+    msa_shutter_conf = pipeline_path+"/src/sandbox/simulation_test/jw95065006001_0_msa.fits"
+
     dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
     sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/MOS/nirspec_MOS_sflat"
     fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/MOS/nirspec_MOS_fflat"

@@ -448,8 +448,11 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
         if key != 'wcsinfo':
             print("adding keyword: ", key, " in extension: primary    after: ", after_key)
             # the DATAMODL keyword will only be modified if mode is IFU
-            if key == 'DATAMODL' and lev2bdict.keywd_dict['EXP_TYPE']=='NRS_IFU':
-                new_value = 'IFUImageModel'
+            if key == 'DATAMODL':
+                if 'IFU' in mode_used:
+                    new_value = 'IFUImageModel'
+                else:
+                    new_value = 'ImageModel'
             if key == 'GRATING':
                 new_value = fits.getval(updated_fitsfile, 'GWA_POS', 0)
             if key == 'FILTER':

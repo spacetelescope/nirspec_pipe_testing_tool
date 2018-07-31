@@ -1,5 +1,6 @@
 # PYTEST TESTING TOOL (PTT)
 
+
 ## What is a Pytest
 
 Simply put, a Pytest is a pass or fail Python test. For instance, with the WCS step, we 
@@ -11,13 +12,29 @@ error should occur with the pipeline, the test will be flagged as an error.
 
 
 
+## Useful links
+
+- PTT Documentation: 
+https://innerspace.stsci.edu/pages/viewpage.action?pageId=123011558
+
+- Testing data sets:
+https://innerspace.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+2
+
+- SCSB GitHub repository: 
+https://github.com/spacetelescope/jwst
+
+- Pipeline Documentation:
+http://jwst-pipeline.readthedocs.io 
+
+
+
 ## Quick Start Guide
 
 
 NOTE: This guide assumes that Conda has been installed. If you have not yet done 
 so, please follow the instructions at:
 https://astroconda.readthedocs.io/en/latest/
-Please use python 3.5
+Please use python 3.6 (though python 3.5 is supported as well)
 
 
 THREE THINGS BEFORE STARTING
@@ -53,25 +70,31 @@ QUICK START GUIDE
 1. Create the conda environment for testing and get the configuration files.  
 
 a. Conda environment for this testing campaign:
-- Current testing version is 7.1.3. Please install this version by typing the following 
+- Current testing version is 7.1.3 Please install this version by typing the following 
 command in a terminal:
 ```bash
-conda create -n jwst_b713 --file url_depending_on_your_system python=3.5
+conda create -n jwst_b7131 --file url_depending_on_your_system python=3.6
 ```
 for the current release candidate, the ulr options are:
-- Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.3/latest-linux
-- OS X: http://ssb.stsci.edu/releases/jwstdp/0.9.3/latest-osx
+- Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.6/latest-linux
+- OS X: http://ssb.stsci.edu/releases/jwstdp/0.9.6/latest-osx
 
 As bugfixes are announced your current pipeline software may be updated by issuing the 
 command:
 ```bash
-conda update --file http://ssb.stsci.edu/releases/jwstdp/0.9.3/latest-osx
+conda update --file http://ssb.stsci.edu/releases/jwstdp/0.9.6/latest-osx
 ```
+
+Please note that this is the most stable release candidate since 06/08/2018, and until
+further notice from SCSB. To be completely sure that this is the latest stable version 
+you can go to the GitHub repo of SCSB: https://github.com/spacetelescope/jwst. In the 
+README file you will find a table called "Software vs DMS build version map", there you 
+will see at the top which one is the latest stable release candidate.
 
 NOTE:
 If you need to use the development version of the pipeline then do the following:
 ```bash
-conda create -n jwst_dev -c http://ssb.stsci.edu/conda-dev jwst python=3.5
+conda create -n jwst_dev -c http://ssb.stsci.edu/conda-dev jwst python=3.6
 ```
 Then, to update the development environment, activate the environment and then type:
 ```bash
@@ -99,7 +122,11 @@ collect_pipeline_cfgs .
 
 2. Activate the conda environment for testing the pipeline, e.g. type:
 ```bash
-source activate jwst_b713
+source activate your_newly_created_environment
+```
+If the above command does not work try:
+```bash
+conda activate your_newly_created_environment
 ```
 From here on, every step of this guide should happen within the conda testig environment.
 
@@ -212,7 +239,7 @@ make sure that:
 the pipeline and the tool, will run faster if the files are local on your computer.
 - The input file for the PTT is the final output file from calwebb_detector1.
 - The adequate mode for the data to be tested is set correctly, choices are: FS, IFU,
-or MOS.
+MOS, or BOTS.
 - The steps that you want to be ran or not are set to True or False.
 - In the bottom part of the file, all the additional arguments for the PTT are 
 correct, e.g. threshold values, figure switches, and additional fits files.
@@ -223,16 +250,23 @@ required to run the PTT. In a terminal, go into the directory where the testing 
 (i.e. at the level of the ```calwebb_spec2_pytests``` directory), and make sure that the 
 testing conda environment is on. Now type:
 ```bash
-python ../utils/run_cal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits -sbs
+script -a -t 0 caldetector1_screenout.txt python ../utils/run_cal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits
 ```
-This script will execute the calwebb detector 1 pipeline step by step. If you want to run
-it in a single run, using the configuration file that you have for it in the ```utils``` 
-directory, simply remove the ```-sbs``` from previous command. 
+The first part of the command will create the text file ```caldetector1_screenout.txt```
+which will contain all the screen output of the pipeline run. This text file will be used 
+to determine the time that each step took to run. The next part of the command is what 
+actually runs the ```run_cal_detector1.py``` script, which executes the calwebb detector 1
+pipeline in a single run, using the configuration file that you have for it in 
+the ```utils``` directory. 
+
+To run calwebb detector 1 step-by-step, simply add ```-sbs``` at the end of  
+the previous command. Note that running the pipeline in full for calwebb detector 1 takes 
+about half the time as it does running it step-by-step, due to IO processing time.
+
 If everything went well, you will see a text file called 
 ```cal_detector1_outputs_and_times.txt```, which contains the steps ran, the name of the 
-output fits file, and the time each step took to run. However, if you chose to run the 
-calwebb detector1 in a single run, you will only see the total running time. This text 
-file, along with the intermediary products will be located in the path you set for the 
+output fits file, and the time each step took to run. This text file, along with the 
+intermediary products will be located in the path you set for the 
 ```working_directory``` variable in the configuration file of the PTT.
 
 NOTE:
@@ -246,8 +280,8 @@ which lives at ```/nirspec_pipetesting_tool/calwebb_spec2_pytests/auxiliary_code
 python ../calwebb_spec2_pytests/auxiliary_code/change_filter_opaque2science.py file.fits 
 ```
 
-If all went well and you have a gain_scale.fits file, you now are able to run the MESA 
-calwebb detector 1 testing tool. Steps to obtain the MESA testing tool:
+If all went well and you have a ```gain_scale_DETECTOR.fits``` file, you now are able to 
+run the MESA calwebb detector 1 testing tool. Steps to obtain the MESA testing tool:
 
 a. At the same level as the top directory of the PTT (i.e. the ```nirspec_pipe_testing_tool``` 
 directory), create a new directory called ```MESA_cal_detector1```.
@@ -256,8 +290,8 @@ b. Inside ```MESA_cal_detector1```, you will clone their Git repository. Please 
 directions for this at:
 http://calibration-pipeline-testing-tool.readthedocs.io/en/latest/
 
-c. Now, in the ```utils``` directory of ```nirspec_pipe_testing_tool```, you will find a 
-sample json file that you can modify in order to use as input for the MESA calwebb
+c. Now, in the ```utils/data``` directory of ```nirspec_pipe_testing_tool```, you will 
+find a sample json file that you can modify in order to use as input for the MESA calwebb
 detector 1 testing tool. Notice that it differs from the example given in the MESA 
 documentation. In our example, the steps are in the order of the pipeline, to make it 
 easier to determine what file is input to which step. Please copy our sample json file 
@@ -271,9 +305,6 @@ test_pipeline --config ./cal_detector1_input.json
 ```
 Please record your progress in our testing campaign Confluence page:
 https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+2. 
-
-Please remember to make a PDF export of the html report, so that it does not
-get corrupted when you move it to another directory. 
 
  
 8. Ready to run PTT. Go back to the directory where PTT lives and into the 
@@ -293,30 +324,62 @@ indicated at the ```PTT_config.cfg``` file with the variable ```working_director
 output fits files of intermediary products will also be saved in the working directory. 
 In the terminal type:
 ```bash
-pytest -s --config_file=PTT_config.cfg  --html=report.html --self-contained-html
+script -a -t 0 calspec2_screenout.txt pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html
 ```
-The ```-s``` will capture all the print statements in the code on screen. If you want to
-save the on-screen output into a text file simply do:
+The first part of the command will create the text file ```calspec2_screenout.txt``` in the 
+```calweb_spec2_pytests``` directory. The text file will contain all the screen output of 
+the pipeline run, and it will be moved to the working directory at the end. The contents 
+of the text file will be used to determine the time that each step took to run. 
+
+The next part of the above command runs the pytest scripts; the ```-s``` will capture all 
+the print statements in the code on screen. For now, the report will always be saved in 
+the ```calweb_spec2_pytests``` directory, and you will have to manually move it to where
+you want it to live, unless you give the full path of the destination in the ```--html=``` 
+flag.
+
+NOTE: If you are doing a re-run of the pytest only, be careful not to overwrite the 
+```calspec2_screenout.txt``` file, in this case you should use the following command to
+run the pytest:
 ```bash
-pytest -s --config_file=PTT_config.cfg  --html=report.html --self-contained-html > screen_output.txt
+pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html > pytest_only.txt
 ```
-and this will create the ```screen_output.txt``` file in the ```calweb_spec2_pytests``` 
-directory, and at the end this file will also be moved to the working directory.
-For now, the report will always be saved in the working directory, regardless of the path
-you choose with the ```--html=``` flag.
+
+-> To only run a few pipeline steps you need to:
+a) Make sure that the variable ```run_calwebb_spec2``` in the ```PTT_config.cfg``` file
+is set to False (otherwise the pipeline will run in full and we have no control of
+individual steps).
+b) Turn off (i.e. set to False) the steps you do not want to run in the ```PTT_config.cfg``` 
+file, which are located in the section ```run_pipe_steps``` of the file.
+
+-> To run a few pytest you need to select which pytest to run (i.e. set to True) in the 
+```PTT_config.cfg``` file, which are located in the section ```run_pytest``` of the file.
+
+-> To only run pytest and skip running the pipeline entirely:
+a) Make sure that the variable ```run_calwebb_spec2``` in the ```PTT_config.cfg``` file
+is set to False.
+b) Set to False all the pipeline steps in the ```PTT_config.cfg``` file. The steps are 
+located in the section ```run_pipe_steps``` of the file.
+c) Set to True all pytest you want to run in the ```PTT_config.cfg``` file. These are 
+located in the section ```run_pytest``` of the file.
+
+NOTE: Setting a pytest to False in the ```PTT_config.cfg``` file will skip running all 
+the pytest for that step (i.e. completion, reference file, and validation pytest).
 
 
 10. Report your findings. If all went well, you should have the html report in the 
-working directory, along with the file name map of intermediary products. Each section 
-of the report specifies what tests passed or failed, and, if there were any errors, the 
-report will tell you (with the name of the script where the error occurred) if it is a 
-pipeline error or a PTT error. Keep updating your testing progress in the Confluence page
-where you obtained the name of your testing data sets, in the column named Test reports 
-(if there is none, please go ahead and add it). In this column place a copy of your html
-report and the text file of the screen output. 
+```calwebb_spec2_pytest``` directory. Please move it manually to the working directory. 
+The file name map of intermediary products, the screen_output text file, and all the 
+intermediary products should already be in the working directory. 
+
+Each section of the html report specifies what tests passed or failed, and, if there were 
+any errors, the report will tell you (with the name of the script where the error 
+occurred) if it is a pipeline error or a PTT error. Keep updating your testing progress 
+in the Confluence page where you obtained the name of your testing data sets, in the 
+column named Test reports (if there is none, please go ahead and add it). In this column 
+place a copy of your html report and the text file of the screen output. 
 
 Please follow these actions for reporting your progress, depending on the outcome:
-* The html file is now portable, i.e. it will not get corrupted if you move it to another
+* The html file is portable, i.e. it will not get corrupted if you move it to another
 directory. 
 - Place the html file in the Confluence page. You can also create a PDF export from the 
 report and use that file for the Confluence page and for any sharing purposes.
@@ -390,7 +453,7 @@ report is much clearer to understand what happened.
 command line as well, and that you make sure that the outcome intermediary files are 
 consistent with the ones ran with scripts, i.e. the PTT. This sanity check is minor 
 but important to verify. 
-In the ```utils``` directory there are two text files named 
+In the ```utils/data``` directory there are two text files named 
 ```terminal_commands_calwebb_detector1_steps.txt``` and
 ```terminal_commands_calwebb_spec2_steps.txt```. These files contain all the commands 
 you can use from the terminal to run the calwebb_detector1 and calwebb spec2 steps,

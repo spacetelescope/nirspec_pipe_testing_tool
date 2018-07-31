@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import argparse
 import subprocess
@@ -34,10 +35,11 @@ This script will perform calwebb_detector1 in one single run, outputing intermed
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Jul 2018 - Version 1.1: Added functions to calculate running times from screen log
 
 
 def get_caldet1cfg_and_workingdir():
@@ -49,12 +51,78 @@ def get_caldet1cfg_and_workingdir():
     config = configparser.ConfigParser()
     config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
     pipe_testing_tool_path = config.get("calwebb_spec2_input_file", "pipe_testing_tool_path")
-    calwebb_detector1_cfg = os.path.join(pipe_testing_tool_path, "utils/calwebb_detector1.cfg")
-    calwebb_tso1_cfg = os.path.join(pipe_testing_tool_path, "utils/calwebb_tso1.cfg")
+    calwebb_detector1_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_detector1.cfg")
+    calwebb_tso1_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_tso1.cfg")
     working_dir = config.get("calwebb_spec2_input_file", "working_directory")
     mode_used = config.get("calwebb_spec2_input_file", "mode_used")
     raw_data_root_file = config.get("calwebb_spec2_input_file", "raw_data_root_file")
     return calwebb_detector1_cfg, calwebb_tso1_cfg, working_dir, mode_used, raw_data_root_file
+
+
+def calculate_step_run_time(screen_output_txt, pipe_steps):
+    """
+    This function calculates the step run times from the screen_output_txt file.
+    Args:
+        screen_output_txt: string, path and name of the text file
+        pipe_steps: list, steps ran in calwebb_detector_1
+
+    Returns:
+        step_running_times: dictionary, with the following structure for all steps that where ran
+                           step_running_times["assign_wcs"] = {start_time: float, end_time: float, run_time: float}
+    """
+    def get_timestamp(time_list):
+        """
+        This sub-function obtains a time stamp from the time strings read from the screen output text file.
+        Args:
+            time_list: list, contains 2 strings (date and time)
+
+        Returns:
+            timestamp: float, time stamp
+        """
+        time_tuple, secs_frac, timestamp = [], None, None
+        stp_date = time_list[0].split("-")
+        for item in stp_date:
+            check_for_letters = re.search('[a-zA-Z]', item)
+            if check_for_letters is None:
+                time_tuple.append(int(item))
+                stp_time = time_list[1].split(":")
+                secs_frac = stp_time[-1].split(",")
+                if "," not in item:
+                    time_tuple.append(int(item))
+            else:
+                return timestamp
+        if secs_frac is not None:
+            for item in secs_frac:
+                time_tuple.append(int(item))
+            if len(time_tuple) < 9:
+                while len(time_tuple) is not 9:
+                    time_tuple.append(0)
+            time_tuple = tuple(time_tuple)
+            timestamp = time.mktime(time_tuple)
+        return timestamp
+
+    # read the screen_output_txt file
+    step_running_times = {}
+    with open(screen_output_txt, "r") as sot:
+        for line in sot.readlines():
+            line = line.replace("\n", "")
+            if "Ending" in line:   # make sure not to overwrite the dictionary
+                break
+            for pstp in pipe_steps:
+                pstp = pstp.replace(".fits", "")
+                if pstp in line and "running with args" in line:
+                    start_time_list = line.split()[0:2]
+                    start_time = get_timestamp(start_time_list)
+                    if start_time is None:
+                        continue
+                if pstp in line and "done" in line:
+                    end_time_list = line.split()[0:2]
+                    end_time = get_timestamp(end_time_list)
+                    if end_time is None:
+                        continue
+                    run_time = end_time - start_time
+                    step_running_times[pstp] = {"start_time" : start_time, "end_time" : end_time, "run_time" : run_time}
+    return step_running_times
 
 
 
@@ -87,7 +155,7 @@ print ("Using this configuration file: ", cfg_file)
 txt_outputs_summary = "cal_detector1_outputs_and_times.txt"
 end_time_total = []
 line0 = "# {:<20}".format("Input file: "+fits_input_uncal_file)
-line1 = "# {:<17} {:<20} {:<20}".format("Step", "Output file", "Time to run [s]")
+line1 = "# {:<16} {:<19} {:<20}".format("Step", "Output file", "Time to run [s]")
 with open(txt_outputs_summary, "w+") as tf:
     tf.write(line0+"\n")
     tf.write(line1+"\n")
@@ -99,6 +167,9 @@ output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbia
 # Get and save the value of the raw data root name to add at the end of calwebb_detector1
 #rawdatrt = fits.getval(fits_input_uncal_file, 'rawdatrt', 0)
 
+# Get the detector used
+det = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
+
 if not step_by_step:
     # start the timer to compute the step running time
     start_time = time.time()
@@ -106,12 +177,33 @@ if not step_by_step:
     # end the timer to compute calwebb_spec2 running time
     end_time = time.time() - start_time  # this is in seconds
     print(" * calwebb_detector1 took "+repr(end_time)+" seconds to finish *")
-    total_time = "{:<18} {:<20} {:<20}".format("", "total time = ", repr(end_time))
-    tot_time_min = round((end_time/60.0), 2)
+    if end_time > 60.0:
+        end_time_min = round(end_time / 60.0, 1)   # in minutes
+        tot_time = repr(end_time_min)+"min"
+        if end_time_min > 60.0:
+            end_time_hr = round(end_time_min / 60.0, 1)   # in hrs
+            tot_time = repr(end_time_hr)+"hr"
+    else:
+        tot_time = str(round(end_time, 1))+"sec"
+    total_time = "{:<18} {:<20} {:<20}".format("", "total_time = ", repr(end_time)+"  ="+tot_time)
+
+    # get the running time for the individual steps
+    caldetector1_screenout = "caldetector1_screenout.txt"
+    step_running_times = calculate_step_run_time(caldetector1_screenout, output_names)
+
+    # write step running times in the text file
+    end_time_list = []
     for outnm in output_names:
-        line2write = "{:<18} {:<20} {:<20}".format(outnm.replace(".fits", ""), outnm, "")
+        stp = outnm.replace(".fits", "")
+        if stp in step_running_times:
+            step_time = step_running_times[stp]["run_time"]
+        else:
+            step_time = "N/A"
+        end_time_list.append(step_time)
+        line2write = "{:<18} {:<20} {:<20}".format(stp, outnm, step_time)
         with open(txt_outputs_summary, "a") as tf:
             tf.write(line2write+"\n")
+
 else:
     # steps to be ran, in order
     steps_to_run = [GroupScaleStep(), DQInitStep(), SaturationStep(), SuperBiasStep(), RefPixStep(),
@@ -166,29 +258,43 @@ else:
                 print ("File has only 1 integration.")
 
         # end the timer to compute cal_detector1 running time
-        end_time = repr(time.time() - start_time)   # this is in seconds
-        end_time_total.append(time.time() - start_time)
+        et = time.time() - start_time   # this is in seconds
+        end_time = repr(et)
+        end_time_total.append(et)
         step = output_names[i].replace(".fits", "")
         print(" * calwebb_detector1 step ", step, " took "+end_time+" seconds to finish * \n")
-        if (time.time() - start_time) > 60.0:
-            end_time_min = (time.time() - start_time)/60.  # this is in minutes
-            print ("    ( = "+repr(end_time_min)+" minutes )")
-            end_time = end_time+"  ="+repr(round(end_time_min, 2))+"min"
+        if et > 60.0:
+            end_time_min = round(et / 60.0, 1)   # in minutes
+            end_time = repr(end_time_min)+"min"
+            if end_time_min > 60.0:
+                end_time_hr = round(end_time_min / 60.0, 1)   # in hrs
+                end_time = repr(end_time_hr)+"hr"
+        else:
+            end_time = repr(round(et, 1))+"sec"
 
         # record results in text file
         line2write = "{:<18} {:<20} {:<20}".format(step, output_names[i], end_time)
         with open(txt_outputs_summary, "a") as tf:
             tf.write(line2write+"\n")
 
+
     # record total time in text file
     tot_time_sec = sum(end_time_total)
-    tot_time_min = round((tot_time_sec/60.0), 2)
-    total_time = "{:<18} {:>20} {:<20}".format("", "total_time  ", repr(tot_time_sec)+"  ="+repr(tot_time_min)+"min")
+    if tot_time_sec > 60.0:
+        tot_time_min = round((tot_time_sec/60.0), 1)
+        tot_time = repr(tot_time_min)+"min"
+        if tot_time_min > 60.0:
+            tot_time_hr = round((tot_time_min/60.0), 1)
+            tot_time = repr(tot_time_hr)+"hr"
+    else:
+        tot_time = round((tot_time_sec/60.0), 1)
+    total_time = "{:<18} {:>20} {:>20}".format("", "total_time  ", repr(tot_time_sec)+"  ="+tot_time)
+
 
 # record total time in text file
 with open(txt_outputs_summary, "a") as tf:
     tf.write(total_time+"\n")
-print ("\n ** Calwebb_detector 1 took "+repr(tot_time_min)+" minutes to complete **")
+print ("\n ** Calwebb_detector 1 took "+repr(tot_time)+" to complete **")
 
 # Move fits products to working dir
 fits_list = glob("*.fits")
@@ -198,10 +304,13 @@ if len(fits_list) >= 1:
         if "step_" in ff:
             ff_newname = os.path.join(working_dir, ff.replace("step_", ""))
         else:
-            ff_newname = working_dir
+            ff_newname = os.path.join(working_dir, ff)
+        if det.lower() not in ff.lower():
+            ff_newname = ff_newname.replace(".fits", "_"+det+".fits")
         subprocess.run(["mv", ff, ff_newname])
-    # move the text file too
+    # move text files too
     subprocess.run(["mv", txt_outputs_summary, working_dir])
+    subprocess.run(["mv", caldetector1_screenout, working_dir])
 else:
     print("No fits files detected after calwbb_detector1 finished. Exiting script.")
 

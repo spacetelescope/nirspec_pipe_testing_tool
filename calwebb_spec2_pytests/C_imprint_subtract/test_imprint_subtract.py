@@ -41,31 +41,26 @@ def set_inandout_filenames(request, config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
-    skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
+    run_pipe_step = config.getboolean("run_pipe_steps", step)
+    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
     # Only run step if data is IFU or MSA
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
-    run_step = config.getboolean("steps", step)
     if core_utils.check_IFU_true(inhdu) or core_utils.check_MOS_true(inhdu):
         stp = ImprintStep()
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
         if run_calwebb_spec2:
-            # read the assign wcs fits file
-            input_file = config.get("calwebb_spec2_input_file", "input_file")
-            local_step_output_file = input_file.replace(".fits", "_imprint_substract.fits")
-            if os.path.isfile(local_step_output_file):
-                hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
+            if os.path.isfile(step_output_file):
+                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
             else:
                 pytest.skip("Skipping "+step+" because the output file does not exist.")
-            # move the output file into the working directory
-            working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-            step_output_file = os.path.join(working_directory, local_step_output_file)
-            print ("Step product was saved as: ", step_output_file)
-            subprocess.run(["mv", local_step_output_file, step_output_file])
-            return hdul, step_output_file, run_step, step_input_file
+            return hdul, step_output_file, run_pipe_step, step_input_file, run_pytests
         else:
-            if run_step:
+            if run_pipe_step:
+                # check that previous pipeline steps were run up to this point
+                core_utils.check_completed_steps(step, step_input_file)
+
                 print ("*** Step "+step+" set to True")
                 if os.path.isfile(step_input_file):
                     print(" The input file ", step_input_file,"exists... will run step "+step)
@@ -76,7 +71,7 @@ def output_hdul(set_inandout_filenames, config):
                         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                         pytest.skip("Skipping "+step+" because msa_imprint_structure file in the configuration file does not exist.")
                     else:
-                        if not skip_runing_pipe_step:
+                        if run_pipe_step:
                             # get the right configuration files to run the step
                             local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
                             # start the timer to compute the step running time
@@ -99,7 +94,7 @@ def output_hdul(set_inandout_filenames, config):
                             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                             step_completed = True
                         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                        return hdul, step_output_file, run_step, step_input_file
+                        return hdul, step_output_file, run_pipe_step, step_input_file, run_pytests
                 else:
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     pytest.skip("Skipping "+step+" because the input file does not exist.")
@@ -146,7 +141,21 @@ def check_output_is_zero(output_hdul):
 ### Unit tests
 
 def test_s_imprint_exists(output_hdul):
-    assert imprint_subtract_utils.s_imprint_exists(output_hdul[0]), "The keyword S_IMPRINT was not added to the header --> imprint_subtract step was not completed."
+    # want to run this pytest?
+    run_pytests = output_hdul[4]
+    if not run_pytests:
+        msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+        assert imprint_subtract_utils.s_imprint_exists(output_hdul[0]), "The keyword S_IMPRINT was not added to the header --> imprint_subtract step was not completed."
 
 def test_check_output_is_zero(output_hdul):
-    assert check_output_is_zero(output_hdul), "Substraction result is not equal to zero."
+    # want to run this pytest?
+    run_pytests = output_hdul[4]
+    if not run_pytests:
+        msg = "Skipping pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+        assert check_output_is_zero(output_hdul), "Substraction result is not equal to zero."

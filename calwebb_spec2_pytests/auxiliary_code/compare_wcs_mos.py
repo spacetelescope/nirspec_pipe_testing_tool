@@ -48,8 +48,8 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
     """
 
     # get grating and filter info from the rate file header
+    print('wcs validation test infile_name=', infile_name)
     det = fits.getval(infile_name, "DETECTOR", 0)
-    print('infile_name=', infile_name)
     lamp = fits.getval(infile_name, "LAMP", 0)
     grat = fits.getval(infile_name, "GRATING", 0)
     filt = fits.getval(infile_name, "FILTER", 0)
@@ -59,6 +59,17 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
     # check that shutter configuration file in header is the same as given in PTT_config file
     if msametfl != os.path.basename(msa_conf_name):
         print ("WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.")
+
+    # copy the MSA shutter configuration file into the pytest directory
+    try:
+        subprocess.run(["cp", msa_conf_name, "."])
+    except FileNotFoundError:
+        print(" * PTT is not able to locat the MSA shutter configuration file. Please make sure that the msa_conf_name variable in")
+        print("   the PTT_config.cfg file is pointing exactly to where the fits file exists. ")
+        print("   -> The WCS test is now set to skip and no plots will be generated. ")
+        FINAL_TEST_RESULT = "skip"
+        return FINAL_TEST_RESULT
+
 
     # get shutter info from metadata
     shutter_info = fits.getdata(msa_conf_name, extname="SHUTTER_INFO") # this is generally ext=2
@@ -174,7 +185,13 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
 
 
         # get the WCS object for this particular slit
-        wcs_slice = nirspec.nrs_wcs_set_input(img, name)
+        try:
+            wcs_slice = nirspec.nrs_wcs_set_input(img, name)
+        except:
+            ValueError
+            print("* WARNING: Slitlet ", name, " was not found in the model. Setting pytest to FAIL.")
+            FINAL_TEST_RESULT = "FAIL"
+            return FINAL_TEST_RESULT
 
         # if we want to print all available transforms, uncomment line below
         #print(wcs_slice)
@@ -204,6 +221,11 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         # Create x, y indices using the Trace WCS
         pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
         esax, esay = pyw.all_pix2world(pipex, pipey, 0)
+
+        # make sure the extracting coordinates are correct
+        xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + esa_wave.shape[1]
+        ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + esa_wave.shape[0]
+        esax, esay = esax - xstart, esay - ystart
 
         # Compute pipeline RA, DEC, and lambda
         pra, pdec, pwave = wcs_slice(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
@@ -346,6 +368,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             print ("NO plots were made because show_figs and save_figs were both set to False. \n")
 
 
+    # remove the copy of the MSA shutter configuration file
+    subprocess.run(["rm", msametfl])
+
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = "PASSED"
     for sl, testdir in total_test_result.items():
@@ -373,20 +398,17 @@ if __name__ == '__main__':
     #working_dir = pipeline_path+"/src/sandbox/zzzz/first_run_MOSset_prueba/"
     #infile_name = working_dir+"jwtest1010001_01101_00001_NRS1_uncal_rate_short_assign_wcs.fits"
     #msa_conf_name = working_dir+"V9621500100101_short_msa.fits"
-    working_dir = pipeline_path+"/src/sandbox/MOS_G395M_test/"
-    infile_name = working_dir+"g395m_nrs1_gain_scale_assign_wcs.fits"
-    msa_conf_name = working_dir+"V9621500100101_msa.fits"
+    #working_dir = pipeline_path+"/src/sandbox/MOS_G395M_test/"
+    #infile_name = working_dir+"g395m_nrs1_gain_scale_assign_wcs.fits"
+    #msa_conf_name = working_dir+"V9621500100101_msa.fits"
+    #esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/MOS_CV3/ESA_Int_products"
 
-    # move msa config file to auxiliary code directory
-    subprocess.run(["cp", msa_conf_name, "."])
-    print("usning msa_conf_name = ", msa_conf_name)
-
-    #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_MOS/"
-    esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/MOS_CV3/ESA_Int_products"
+    working_dir = pipeline_path+"/src/sandbox/simulation_test/491_results/"
+    infile_name = working_dir+"F170LP-G235M_MOS_observation-6-c0e0_001_DN_NRS1_mod_updatedHDR_assign_wcs.fits"
+    msa_conf_name = pipeline_path+"/src/sandbox/simulation_test/jw95065006001_0_msa.fits"
+    esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/simulations/ESA_Int_products"
 
     # Run the principal function of the script
     result = compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
                          show_figs=False, save_figs=True, threshold_diff=1.0e-7, debug=False)
 
-    # remove msa config file from auxiliary code directory
-    subprocess.run(["rm", os.path.basename(msa_conf_name)])

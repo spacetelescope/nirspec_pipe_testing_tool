@@ -39,7 +39,8 @@ def set_inandout_filenames(request, config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
-    skip_runing_pipe_step = config.getboolean("tests_only", "_".join((step, "tests")))
+    run_pipe_step = config.getboolean("run_pipe_steps", step)
+    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
     stp = Extract1dStep()
     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
@@ -59,26 +60,26 @@ def output_hdul(set_inandout_filenames, config):
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
     if run_calwebb_spec2:
-        # read the assign wcs fits file
-        input_file = config.get("calwebb_spec2_input_file", "input_file")
-        local_step_output_file = input_file.replace(".fits", "_x1d.fits")
-        hdul = core_utils.read_hdrfits(local_step_output_file, info=False, show_hdr=False)
-        # move the output file into the working directory
-        step_output_file = os.path.join(working_directory, local_step_output_file)
-        print ("Step product was saved as: ", step_output_file)
-        subprocess.run(["mv", local_step_output_file, step_output_file])
-        #core_utils.convert_html2pdf()   # convert the html report into a pdf file
+        # read the output header
+        hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+
+        # move the final reporting files to the working directory
+        core_utils.move_latest_report_and_txt_2workdir()
+
         # end the timer to compute the step running time of PTT
         PTT_end_time = time.time()
         core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
-        # move the final reporting files to the working directory
-        core_utils.move_latest_report_and_txt_2workdir()
-        return hdul, step_output_file
+
+        return hdul, step_output_file, run_pytests
+
     else:
         if config.getboolean("steps", step):
             print ("*** Step "+step+" set to True")
             if os.path.isfile(step_input_file):
-                if not skip_runing_pipe_step:
+                if run_pipe_step:
+                    # check that previous pipeline steps were run up to this point
+                    core_utils.check_completed_steps(step, step_input_file)
+
                     # get the right configuration files to run the step
                     local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
                     # start the timer to compute the step running time
@@ -107,14 +108,14 @@ def output_hdul(set_inandout_filenames, config):
                 # convert the html report into a pdf file
                 #core_utils.convert_html2pdf()
 
+                # move the final reporting files to the working directory
+                core_utils.move_latest_report_and_txt_2workdir()
+
                 # end the timer to compute the step running time of PTT
                 PTT_end_time = time.time()
                 core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
 
-                # move the final reporting files to the working directory
-                core_utils.move_latest_report_and_txt_2workdir()
-
-                return hdul, step_output_file
+                return hdul, step_output_file, run_pytests
             else:
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 #core_utils.convert_html2pdf()   # convert the html report into a pdf file
@@ -158,10 +159,24 @@ def move_output_files(request):
 # Unit tests
 
 def test_extract1d_rfile(output_hdul):
-    result = extract_1d_utils.extract1d_rfile_is_correct(output_hdul)
-    assert not result, result
+    # want to run this pytest?
+    run_pytests = output_hdul[2]
+    if not run_pytests:
+        msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+        result = extract_1d_utils.extract1d_rfile_is_correct(output_hdul)
+        assert not result, result
 
 def test_s_extr1d_exists(output_hdul):
-    assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
+    # want to run this pytest?
+    run_pytests = output_hdul[2]
+    if not run_pytests:
+        msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+        assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
 
 
