@@ -58,7 +58,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
 
     # check that shutter configuration file in header is the same as given in PTT_config file
     if msametfl != os.path.basename(msa_conf_name):
-        print ("WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.")
+        print ("* WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.\n")
 
     # copy the MSA shutter configuration file into the pytest directory
     try:
@@ -92,7 +92,10 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         print("GWA_TTILT: {}".format(img.meta.instrument.gwa_tilt))
 
     # loop over the slits
-    slits_list = nirspec.get_open_slits(img)
+    #slits_list = nirspec.get_open_slits(img)   # this function returns all open slitlets as defined in msa meta file,
+    # however, some of them may not be projected on the detector, and those are later removed from the list of open
+    # slitlets. To get the open and projected on the detector slitlets we use the following:
+    slits_list = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
     #print ('Open slits: ', slits_list, '\n')
 
     # list to determine if pytest is passed or not
@@ -189,9 +192,8 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             wcs_slice = nirspec.nrs_wcs_set_input(img, name)
         except:
             ValueError
-            print("* WARNING: Slitlet ", name, " was not found in the model. Setting pytest to FAIL.")
-            FINAL_TEST_RESULT = "FAIL"
-            return FINAL_TEST_RESULT
+            print("* WARNING: Slitlet ", name, " was not found in the model. Skipping test for this slitlet.")
+            continue
 
         # if we want to print all available transforms, uncomment line below
         #print(wcs_slice)
@@ -203,7 +205,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
 
         # In different observing modes the WCS may have different coordinate frames. To see available frames
         # uncomment line below.
-        print("Avalable frames: ", wcs_slice.available_frames)
+        #print("Avalable frames: ", wcs_slice.available_frames)
 
         if debug:
             # To get specific pixel values use following syntax:
@@ -233,7 +235,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         # calculate and print statistics for slit-y and x relative differences
         #slitlet_name = "slitlet"+repr(name)
         slitlet_name = repr(r)+"_"+repr(c)
-        tested_quantity = "Relative Wavelength Difference"
+        tested_quantity = "Wavelength Difference"
         rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
         rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats = rel_diff_pwave_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
@@ -242,9 +244,11 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         # get the transforms for pipeline slit-y
         det2slit = wcs_slice.get_transform('detector', 'slit_frame')
         slitx, slity, _ = det2slit(esax-1, esay-1)
+        tested_quantity = "Slit-Y Difference"
         # calculate and print statistics for slit-y and x relative differences
-        tested_quantity = "Relative Slit-Y Difference"
-        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
+        #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=False)
+        # calculate and print statistics for slit-y and x absolute differences
+        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
         total_test_result[slitlet_name] = {tested_quantity : result}
@@ -253,13 +257,13 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         detector2msa = wcs_slice.get_transform("detector", "msa_frame")
         pmsax, pmsay, _ = detector2msa(esax-1, esay-1)   # => RETURNS: msaX, msaY, LAMBDA (lam *= 10**-6 to convert to microns)
         # MSA-x
-        tested_quantity = "Relative MSA_X Difference"
+        tested_quantity = "MSA_X Difference"
         reldiffpmsax_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msax, pmsax, tested_quantity)
         reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats = reldiffpmsax_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsax_stats[1], threshold_diff)
         total_test_result[slitlet_name] = {tested_quantity : result}
         # MSA-y
-        tested_quantity = "Relative MSA_Y Difference"
+        tested_quantity = "MSA_Y Difference"
         reldiffpmsay_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msay, pmsay, tested_quantity)
         reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats = reldiffpmsay_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsay_stats[1], threshold_diff)

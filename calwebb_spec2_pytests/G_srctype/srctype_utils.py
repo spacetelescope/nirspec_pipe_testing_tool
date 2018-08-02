@@ -16,7 +16,7 @@ of the JWST Calibration Pipeline.
 
 ### VERIFICATION FUNCTIONS
 
-def s_srctype_exists(output_hdul):
+def s_srctyp_exists(output_hdul):
     """
     This function checks that the keyword SRCTYPE was added.
     Args:
@@ -25,7 +25,7 @@ def s_srctype_exists(output_hdul):
     Returns:
         result: boolean, true if the keyword was indeed added
     """
-    result = "SRCTYPE" in output_hdul
+    result = "S_SRCTYP" in output_hdul
     return result
 
 

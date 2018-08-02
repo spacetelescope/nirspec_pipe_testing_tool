@@ -136,7 +136,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
     dfimdq = np.transpose(dfimdq)
     if det == "NRS2":
-        dfimdq = dfimdq[:, ::-1, ::-1]
+        dfimdq = dfimdq[..., ::-1, ::-1]
     naxis3 = fits.getval(dfile, "NAXIS3", "SCI")#1)
 
     # get the wavelength values
@@ -184,7 +184,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     sfim = np.transpose(sfim)
     sfimdq = np.transpose(sfimdq)
     if det == "NRS2":
-        sfim = sfim[:, ::-1, ::-1]
+        sfim = sfim[..., ::-1, ::-1]
     sfv = fits.getdata(sfile, 5)
 
     # F-Flat

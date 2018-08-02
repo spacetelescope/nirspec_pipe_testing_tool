@@ -81,24 +81,30 @@ def calculate_step_run_time(screen_output_txt, pipe_steps):
         """
         time_tuple, secs_frac, timestamp = [], None, None
         stp_date = time_list[0].split("-")
+        stp_time = time_list[1].split(":")
+        # append the date
         for item in stp_date:
             check_for_letters = re.search('[a-zA-Z]', item)
             if check_for_letters is None:
-                time_tuple.append(int(item))
-                stp_time = time_list[1].split(":")
-                secs_frac = stp_time[-1].split(",")
-                if "," not in item:
+                if "," not in item:  # make sure there are no fractional numbers
                     time_tuple.append(int(item))
             else:
                 return timestamp
-        if secs_frac is not None:
-            for item in secs_frac:
+        # append the time
+        for item in stp_time:
+            if "," not in item:  # make sure there are no fractional numbers
                 time_tuple.append(int(item))
-            if len(time_tuple) < 9:
-                while len(time_tuple) is not 9:
-                    time_tuple.append(0)
-            time_tuple = tuple(time_tuple)
-            timestamp = time.mktime(time_tuple)
+            else:
+                # separate the fractions of seconds from seconds and append them
+                secs_frac = stp_time[-1].split(",")
+                for sf in secs_frac:
+                    time_tuple.append(int(sf))
+        # convert the time tuple into a time stamp, which HAS to have nine integer numbers
+        if len(time_tuple) < 9:
+            while len(time_tuple) is not 9:
+                time_tuple.append(0)
+        time_tuple = tuple(time_tuple)
+        timestamp = time.mktime(time_tuple)
         return timestamp
 
     # read the screen_output_txt file

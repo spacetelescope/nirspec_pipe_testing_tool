@@ -73,7 +73,7 @@ a. Conda environment for this testing campaign:
 - Current testing version is 7.1.3 Please install this version by typing the following 
 command in a terminal:
 ```bash
-conda create -n jwst_b7131 --file url_depending_on_your_system python=3.6
+conda create -n jwst_b7131 --file url_depending_on_your_system 
 ```
 for the current release candidate, the ulr options are:
 - Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.6/latest-linux

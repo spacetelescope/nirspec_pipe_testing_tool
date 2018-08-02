@@ -488,7 +488,7 @@ def print_stats(arrX, xname, threshold_diff, abs=False):
     return x_stats
 
 
-def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name):
+def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, abs=False):
     """
     This functions performs all the steps necessary to obtain the relative difference image and the corresponding
     statistics, considering only non-NaN elements.
@@ -498,6 +498,7 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name):
         esa_arr: numpy array, array of the ESA quantity to be investigated
         arr: numpy array, the array of the quantity to be investigated
         arr_name: string, name of the array to be printed in statistics
+        abs: boolean, default set to False, i.e. quantities are relative
 
     Returns:
         DATAMODEL_rel_diff: numpy array, 2D array ready for plotting (image)
@@ -514,14 +515,20 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name):
     # Set the values to NaN in the ESA lambda extension
     esa_arr[nanind] = np.nan
     # Compute the difference in wavelength
-    DATAMODEL_rel_diff = (arr - esa_arr) / esa_arr
+    if abs:
+        DATAMODEL_diff = arr / esa_arr
+    else:
+        DATAMODEL_diff = (arr - esa_arr) / esa_arr
     if arr[notnan].size == 0:
         print(arr_name, " has all NaN values. Differences array will also be NaNs and statistics calculations will fail.")
         notnan_reldiffarr_stats = np.nan, np.nan, np.nan
     else:
         # calculate and print stats
-        notnan_reldiffarr_stats = print_stats(DATAMODEL_rel_diff[notnan], arr_name, threshold_diff, abs=False)
-    return DATAMODEL_rel_diff, DATAMODEL_rel_diff[notnan], notnan_reldiffarr_stats
+        if abs:
+            notnan_reldiffarr_stats = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=True)
+        else:
+            notnan_reldiffarr_stats = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=False)
+    return DATAMODEL_diff, DATAMODEL_diff[notnan], notnan_reldiffarr_stats
 
 
 def does_median_pass_tes(tested_quantity, arr_median, threshold_diff):
