@@ -226,9 +226,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
     # get the open and projected on the detector slitlets
-    assign_wcs_file = step_input_filename.replace("_flat_field.fits", "_assign_wcs.fits")
-    img = datamodels.ImageModel(assign_wcs_file)
-    open_and_on_detector_slits_list = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
+    #assign_wcs_file = step_input_filename.replace("_flat_field.fits", "_assign_wcs.fits")
+    #img = datamodels.ImageModel(assign_wcs_file)
+    #open_and_on_detector_slits_list = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
 
     # loop over the 2D subwindows and read in the WCS values
     for i, slit in enumerate(model.slits):
@@ -236,9 +236,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print ("\nWorking with slit: ", slit_id)
         ext = sci_ext_list[i]   # this is for getting the science extension in the pipeline calculated flat
         # make sure that the slitlet is open and projected on the detector, otherwise indicate so
-        if not slit_id in open_and_on_detector_slits_list:
-            print("* This open slitlet was removed because it is not projected on the detector. Test skipped for this slitlet. \n")
-            continue
+        #if not slit_id in open_and_on_detector_slits_list:
+        #    print("* This open slitlet was removed because it is not projected on the detector. Test skipped for this slitlet. \n")
+        #    continue
 
         # get the wavelength
         y, x = np.mgrid[:slit.data.shape[0], :slit.data.shape[1]]
