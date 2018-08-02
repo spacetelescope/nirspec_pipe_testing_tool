@@ -95,7 +95,6 @@ def output_hdul(set_inandout_filenames, config):
             else:
                 print("Skipping running pipeline step ", step)
                 # add the running time for this step
-                working_directory = config.get("calwebb_spec2_input_file", "working_directory")
                 end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
             step_completed = True
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
@@ -124,7 +123,6 @@ def output_hdul(set_inandout_filenames, config):
 
         else:
             print (" The input file does not exist. Skipping step.")
-            end_time = repr(0.0)
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             #core_utils.convert_html2pdf()   # convert the html report into a pdf file
             # end the timer to compute the step running time of PTT

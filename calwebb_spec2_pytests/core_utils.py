@@ -397,6 +397,7 @@ def get_stp_run_time_from_screenfile(step, working_directory):
     if not os.path.isfile(calspec2_screenout):
         calspec2_screenout = os.path.join(working_directory, calspec2_screenout)
     step_running_times = calculate_step_run_time(calspec2_screenout)
+    end_time = None
     for stp in step_string_dict:
         if stp in step_running_times:
             if stp == step:
@@ -405,6 +406,9 @@ def get_stp_run_time_from_screenfile(step, working_directory):
                 break
         else:
             continue
+    if end_time is None:
+        print("\n * PTT unable to calculate time from calspec2_screenout.txt for step ", step, " ! \n")
+        end_time = "0.0"
     return end_time
 
 
