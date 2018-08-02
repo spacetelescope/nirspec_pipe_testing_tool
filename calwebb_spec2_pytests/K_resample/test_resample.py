@@ -95,7 +95,6 @@ def output_hdul(set_inandout_filenames, config):
 
             else:
                 print (" The input file does not exist. Skipping step.")
-                end_time = repr(0.0)
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
 
