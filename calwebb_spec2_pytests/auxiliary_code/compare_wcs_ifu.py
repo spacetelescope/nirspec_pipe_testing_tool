@@ -176,7 +176,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         pra, pdec, pwave = wcs_slice(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
         pwave *= 10**-6
         # calculate and print statistics for slit-y and x relative differences
-        tested_quantity = "Relative Wavelength Difference"
+        tested_quantity = "Wavelength Difference"
         rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
         rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats = rel_diff_pwave_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
@@ -185,9 +185,11 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         # get the transforms for pipeline slit-y
         det2slit = wcs_slice.get_transform('detector', 'slit_frame')
         slitx, slity, _ = det2slit(esax-1, esay-1)
+        tested_quantity = "Slit-Y Difference"
         # calculate and print statistics for slit-y and x relative differences
-        tested_quantity = "Relative Slit-Y Difference"
-        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
+        #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
+        # calculate and print statistics for slit-y and x absolute differences
+        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
         total_test_result["slice"+pslice] = {tested_quantity : result}
@@ -196,13 +198,13 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         detector2msa = wcs_slice.get_transform("detector", "msa_frame")
         pmsax, pmsay, _ = detector2msa(esax-1, esay-1)   # => RETURNS: msaX, msaY, LAMBDA (lam *= 10**-6 to convert to microns)
         # MSA-x
-        tested_quantity = "Relative MSA_X Difference"
+        tested_quantity = "MSA_X Difference"
         reldiffpmsax_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msax, pmsax, tested_quantity)
         reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats = reldiffpmsax_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsax_stats[1], threshold_diff)
         total_test_result["slice"+pslice] = {tested_quantity : result}
         # MSA-y
-        tested_quantity = "Relative MSA_Y Difference"
+        tested_quantity = "MSA_Y Difference"
         reldiffpmsay_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msay, pmsay, tested_quantity)
         reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats = reldiffpmsay_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsay_stats[1], threshold_diff)

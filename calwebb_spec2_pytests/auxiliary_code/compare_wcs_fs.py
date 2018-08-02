@@ -218,9 +218,11 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         # get the transforms for pipeline slit-y
         det2slit = wcs_slit.get_transform('detector', 'slit_frame')
         slitx, slity, _ = det2slit(esax-1, esay-1)
-        # calculate and print statistics for slit-y and x relative differences
         tested_quantity = "Slit-Y Difference"
-        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
+        # calculate and print statistics for slit-y and x relative differences
+        #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
+        # calculate and print statistics for slit-y and x absolute differences
+        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
         total_test_result[pipeslit] = {tested_quantity : test_result}

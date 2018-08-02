@@ -43,7 +43,6 @@ def output_hdul(set_inandout_filenames, config):
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
-    stp = PhotomStep()
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -61,35 +60,39 @@ def output_hdul(set_inandout_filenames, config):
         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
         return hdul, step_output_file, run_pytests
     else:
-        if config.getboolean("steps", step):
-            print ("*** Step "+step+" set to True")
-            if os.path.isfile(step_input_file):
-                if run_pipe_step:
-                    # check that previous pipeline steps were run up to this point
-                    core_utils.check_completed_steps(step, step_input_file)
+        if os.path.isfile(step_input_file):
+            if run_pipe_step:
+                print ("*** Step "+step+" set to True")
+                stp = PhotomStep()
 
-                    # get the right configuration files to run the step
-                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
-                    # start the timer to compute the step running time
-                    start_time = time.time()
-                    if local_pipe_cfg_path == "pipe_source_tree_code":
-                        result = stp.call(step_input_file)
-                    else:
-                        result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/photom.cfg')
-                    result.save(step_output_file)
-                    # end the timer to compute the step running time
-                    end_time = repr(time.time() - start_time)   # this is in seconds
-                    print("Step "+step+" took "+end_time+" seconds to finish")
-                step_completed = True
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul, step_output_file, run_pytests
+                # check that previous pipeline steps were run up to this point
+                core_utils.check_completed_steps(step, step_input_file)
+
+                # get the right configuration files to run the step
+                local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                # start the timer to compute the step running time
+                start_time = time.time()
+                if local_pipe_cfg_path == "pipe_source_tree_code":
+                    result = stp.call(step_input_file)
+                else:
+                    result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/photom.cfg')
+                result.save(step_output_file)
+                # end the timer to compute the step running time
+                end_time = repr(time.time() - start_time)   # this is in seconds
+                print("Step "+step+" took "+end_time+" seconds to finish")
             else:
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
+                print("Skipping running pipeline step ", step)
+                # add the running time for this step
+                working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+            step_completed = True
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+            return hdul, step_output_file, run_pytests
+
         else:
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            pytest.skip("Skipping "+step+". Step set to False in configuration file.")
+            pytest.skip("Skipping "+step+" because the input file does not exist.")
 
 
 

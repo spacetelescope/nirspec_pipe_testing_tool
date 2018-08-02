@@ -28,7 +28,7 @@ step_string_dict["imprint_subtract"] = {"outfile" : True, "suffix" : "_imprint"}
 step_string_dict["msa_flagging"]     = {"outfile" : True, "suffix" : "_msa_flagging"}
 step_string_dict["extract_2d"]       = {"outfile" : True, "suffix" : "_extract_2d"}
 step_string_dict["flat_field"]       = {"outfile" : True, "suffix" : "_flat_field"}
-step_string_dict["srctype"]          = {"outfile" : False, "suffix" : ""}
+step_string_dict["srctype"]          = {"outfile" : False, "suffix" : "N/A"}
 #step_string_dict["straylight"]       = {"outfile" : True, "suffix" : "_stray"}   # MIRI only
 #step_string_dict["fringe"]           = {"outfile" : True, "suffix" : "_fringe"}   # MIRI only
 step_string_dict["pathloss"]         = {"outfile" : True, "suffix" : "_pathloss"}
@@ -214,7 +214,10 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                             j -= 1
                             continue
             # determine the output suffix according to the step
-            out_file_suffix = step_string_dict[stp]["suffix"]
+            if step_string_dict[stp]["outfile"]:
+                out_file_suffix = step_string_dict[stp]["suffix"]
+            else:
+                out_file_suffix = in_file_suffix
             step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix+".fits")
             step_output_filename = os.path.join(working_directory, step_output_basename)
             # now exit the for loop because step was reached
@@ -325,24 +328,30 @@ def calculate_step_run_time(screen_output_txt):
         """
         time_tuple, secs_frac, timestamp = [], None, None
         stp_date = time_list[0].split("-")
+        stp_time = time_list[1].split(":")
+        # append the date
         for item in stp_date:
             check_for_letters = re.search('[a-zA-Z]', item)
             if check_for_letters is None:
-                time_tuple.append(int(item))
-                stp_time = time_list[1].split(":")
-                secs_frac = stp_time[-1].split(",")
-                if "," not in item:
+                if "," not in item:  # make sure there are no fractional numbers
                     time_tuple.append(int(item))
             else:
                 return timestamp
-        if secs_frac is not None:
-            for item in secs_frac:
+        # append the time
+        for item in stp_time:
+            if "," not in item:  # make sure there are no fractional numbers
                 time_tuple.append(int(item))
-            if len(time_tuple) < 9:
-                while len(time_tuple) is not 9:
-                    time_tuple.append(0)
-            time_tuple = tuple(time_tuple)
-            timestamp = time.mktime(time_tuple)
+            else:
+                # separate the fractions of seconds from seconds and append them
+                secs_frac = stp_time[-1].split(",")
+                for sf in secs_frac:
+                    time_tuple.append(int(sf))
+        # convert the time tuple into a time stamp, which HAS to have nine integer numbers
+        if len(time_tuple) < 9:
+            while len(time_tuple) is not 9:
+                time_tuple.append(0)
+        time_tuple = tuple(time_tuple)
+        timestamp = time.mktime(time_tuple)
         return timestamp
 
     # read the screen_output_txt file
@@ -368,6 +377,35 @@ def calculate_step_run_time(screen_output_txt):
                     run_time = end_time - start_time
                     step_running_times[pstp] = {"start_time" : start_time, "end_time" : end_time, "run_time" : run_time}
     return step_running_times
+
+
+def get_stp_run_time_from_screenfile(step, working_directory):
+    """
+    This function calculates the running time for the given step from the screen output file. It is used when PTT
+    is told to skip running the pipeline step.
+    Args:
+        step: string, name of step
+        working_directory: string, path to the working directory
+
+    Returns:
+        end_time: string, running time for this step
+
+    """
+    # add the running time for this step
+    calspec2_screenout = "calspec2_screenout.txt"
+    # make sure we are able to find calspec2_screenout either in the calwebb_spec2 directory or in the working dir
+    if not os.path.isfile(calspec2_screenout):
+        calspec2_screenout = os.path.join(working_directory, calspec2_screenout)
+    step_running_times = calculate_step_run_time(calspec2_screenout)
+    for stp in step_string_dict:
+        if stp in step_running_times:
+            if stp == step:
+                step_time = step_running_times[stp]["run_time"]
+                end_time = step_time
+                break
+        else:
+            continue
+    return end_time
 
 
 
@@ -508,6 +546,7 @@ def set_inandout_filenames(step, config):
         True_steps_suffix_map = config.get("calwebb_spec2_input_file", "True_steps_suffix_map")
         pytests_directory = os.getcwd()
         True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
+        print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map, ", located in working directory.")
     else:
         True_steps_suffix_map = "full_run_map.txt"
         print("Pipeline was set to run in full. Suffix map named: full_run_map.txt, located in working directory.")
@@ -604,12 +643,13 @@ def check_IFU_true(output_hdul):
     return result
 
 
-def check_completed_steps(step, step_input_file):
+def check_completed_steps(step, step_input_file, caldet1=False):
     """
     This function checks the header of the file to make sure that steps up to this point were run.
     Args:
         step: string, calwebb_spec2 step
         step_input_file: string, full path and name of step input file
+        caldet1: boolean, if True this function will also check for calwebb_detector1 completed steps
 
     Returns:
         nothing but prints warnings
@@ -619,30 +659,32 @@ def check_completed_steps(step, step_input_file):
 
     # get all the completed steps
     steps_caldet1 = ["GRPSCL", "DQINIT", "SATURA", "SUPERB", "REFPIX", "LINEAR", "DARK", "JUMP", "RAMP", "GANSCL"]
-    steps_calwebbspec2 = {"assign_wcs" : "WCS",
-                          "msa_flagging" : "MSAFLG",
-                          "extract_2d" : "EXTR2D",
-                          "flat_field" : "FLAT",
-                          "srctype" : "SRCTYP",
-                          "pathloss" : "PTHLOS",
-                          "barshadow" : "BARSHA",
-                          "photom" : "PHOTOM",
-                          "resample_spec" : "RESAMP",
-                          "cube_build" : "IFUCUB",
-                          "extract_1d" : "EXTR1D"}
+    steps_calwebbspec2 = collections.OrderedDict()
+    steps_calwebbspec2["assign_wcs"] = "WCS"
+    steps_calwebbspec2["msa_flagging"] = "MSAFLG"
+    steps_calwebbspec2["extract_2d"] = "EXTR2D"
+    steps_calwebbspec2["flat_field"] = "FLAT"
+    steps_calwebbspec2["srctype"] = "SRCTYP"
+    steps_calwebbspec2["pathloss"] = "PTHLOS"
+    steps_calwebbspec2["barshadow"] = "BARSHA"
+    steps_calwebbspec2["photom"] = "PHOTOM"
+    steps_calwebbspec2["resample_spec"] = "RESAMP"
+    steps_calwebbspec2["cube_build"] = "IFUCUB"
+    steps_calwebbspec2["extract_1d"] = "EXTR1D"
     for key, val in hdr.items():
         # check that calwebb_detector1 was run
-        for pstp in steps_caldet1:
-            if pstp in key:
-                if val == "COMPLETE" or val == "SKIPPED":
-                    continue
-            else:
-                print("*** WARNING: calwebb_detector1 step ", pstp, " was not ran. Please make sure this is intentional. \n")
+        if caldet1:
+            for pstp in steps_caldet1:
+                if "S_"+pstp in hdr:
+                    if val == "COMPLETE" or val == "SKIPPED":
+                        continue
+                else:
+                    print("*** WARNING: calwebb_detector1 step ", pstp, " was not ran. Please make sure this is intentional. \n")
         # check that calwebb_spec2 steps up to relevant step were ran
         for pstp in steps_calwebbspec2:
             if step == pstp:
                 break
-            if steps_calwebbspec2[pstp] in key:
+            if "S_"+steps_calwebbspec2[pstp] in hdr:
                 if val == "COMPLETE" or val == "SKIPPED":
                     continue
             else:

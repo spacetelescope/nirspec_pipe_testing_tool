@@ -20,3 +20,4 @@ cal_detector1_outputs_and_times.txt
 */*/*/*.pytest_cache
 /screenlog.0
 /*/screen_output.txt
+calspec2_screenout.txt

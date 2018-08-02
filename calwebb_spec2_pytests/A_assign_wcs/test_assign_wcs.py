@@ -73,18 +73,21 @@ def output_hdul(set_inandout_filenames, config):
         _, step_input_file = change_filter_opaque2science.change_filter_opaque(step_input_file)
         print (" * With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Further steps will be skipped. \n")
 
-    stp = AssignWcsStep()
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
+    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+
     # get main header from input file
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
+
     # Check if data is IFU that the Image Model keyword is correct
     mode_used = config.get("calwebb_spec2_input_file", "mode_used")
     if mode_used == "IFU":
@@ -92,10 +95,12 @@ def output_hdul(set_inandout_filenames, config):
         if DATAMODL != "IFUImageModel":
             fits.setval(step_input_file, "DATAMODL", 0, value="IFUImageModel")
             print("DATAMODL keyword changed to IFUImageModel.")
+
     # get the shutter configuration file for MOS data only
     msa_shutter_conf = "No shutter configuration file will be used."
     if core_utils.check_MOS_true(inhdu):
         msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
+
         # check if the configuration shutter file name is in the header of the fits file and if not add it
         msametfl = fits.getval(step_input_file, "MSAMETFL", 0)
         if os.path.basename(msa_shutter_conf) != msametfl:
@@ -116,8 +121,9 @@ def output_hdul(set_inandout_filenames, config):
         # get the name of the configuration file and run the pipeline
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
         input_file = config.get("calwebb_spec2_input_file", "input_file")
+        if "_uncal_rate" in input_file:
+            input_file = input_file.replace("_uncal_rate", "")
         final_output_name = input_file.replace(".fits", "_cal.fits")
-        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
         if core_utils.check_MOS_true(inhdu):
             # copy the MSA shutter configuration file into the pytest directory
             subprocess.run(["cp", msa_shutter_conf, "."])
@@ -135,7 +141,7 @@ def output_hdul(set_inandout_filenames, config):
 
         # add the detector string to the name of the files and move them to the working directory
         core_utils.add_detector2filename(working_directory, step_input_file)
-        print ("The final calwebb_spec2 product was saved in: ", final_output_name)
+        print ("\nThe final calwebb_spec2 product was saved in: ", final_output_name)
 
         # read the assign wcs fits file
         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
@@ -158,7 +164,11 @@ def output_hdul(set_inandout_filenames, config):
 
         # print total running time in the text file
         string2print = "pipeline_total_time"
-        assign_wcs_utils.print_time2file(txt_name, repr(sum(end_time_list)), string2print)
+        if float(end_time) <= sum(end_time_list):
+            tot_time = repr(sum(end_time_list))
+        else:
+            tot_time = end_time
+        assign_wcs_utils.print_time2file(txt_name, tot_time, string2print)
         print("Pipeline and PTT run times written in file: ", os.path.basename(txt_name), "in working directory. \n")
 
         return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests
@@ -175,40 +185,44 @@ def output_hdul(set_inandout_filenames, config):
         core_utils.start_end_PTT_time(txt_name, start_time=PTT_start_time, end_time=None)
         print("Pipeline and PTT run times will be written in file: ", os.path.basename(txt_name), "in working directory. \n")
 
-        if config.getboolean("steps", step):
-            print ("*** Step "+step+" set to True")
-            if os.path.isfile(step_input_file):
-                if run_pipe_step:
-                    if core_utils.check_MOS_true(inhdu):
-                        # copy the MSA shutter configuration file into the pytest directory
-                        subprocess.run(["cp", msa_shutter_conf, "."])
-                    # get the right configuration files to run the step
-                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
-                    # start the timer to compute the step running time
-                    start_time = time.time()
-                    if local_pipe_cfg_path == "pipe_source_tree_code":
-                        result = stp.call(step_input_file)
-                    else:
-                        result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/assign_wcs.cfg')
-                    result.save(step_output_file)
-                    # end the timer to compute the step running time
-                    end_time = repr(time.time() - start_time)   # this is in seconds
-                    print("Step "+step+" took "+end_time+" seconds to finish")
-                    if core_utils.check_MOS_true(inhdu):
-                        # remove the copy of the MSA shutter configuration file
-                        subprocess.run(["rm", msametfl])
-                step_completed = True
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
-                #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-                return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests
+        if os.path.isfile(step_input_file):
+            if run_pipe_step:
+                print ("*** Step "+step+" set to True")
+                stp = AssignWcsStep()
+
+                if core_utils.check_MOS_true(inhdu):
+                    # copy the MSA shutter configuration file into the pytest directory
+                    subprocess.run(["cp", msa_shutter_conf, "."])
+                # get the right configuration files to run the step
+                local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                # start the timer to compute the step running time
+                start_time = time.time()
+                if local_pipe_cfg_path == "pipe_source_tree_code":
+                    result = stp.call(step_input_file)
+                else:
+                    result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/assign_wcs.cfg')
+                result.save(step_output_file)
+                # end the timer to compute the step running time
+                end_time = repr(time.time() - start_time)   # this is in seconds
+                print("Step "+step+" took "+end_time+" seconds to finish")
+                if core_utils.check_MOS_true(inhdu):
+                    # remove the copy of the MSA shutter configuration file
+                    subprocess.run(["rm", msametfl])
             else:
-                print("Skipping step. Intput file "+step_input_file+" does not exit.")
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
-        else:
+                print("Skipping running pipeline step ", step)
+                # add the running time for this step
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+
+            step_completed = True
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            pytest.skip("Skipping "+step+". Step set to False in configuration file.")
+            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
+            #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+            return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests
+
+        else:
+            print("Skipping step. Intput file "+step_input_file+" does not exit.")
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            pytest.skip("Skipping "+step+" because the input file does not exist.")
 
 
 
@@ -254,7 +268,7 @@ def validate_wcs(output_hdul):
 
 
 # Unit tests
-"""
+
 # reference files from running calwebb_spec1
 def test_rmask_rfile(output_hdul):
     # want to run this pytest?
@@ -456,7 +470,7 @@ def test_wavran_rfile(output_hdul):
         result = assign_wcs_utils.wavran_rfile_is_correct(output_hdul)
         assert not result, result
 
-"""
+
 # other tests specific to the WCS step
 """
 def test_wavstart_exists(output_hdul):

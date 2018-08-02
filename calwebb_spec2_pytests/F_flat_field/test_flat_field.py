@@ -43,7 +43,6 @@ def set_inandout_filenames(request, config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
-    stp = FlatFieldStep()
     msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
     msametfl = os.path.basename(msa_shutter_conf)
     dflat_path = config.get("esa_intermediary_products", "dflat_path")
@@ -76,56 +75,60 @@ def output_hdul(set_inandout_filenames, config):
         flattest_paths = [step_output_file, msa_shutter_conf, dflat_path, sflat_path, fflat_path]
         return hdul, step_output_file, flattest_paths, flattest_switches, run_pytests
     else:
-        if config.getboolean("steps", step):
-            print ("*** Step "+step+" set to True")
-            if os.path.isfile(step_input_file):
-                if run_pipe_step:
-                    # check that previous pipeline steps were run up to this point
-                    core_utils.check_completed_steps(step, step_input_file)
+        if os.path.isfile(step_input_file):
+            if run_pipe_step:
+                print ("*** Step "+step+" set to True")
+                stp = FlatFieldStep()
 
+                # check that previous pipeline steps were run up to this point
+                core_utils.check_completed_steps(step, step_input_file)
+
+                flat_suffix = "intflat"
+                if core_utils.check_MOS_true(inhdu):
+                    # copy the MSA shutter configuration file into the pytest directory
+                    subprocess.run(["cp", msa_shutter_conf, "."])
+                # start the timer to compute the step running time
+                ontheflyflat = step_output_file.replace("flat_field.fits", "intflat.fits")
+                print ("Step product will be saved as: ", step_output_file)
+                print ("on-the-fly flat will be saved as: ", ontheflyflat)
+                # get the right configuration files to run the step
+                local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                if core_utils.check_IFU_true(inhdu):
                     flat_suffix = "intflat"
-                    if core_utils.check_MOS_true(inhdu):
-                        # copy the MSA shutter configuration file into the pytest directory
-                        subprocess.run(["cp", msa_shutter_conf, "."])
-                    # start the timer to compute the step running time
-                    ontheflyflat = step_output_file.replace("flat_field.fits", "intflat.fits")
-                    print ("Step product will be saved as: ", step_output_file)
-                    print ("on-the-fly flat will be saved as: ", ontheflyflat)
-                    # get the right configuration files to run the step
-                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
-                    if core_utils.check_IFU_true(inhdu):
-                        flat_suffix = "intflat"
-                    # start the timer to compute the step running time
-                    start_time = time.time()
-                    if local_pipe_cfg_path == "pipe_source_tree_code":
-                        stp.call(step_input_file, output_file=step_output_file, flat_suffix=flat_suffix)
-                                  #override_dflat="/grp/crds/jwst/references/jwst/jwst_nirspec_dflat_0001.fits",
-                                  #override_fflat="/grp/crds/jwst/references/jwst/jwst_nirspec_fflat_0015.fits",
-                                  #override_sflat="/grp/crds/jwst/references/jwst/jwst_nirspec_sflat_0034.fits")
-                    else:
-                        stp.call(step_input_file, output_file=step_output_file, flat_suffix=flat_suffix,
-                                 config_file=local_pipe_cfg_path+'/flat_field.cfg')
-                    # end the timer to compute the step running time
-                    end_time = repr(time.time() - start_time)   # this is in seconds
-                    print("Step "+step+" took "+end_time+" seconds to finish")
-                    # move the on-the-fly flat to the working directory
-                    subprocess.run(["mv", os.path.basename(ontheflyflat), ontheflyflat])
-                    # raname and move the flat_field output
-                    subprocess.run(["mv", os.path.basename(step_output_file).replace("_flat_field.fits", "_flatfieldstep.fits"),
-                                    step_output_file])
-                    if core_utils.check_MOS_true(inhdu):
-                        # remove the copy of the MSA shutter configuration file
-                        subprocess.run(["rm", msametfl])
-                step_completed = True
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul, step_output_file, flattest_paths, flattest_switches, run_pytests
+                # start the timer to compute the step running time
+                start_time = time.time()
+                if local_pipe_cfg_path == "pipe_source_tree_code":
+                    stp.call(step_input_file, output_file=step_output_file, flat_suffix=flat_suffix)
+                              #override_dflat="/grp/crds/jwst/references/jwst/jwst_nirspec_dflat_0001.fits",
+                              #override_fflat="/grp/crds/jwst/references/jwst/jwst_nirspec_fflat_0015.fits",
+                              #override_sflat="/grp/crds/jwst/references/jwst/jwst_nirspec_sflat_0034.fits")
+                else:
+                    stp.call(step_input_file, output_file=step_output_file, flat_suffix=flat_suffix,
+                             config_file=local_pipe_cfg_path+'/flat_field.cfg')
+                # end the timer to compute the step running time
+                end_time = repr(time.time() - start_time)   # this is in seconds
+                print("Step "+step+" took "+end_time+" seconds to finish")
+                # move the on-the-fly flat to the working directory
+                subprocess.run(["mv", os.path.basename(ontheflyflat), ontheflyflat])
+                # raname and move the flat_field output
+                subprocess.run(["mv", os.path.basename(step_output_file).replace("_flat_field.fits", "_flatfieldstep.fits"),
+                                step_output_file])
+                if core_utils.check_MOS_true(inhdu):
+                    # remove the copy of the MSA shutter configuration file
+                    subprocess.run(["rm", msametfl])
             else:
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
+                print("Skipping running pipeline step ", step)
+                # add the running time for this step
+                working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+            step_completed = True
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+            return hdul, step_output_file, flattest_paths, flattest_switches, run_pytests
+
         else:
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            pytest.skip("Skipping "+step+". Step set to False in configuration file.")
+            pytest.skip("Skipping "+step+" because the input file does not exist.")
 
 
 

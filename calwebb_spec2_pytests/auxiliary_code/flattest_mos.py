@@ -80,7 +80,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
     dfimdq = np.transpose(dfimdq)
     if det == "NRS2":
-        dfimdq = dfimdq[:, ::-1, ::-1]
+        dfimdq = dfimdq[..., ::-1, ::-1]
     naxis3 = fits.getval(dfile, "NAXIS3", "SCI")
 
     # get the wavelength values
@@ -123,7 +123,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     sfim = np.transpose(sfim, (0, 2, 1))
     sfimdq = np.transpose(sfimdq, (0, 2, 1))
     if det == "NRS2":
-        sfim = sfim[:, ::-1, ::-1]
+        sfim = sfim[..., ::-1, ::-1]
 
     # get the wavelength values for sflat cube
     sfimwave = np.array([])
@@ -219,17 +219,26 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     total_test_result = []
 
     # get the datamodel from the assign_wcs output file
-    extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
-    model = datamodels.MultiSlitModel(extract2d_wcs_file)
+    extract2d_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
+    model = datamodels.MultiSlitModel(extract2d_file)
 
     # get all the science extensions in the flatfile
     sci_ext_list = auxfunc.get_sci_extensions(flatfile)
+
+    # get the open and projected on the detector slitlets
+    assign_wcs_file = step_input_filename.replace("_flat_field.fits", "_assign_wcs.fits")
+    img = datamodels.ImageModel(assign_wcs_file)
+    open_and_on_detector_slits_list = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
 
     # loop over the 2D subwindows and read in the WCS values
     for i, slit in enumerate(model.slits):
         slit_id = slit.name
         print ("\nWorking with slit: ", slit_id)
         ext = sci_ext_list[i]   # this is for getting the science extension in the pipeline calculated flat
+        # make sure that the slitlet is open and projected on the detector, otherwise indicate so
+        if not slit_id in open_and_on_detector_slits_list:
+            print("* This open slitlet was removed because it is not projected on the detector. Test skipped for this slitlet. \n")
+            continue
 
         # get the wavelength
         y, x = np.mgrid[:slit.data.shape[0], :slit.data.shape[1]]
@@ -608,7 +617,7 @@ if __name__ == '__main__':
     # simulated data
     working_dir = pipeline_path+"/src/sandbox/simulation_test/491_results/"
     step_input_filename = working_dir+"F170LP-G235M_MOS_observation-6-c0e0_001_DN_NRS1_mod_updatedHDR_flat_field.fits"
-    msa_shutter_conf = pipeline_path+"/src/sandbox/simulation_test/jw95065006001_0_msa.fits"
+    msa_shutter_conf = working_dir+"jw95065006001_0_msa.fits"
 
     dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
     sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/MOS/nirspec_MOS_sflat"

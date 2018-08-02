@@ -41,7 +41,6 @@ def output_hdul(set_inandout_filenames, config):
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
-    stp = Extract1dStep()
     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
@@ -73,59 +72,56 @@ def output_hdul(set_inandout_filenames, config):
         return hdul, step_output_file, run_pytests
 
     else:
-        if config.getboolean("steps", step):
-            print ("*** Step "+step+" set to True")
-            if os.path.isfile(step_input_file):
-                if run_pipe_step:
-                    # check that previous pipeline steps were run up to this point
-                    core_utils.check_completed_steps(step, step_input_file)
+        if os.path.isfile(step_input_file):
+            if run_pipe_step:
+                print ("*** Step "+step+" set to True")
+                stp = Extract1dStep()
 
-                    # get the right configuration files to run the step
-                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
-                    # start the timer to compute the step running time
-                    start_time = time.time()
-                    if local_pipe_cfg_path == "pipe_source_tree_code":
-                        result = stp.call(step_input_file)
-                    else:
-                        result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/extract_1d.cfg')
-                    result.save(step_output_file)
-                    # end the timer to compute the step running time
-                    end_time = repr(time.time() - start_time)   # this is in seconds
-                    print("Step "+step+" took "+end_time+" seconds to finish")
-                step_completed = True
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                # get the total running time and print it in the file
-                total_time = repr(core_utils.get_time_to_run_pipeline(txt_name))
-                total_time_min = repr(round(float(total_time)/60.0, 2))
-                print ("The total time for the pipeline to run was "+total_time+" seconds.")
-                #print ("   ( = "+total_time_min+" minutes )")
-                line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'total_time  ', total_time+'  ='+total_time_min+'min')
-                print (line2write)
-                with open(txt_name, "a") as tf:
-                    tf.write(line2write+"\n")
+                # check that previous pipeline steps were run up to this point
+                core_utils.check_completed_steps(step, step_input_file)
 
-                # convert the html report into a pdf file
-                #core_utils.convert_html2pdf()
-
-                # move the final reporting files to the working directory
-                core_utils.move_latest_report_and_txt_2workdir()
-
-                # end the timer to compute the step running time of PTT
-                PTT_end_time = time.time()
-                core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
-
-                return hdul, step_output_file, run_pytests
+                # get the right configuration files to run the step
+                local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                # start the timer to compute the step running time
+                start_time = time.time()
+                if local_pipe_cfg_path == "pipe_source_tree_code":
+                    result = stp.call(step_input_file)
+                else:
+                    result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/extract_1d.cfg')
+                result.save(step_output_file)
+                # end the timer to compute the step running time
+                end_time = repr(time.time() - start_time)   # this is in seconds
+                print("Step "+step+" took "+end_time+" seconds to finish")
             else:
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                #core_utils.convert_html2pdf()   # convert the html report into a pdf file
-                # end the timer to compute the step running time of PTT
-                PTT_end_time = time.time()
-                core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
-                # move the final reporting files to the working directory
-                core_utils.move_latest_report_and_txt_2workdir()
-                # skip the test if input file does not exist
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
+                print("Skipping running pipeline step ", step)
+                # add the running time for this step
+                working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+            step_completed = True
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+            # get the total running time and print it in the file
+            total_time = repr(core_utils.get_time_to_run_pipeline(txt_name))
+            total_time_min = repr(round(float(total_time)/60.0, 2))
+            print ("The total time for the pipeline to run was "+total_time+" seconds.")
+            #print ("   ( = "+total_time_min+" minutes )")
+            line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'total_time  ', total_time+'  ='+total_time_min+'min')
+            print (line2write)
+            with open(txt_name, "a") as tf:
+                tf.write(line2write+"\n")
+
+            # convert the html report into a pdf file
+            #core_utils.convert_html2pdf()
+
+            # end the timer to compute the step running time of PTT
+            PTT_end_time = time.time()
+            core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
+
+            # move the final reporting files to the working directory
+            core_utils.move_latest_report_and_txt_2workdir()
+
+            return hdul, step_output_file, run_pytests
+
         else:
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             #core_utils.convert_html2pdf()   # convert the html report into a pdf file
@@ -134,8 +130,8 @@ def output_hdul(set_inandout_filenames, config):
             core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
             # move the final reporting files to the working directory
             core_utils.move_latest_report_and_txt_2workdir()
-            # skip the test if step set to False
-            pytest.skip("Skipping "+step+". Step set to False in configuration file.")
+            # skip the test if input file does not exist
+            pytest.skip("Skipping "+step+" because the input file does not exist.")
 
 
 """
