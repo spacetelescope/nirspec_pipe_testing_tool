@@ -17,12 +17,13 @@ This script compares pipeline WCS info with ESA results for Integral Field Unit 
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.0"
+__version__ = "2.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
 #                         script, and added new routines for plot making and statistics calculations.
+# Aug 2018 - Version 2.1: Modified slit-y differences to be reported in absolute numbers rather than relative
 
 
 

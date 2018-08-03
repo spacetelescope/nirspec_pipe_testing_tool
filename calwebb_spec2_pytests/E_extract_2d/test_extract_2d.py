@@ -139,6 +139,7 @@ def test_s_ext2d_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running completion pytest...\n")
         assert extract_2d_utils.s_ext2d_exists(output_hdul[0]), "The keyword S_EXTR2D was not added to the header --> extract_2d step was not completed."
 
 
@@ -150,4 +151,5 @@ def test_s_ext2d_exists(output_hdul):
 #        print(msg)
 #        pytest.skip(msg)
 #    else:
+#       print("\n * Running validation pytest...\n")
 #       assert validate_extract2d(output_hdul), "Box is not of expected size."

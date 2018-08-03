@@ -107,5 +107,6 @@ def test_s_photom_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running completion pytest...\n")
         assert photom_utils.s_photom_exists(output_hdul[0]), "The keyword S_PHOTOM was not added to the header --> Photom step was not completed."
 

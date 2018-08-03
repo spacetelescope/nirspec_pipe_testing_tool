@@ -17,12 +17,13 @@ This script contains the auxiliary functions that the wcs FS, MOS, and IFU WCS s
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.0"
+__version__ = "2.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Added routines for plot making and statistics calculations for assign_wcs with using
 #                         the datamodel instead of the compute_world_coordinates script.
+# Aug 2018 - Version 2.1: Added case to catch simulation rawdataroot names for the ESA files
 
 
 def find_nearest(arr, value):
@@ -209,7 +210,9 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
     # get the root name from rawdatroot keyword (e.g. NRSV96214001001P0000000002105_1_491_SE_2016-01-24T01h59m01.fits)
     esaroot = rawdatroot.split("_")[0]
     if "NRS" in esaroot:
-        esaroot = esaroot.replace("NRS", "")
+        esaroot = esaroot.replace("NRS", "")   # captures all cases for ground observations
+    else:
+        esaroot = rawdatroot.replace(".fits", "")   # captures simulation data
 
     # go into the esa_files_path directory and enter the the mode to get the right esafile
     # get all subdirectories within esa_files_path
