@@ -84,7 +84,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
         # skip the test if the esafile was not found
         if esafile == "ESA file not found":
-            print(" * compare_wcs_fs.py is exiting because the corresponding ESA file was not found.")
+            print(" * compare_wcs_ifu.py is exiting because the corresponding ESA file was not found.")
             print("   -> The WCS test is now set to skip and no plots will be generated. ")
             FINAL_TEST_RESULT = "skip"
             return FINAL_TEST_RESULT
