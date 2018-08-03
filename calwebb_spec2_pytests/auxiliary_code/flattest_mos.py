@@ -267,9 +267,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 # get the shutter with the source in it
                 if slitlet_info.field("BACKGROUND")[im] == "N":
                     isrc = j
-        quad = slitlet_info.field("SHUTTER_QUADRANT")[im]
-        row = slitlet_info.field("SHUTTER_ROW")[im]
-        col = slitlet_info.field("SHUTTER_COLUMN")[im]
+        # changes suggested by Phil Hodge
+        quad = slit.quadrant #slitlet_info.field("SHUTTER_QUADRANT")[isrc]
+        row = slit.xcen #slitlet_info.field("SHUTTER_ROW")[isrc]
+        col = slit.ycen #slitlet_info.field("SHUTTER_COLUMN")[isrc]
         slitlet_id = repr(row)+"_"+repr(col)
         print ('silt_id=', slit_id, "   quad=", quad, "   row=", row, "   col=", col, "   slitlet_id=", slitlet_id)
 
@@ -330,6 +331,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     dfrqe_rqe = dfrqe.field("RQE")
                     iw = np.where((dfrqe_wav >= wave[k, j]-delw/2.0) & (dfrqe_wav <= wave[k, j]+delw/2.0))
                     int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw[0]], dfrqe_rqe[iw[0]])
+                    if dfrqe_wav.size == 0:
+                        print("*\n flattest_mos.py was unable to integrate over the D-Flat fast vector. Skipping wavelength ", jwav)
+                        continue
                     first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
                     dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
     
@@ -632,5 +636,5 @@ if __name__ == '__main__':
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
                            fflat_path=fflat_path, msa_shutter_conf=msa_shutter_conf, writefile=writefile,
-                           show_figs=True, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
+                           show_figs=False, save_figs=True, plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
 
