@@ -207,8 +207,9 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
 
 
     # get the root name from rawdatroot keyword (e.g. NRSV96214001001P0000000002105_1_491_SE_2016-01-24T01h59m01.fits)
-    if "NRS" in rawdatroot.split("_")[0]:
-        esaroot = rawdatroot.split("_")[0].replace("NRS", "")
+    esaroot = rawdatroot.split("_")[0]
+    if "NRS" in esaroot:
+        esaroot = esaroot.replace("NRS", "")
 
     # go into the esa_files_path directory and enter the the mode to get the right esafile
     # get all subdirectories within esa_files_path
