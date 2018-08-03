@@ -121,5 +121,6 @@ def test_s_ifucub_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running completion pytest...\n")
         assert cube_build_utils.s_ifucub_exists(output_hdul[0]), "The keyword S_IFUCUB was not added to the header --> IFU cube_build step was not completed."
 

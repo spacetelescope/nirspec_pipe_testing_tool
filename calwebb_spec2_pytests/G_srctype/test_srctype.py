@@ -113,5 +113,6 @@ def test_s_srctyp_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running completion pytest...\n")
         assert srctype_utils.s_srctyp_exists(output_hdul[0]), "The keyword S_SRCTYP was not added to the header --> Srctype step was not completed."
 

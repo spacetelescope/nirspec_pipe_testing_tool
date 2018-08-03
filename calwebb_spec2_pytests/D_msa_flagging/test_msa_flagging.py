@@ -100,4 +100,5 @@ def test_msa_failed_open_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running completion pytest...\n")
         assert msa_flagging_utils.msa_failed_open_exists(output_hdul[0]), "The keyword S_MSAFLG was not added to the header --> msa_flagging step was not completed."

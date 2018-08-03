@@ -162,6 +162,7 @@ def test_extract1d_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = extract_1d_utils.extract1d_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -173,6 +174,7 @@ def test_s_extr1d_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running completion pytest...\n")
         assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
 
 

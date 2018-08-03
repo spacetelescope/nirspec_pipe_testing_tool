@@ -18,12 +18,13 @@ This script compares pipeline WCS info with ESA results for Multi-Object Spectro
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.0"
+__version__ = "2.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
 #                         script, and added new routines for plot making and statistics calculations.
+# Aug 2018 - Version 2.1: Modified slit-y differences to be reported in absolute numbers rather than relative
 
 
 def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save_figs=False,
@@ -225,9 +226,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         esax, esay = pyw.all_pix2world(pipex, pipey, 0)
 
         # make sure the extracting coordinates are correct
-        xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + esa_wave.shape[1]
-        ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + esa_wave.shape[0]
-        esax, esay = esax - xstart, esay - ystart
+        #xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + esa_wave.shape[1]
+        #ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + esa_wave.shape[0]
+        #esax, esay = esax - xstart, esay - ystart
 
         # Compute pipeline RA, DEC, and lambda
         pra, pdec, pwave = wcs_slice(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
@@ -409,7 +410,7 @@ if __name__ == '__main__':
 
     working_dir = pipeline_path+"/src/sandbox/simulation_test/491_results/"
     infile_name = working_dir+"F170LP-G235M_MOS_observation-6-c0e0_001_DN_NRS1_mod_updatedHDR_assign_wcs.fits"
-    msa_conf_name = pipeline_path+"/src/sandbox/simulation_test/jw95065006001_0_msa.fits"
+    msa_conf_name = working_dir+"jw95065006001_0_msa.fits"
     esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/simulations/ESA_Int_products"
 
     # Run the principal function of the script

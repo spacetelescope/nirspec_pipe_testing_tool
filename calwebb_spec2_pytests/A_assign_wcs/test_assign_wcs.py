@@ -278,6 +278,7 @@ def test_rmask_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...")
         result = assign_wcs_utils.rmask_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -289,6 +290,7 @@ def test_saturation_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...")
         result = assign_wcs_utils.saturation_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -300,6 +302,7 @@ def test_superbias_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...")
         result = assign_wcs_utils.superbias_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -311,6 +314,7 @@ def test_linearity_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...")
         result = assign_wcs_utils.linearity_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -322,6 +326,7 @@ def test_dark_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...")
         result = assign_wcs_utils.dark_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -333,6 +338,7 @@ def test_readnoise_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...")
         result = assign_wcs_utils.readnoise_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -344,6 +350,7 @@ def test_gain_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...")
         result = assign_wcs_utils.gain_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -357,6 +364,7 @@ def test_camera_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.camera_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -368,6 +376,7 @@ def test_colimator_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.colimator_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -379,6 +388,7 @@ def test_disperser_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.disperser_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -390,6 +400,7 @@ def test_fore_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.fore_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -401,6 +412,7 @@ def test_fpa_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.fpa_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -412,6 +424,7 @@ def test_ifufore_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.ifufore_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -423,6 +436,7 @@ def test_ifupost_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.ifupost_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -434,6 +448,7 @@ def test_ifuslicer_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.ifuslicer_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -445,6 +460,7 @@ def test_msa_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.msa_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -456,6 +472,7 @@ def test_ote_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.ote_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -467,6 +484,7 @@ def test_wavran_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = assign_wcs_utils.wavran_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -481,6 +499,7 @@ def test_wavstart_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         assert assign_wcs_utils.wavstart_exists(output_hdul[1]), "The keyword WAVSTART was not added to the header."
 
 def test_sporder_exists(output_hdul):
@@ -491,7 +510,8 @@ def test_sporder_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
-       assert assign_wcs_utils.sporder_exists(output_hdul[1]), "The keyword SPORDER was not added to the header."
+        print("\n * Running reference file pytest...\n")
+        assert assign_wcs_utils.sporder_exists(output_hdul[1]), "The keyword SPORDER was not added to the header."
 """
 
 def test_s_wcs_exists(output_hdul):
@@ -502,6 +522,7 @@ def test_s_wcs_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running completion pytest...\n")
         assert assign_wcs_utils.s_wcs_exists(output_hdul[0]), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
 
 def test_validate_wcs(output_hdul):
@@ -512,6 +533,7 @@ def test_validate_wcs(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running validation pytest...\n")
         assert validate_wcs(output_hdul), "Output value from compare_wcs.py is greater than threshold."
 
 

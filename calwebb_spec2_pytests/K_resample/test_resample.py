@@ -113,5 +113,6 @@ def test_s_resample_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running completion pytest...\n")
         assert resample_utils.s_resamp_exists(output_hdul[0]), "The keyword S_RESAMP was not added to the header --> Resample step was not completed."
 

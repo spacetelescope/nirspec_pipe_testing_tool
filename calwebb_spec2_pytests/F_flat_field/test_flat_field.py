@@ -189,6 +189,7 @@ def test_s_flat_exists(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running completion pytest...\n")
         assert flat_field_utils.s_flat_exists(output_hdul[0]), "The keyword S_FLAT was not added to the header --> flat_field step was not completed."
 
 def test_validate_flat_field(output_hdul):
@@ -199,6 +200,7 @@ def test_validate_flat_field(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running validation pytest...\n")
         assert validate_flat_field(output_hdul), "Output value from flattest.py is greater than threshold."
 
 def test_fflat_rfile(output_hdul):
@@ -209,6 +211,7 @@ def test_fflat_rfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = flat_field_utils.fflat_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -220,6 +223,7 @@ def test_sflat_sfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = flat_field_utils.sflat_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -231,6 +235,7 @@ def test_dflat_dfile(output_hdul):
         print(msg)
         pytest.skip(msg)
     else:
+        print("\n * Running reference file pytest...\n")
         result = flat_field_utils.dflat_rfile_is_correct(output_hdul)
         assert not result, result
 
