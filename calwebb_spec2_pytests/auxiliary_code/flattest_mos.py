@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -54,6 +55,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         - median_diff: Boolean, True if smaller or equal to 1e-14
 
     """
+
+    # start the timer
+    flattest_start_time = time.time()
 
     # get info from the rate file header
     det = fits.getval(step_input_filename, "DETECTOR", 0)
@@ -331,13 +335,12 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     dfrqe_wav = dfrqe.field("WAVELENGTH")
                     dfrqe_rqe = dfrqe.field("RQE")
                     iw = np.where((dfrqe_wav >= wave[k, j]-delw/2.0) & (dfrqe_wav <= wave[k, j]+delw/2.0))
-                    int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw[0]], dfrqe_rqe[iw[0]])
-                    if dfrqe_wav.size == 0:
-                        print("*\n flattest_mos.py was unable to integrate over the D-Flat fast vector. Skipping pixels ", j, k,
-                              ", which correspond to wavelength ", jwav)
-                        continue
-                    first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
-                    dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
+                    if np.size(iw) == 0:
+                        dff = 1.0
+                    else:
+                        int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw[0]], dfrqe_rqe[iw[0]])
+                        first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
+                        dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
     
                     if debug:
                         #print ("np.shape(dfrqe_wav) : ", np.shape(dfrqe_wav))
@@ -571,7 +574,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             complfile_ext = fits.ImageHDU(delf.reshape(wave_shape), name=slitlet_id)
             complfile.append(complfile_ext)
 
-            print("Extension ", ext, " appended to calculated and comparison fits files.")
+            # the file is not yet written, indicate that this slit was appended to list to be written
+            print("Extension ", i, " appended to list to be written into calculated and comparison fits files.")
 
 
     if writefile:
@@ -584,10 +588,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # this is the file to hold the image of pipeline-calculated difference values
         complfile.writeto(complfile_name, overwrite=True)
 
-        print("\nFits file with flat values of each slice saved as: ")
+        print("\nFits file with calculated flat values of each slit saved as: ")
         print(outfile_name)
 
-        print("Fits file with image of pipeline - calculated saved as: ")
+        print("Fits file with comparison (pipeline flat - calculated flat) saved as: ")
         print(complfile_name)
 
 
@@ -605,7 +609,17 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print("\n *** Final result for flat_field test will be reported as FAILED *** \n")
         msg = "One or more slitlets FAILED flat_field test."
 
-    print("Done. ")
+    # end the timer
+    flattest_end_time = time.time() - flattest_start_time
+    if flattest_end_time > 60.0:
+        flattest_end_time = flattest_end_time/60.0  # in minutes
+        flattest_tot_time = "* flattest script too ", repr(flattest_end_time)+" minutes to finish."
+        if flattest_end_time > 60.0:
+            flattest_end_time = flattest_end_time/60.  # in hours
+            flattest_tot_time = "* Script flattest_mos.py took ", repr(flattest_end_time)+" hours to finish."
+    else:
+        flattest_tot_time = "* Script flattest_mos.py took ", repr(flattest_end_time)+" seconds to finish."
+    print(flattest_tot_time)
 
     return FINAL_TEST_RESULT, msg
 

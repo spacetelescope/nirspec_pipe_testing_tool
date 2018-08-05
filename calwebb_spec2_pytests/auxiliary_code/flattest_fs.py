@@ -1,3 +1,4 @@
+import time
 import os
 import numpy as np
 import matplotlib
@@ -53,6 +54,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         - median_diff: Boolean, True if smaller or equal to threshold.
 
     """
+
+    # start the timer
+    flattest_start_time = time.time()
 
     # get info from the rate file header
     det = fits.getval(step_input_filename, "DETECTOR", 0)
@@ -483,6 +487,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             complfile_ext = fits.ImageHDU(delf, name=slit_id)
             complfile.append(complfile_ext)
 
+            # the file is not yet written, indicate that this slit was appended to list to be written
+            print("Extension ", i, " appended to list to be written into calculated and comparison fits files.")
 
 
     if writefile:
@@ -495,10 +501,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         # this is the file to hold the image of pipeline-calculated difference values
         complfile.writeto(complfile_name, overwrite=True)
 
-        print("Fits file with flat values of each slice saved as: ")
+        print("\nFits file with calculated flat values of each slit saved as: ")
         print(outfile_name)
 
-        print("Fits file with image of pipeline - calculated saved as: ")
+        print("Fits file with comparison (pipeline flat - calculated flat) saved as: ")
         print(complfile_name)
 
 
@@ -515,7 +521,17 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print("\n *** Final result for flat_field test will be reported as FAILED *** \n")
         msg = "One or more slits FAILED flat_field test."
 
-    print("Done. ")
+    # end the timer
+    flattest_end_time = time.time() - flattest_start_time
+    if flattest_end_time > 60.0:
+        flattest_end_time = flattest_end_time/60.0  # in minutes
+        flattest_tot_time = "* flattest_fs.py script took ", repr(flattest_end_time)+" minutes to finish."
+        if flattest_end_time > 60.0:
+            flattest_end_time = flattest_end_time/60.  # in hours
+            flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time)+" hours to finish."
+    else:
+        flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time)+" seconds to finish."
+    print(flattest_tot_time)
 
     return FINAL_TEST_RESULT, msg
 
