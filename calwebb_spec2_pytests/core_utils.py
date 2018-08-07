@@ -239,7 +239,7 @@ def add_detector2filename(working_directory, step_input_file):
     # dictionary of the steps and corresponding strings to be added to the file name after the step has ran
     step_strings = ["_assign_wcs", "_bkg_subtract", "_imprint_subtract", "_msa_flagging", "_extract_2d", "_flat_field",
                    "_srctype", "_pathloss", "_barshadow", "_photom", "_resample_spec", "_cube_build", "_extract_1d",
-                    "_intflat", "_s2d", "_x1d", "_cal"]
+                    "_intflat", "_s2d", "_s3d", "_x1d", "_cal"]
 
     # get the detector name and add it
     det = fits.getval(step_input_file, "DETECTOR", 0)

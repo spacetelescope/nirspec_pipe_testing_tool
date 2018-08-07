@@ -376,7 +376,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
                 # To visually compare between the pipeline flat and the calculated one (e.g. in ds9), Phil Hodge
                 # suggested using the following line:
-                calc_flat[pind[0], pind[1]] = flatcor[j]   # this line writes the calculated flat into a full frame array
+                calc_flat[pind[0], pind[1]] = flatcor[j]
+                # this line writes the calculated flat into a full frame array
+                # then this new array needs to be written into a file. This part has not been done yet.
 
                 # Difference between pipeline and calculated values
                 delf[j] = pipeflat[pind[0], pind[1]] - flatcor[j]
