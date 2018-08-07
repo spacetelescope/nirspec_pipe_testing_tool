@@ -230,11 +230,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # get all the science extensions in the flatfile
     sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
-    # get the open and projected on the detector slitlets
-    #assign_wcs_file = step_input_filename.replace("_flat_field.fits", "_assign_wcs.fits")
-    #img = datamodels.ImageModel(assign_wcs_file)
-    #open_and_on_detector_slits_list = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
-
     # loop over the 2D subwindows and read in the WCS values
     for i, slit in enumerate(model.slits):
         slit_id = slit.name
@@ -613,7 +608,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     flattest_end_time = time.time() - flattest_start_time
     if flattest_end_time > 60.0:
         flattest_end_time = flattest_end_time/60.0  # in minutes
-        flattest_tot_time = "* flattest script too ", repr(flattest_end_time)+" minutes to finish."
+        flattest_tot_time = "* Script flattest_mos.py took ", repr(flattest_end_time)+" minutes to finish."
         if flattest_end_time > 60.0:
             flattest_end_time = flattest_end_time/60.  # in hours
             flattest_tot_time = "* Script flattest_mos.py took ", repr(flattest_end_time)+" hours to finish."

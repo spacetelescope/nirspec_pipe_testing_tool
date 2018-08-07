@@ -256,9 +256,12 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         if debug:
             print("n_p = ", n_p)
             print ("nw = ", nw)
+
+        # initialize arrays of the right size
         delf = np.zeros([nw]) + 999.0
         flatcor = np.zeros([nw]) + 999.0
         sffarr = np.zeros([nw])
+        calc_flat = np.zeros([2048, 2048]) + 999.0
 
         # loop through the wavelengths
         print (" Looping through the wavelngth, this may take a little time ... ")
@@ -373,7 +376,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
                 # To visually compare between the pipeline flat and the calculated one (e.g. in ds9), Phil Hodge
                 # suggested using the following line:
-                #calc_flat[pind[0], pind[1]] = flatcor[j]   # this line writes the calculated flat into a full frame array
+                calc_flat[pind[0], pind[1]] = flatcor[j]
+                # this line writes the calculated flat into a full frame array
+                # then this new array needs to be written into a file. This part has not been done yet.
 
                 # Difference between pipeline and calculated values
                 delf[j] = pipeflat[pind[0], pind[1]] - flatcor[j]
@@ -501,7 +506,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     flattest_end_time = time.time() - flattest_start_time
     if flattest_end_time > 60.0:
         flattest_end_time = flattest_end_time/60.0  # in minutes
-        flattest_tot_time = "* flattest script too ", repr(flattest_end_time)+" minutes to finish."
+        flattest_tot_time = "* Script flattest_ifu.py script took ", repr(flattest_end_time)+" minutes to finish."
         if flattest_end_time > 60.0:
             flattest_end_time = flattest_end_time/60.  # in hours
             flattest_tot_time = "* Script flattest_ifu.py took ", repr(flattest_end_time)+" hours to finish."

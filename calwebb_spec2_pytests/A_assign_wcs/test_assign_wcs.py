@@ -127,6 +127,7 @@ def output_hdul(set_inandout_filenames, config):
         if core_utils.check_MOS_true(inhdu):
             # copy the MSA shutter configuration file into the pytest directory
             subprocess.run(["cp", msa_shutter_conf, "."])
+
         # start the timer to compute the step running time
         start_time = time.time()
         Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
