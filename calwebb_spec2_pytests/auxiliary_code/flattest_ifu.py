@@ -203,7 +203,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         return median_diff, msg
 
     print("Using F-flat: ", ffile)
-    ffv = fits.getdata(ffile, "SCI")#1)
+    ffv = fits.getdata(ffile, "IFU")#1)
 
     # now go through each pixel in the test data
 
@@ -370,6 +370,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
                 flatcor[j] = dff * dfs * sff * sfs * fff
                 sffarr[j] = sff
+
+                # To visually compare between the pipeline flat and the calculated one (e.g. in ds9), Phil Hodge
+                # suggested using the following line:
+                #calc_flat[pind[0], pind[1]] = flatcor[j]   # this line writes the calculated flat into a full frame array
 
                 # Difference between pipeline and calculated values
                 delf[j] = pipeflat[pind[0], pind[1]] - flatcor[j]
