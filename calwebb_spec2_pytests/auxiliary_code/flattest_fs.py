@@ -525,7 +525,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     flattest_end_time = time.time() - flattest_start_time
     if flattest_end_time > 60.0:
         flattest_end_time = flattest_end_time/60.0  # in minutes
-        flattest_tot_time = "* flattest_fs.py script took ", repr(flattest_end_time)+" minutes to finish."
+        flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time)+" minutes to finish."
         if flattest_end_time > 60.0:
             flattest_end_time = flattest_end_time/60.  # in hours
             flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time)+" hours to finish."
