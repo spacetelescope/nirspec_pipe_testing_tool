@@ -315,12 +315,15 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
-    FINAL_TEST_RESULT = "PASSED"
+    FINAL_TEST_RESULT = "FAILED"
     for sl, testdir in total_test_result.items():
         for t, tr in testdir.items():
             if tr == "FAILED":
                 FINAL_TEST_RESULT = "FAILED"
                 print("\n * The test of", t, "for slice", sl, " FAILED.")
+            else:
+                FINAL_TEST_RESULT = "PASSED"
+                print("\n * The test of", t, "for slice", sl, " PASSED.")
 
     if FINAL_TEST_RESULT == "PASSED":
         print("\n *** Final result for assign_wcs test will be reported as PASSED *** \n")

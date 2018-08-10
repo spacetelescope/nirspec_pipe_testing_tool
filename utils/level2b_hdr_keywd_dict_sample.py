@@ -75,8 +75,8 @@ keywd_dict['OBSLABEL']= '#TODO' # proposer label for observation, e.g. #TODO
 keywd_dict['VISITYPE']= 'GENERIC' # type of visit (prime or parallel)
 keywd_dict['VSTSTART']= '2016-01-17T17:34:57' # UTC visit start time, e.g. 2013-01-19T18:27:22
 keywd_dict['NEXPOSUR']= 1 # total number of exposures in visit, e.g. 1
-keywd_dict['INTARGET']= True # boolean represented with string, T if at least one exposure in visit is internal
-keywd_dict['TARGOOPP']= False # boolean represented with string, visit scheduled as target of opportunity
+keywd_dict['INTARGET']= "T" # boolean represented with string, T if at least one exposure in visit is internal
+keywd_dict['TARGOOPP']= "F" # boolean represented with string, visit scheduled as target of opportunity
 
 
 # Target information
@@ -145,8 +145,8 @@ keywd_dict['EFFEXPTM']= 53.68380000000001 # [seconds] effective exposure time, e
 keywd_dict['DURATION']= -1.0 # [seconds] total duration of exposuree.g. -1.0
 keywd_dict['NRSTSTRT']= 1 # number of extra resets at start of exposure, e.g. 1
 keywd_dict['NRESETS']  = 1 # number of resets between integrations, e.g. 1
-keywd_dict['ZEROFRAM']= False # boolean represented with string, T if a zero frame was read separately
-keywd_dict['DATAPROB']= False # boolean represented with string, T if science telemetry indicated any problems
+keywd_dict['ZEROFRAM']= "F" # boolean represented with string, T if a zero frame was read separately
+keywd_dict['DATAPROB']= "F" # boolean represented with string, T if science telemetry indicated any problems
 keywd_dict['NRS_NORM']= 16  # int, Number of normal pixels in IRS2 readout, used also in IFU data
 keywd_dict['NRS_REF']= 4  # int, Number of reference pixels in IRS2 readout, used also in IFU data
 

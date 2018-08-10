@@ -166,20 +166,22 @@ with open(txt_outputs_summary, "w+") as tf:
     tf.write(line0+"\n")
     tf.write(line1+"\n")
 
-final_out = "gain_scale.fits"
+# Get the detector used
+det = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
+
+#final_output_caldet1 = "gain_scale.fits"
+final_output_caldet1 = "final_output_caldet1_"+det+".fits"
 output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits",
-                "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits", final_out]
+                "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits", final_output_caldet1]
 
 # Get and save the value of the raw data root name to add at the end of calwebb_detector1
 #rawdatrt = fits.getval(fits_input_uncal_file, 'rawdatrt', 0)
 
-# Get the detector used
-det = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
-
 if not step_by_step:
     # start the timer to compute the step running time
     start_time = time.time()
-    Detector1Pipeline.call(fits_input_uncal_file, config_file=cfg_file)
+    result = Detector1Pipeline.call(fits_input_uncal_file, config_file=cfg_file)
+    result.save(final_output_caldet1)
     # end the timer to compute calwebb_spec2 running time
     end_time = time.time() - start_time  # this is in seconds
     print(" * calwebb_detector1 took "+repr(end_time)+" seconds to finish *")

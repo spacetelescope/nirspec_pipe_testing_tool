@@ -146,7 +146,7 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
     initial_input_file_basename = os.path.basename(initial_input_file)
     if "_uncal_rate" in initial_input_file_basename:
         initial_input_file_basename = initial_input_file_basename.replace("_uncal_rate", "")
-    if det not in initial_input_file_basename:
+    if det.lower() not in initial_input_file_basename.lower():
         initial_input_file_basename = initial_input_file_basename.replace(".fits", "_"+det+".fits")
 
     # get the right input and output name according to the steps dictionary

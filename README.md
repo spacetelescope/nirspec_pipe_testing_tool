@@ -237,9 +237,16 @@ This is the file that controls all the input that the tool needs. Please open it
 make sure that:
 - All the paths point to the right places. The files can be located anywhere, but both,
 the pipeline and the tool, will run faster if the files are local on your computer.
-- The input file for the PTT is the final output file from calwebb_detector1.
+- The input file for the PTT is the final output file from ```calwebb_detector1```.
 - The adequate mode for the data to be tested is set correctly, choices are: FS, IFU,
 MOS, or BOTS.
+- The variable ```raw_data_root_file``` should be the name of the raw file you downloaded
+from the NIRSpec vault; for ground observations it starts with NRS. If you are running 
+simulations then you can look into the ```ESA_Int_products``` directory and see what is
+the name of the directory that corresponds to your data, copy that name and add .fits to
+the end, e.g. for my simulation file ```F170LP-G235M_MOS_observation-6-c0e0_001_DN_NRS1.fits```
+go into ```/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/simulations/ESA_Int_products```,
+then set ```raw_data_root_file = F170LP-G235M_MOS_observation-6-c0e0_001.fits```
 - The steps that you want to be ran or not are set to True or False.
 - In the bottom part of the file, all the additional arguments for the PTT are 
 correct, e.g. threshold values, figure switches, and additional fits files.
@@ -263,13 +270,30 @@ To run calwebb detector 1 step-by-step, simply add ```-sbs``` at the end of
 the previous command. Note that running the pipeline in full for calwebb detector 1 takes 
 about half the time as it does running it step-by-step, due to IO processing time.
 
+NOTE ON SCRIPT COMMAND:
+- The script command will run on Mac machines, if you are using Linux, please follow these
+steps:
+
+i) Make sure you are in ```bash```.
+
+ii) In the terminal type:
+```bash
+python ../utils/run_cal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits 2>&1 | tee caldetector1_screenout.txt
+```
+
+The command means the following:
+- 2> redirect standard error
+- &1 to standard output
+- | tee pipe all output to the given text file and to console at the same time
+
+
 If everything went well, you will see a text file called 
 ```cal_detector1_outputs_and_times.txt```, which contains the steps ran, the name of the 
 output fits file, and the time each step took to run. This text file, along with the 
 intermediary products will be located in the path you set for the 
 ```working_directory``` variable in the configuration file of the PTT.
 
-NOTE:
+NOTE ON ```calwebb_detector1``` ERRORS:
 - If you were not able to get the file to run though cal detector1 due to an error saying 
 that the pipeline was not able to find a best reference for dark or superbias, it is 
 possible this is due to the filter keyword  in the main header set to OPAQUE. 
@@ -337,7 +361,11 @@ the ```calweb_spec2_pytests``` directory, and you will have to manually move it 
 you want it to live, unless you give the full path of the destination in the ```--html=``` 
 flag.
 
-NOTE: If you are doing a re-run of the pytest only, be careful not to overwrite the 
+NOTE: 
+- If you are running the tool in Linux, the script command will not work. Please see the 
+NOTE ON SCRIPT COMMAND of step 7 of this guide.
+
+- If you are doing a re-run of the pytest only, be careful not to overwrite the 
 ```calspec2_screenout.txt``` file, in this case you should use the following command to
 run the pytest:
 ```bash

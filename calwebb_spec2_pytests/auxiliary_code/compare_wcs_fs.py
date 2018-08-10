@@ -58,7 +58,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
     img = datamodels.ImageModel(infile_name)
 
     # loop over the slits
-    sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1", "S200B1"]
+    sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1"]
     sci_ext_list = auxfunc.get_sci_extensions(infile_name)
     print ('sci_ext_list=', sci_ext_list, '\n')
 
@@ -75,13 +75,16 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
     # loop over the slits
     if det != "NRS2":
-        sltname_list.pop(len(sltname_list)-1)
+        sltname_list.append("S200B1")
 
     # check if data is BOTS
     if fits.getval(infile_name, "EXP_TYPE", 0) == "NRS_BRIGHTOBJ":
         sltname_list = ["S1600A1"]
 
-    for pipeslit in sltname_list:
+    # To get the open and projected on the detector
+    open_slits = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
+    for opslit in open_slits:
+        pipeslit = opslit.name
         print ("\nWorking with slit: ", pipeslit)
 
         # Get the ESA trace
@@ -379,8 +382,8 @@ if __name__ == '__main__':
     # input parameters that the script expects
     #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G235H_opaque/491_results"
     #data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140H_opaque/491_results"
-    data_dir = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G140M_F070LP/491_results"
-    infile_name = data_dir+"/gain_scale_assign_wcs.fits"
+    data_dir = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G235M_F170LP/491_results"
+    infile_name = data_dir+"/final_output_caldet1_NRS1_assign_wcs.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     #esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3/ESA_Int_products"

@@ -183,13 +183,19 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
             if (count==1) and (':' not in val):
                 val = float(val)
             valtype = type(val)
-    if (valtype in hkwd_val) or (val in hkwd_val):
+    dict_type = type(hkwd_val[0])
+    if (valtype in hkwd_val) or (val in hkwd_val) or (valtype == dict_type):
         print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Allowed value type'))
         warning = None
     else:
-        warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value type. Expected: '+str(val)+', got: '+str(valtype))
+        warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value type. Expected e.g.'+repr(hkwd_val[0])+', got: '+repr(val))
         print (warning)
-    return warning
+        # if the gotten value contains letters then chenge it for the dictionary value, otherwise just return the type
+        # of value that it should be changed to
+        if re.search('[a-zA-Z]', str(val)):
+            val = hkwd_val[0]
+    val_and_valtype = [val, dict_type]
+    return warning, val_and_valtype
 
 
 def check3numbers(key, val, ext='primary'):
@@ -307,7 +313,19 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Has correct format'))
                     warning = None
                 else:
-                    warning = check_value_type(key, val, hkwd_val)
+                    warning, val_and_valtype = check_value_type(key, val, hkwd_val)
+                    if warning is not None  and  "Incorrect value type" in warning:
+                        val, dict_type = val_and_valtype
+                        if dict_type == int:
+                            val = int(float(val))
+                        elif dict_type == float:
+                            val = float(val)
+                        elif dict_type == str:
+                            val = str(val)
+                        specific_keys_dict[key] = val
+                        missing_keywds.append(key)
+                        print('     Setting value of ', key, ' to type ', dict_type, ' and value ', val)
+                        warning = None
 
                 # Check for specific keywords
                 if key=='DPSW_VER':
