@@ -59,9 +59,9 @@ keywd_dict['EXPOSURE']= '00001' # exposure request number, e.g. 00001
 keywd_dict['DETECTOR']= 'NRS1' # name of detector used to acquire data
 keywd_dict['NINTS']   = 1 # number of integrations within exposure, e.g. 1
 keywd_dict['NGROUPS'] = 6 # number of groups within integration, e.g. 20
-keywd_dict['ZEROFRAM']= False # boolean represented with string, T if a zero frame was read separately
+keywd_dict['ZEROFRAM']= "F" # boolean represented with string, T if a zero frame was read separately
 keywd_dict['READPATT']= 'NRSRAPID' # readout pattern
-keywd_dict['DATAPROB']= False # boolean represented with string, T if science telemetry indicated any problems
+keywd_dict['DATAPROB']= "F" # boolean represented with string, T if science telemetry indicated any problems
 
 # Program information
 keywd_dict['TITLE']   = 'proposal_title1' # proposal title
@@ -79,8 +79,8 @@ keywd_dict['OBSLABEL']= '#TODO' # proposer label for observation, e.g. #TODO
 keywd_dict['VISITYPE']= 'GENERIC' # type of visit (prime or parallel)
 keywd_dict['VSTSTART']= '2016-01-17T17:34:57' # UTC visit start time, e.g. 2013-01-19T18:27:22
 keywd_dict['NEXPOSUR']= 1 # total number of exposures in visit, e.g. 1
-keywd_dict['INTARGET']= True # boolean represented with string, T if at least one exposure in visit is internal
-keywd_dict['TARGOOPP']= False # boolean represented with string, visit scheduled as target of opportunity
+keywd_dict['INTARGET']= "T" # boolean represented with string, T if at least one exposure in visit is internal
+keywd_dict['TARGOOPP']= "F" # boolean represented with string, visit scheduled as target of opportunity
 
 # Exposure information
 keywd_dict['PNTG_SEQ']= 1 # pointing sequence number, e.g. 1
@@ -125,7 +125,7 @@ keywd_dict['DURATION']= -1.0 # [seconds] total duration of exposuree.g. -1.0
 keywd_dict['SUBARRAY']= 'GENERIC' # name of subarray used, options are:
 #                          '1024X16', '128X128', '128X2048', '2048X128', '2048X64', '32X32', '64X2048', '8X8',
 #                          'ALLSLITS', 'BRIGHTSKY', 'FULL', 'GENERIC', 'MASK1065', 'MASK1140', 'MASK1550',
-#                          'MASKLYOT', 'S1600A1', 'S200A1', 'S200A2', 'S200B1', 'S400A1', 'SLITLESSPRISM',
+#                          'MASKLYOT', 'SUB1600A1', 'SUB200A1', 'SUB200A2', 'SUB200B1', 'SUB400A1', 'SLITLESSPRISM',
 #                          'STRIPE', 'SUB1024A', 'SUB1024B', 'SUB128', 'SUB16', 'SUB160', 'SUB160P',
 #                          'SUB1A', 'SUB1B', 'SUB2048', 'SUB256', 'SUB32', 'SUB320', 'SUB400P', 'SUB512',
 #                          'SUB64', 'SUB640', 'SUB64P', 'SUB80', 'SUB96', 'SUBGRISM128', 'SUBGRISM256',
