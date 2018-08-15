@@ -219,6 +219,11 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
             else:
                 out_file_suffix = in_file_suffix
             step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix+".fits")
+            # Special case for BOTS files after extract_1d
+            if "extract_1d" in stp:
+                inhdu = read_hdrfits(initial_input_file, info=False, show_hdr=False)
+                if check_BOTS_true(inhdu):
+                    step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix+"ints.fits")
             step_output_filename = os.path.join(working_directory, step_output_basename)
             # now exit the for loop because step was reached
             break
@@ -245,14 +250,15 @@ def add_detector2filename(working_directory, step_input_file):
     det = fits.getval(step_input_file, "DETECTOR", 0)
     step_input_file_basename = os.path.basename(step_input_file).replace(".fits", "")
     ptt_directory = os.getcwd()  # directory where PTT lives
-    step_files = glob.glob(os.path.join(ptt_directory, step_input_file_basename+"*.fits"))  # get all fits files just created
-    if len(step_files) == 0:
-        step_files = glob.glob(os.path.join(ptt_directory, "*.fits"))
+    #step_files = glob.glob(os.path.join(ptt_directory, step_input_file_basename+"*.fits"))  # get all fits files just created
+    #if len(step_files) == 0:
+    #    step_files = glob.glob(os.path.join(ptt_directory, "*.fits"))
+    step_files = glob.glob(os.path.join(ptt_directory, "*.fits"))
     for sf in step_files:
         for stp_str in step_strings:
-            if stp_str in sf:  # look for the step string appearing in the name of the files
+            if stp_str in sf.lower():  # look for the step string appearing in the name of the files
                 if det.lower() not in sf.lower():  # only add the detector to the name if it is not part of the basename
-                    new_name = os.path.basename(sf.replace(stp_str+".fits", det+"_"+stp_str+".fits"))
+                    new_name = os.path.basename(sf.replace(stp_str+".fits", "_"+det+stp_str+".fits"))
                 else:
                     print("Detector ", det, " is already part of the file name ", os.path.basename(sf),
                           ", PTT will not add it again.")
@@ -429,12 +435,12 @@ def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_c
     #print ("Map saved at: ", True_steps_suffix_map)
     if (float(end_time)) > 60.0:
         end_time_min = float(end_time)/60.  # this is in minutes
-        end_time = repr(end_time)+"  ="+repr(round(end_time_min, 1))+"min"
         if end_time_min > 60.0:
             end_time_hr = end_time_min/60.  # this is in hours
             end_time = repr(end_time)+"  ="+repr(round(end_time_hr, 1))+"hr"
+        else:
+            end_time = repr(end_time)+"  ="+repr(round(end_time_min, 1))+"min"
     line2write = "{:<20} {:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed), end_time)
-    print (line2write)
     with open(True_steps_suffix_map, "a") as tf:
         tf.write(line2write+"\n")
 

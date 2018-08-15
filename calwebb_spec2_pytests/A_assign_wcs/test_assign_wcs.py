@@ -120,6 +120,8 @@ def output_hdul(set_inandout_filenames, config):
 
         # get the name of the configuration file and run the pipeline
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
+        if mode_used == "BOTS":
+            calwebb_spec2_cfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "calwebb_tso_spec2.cfg")
         input_file = config.get("calwebb_spec2_input_file", "input_file")
         if "_uncal_rate" in input_file:
             input_file = input_file.replace("_uncal_rate", "")
@@ -194,8 +196,10 @@ def output_hdul(set_inandout_filenames, config):
                 if core_utils.check_MOS_true(inhdu):
                     # copy the MSA shutter configuration file into the pytest directory
                     subprocess.run(["cp", msa_shutter_conf, "."])
+
                 # get the right configuration files to run the step
                 local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+
                 # start the timer to compute the step running time
                 start_time = time.time()
                 if local_pipe_cfg_path == "pipe_source_tree_code":
@@ -203,12 +207,15 @@ def output_hdul(set_inandout_filenames, config):
                 else:
                     result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/assign_wcs.cfg')
                 result.save(step_output_file)
+
                 # end the timer to compute the step running time
                 end_time = repr(time.time() - start_time)   # this is in seconds
                 print("Step "+step+" took "+end_time+" seconds to finish")
+
                 if core_utils.check_MOS_true(inhdu):
                     # remove the copy of the MSA shutter configuration file
                     subprocess.run(["rm", msametfl])
+
             else:
                 print("Skipping running pipeline step ", step)
                 # add the running time for this step

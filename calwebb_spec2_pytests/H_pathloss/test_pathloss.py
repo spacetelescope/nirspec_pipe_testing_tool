@@ -56,13 +56,14 @@ def output_hdul(set_inandout_filenames, config):
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
-    if run_calwebb_spec2:
-        hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-        return hdul, step_output_file, run_pytests
-    else:
-        # only run this step if data is not BOTS
-        inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
-        if not core_utils.check_BOTS_true(inhdu):
+    # only run this step if data is not BOTS
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    if not core_utils.check_BOTS_true(inhdu):
+
+        if run_calwebb_spec2:
+            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+            return hdul, step_output_file, run_pytests
+        else:
             if os.path.isfile(step_input_file):
                 if run_pipe_step:
                     print ("*** Step "+step+" set to True")
@@ -98,8 +99,8 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
 
-        else:
-            pytest.skip("Skipping "+step+" because data is BOTS.")
+    else:
+        pytest.skip("Skipping "+step+" because data is BOTS.")
 
 
 

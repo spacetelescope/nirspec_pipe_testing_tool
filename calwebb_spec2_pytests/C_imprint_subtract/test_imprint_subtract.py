@@ -43,10 +43,10 @@ def output_hdul(set_inandout_filenames, config):
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
-    # Only run step if data is IFU or MSA
-    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
 
+    # Only run step if data is IFU or MSA
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if core_utils.check_IFU_true(inhdu) or core_utils.check_MOS_true(inhdu):
 
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
