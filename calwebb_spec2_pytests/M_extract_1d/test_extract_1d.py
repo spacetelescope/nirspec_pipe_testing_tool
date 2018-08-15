@@ -92,13 +92,17 @@ def output_hdul(set_inandout_filenames, config):
                 # end the timer to compute the step running time
                 end_time = repr(time.time() - start_time)   # this is in seconds
                 print("Step "+step+" took "+end_time+" seconds to finish")
+
             else:
                 print("Skipping running pipeline step ", step)
-                # add the running time for this step
+                # get the running time for this step
                 end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+
+            # add the running time for this step
             step_completed = True
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+
             # get the total running time and print it in the file
             total_time = repr(core_utils.get_time_to_run_pipeline(txt_name))
             total_time_min = repr(round(float(total_time)/60.0, 2))

@@ -39,12 +39,13 @@ def output_hdul(set_inandout_filenames, config):
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
-
-    # Only run step if data is MOS
-    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
+
+    # Only run step if data is MOS or IFU
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     print ("Is data FS or BOTS?", core_utils.check_FS_true(inhdu), core_utils.check_BOTS_true(inhdu))
     if not core_utils.check_FS_true(inhdu) and not core_utils.check_BOTS_true(inhdu):
+
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
         if run_calwebb_spec2:

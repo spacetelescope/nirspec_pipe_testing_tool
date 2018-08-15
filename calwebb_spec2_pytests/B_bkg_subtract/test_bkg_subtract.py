@@ -44,63 +44,74 @@ def output_hdul(set_inandout_filenames, config):
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
-    if run_calwebb_spec2:
-        if os.path.isfile(step_output_file):
-            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-        else:
-            pytest.skip("Skipping "+step+" because the output file does not exist.")
-        return hdul, step_output_file, step_input_file, run_pytests
-    else:
-        if os.path.isfile(step_input_file):
-            print(" The input file ", step_input_file,"exists... will run step "+step)
-            bkg_list = core_utils.getlist("additional_arguments", "bkg_list")
-            existing_bgfiles = 0
-            for bg_file in bkg_list:
-                if os.path.isfile(bg_file):
-                    existing_bgfiles += 1
-            if existing_bgfiles == 0:
-                print (" Need at least one background file to continue. Step will be skipped.")
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because files listed on bkg_list in the configuration file do not exist.")
+
+    # skip if BOTS data
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    if core_utils.check_BOTS_true(inhdu):
+
+        if run_calwebb_spec2:
+            if os.path.isfile(step_output_file):
+                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
             else:
-                if run_pipe_step:
-                    print ("*** Step "+step+" set to True")
-                    stp = BackgroundStep()
+                pytest.skip("Skipping "+step+" because the output file does not exist.")
+            return hdul, step_output_file, step_input_file, run_pytests
+        else:
+            if os.path.isfile(step_input_file):
+                print(" The input file ", step_input_file,"exists... will run step "+step)
+                bkg_list = core_utils.getlist("additional_arguments", "bkg_list")
+                existing_bgfiles = 0
+                for bg_file in bkg_list:
+                    if os.path.isfile(bg_file):
+                        existing_bgfiles += 1
+                if existing_bgfiles == 0:
+                    print (" Need at least one background file to continue. Step will be skipped.")
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip("Skipping "+step+" because files listed on bkg_list in the configuration file do not exist.")
+                else:
+                    if run_pipe_step:
+                        print ("*** Step "+step+" set to True")
+                        stp = BackgroundStep()
 
-                    # check that previous pipeline steps were run up to this point
-                    core_utils.check_completed_steps(step, step_input_file)
+                        # check that previous pipeline steps were run up to this point
+                        core_utils.check_completed_steps(step, step_input_file)
 
-                    # get the right configuration files to run the step
-                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
-                    # start the timer to compute the step running time
-                    start_time = time.time()
-                    if local_pipe_cfg_path == "pipe_source_tree_code":
-                        result = stp.call(step_input_file, bkg_list)
+                        # get the right configuration files to run the step
+                        local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                        # start the timer to compute the step running time
+                        start_time = time.time()
+                        if local_pipe_cfg_path == "pipe_source_tree_code":
+                            result = stp.call(step_input_file, bkg_list)
+                        else:
+                            result = stp.call(step_input_file, bkg_list, config_file=local_pipe_cfg_path+'/background.cfg')
+                        if result is not None:
+                            result.save(step_output_file)
+                            # end the timer to compute the step running time
+                            end_time = repr(time.time() - start_time)   # this is in seconds
+                            print("Step "+step+" took "+end_time+" seconds to finish")
+                            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                            step_completed = True
+                        else:
+                            hdul = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
                     else:
-                        result = stp.call(step_input_file, bkg_list, config_file=local_pipe_cfg_path+'/background.cfg')
-                    if result is not None:
-                        result.save(step_output_file)
-                        # end the timer to compute the step running time
-                        end_time = repr(time.time() - start_time)   # this is in seconds
-                        print("Step "+step+" took "+end_time+" seconds to finish")
+                        print("Skipping running pipeline step ", step)
+                        # add the running time for this step
+                        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+                        end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
                         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                         step_completed = True
-                    else:
-                        hdul = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
-                else:
-                    print("Skipping running pipeline step ", step)
-                    # add the running time for this step
-                    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-                    end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
-                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                    step_completed = True
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                return hdul, step_output_file, step_input_file, run_pytests
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    return hdul, step_output_file, step_input_file, run_pytests
 
-        else:
-            print (" The input file does not exist. Skipping step.")
-            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            pytest.skip("Skipping "+step+" because the input file does not exist.")
+            else:
+                print (" The input file does not exist. Skipping step.")
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                pytest.skip("Skipping "+step+" because the input file does not exist.")
+
+    else:
+        msg = "Skipping "+step+" because data is BOTS."
+        print (msg)
+        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+        pytest.skip(msg)
 
 
 ### FUNCTION FOR VALIDATION

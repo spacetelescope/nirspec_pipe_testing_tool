@@ -42,11 +42,10 @@ def output_hdul(set_inandout_filenames, config):
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
-    # Only run step if data is not IFU
-    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
-    print("Is the input file IFU? = ", core_utils.check_IFU_true(inhdu))
-    if not core_utils.check_IFU_true(inhdu):
+    # Only run step if data is not IFU or BOTS
+    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
+    if mode_used != "BOTS"  and  mode_used != "IFU":
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
 
@@ -99,7 +98,7 @@ def output_hdul(set_inandout_filenames, config):
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
 
     else:
-        pytest.skip("Skipping "+step+" because data is IFU data and the resample will be done in cube_build.")
+        pytest.skip("Skipping "+step+" because data is IFU or BOTS.")
 
 
 

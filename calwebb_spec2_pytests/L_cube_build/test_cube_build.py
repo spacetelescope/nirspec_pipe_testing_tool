@@ -44,6 +44,7 @@ def output_hdul(set_inandout_filenames, config):
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
+
     # Only run step if data is IFU
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     end_time = '0.0'
