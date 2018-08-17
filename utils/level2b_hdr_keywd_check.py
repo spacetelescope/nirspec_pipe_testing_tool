@@ -152,7 +152,7 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
     valtype = type(val)
 
     # Store type that value should have
-    dict_type = hkwd_val[0]
+    dict_type = type(hkwd_val[0])
 
     # Check if type of value correspond to what is given, else change it
     if val is not None:
@@ -169,21 +169,27 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
                 if val=='':
                     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
                     print (warning)
-                    return warning, dict_type
+                    val_and_valtype = [val, dict_type]
+                    return warning, val_and_valtype
 
                 val = int(val)
             if (count==1) and (':' not in val):
                 val = float(val)
             valtype = type(val)
 
-    if (valtype in hkwd_val) or (val in hkwd_val) or (valtype == type(dict_type)):
+    if (valtype in hkwd_val) or (val in hkwd_val) or (valtype == dict_type):
         print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Allowed value type'))
         warning = None
     else:
         warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value type. Expected e.g. '+repr(hkwd_val[0])+', got: '+repr(val))
         print (warning)
+        # if the gotten value contains letters then chenge it for the dictionary value, otherwise just return the type
+        # of value that it should be changed to
+        if re.search('[a-zA-Z]', str(val)):
+            val = hkwd_val[0]
 
-    return warning, dict_type
+    val_and_valtype = [val, dict_type]
+    return warning, val_and_valtype
 
 
 def check3numbers(key, val, ext='primary'):
@@ -315,7 +321,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 else:
                     if not isinstance(lev2bdict_val, list):
                         lev2bdict_val = [lev2bdict_val]
-                    warning, dict_type = check_value_type(key, val, lev2bdict_val)
+                    warning, val_and_valtype = check_value_type(key, val, lev2bdict_val)
+                    val, dict_type = val_and_valtype
                     if warning is not None  and  "Incorrect value type" in warning:
                         if dict_type == int:
                             val = int(float(val))
