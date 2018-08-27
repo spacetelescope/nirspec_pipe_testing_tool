@@ -156,6 +156,8 @@ if os.path.isfile(uncal_file):
         filt = 'CLEAR'
     elif 'FLAT4' in lamp:
         filt = 'F070LP'
+    elif 'REF' in lamp:
+        filt = 'F100LP'
 
     fits.setval(uncal_file, 'LAMP', 0, value=lamp)
     fits.setval(uncal_file, 'FILTER', 0, value=filt, after='DETECTOR')
