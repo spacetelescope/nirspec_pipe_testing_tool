@@ -120,6 +120,8 @@ def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, s
             filt = 'CLEAR'
         elif 'FLAT4' in lamp:
             filt = 'F070LP'
+        elif 'REF' in lamp:
+            filt = 'F100LP'
         print ("Since  LAMP =", lamp, "  =>  setting  FILTER =", filt)
         filt_gain_scale_basename = gain_scale_basename.replace(".fits", "_"+filt+".fits")
         filt_gain_scale = os.path.join(file_dir, filt_gain_scale_basename)
