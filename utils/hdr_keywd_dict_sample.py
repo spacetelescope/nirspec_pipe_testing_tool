@@ -101,7 +101,7 @@ keywd_dict['TARG_DEC']= 0.0 # target DEC computed at time of exposure, e.g. 0.0
 keywd_dict['TARRUDEC']= 0.0 # target Dec uncertainty, e.g. 0.0
 keywd_dict['PROP_RA'] = 0.0 # proposer specified RA for the target, e.g. 0.0
 keywd_dict['PROP_DEC']= 0.0 # proposer specified Dec for the target, e.g. 0.0
-keywd_dict['MU_EPOCH']= '2000-01-01T00:00:00.000' # epoch of proper motion values for RA and Dec, proposer specified, e.g. 2000.0
+keywd_dict['MU_EPOCH']= 2000.0 # epoch of proper motion values for RA and Dec, proposer specified, e.g. 2000.0
 
 # Exposure times
 keywd_dict['EXPSTART']= 57404.72892391204 # UTC exposure start time (MJD), e.g. 56311.76636840278
