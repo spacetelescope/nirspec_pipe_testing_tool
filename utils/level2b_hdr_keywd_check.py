@@ -158,14 +158,24 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
     if val is not None:
         count = 0
         for v in val:
+            # check if value is a float
             if v=='.':
                 count += 1
+
+        # check if value has a negative sign
+        neg_in_value = False
+        if (count == 0) and ('-' in val):
+            val_list = val.split("-")
+            if len(val_list) == 2:
+                neg_in_value = True
+
+        # check for letters in value
         no_letters_in_string = True
         for char in val:
             if char.isalpha():
                 no_letters_in_string = False
         if no_letters_in_string:
-            if (count == 0) and (':' not in val) and ('-' not in val):
+            if (count == 0) and (':' not in val) and (neg_in_value):
                 if val=='':
                     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
                     print (warning)
