@@ -10,69 +10,54 @@ import sys
 from jwst.datamodels import open as dmodel_open
 from astropy.io import fits
 from astropy.time import Time
+from crds.matches import find_match_paths_as_dict as ref_matches
 
-#List of metadata to compare:
-comparison_meta = {
-        'exp_type': 'EXPOSURE.TYPE',
-        'detector': 'INSTRUMENT.DETECTOR',
-        'obs_filter': 'INSTRUMENT.FILTER',
-        'grating': 'INSTRUMENT.GRATING',
-        'instrument': 'INSTRUMENT.NAME',
-        'subarray': 'SUBARRAY.NAME',
-        'sub_xsize': 'SUBARRAY.XSIZE',
-        'sub_xstart': 'SUBARRAY.XSTART',
-        'sub_ysize': 'SUBARRAY.YSIZE',
-        'sub_ystart': 'SUBARRAY.YSTART',
-        'reftype': 'REFTYPE'}
-
-def check_meta(input_meta, ref_meta, meta):
-    try:
-        in_val = input_meta[meta]
-        ref_val = ref_meta[meta]
-    except (KeyError, AttributeError):
-        return None
-    if ref_val == "N/A":
-        return None
+def check_meta(input_file, match_key, match_val):
+    input_val = input_file[match_key.lower()]
     #direct comparison for numeric types; "in" comparison for string types
-    if isinstance(in_val, str):
-        return in_val in ref_val
-    return in_val == ref_val
-    
-def reffile_test(path_to_input_file, pipeline_step,
-                        logfile=None,
-                        useafter=True, 
-                        readpattern=True,
-                        exp_type=True,
-                        detector=True,
-                        obs_filter=True,
-                        grating=True,
-                        instrument=True,
-                        subarray=True,
-                        sub_xsize=True,
-                        sub_ysize=True,
-                        sub_xstart=True,
-                        sub_ystart=True,
-                        reftype=True,
-                        **other_meta
-                    ):
+    if match_val in ["GENERIC", "ALL", "N/A"]:
+        return True
+    if isinstance(input_val, str):
+        return input_val in match_val
+    return input_val == type(input_val)(match_val) #have to make sure because match_val is always a string
+
+def get_streams(logfile=None):
     """
-    This is a function which compares the metadata values from the comparison 
-    list (default being the "BESTREFS header" from the pipeline) between an
-    input file and the reference file which was used for a given pipeline step.
-    
-    To omit any of the metadata tests from the default, set the corresponding
-    keyword value to False when calling the function.
-    
-    To test any metadata not already included in the default list, include
-    test names and metadata strings for each as keyword arguments.
+    Utility function to identify the output streams.
     """
-    
-    #identify output streams
     if logfile is None:
         errstream = sys.stderr
         logstream = sys.stdout
     else:
         errstream = logstream = open(logfile, 'a')
+    return logstream, errstream
+
+def load_input_file(path_to_input_file, logstream=None):
+    """
+    Utility function as a wrapper around dmodel_open.
+    """
+    if not isinstance(path_to_input_file, str):
+        return path_to_input_file
+    if logstream is not None:
+        print("Loading input file...", file=logstream)
+    try:
+        input_file = dmodel_open(path_to_input_file)
+    except ValueError:
+        import pdb; pdb.set_trace()
+    
+    return input_file
+    
+    
+def reffile_test(path_to_input_file, pipeline_step, logfile=None, 
+                 input_file=None):
+    """
+    This is a new version of reffile_test which uses crds.matches instead of
+    working with the reference file metadata directly. That way, if the rmap
+    was updated manually on CRDS (to avoid redelivering files for a minor
+    keyword change), this will test the actual match criteria.
+    """
+    
+    logstream, errstream = get_streams()
     
     #Convert pipeline step to a header keyword if necessary
     if pipeline_step.upper().startswith("R_"):
@@ -83,90 +68,56 @@ def reffile_test(path_to_input_file, pipeline_step,
         else:
             step_key = "R_" + pipeline_step.upper()
     
+    #Identify the context
+    context = fits.getval(path_to_input_file, "CRDS_CTX")
+    
     #Identify the reference file
     try:
         reffile_name = fits.getval(path_to_input_file, step_key)
     except KeyError:
         print("Invalid pipeline step", file=errstream)
         return None
-    reffile_path = reffile_name.replace('crds://', 
-                                        '/grp/crds/jwst/references/jwst/')
+    
+    reffile_name = reffile_name.replace('crds://', '')
     
     #Is there a reference file for this step? If not, PASS
-    if reffile_path == "N/A":
-        print("No reference file for this pipeline step.", file=errstream)
+    if reffile_name == "N/A":
+        print("No reference file for step {}.".format(pipeline_step), file=errstream)
         return ""
     
     #Grab metadata from the input and reference files
-    print("Loading input file...", file=logstream)
+    if input_file is None:
+        input_file = load_input_file(path_to_input_file, logstream=logstream)
+    print("Grabbing CRDS match criteria...", file=logstream)
     try:
-        input_file_meta = dmodel_open(path_to_input_file).meta
+        match_criteria = ref_matches(context, reffile_name)[0]
     except ValueError:
         import pdb; pdb.set_trace()
-    print("Loading reference file...", file=logstream)
-    try:
-        reffile_meta = dmodel_open(reffile_path).meta
-    except ValueError:
-        import pdb; pdb.set_trace()
-    
-    #Go through the various check keywords
-    keywords = {'exp_type':exp_type,
-                'detector':detector,
-                'obs_filter':obs_filter,
-                'grating':grating,
-                'instrument':instrument,
-                'subarray':subarray,
-                'sub_xsize':sub_xsize,
-                'sub_ysize':sub_ysize,
-                'sub_xstart':sub_xstart,
-                'sub_ystart':sub_ystart,
-                'reftype':reftype}
+        
+    #Remove irrelevant match criteria
+    del match_criteria['observatory']
+    del match_criteria['instrument']
+    del match_criteria['filekind']
     
     tests = {}
     
-    if useafter: #dates require special handling
-        if reffile_meta.useafter is None:
-            tests['useafter'] = True
-        else:
-            input_date = input_file_meta.observation.date
-            input_time = input_file_meta.observation.time
-            input_obstime = Time(input_date + "T" + input_time)
-            ref_useafter = Time(reffile_meta.useafter)
-            
-            tests['useafter'] = input_obstime >= ref_useafter
+    #Useafter dates require special handling
+    if "META.OBSERVATION.DATE" not in match_criteria:
+        tests['USEAFTER'] = True
+    else:
+        input_date = input_file.meta.observation.date
+        input_time = input_file.meta.observation.time
+        input_obstime = Time(input_date + "T" + input_time)
+        ref_date = match_criteria.pop("META.OBSERVATION.DATE")
+        ref_time = match_criteria.pop("META.OBSERVATION.TIME")
+        ref_useafter = Time(ref_date + "T" + ref_time)
+        tests["USEAFTER"] = input_obstime >= ref_useafter
         #Note that this does NOT check whether there is a more recent
         #(but still valid) reference file that could have been selected
     
-    if readpattern: #read pattern requires special handling
-        try: #first test P_READPA, then try READPATT if that doesn't work
-            input_pattern = input_file_meta.exposure.readpatt
-            ref_pattern = reffile_meta.exposure.preadpatt
-            if ref_pattern is None:
-                ref_pattern = reffile_meta.exposure.readpatt
-        except (KeyError, AttributeError):
-            tests['readpattern'] = None
-        else:
-            if ref_pattern == "N/A":
-                tests['readpattern'] = None
-            else:
-                if "ALL" in ref_pattern:
-                    tests['readpattern'] = ("IRS2" in ref_pattern) == ("IRS2" in input_pattern)
-                else:
-                    tests['readpattern'] = input_pattern in ref_pattern
-    
-    for meta in keywords:
-        if keywords[meta]:
-            try:
-                meta_key = comparison_meta[meta].lower()
-            except KeyError:
-                tests[meta] = None
-            else:
-                tests[meta] = check_meta(input_file_meta, reffile_meta, meta_key)
-        
-    
-    #Next, check any other pieces of metadata which were passed
-    for meta, meta_key in other_meta:
-        tests[meta] = check_meta(input_file_meta, reffile_meta, meta_key)
+    #Loop over the rest of the matching criteria
+    for criterion, value in match_criteria.items():
+        tests[criterion] = check_meta(input_file, criterion, value)
     
     final = all([x or x is None for x in tests.values()])
     
@@ -185,15 +136,12 @@ def reffile_test(path_to_input_file, pipeline_step,
         result = tests[meta]
         print("    {}: {}".format(meta, rescode[result]), file=logstream)
         if rescode[result] == "FAIL":
-            if meta == "readpattern":
-                ival = input_file_meta.exposure.readpatt
-                rval = reffile_meta.exposure.preadpatt or reffile_meta.exposure.readpatt
-            elif meta == "useafter":
+            if meta == "USEAFTER":
                 ival = input_obstime
                 rval = ref_useafter
             else:
-                ival = input_file_meta[comparison_meta[meta].lower()]
-                rval = reffile_meta[comparison_meta[meta].lower()]
+                ival = input_file[meta.lower()]
+                rval = match_criteria[meta]
             failures.append(failmsg.format(meta, rval, ival))
             print("      Input file value: {}".format(ival), file=logstream)
             print("      Reference file value: {}".format(rval), file=logstream)
@@ -237,8 +185,18 @@ def check_all_reffiles(path_to_input_file, logfile=None):
         with open(logfile, 'w'):
             pass
     
+    #Only want to load the input file once
+    input_file = load_input_file(path_to_input_file)
+    
+    failures = {}
+    
     for step in all_steps:
-        reffile_test(path_to_input_file, step, logfile=logfile)
+        res = reffile_test(path_to_input_file, step, logfile=logfile, 
+                           input_file=input_file)
+        if res:
+            failures[step] = res
+        
+    return failures
 
 if __name__ == "__main__":
     import argparse
