@@ -223,7 +223,7 @@ keywd_dict['wcsinfo'] = {
                             'S_REGION' : [str], # spatial extent of the observation, e.g. 'N/A'
                             'WAVSTART' : [float], # lower bound of the default wavelength range
                             'WAVEND' : [float], # upper bound of the default wavelength range
-                            'SPORDER' : [float], # default spectral order
+                            'SPORDER' : [int], # default spectral order
                             'V2_REF' : [float], # location of the aperture reference point in V2 (arcsec): 100-400 arcsec
                             'V3_REF' : [float], # location of the aperture reference point in V3 (arcsec): -100 to -400 arcsec
                             'VPARITY' : [int], # Relative sense of rotation between Ideal xy and V2V3

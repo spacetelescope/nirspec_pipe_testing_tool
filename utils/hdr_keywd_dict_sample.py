@@ -101,7 +101,7 @@ keywd_dict['TARG_DEC']= 0.0 # target DEC computed at time of exposure, e.g. 0.0
 keywd_dict['TARRUDEC']= 0.0 # target Dec uncertainty, e.g. 0.0
 keywd_dict['PROP_RA'] = 0.0 # proposer specified RA for the target, e.g. 0.0
 keywd_dict['PROP_DEC']= 0.0 # proposer specified Dec for the target, e.g. 0.0
-keywd_dict['MU_EPOCH']= '2000-01-01T00:00:00.000' # epoch of proper motion values for RA and Dec, proposer specified, e.g. 2000.0
+keywd_dict['MU_EPOCH']= 2000.0 # epoch of proper motion values for RA and Dec, proposer specified, e.g. 2000.0
 
 # Exposure times
 keywd_dict['EXPSTART']= 57404.72892391204 # UTC exposure start time (MJD), e.g. 56311.76636840278
@@ -234,7 +234,7 @@ keywd_dict['wcsinfo'] = {
                             'S_REGION' : 'N/A', # spatial extent of the observation, e.g. 'N/A'
                             'WAVSTART' : 1.0, # lower bound of the default wavelength range
                             'WAVEND' : 2.0, # upper bound of the default wavelength range
-                            'SPORDER' : 1.0, # default spectral order
+                            'SPORDER' : 1, # default spectral order
                             'V2_REF' : 101.1, # location of the aperture reference point in V2 (arcsec): 100-400 arcsec
                             'V3_REF' : -202.2, # location of the aperture reference point in V3 (arcsec): -100 to -400 arcsec
                             'VPARITY' : -1, # Relative sense of rotation between Ideal xy and V2V3
