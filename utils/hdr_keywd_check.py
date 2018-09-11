@@ -72,6 +72,7 @@ def read_hdrfits(fits_file_name):
     # get and print header
     #print ('\n FILE HEADER: \n')
     hdr = hdulist[0].header
+    return hdr #this is really what we should be using...
     sci_hdr = hdulist[1].header
     #print (repr(hdr))
     # close the fits file
@@ -167,6 +168,9 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
     # Store type that value should have, checking for option lists
     dict_type = type(hkwd_val[0]) if len(hkwd_val) > 1 else hkwd_val[0]
     
+    if key == "GWA_TILT" and valtype == str:
+        import pdb; pdb.set_trace()
+    
     # If we don't want a string, check for numerics
     if dict_type != str:
         #regex patterns
@@ -176,8 +180,7 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
         if val is None or valtype == '':
             warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
             print (warning)
-            return warning, dict_type
-        
+            return None, warning, dict_type
         if valtype == str:
             if not float_pattern.fullmatch(val) is None:
                 val = float(val)
@@ -185,15 +188,18 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
             elif not int_pattern.fullmatch(val) is None:
                 val = int(val)
                 valtype = int
-
+    
+    if valtype == bool:
+        return val, None, valtype
+    
     if (valtype in hkwd_val) or (val in hkwd_val) or (valtype == type(dict_type)):
         print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Allowed value type'))
         warning = None
     else:
         warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value type. Expected e.g. '+repr(hkwd_val[0])+', got: '+repr(val))
-        print (warning)
+        print(warning)
 
-    return warning, dict_type
+    return val, warning, dict_type
 
 
 def check3numbers(key, val, ext='primary'):
@@ -314,18 +320,17 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Has correct format'))
                     warning = None
                 else:
-                    warning, dict_type = check_value_type(key, val, hkwd_val)
+                    new_val, warning, dict_type = check_value_type(key, val, hkwd_val)
                     if warning is not None  and  "Incorrect value type" in warning:
                         if dict_type == int:
-                            val = int(float(val))
-                        elif dict_type == float:
-                            val = float(val)
-                        elif dict_type == str:
-                            val = str(val)
-                        specific_keys_dict[key] = val
-                        missing_keywds.append(key)
+                            new_val = int(float(new_val))
+                        else:
+                            new_val = dict_type(new_val)
                         print('     Setting value of ', key, ' to type ', dict_type, ' and value ', val)
                         warning = None
+                    if new_val != val:
+                        specific_keys_dict[key] = new_val
+                        missing_keywds.append(key)
 
                 # Check for specific keywords
                 if key=='DPSW_VER':
