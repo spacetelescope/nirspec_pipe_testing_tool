@@ -28,7 +28,7 @@ __version__ = "2.1"
 
 
 def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save_figs=False,
-                threshold_diff=1.0e-7, debug=False):
+                threshold_diff=1.0e-7, mode_used=None, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the
     compute_world_coordinates.py script with the ESA files. The function calls that script.
@@ -40,6 +40,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         show_figs: boolean, whether to show plots or not
         save_figs: boolean, save the plots or not
         threshold_diff: float, threshold difference between pipeline output and ESA file
+        mode_used: string, mode used in the PTT configuration file
         debug: boolean, if true a series of print statements will show on-screen
 
     Returns:
@@ -49,6 +50,8 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
     """
 
     # get grating and filter info from the rate file header
+    if mode_used is not None and mode_used == "MOS_sim":
+        infile_name = infile_name.replace("assign_wcs", "extract_2d")
     print('wcs validation test infile_name=', infile_name)
     det = fits.getval(infile_name, "DETECTOR", 0)
     lamp = fits.getval(infile_name, "LAMP", 0)
@@ -65,8 +68,8 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
     try:
         subprocess.run(["cp", msa_conf_name, "."])
     except FileNotFoundError:
-        print(" * PTT is not able to locat the MSA shutter configuration file. Please make sure that the msa_conf_name variable in")
-        print("   the PTT_config.cfg file is pointing exactly to where the fits file exists. ")
+        print(" * PTT is not able to locate the MSA shutter configuration file. Please make sure that the msa_conf_name variable in")
+        print("   the PTT_config.cfg file is pointing exactly to where the fits file exists (i.e. full path and name). ")
         print("   -> The WCS test is now set to skip and no plots will be generated. ")
         FINAL_TEST_RESULT = "skip"
         return FINAL_TEST_RESULT
@@ -81,31 +84,43 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
     print ('Using this MSA shutter configuration file: ', msa_conf_name)
 
     # get the datamodel from the assign_wcs output file
-    img = datamodels.ImageModel(infile_name)
-    if debug:
-        print("Instrument Configuration")
-        print("Detector: {}".format(img.meta.instrument.detector))
-        print("GWA: {}".format(img.meta.instrument.grating))
-        print("Filter: {}".format(img.meta.instrument.filter))
-        print("Lamp: {}".format(img.meta.instrument.lamp_state))
-        print("GWA_XTILT: {}".format(img.meta.instrument.gwa_xtilt))
-        print("GWA_YTILT: {}".format(img.meta.instrument.gwa_ytilt))
-        print("GWA_TTILT: {}".format(img.meta.instrument.gwa_tilt))
+    if mode_used is None  or  mode_used != "MOS_sim":
+        img = datamodels.ImageModel(infile_name)
+        # these commands only work for the assign_wcs ouput file
+        # loop over the slits
+        #slits_list = nirspec.get_open_slits(img)   # this function returns all open slitlets as defined in msa meta file,
+        # however, some of them may not be projected on the detector, and those are later removed from the list of open
+        # slitlets. To get the open and projected on the detector slitlets we use the following:
+        slits_list = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
+        #print ('Open slits: ', slits_list, '\n')
 
-    # loop over the slits
-    #slits_list = nirspec.get_open_slits(img)   # this function returns all open slitlets as defined in msa meta file,
-    # however, some of them may not be projected on the detector, and those are later removed from the list of open
-    # slitlets. To get the open and projected on the detector slitlets we use the following:
-    slits_list = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
-    #print ('Open slits: ', slits_list, '\n')
+        if debug:
+            print("Instrument Configuration")
+            print("Detector: {}".format(img.meta.instrument.detector))
+            print("GWA: {}".format(img.meta.instrument.grating))
+            print("Filter: {}".format(img.meta.instrument.filter))
+            print("Lamp: {}".format(img.meta.instrument.lamp_state))
+            print("GWA_XTILT: {}".format(img.meta.instrument.gwa_xtilt))
+            print("GWA_YTILT: {}".format(img.meta.instrument.gwa_ytilt))
+            print("GWA_TTILT: {}".format(img.meta.instrument.gwa_tilt))
+
+
+    elif mode_used == "MOS_sim":
+        # this command works for the extract_2d and flat_field output files
+        model = datamodels.MultiSlitModel(infile_name)
+        slits_list = model.slits
 
     # list to determine if pytest is passed or not
     total_test_result = OrderedDict()
 
     # loop over the slices
-    for slitlet_idx, slit in enumerate(slits_list):
+    for slit in slits_list:
         name = slit.name
         print ("\nWorking with slit: ", name)
+
+        # get the right index in the list of open shutters
+        pslit_list = pslit.tolist()
+        slitlet_idx = pslit_list.index(int(name))
 
         # Get the ESA trace
         #raw_data_root_file = "NRSV96215001001P0000000002103_1_491_SE_2016-01-24T01h25m07.cts.fits" # testing only
@@ -152,19 +167,23 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             # Assign variables according to detector
             skipv2v3test = True
             if det == "NRS1":
-                esa_flux = fits.getdata(esafile, "DATA1")
-                esa_wave = fits.getdata(esafile, "LAMBDA1")
-                esa_slity = fits.getdata(esafile, "SLITY1")
-                esa_msax = fits.getdata(esafile, "MSAX1")
-                esa_msay = fits.getdata(esafile, "MSAY1")
-                pyw = wcs.WCS(esahdulist['LAMBDA1'].header)
                 try:
-                    esa_v2v3x = fits.getdata(esafile, "V2V3X1")
-                    esa_v2v3y = fits.getdata(esafile, "V2V3Y1")
-                    skipv2v3test = False
-                except:
-                    KeyError
-                    print("Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions.")
+                    esa_flux = fits.getdata(esafile, "DATA1")
+                    esa_wave = fits.getdata(esafile, "LAMBDA1")
+                    esa_slity = fits.getdata(esafile, "SLITY1")
+                    esa_msax = fits.getdata(esafile, "MSAX1")
+                    esa_msay = fits.getdata(esafile, "MSAY1")
+                    pyw = wcs.WCS(esahdulist['LAMBDA1'].header)
+                    try:
+                        esa_v2v3x = fits.getdata(esafile, "V2V3X1")
+                        esa_v2v3y = fits.getdata(esafile, "V2V3Y1")
+                        skipv2v3test = False
+                    except KeyError:
+                        print("Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions.")
+                except KeyError:
+                    print("PTT did not find ESA extensions that match detector NRS1, skipping test for this slitlet...")
+                    continue
+
             if det == "NRS2":
                 try:
                     esa_flux = fits.getdata(esafile, "DATA2")
@@ -177,24 +196,28 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                         esa_v2v3x = fits.getdata(esafile, "V2V3X2")
                         esa_v2v3y = fits.getdata(esafile, "V2V3Y2")
                         skipv2v3test = False
-                    except:
-                        KeyError
+                    except KeyError:
                         print("Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions.")
-                except:
-                    KeyError
-                    print("\n * compare_wcs_fs.py is exiting because there are no extensions that match detector NRS2 in the ESA file.")
-                    print("   -> The WCS test is now set to skip and no plots will be generated. \n")
-                    FINAL_TEST_RESULT = "skip"
-                    return FINAL_TEST_RESULT
+                except KeyError:
+                    print("PTT did not find ESA extensions that match detector NRS2, skipping test for this slitlet...")
+                    continue
+                    #print("\n * compare_wcs_mos.py is exiting because there are no extensions that match detector NRS2 in the ESA file.")
+                    #print("   -> The WCS test is now set to skip and no plots will be generated. \n")
+                    #FINAL_TEST_RESULT = "skip"
+                    #return FINAL_TEST_RESULT
 
 
         # get the WCS object for this particular slit
-        try:
-            wcs_slice = nirspec.nrs_wcs_set_input(img, name)
-        except:
-            ValueError
-            print("* WARNING: Slitlet ", name, " was not found in the model. Skipping test for this slitlet.")
-            continue
+        if mode_used is None  or  mode_used != "MOS_sim":
+            try:
+                wcs_slice = nirspec.nrs_wcs_set_input(img, name)
+            except:
+                ValueError
+                print("* WARNING: Slitlet ", name, " was not found in the model. Skipping test for this slitlet.")
+                continue
+        elif mode_used == "MOS_sim":
+            wcs_slice = model.slits[0].wcs
+
 
         # if we want to print all available transforms, uncomment line below
         #print(wcs_slice)
@@ -208,18 +231,19 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         # uncomment line below.
         #print("Avalable frames: ", wcs_slice.available_frames)
 
-        if debug:
-            # To get specific pixel values use following syntax:
-            det2slit = wcs_slice.get_transform('detector', 'slit_frame')
-            slitx, slity, lam = det2slit(700, 1080)
-            print("slitx: " , slitx)
-            print("slity: " , slity)
-            print("lambda: " , lam)
+        if mode_used is None  or  mode_used != "MOS_sim":
+            if debug:
+                # To get specific pixel values use following syntax:
+                det2slit = wcs_slice.get_transform('detector', 'slit_frame')
+                slitx, slity, lam = det2slit(700, 1080)
+                print("slitx: " , slitx)
+                print("slity: " , slity)
+                print("lambda: " , lam)
 
-        if debug:
-            # The number of inputs and outputs in each frame can vary. This can be checked with:
-            print('Number on inputs: ', det2slit.n_inputs)
-            print('Number on outputs: ', det2slit.n_outputs)
+            if debug:
+                # The number of inputs and outputs in each frame can vary. This can be checked with:
+                print('Number on inputs: ', det2slit.n_inputs)
+                print('Number on outputs: ', det2slit.n_outputs)
 
         # Create x, y indices using the Trace WCS
         pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
@@ -414,9 +438,14 @@ if __name__ == '__main__':
     working_dir = pipeline_path+"/src/sandbox/simulation_test/491_results/"
     infile_name = working_dir+"F170LP-G235M_MOS_observation-6-c0e0_001_DN_NRS1_mod_updatedHDR_assign_wcs.fits"
     msa_conf_name = working_dir+"jw95065006001_0_msa.fits"
+    msa_conf_name = working_dir+"jw95065006001_0_singles_msa.fits"
     esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/simulations/ESA_Int_products"
+
+    # choose None or MOS_sim, only for MOS simulations
+    #mode_used = None
+    mode_used = "MOS_sim"
 
     # Run the principal function of the script
     result = compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
-                         show_figs=False, save_figs=True, threshold_diff=1.0e-7, debug=False)
+                         show_figs=False, save_figs=True, threshold_diff=1.0e-7, mode_used=mode_used, debug=False)
 

@@ -135,7 +135,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                         print("Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions.")
                 except:
                     KeyError
-                    print("\n * compare_wcs_fs.py is exiting because there are no extensions that match detector NRS2 in the ESA file.")
+                    print("\n * compare_wcs_ifu.py is exiting because there are no extensions that match detector NRS2 in the ESA file.")
                     print("   -> The WCS test is now set to skip and no plots will be generated. \n")
                     FINAL_TEST_RESULT = "skip"
                     return FINAL_TEST_RESULT

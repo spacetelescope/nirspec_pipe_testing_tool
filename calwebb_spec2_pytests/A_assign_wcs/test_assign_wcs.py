@@ -174,7 +174,7 @@ def output_hdul(set_inandout_filenames, config):
         assign_wcs_utils.print_time2file(txt_name, tot_time, string2print)
         print("Pipeline and PTT run times written in file: ", os.path.basename(txt_name), "in working directory. \n")
 
-        return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests
+        return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
 
     else:
 
@@ -225,7 +225,7 @@ def output_hdul(set_inandout_filenames, config):
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
             #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-            return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests
+            return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
 
         else:
             print("Skipping step. Intput file "+step_input_file+" does not exit.")
@@ -244,6 +244,7 @@ def validate_wcs(output_hdul):
     infile_name = output_hdul[1]
     msa_conf_name = output_hdul[2]
     esa_files_path = output_hdul[3]
+    mode_used = output_hdul[7]
 
     # define the threshold difference between the pipeline output and the ESA files for the pytest to pass or fail
     threshold_diff = float(output_hdul[4])
@@ -259,7 +260,7 @@ def validate_wcs(output_hdul):
         result = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
                                             save_figs=save_wcs_plots, threshold_diff=threshold_diff, debug=False)
 
-    elif core_utils.check_MOS_true(hdu):
+    elif core_utils.check_MOS_true(hdu)  and  mode_used != "MOS_sim":
         result = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
                                              show_figs=show_figs, save_figs=save_wcs_plots,
                                              threshold_diff=threshold_diff, debug=False)
@@ -270,7 +271,7 @@ def validate_wcs(output_hdul):
     elif core_utils.check_BOTS_true(hdu):
         pytest.skip("Skipping pytest: BOTS files at the moment are not being compared against an ESA intermediary product.")
     else:
-        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. PTT does not yet include the routine to verify this kind of file.")
+        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU.")
 
     return result
 

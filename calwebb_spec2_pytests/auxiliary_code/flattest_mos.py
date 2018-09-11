@@ -231,10 +231,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
     # loop over the 2D subwindows and read in the WCS values
-    for i, slit in enumerate(model.slits):
+    for slit in model.slits:
         slit_id = slit.name
         print ("\nWorking with slit: ", slit_id)
-        ext = sci_ext_list[i]   # this is for getting the science extension in the pipeline calculated flat
+        ext = sci_ext_list.index(int(slit_id))   # this is for getting the science extension in the pipeline calculated flat
         # make sure that the slitlet is open and projected on the detector, otherwise indicate so
         #if not slit_id in open_and_on_detector_slits_list:
         #    print("* This open slitlet was removed because it is not projected on the detector. Test skipped for this slitlet. \n")

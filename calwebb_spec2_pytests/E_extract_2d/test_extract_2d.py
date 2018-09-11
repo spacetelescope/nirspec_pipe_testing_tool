@@ -12,6 +12,7 @@ from astropy.io import fits
 from jwst.extract_2d.extract_2d_step import Extract2dStep
 from .. import core_utils
 from . import extract_2d_utils
+from .. auxiliary_code import compare_wcs_mos
 
 
 # HEADER
@@ -41,8 +42,15 @@ def output_hdul(set_inandout_filenames, config):
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
+    run_pytests_assign_wcs = config.getboolean("run_pytest", "_".join(("assign_wcs", "tests")))
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
     msa_conf_name = config.get("esa_intermediary_products", "msa_conf_name")
+
+    # Check if the mode used is MOS_sim and get the threshold for the assign_wcs test
+    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
+    wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
+    save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
+
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -51,7 +59,7 @@ def output_hdul(set_inandout_filenames, config):
     if not core_utils.check_IFU_true(inhdu):
         if run_calwebb_spec2:
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests
+            return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, run_pytests_assign_wcs
         else:
             if os.path.isfile(step_input_file):
                 if run_pipe_step:
@@ -81,7 +89,7 @@ def output_hdul(set_inandout_filenames, config):
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests
+                return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, run_pytests_assign_wcs
 
             else:
                 print (" The input file does not exist. Skipping step.")
@@ -95,37 +103,36 @@ def output_hdul(set_inandout_filenames, config):
 
 ### THESE FUNCTIONS ARE TO VALIDATE BOTH THE WCS AND THE 2D_EXTRACT STEPS
 
-# fixture to validate the WCS and extract 2d steps
+# fixture to validate the WCS and extract 2d steps, only for MOS simulations
 @pytest.fixture(scope="module")
 def validate_wcs_extract2d(output_hdul):
     # get the input information for the wcs routine
-    hdu = output_hdul[0]
     infile_name = output_hdul[1]
     msa_conf_name = output_hdul[2]
     esa_files_path = output_hdul[3]
+    mode_used = output_hdul[5]
 
     # define the threshold difference between the pipeline output and the ESA files for the pytest to pass or fail
-    threshold_diff = float(output_hdul[4])
+    threshold_diff = float(output_hdul[6])
 
     # save the output plots
-    save_wcs_plots = output_hdul[5]
+    save_wcs_plots = output_hdul[7]
 
     # show the figures
     show_figs = False
 
-    #if core_utils.check_FS_true(hdu):
-    #    result = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path,
-    #                                             auxiliary_code_path=None, plot_names=None,
-    #                                             show_figs=show_figs, save_figs=save_wcs_plots,
-    #                                             threshold_diff=threshold_diff)
+    if mode_used == "MOS_sim":
+        result = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
+                                             show_figs=show_figs, save_figs=save_wcs_plots,
+                                             threshold_diff=threshold_diff, mode_used=mode_used, debug=False)
 
-    #else:
-    #    pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU. Tool does not yet include the routine to verify this kind of file.")
+    else:
+        pytest.skip("Skipping pytest for WCS validation: The fits file is not MOS simulated data, the validation test was done after the assign_wcs step.")
 
-    #if result == "skip":
-    #    pytest.skip("Extract_2d validation will be skipped.")
+    if result == "skip":
+        pytest.skip("Pytest for assign_wcs validation after extract_2d will be skipped.")
 
-    #return result
+    return result
 
 
 
@@ -143,13 +150,14 @@ def test_s_ext2d_exists(output_hdul):
         assert extract_2d_utils.s_ext2d_exists(output_hdul[0]), "The keyword S_EXTR2D was not added to the header --> extract_2d step was not completed."
 
 
-#def test_validate_extract2d(output_hdul):
-#    # want to run this pytest?
-#    run_pytests = output_hdul[4]
-#    if not run_pytests:
-#        msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
-#        print(msg)
-#        pytest.skip(msg)
-#    else:
-#       print("\n * Running validation pytest...\n")
-#       assert validate_extract2d(output_hdul), "Box is not of expected size."
+def test_validate_wcs_extract2d(output_hdul):
+    # want to run this pytest? For this particular case, check both for the extract_2d step and for assign_wcs
+    run_pytests = output_hdul[4]
+    assign_wcs_pytests = output_hdul[8]
+    if not run_pytests and not assign_wcs_pytests:
+        msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        pytest.skip(msg)
+    else:
+       print("\n * Running validation pytest...\n")
+       assert validate_wcs_extract2d(output_hdul), "Output value from compare_wcs.py is greater than threshold."
