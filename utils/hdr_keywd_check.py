@@ -164,40 +164,27 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
     # Check if type of value matches expected
     valtype = type(val)
 
-    # Store type that value should have
-    dict_type = hkwd_val[0]
-
-    # Check if type of value correspond to what is given, else change it
-    if val is not None:
-        count = 0
-        for v in val:
-            # check if value is a float
-            if v=='.':
-                count += 1
-
-        # check if value has a negative sign
-        neg_in_value = False
-        if (count == 0) and ('-' in val):
-            val_list = val.split("-")
-            if len(val_list) == 2:
-                neg_in_value = True
-
-        # check for letters in value
-        no_letters_in_string = True
-        for char in val:
-            if char.isalpha():
-                no_letters_in_string = False
-        if no_letters_in_string:
-            if (count == 0) and (':' not in val) and (neg_in_value):
-                if val=='':
-                    warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
-                    print (warning)
-                    return warning, dict_type
-
-                val = int(val)
-            if (count==1) and (':' not in val):
+    # Store type that value should have, checking for option lists
+    dict_type = type(hkwd_val[0]) if len(hkwd_val) > 1 else hkwd_val[0]
+    
+    # If we don't want a string, check for numerics
+    if dict_type != str:
+        #regex patterns
+        float_pattern = re.compile(r"\b\s*[+-]?(?=\d*[.eE])([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?(?=\s|$)")
+        int_pattern = re.compile(r"\b\s*[-+]?\d+(?=\s|$)")
+        
+        if val is None or valtype == '':
+            warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
+            print (warning)
+            return warning, dict_type
+        
+        if valtype == str:
+            if not float_pattern.fullmatch(val) is None:
                 val = float(val)
-            valtype = type(val)
+                valtype = float
+            elif not int_pattern.fullmatch(val) is None:
+                val = int(val)
+                valtype = int
 
     if (valtype in hkwd_val) or (val in hkwd_val) or (valtype == type(dict_type)):
         print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Allowed value type'))
