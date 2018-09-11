@@ -51,7 +51,7 @@ keywd_dict['PROGRAM'] = [str] # program number, e.g. test1
 keywd_dict['OBSERVTN']= [str] # observation number, e.g. 001
 keywd_dict['VISIT']   = [str] # visit number, e.g. 001
 keywd_dict['VISITGRP']= [str] # visit group identifier, e.g. 01
-keywd_dict['SEQ_ID']  = [int] # parallel sequence identifier, e.g. 1
+keywd_dict['SEQ_ID']  = [str] # parallel sequence identifier, e.g. 1
 keywd_dict['ACT_ID']  = [str] # activity identifier, e.g. 01
 keywd_dict['EXPOSURE']= [str] # exposure request number, e.g. 00001
 
