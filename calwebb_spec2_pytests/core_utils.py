@@ -121,7 +121,7 @@ def get_sci_extensions(fits_file_name):
     sci_dicts = {}
     for ext, hdu in enumerate(hdulist):
         if hdu.name == "SCI":
-            sci_list[hdu.header['SLTNAME'] = ext
+            sci_list[hdu.header['SLTNAME']] = ext
     return sci_list
 
 
