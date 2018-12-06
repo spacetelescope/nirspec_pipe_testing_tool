@@ -534,7 +534,7 @@ def test_s_wcs_exists(output_hdul):
         print("\n * Running completion pytest...\n")
         assert assign_wcs_utils.s_wcs_exists(output_hdul[0]), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
 
-def test_validate_wcs(output_hdul):
+def test_validate_wcs(output_hdul, validate_wcs):
     # want to run this pytest?
     run_pytests = output_hdul[6]
     if not run_pytests:
