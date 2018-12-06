@@ -544,6 +544,6 @@ def test_validate_wcs(output_hdul, request):
     else:
         print("\n", validate_wcs, "\n")
         print("\n * Running validation pytest...\n")
-        assert request.getfixturevalue(validate_wcs), "Output value from compare_wcs.py is greater than threshold."
+        assert request.getfixturevalue('validate_wcs'), "Output value from compare_wcs.py is greater than threshold."
 
 
