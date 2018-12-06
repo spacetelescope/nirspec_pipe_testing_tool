@@ -118,10 +118,10 @@ def get_sci_extensions(fits_file_name):
         sci_list: list of the numbers of the science extensions
     """
     hdulist = fits.open(fits_file_name)
-    sci_list = []
+    sci_dicts = {}
     for ext, hdu in enumerate(hdulist):
         if hdu.name == "SCI":
-            sci_list.append(ext)
+            sci_list[hdu.header['SLTNAME']] = ext
     return sci_list
 
 
