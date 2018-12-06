@@ -150,7 +150,7 @@ def test_s_ext2d_exists(output_hdul):
         assert extract_2d_utils.s_ext2d_exists(output_hdul[0]), "The keyword S_EXTR2D was not added to the header --> extract_2d step was not completed."
 
 
-def test_validate_wcs_extract2d(output_hdul):
+def test_validate_wcs_extract2d(output_hdul, validate_wcs_extract2d):
     # want to run this pytest? For this particular case, check both for the extract_2d step and for assign_wcs
     run_pytests = output_hdul[4]
     assign_wcs_pytests = output_hdul[8]
