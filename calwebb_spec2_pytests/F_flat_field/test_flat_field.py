@@ -192,7 +192,7 @@ def test_s_flat_exists(output_hdul):
         print("\n * Running completion pytest...\n")
         assert flat_field_utils.s_flat_exists(output_hdul[0]), "The keyword S_FLAT was not added to the header --> flat_field step was not completed."
 
-def test_validate_flat_field(output_hdul):
+def test_validate_flat_field(output_hdul, request):
     # want to run this pytest?
     run_pytests = output_hdul[4]
     if not run_pytests:
@@ -201,7 +201,7 @@ def test_validate_flat_field(output_hdul):
         pytest.skip(msg)
     else:
         print("\n * Running validation pytest...\n")
-        assert validate_flat_field(output_hdul), "Output value from flattest.py is greater than threshold."
+        assert request.get_fixture_result('validate_flat_field'), "Output value from flattest.py is greater than threshold."
 
 def test_fflat_rfile(output_hdul):
     # want to run this pytest?
