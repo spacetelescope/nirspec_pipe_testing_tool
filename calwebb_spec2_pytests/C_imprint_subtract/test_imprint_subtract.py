@@ -166,7 +166,7 @@ def test_s_imprint_exists(output_hdul):
         print("\n * Running completion pytest...\n")
         assert imprint_subtract_utils.s_imprint_exists(output_hdul[0]), "The keyword S_IMPRINT was not added to the header --> imprint_subtract step was not completed."
 
-def test_check_output_is_zero(output_hdul):
+def test_check_output_is_zero(output_hdul, request):
     # want to run this pytest?
     run_pytests = output_hdul[4]
     if not run_pytests:
@@ -175,4 +175,4 @@ def test_check_output_is_zero(output_hdul):
         pytest.skip(msg)
     else:
         print("\n * Running numerical accuracy pytest...\n")
-        assert check_output_is_zero(output_hdul), "Substraction result is not equal to zero."
+        assert request.getfixturevalue('check_output_is_zero'), "Substraction result is not equal to zero."
