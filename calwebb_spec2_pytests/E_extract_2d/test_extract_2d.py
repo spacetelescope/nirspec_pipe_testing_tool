@@ -160,4 +160,4 @@ def test_validate_wcs_extract2d(output_hdul, validate_wcs_extract2d):
         pytest.skip(msg)
     else:
        print("\n * Running validation pytest...\n")
-       assert validate_wcs_extract2d(output_hdul), "Output value from compare_wcs.py is greater than threshold."
+       assert request.getfixturevalue('validate_wcs_extract2d'), "Output value from compare_wcs.py is greater than threshold."
