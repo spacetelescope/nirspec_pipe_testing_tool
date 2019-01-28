@@ -6,16 +6,17 @@ Created on Thu Mar 22 12:50:23 2018
 @author: gkanarek
 """
 
-import sys
+import sys, os
 from jwst.datamodels import open as dmodel_open
 from astropy.io import fits
 from astropy.time import Time
 from crds.matches import find_match_paths_as_dict as ref_matches
+from crds import getrecommendations
 
 def check_meta(input_file, match_key, match_val):
     input_val = input_file[match_key.lower()]
     #direct comparison for numeric types; "in" comparison for string types
-    if match_val in ["GENERIC", "ALL", "N/A"]:
+    if match_val in ["GENERIC", "ALL", "N/A", "ANY"]:
         return True
     if isinstance(input_val, str):
         return input_val in match_val
@@ -57,7 +58,7 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     keyword change), this will test the actual match criteria.
     """
     
-    logstream, errstream = get_streams()
+    logstream, errstream = get_streams(logfile=logfile)
     
     #Convert pipeline step to a header keyword if necessary
     if pipeline_step.upper().startswith("R_"):
@@ -93,13 +94,21 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         match_criteria = ref_matches(context, reffile_name)[0]
     except ValueError:
         import pdb; pdb.set_trace()
+    
+    tests = {} #store all the tests in a single dictionary
+    
+    #Test whether the recommended reference file was actually selected
+    recommended_reffile = getrecommendations(match_criteria, 
+                                             reftypes=[pipeline_step],
+                                             context=context,
+                                             fast=True)
+    recommended_reffile = os.path.basename(recommended_reffile) #remove path, only want to test filename
+    tests['RECOMMENDATION'] = recommended_reffile == reffile_name
         
     #Remove irrelevant match criteria
     del match_criteria['observatory']
     del match_criteria['instrument']
     del match_criteria['filekind']
-    
-    tests = {}
     
     #Useafter dates require special handling
     if "META.OBSERVATION.DATE" not in match_criteria:
