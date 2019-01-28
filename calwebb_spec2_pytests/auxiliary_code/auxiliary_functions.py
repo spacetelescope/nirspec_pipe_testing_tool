@@ -49,11 +49,11 @@ def get_sci_extensions(fits_file_name):
     """
     hdulist = fits.open(fits_file_name)
     hdulist.info()
-    sci_list = []
+    sci_dict = {}
     for ext, hdu in enumerate(hdulist):
         if hdu.name == "SCI":
-            sci_list.append(ext)
-    return sci_list
+            sci_dict[hdu.header["SLTNAME"]] = ext
+    return sci_dict
 
 
 def do_idl_match(arrA, arrB):

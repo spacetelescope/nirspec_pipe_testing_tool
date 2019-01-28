@@ -168,9 +168,6 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
     # Store type that value should have, checking for option lists
     dict_type = type(hkwd_val[0]) if len(hkwd_val) > 1 else hkwd_val[0]
     
-    if key == "GWA_TILT" and valtype == str:
-        import pdb; pdb.set_trace()
-    
     # If we don't want a string, check for numerics
     if dict_type != str:
         #regex patterns
