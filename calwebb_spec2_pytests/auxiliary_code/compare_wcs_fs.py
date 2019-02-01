@@ -59,8 +59,8 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
     # loop over the slits
     sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1"]
-    sci_ext_list = auxfunc.get_sci_extensions(infile_name)
-    print ('sci_ext_list=', sci_ext_list, '\n')
+    #sci_ext_list = auxfunc.get_sci_extensions(infile_name)
+    #print ('sci_ext_list=', sci_ext_list, '\n')
 
     # mapping the ESA slit names to pipeline names
     map_slit_names = {'SLIT_A_1600' : 'S1600A1',
@@ -198,6 +198,13 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
         esax, esay = pyw.all_pix2world(pipex, pipey, 0)
 
+        if det == "NRS2":
+            esax = 2049-esax
+            esay = 2049-esay
+            print("flipped coords")
+            print(esax-1)
+            print(esay-1)
+
         # check if subarray is not FULL FRAME
         subarray = fits.getval(infile_name, "SUBARRAY", 0)
         if "FULL" not in subarray:
@@ -224,9 +231,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         slitx, slity, _ = det2slit(esax-1, esay-1)
         tested_quantity = "Slit-Y Difference"
         # calculate and print statistics for slit-y and x relative differences
-        #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
+        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
         # calculate and print statistics for slit-y and x absolute differences
-        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
+        #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
         total_test_result[pipeslit] = {tested_quantity : test_result}

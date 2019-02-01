@@ -249,6 +249,11 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
         esax, esay = pyw.all_pix2world(pipex, pipey, 0)
 
+        if det == "NRS2":
+           print("NRS2 needs a flip")
+           esax = 2049-esax
+           esay = 2049-esay
+
         # make sure the extracting coordinates are correct
         #xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + esa_wave.shape[1]
         #ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + esa_wave.shape[0]
@@ -271,9 +276,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         slitx, slity, _ = det2slit(esax-1, esay-1)
         tested_quantity = "Slit-Y Difference"
         # calculate and print statistics for slit-y and x relative differences
-        #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=False)
+        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=False)
         # calculate and print statistics for slit-y and x absolute differences
-        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
+        #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
         total_test_result[slitlet_name] = {tested_quantity : result}

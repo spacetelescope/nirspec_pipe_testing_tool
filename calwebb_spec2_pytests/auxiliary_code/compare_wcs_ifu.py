@@ -17,13 +17,15 @@ This script compares pipeline WCS info with ESA results for Integral Field Unit 
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.1"
+__version__ = "2.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
 #                         script, and added new routines for plot making and statistics calculations.
 # Aug 2018 - Version 2.1: Modified slit-y differences to be reported in absolute numbers rather than relative
+# Dec 2018 - Version 2.2: (JM) Problem with the science extension function call (not appropriate for IFU data);
+#                         now using the data model to get the slice info.
 
 
 
@@ -62,9 +64,11 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
     #['detector', 'sca', 'gwa', 'slit_frame', 'slicer', 'msa_frame', 'oteip', 'v2v3', 'world']
 
     # loop over the slices: 0 - 29
-    slice_list = range(30)
-    sci_ext_list = auxfunc.get_sci_extensions(infile_name)
-    print ('sci_ext_list=', sci_ext_list, '\n')
+    #slice_list = range(30)
+    #sci_ext_list = auxfunc.get_sci_extensions(infile_name)
+    img = datamodels.ImageModel(infile_name)
+    slice_list = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
+    #print ('sci_ext_list=', sci_ext_list, '\n')
 
     # list to determine if pytest is passed or not
     total_test_result = OrderedDict()
@@ -126,6 +130,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     esa_msax = fits.getdata(esafile, "MSAX2")
                     esa_msay = fits.getdata(esafile, "MSAY2")
                     pyw = wcs.WCS(esahdulist['LAMBDA2'].header)
+                    print("using NRS2 extensions")
                     try:
                         esa_v2v3x = fits.getdata(esafile, "V2V3X2")
                         esa_v2v3y = fits.getdata(esafile, "V2V3Y2")
@@ -172,12 +177,20 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         # Create x, y indices using the Trace WCS
         pipey, pipex = np.mgrid[:esa_wave.shape[0], : esa_wave.shape[1]]
         esax, esay = pyw.all_pix2world(pipex, pipey, 0)
+        # need to account for different detector orientation for NRS2
+        if det == "NRS2":
+            esax = 2049-esax
+            esay = 2049-esay
+        print("x,y: ", esax-1,esay-1)
 
         # Compute pipeline RA, DEC, and lambda
         pra, pdec, pwave = wcs_slice(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
         pwave *= 10**-6
+        print("wavelengths: ",pwave)
         # calculate and print statistics for slit-y and x relative differences
         tested_quantity = "Wavelength Difference"
+        print(esa_wave)
+        print(pwave)
         rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
         rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats = rel_diff_pwave_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
@@ -188,9 +201,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         slitx, slity, _ = det2slit(esax-1, esay-1)
         tested_quantity = "Slit-Y Difference"
         # calculate and print statistics for slit-y and x relative differences
-        #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
+        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
         # calculate and print statistics for slit-y and x absolute differences
-        rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
+        #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
         result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
         total_test_result["slice"+pslice] = {tested_quantity : result}
