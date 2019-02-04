@@ -368,7 +368,7 @@ def calculate_step_run_time(screen_output_txt):
         for line in sot.readlines():
             line = line.replace("\n", "")
             if "Ending" in line:   # make sure not to overwrite the dictionary
-                break
+                continue
             for pstp in pipe_steps:
                 if pstp in line and "running with args" in line:
                     start_time_list = line.split()[0:2]
