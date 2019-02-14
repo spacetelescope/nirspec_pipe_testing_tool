@@ -141,6 +141,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     dfimdq = np.transpose(dfimdq)
     if det == "NRS2":
         dfimdq = dfimdq[..., ::-1, ::-1]
+        # rotate science data by 180 degrees
+        dfim = np.rot90(dfim)
+        dfim = np.rot90(dfim)
     naxis3 = fits.getval(dfile, "NAXIS3", "SCI")#1)
 
     # get the wavelength values
@@ -183,6 +186,10 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     print("Using S-flat: ", sfile)
     sfim = fits.getdata(sfile, "SCI")#1)
     sfimdq = fits.getdata(sfile, "DQ")#3)
+    if det == "NRS2":
+        # rotate dq data by 180 degrees
+        sfimdq = np.rot90(sfimdq)
+        sfimdq = np.rot90(sfimdq)
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim)
