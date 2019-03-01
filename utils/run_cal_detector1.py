@@ -35,11 +35,12 @@ This script will perform calwebb_detector1 in one single run, outputing intermed
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Jul 2018 - Version 1.1: Added functions to calculate running times from screen log
+# Feb 2019 - Version 1.2: made changes to be able to process 491 and 492 files in the same directory
 
 
 def get_caldet1cfg_and_workingdir():
@@ -169,6 +170,9 @@ with open(txt_outputs_summary, "w+") as tf:
 # Get the detector used
 det = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
 
+# Name of the text file containing all the pipeline output
+caldetector1_screenout = "caldetector1_screenout_"+det+".txt"
+
 #final_output_caldet1 = "gain_scale.fits"
 final_output_caldet1 = "final_output_caldet1_"+det+".fits"
 output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits",
@@ -196,7 +200,6 @@ if not step_by_step:
     total_time = "{:<18} {:<20} {:<20}".format("", "total_time = ", repr(end_time)+"  ="+tot_time)
 
     # get the running time for the individual steps
-    caldetector1_screenout = "caldetector1_screenout.txt"
     step_running_times = calculate_step_run_time(caldetector1_screenout, output_names)
 
     # write step running times in the text file

@@ -14,10 +14,11 @@ This script contains functions frequently used in the test suite.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Feb 2019 - Version 1.2: made changes to be able to process 491 and 492 files in the same directory
 
 
 # dictionary of the steps and corresponding strings to be added to the file name after the step has ran
@@ -115,14 +116,14 @@ def get_sci_extensions(fits_file_name):
         fits_file_name: name of the fits file of interest
 
     Returns:
-        sci_list: list of the numbers of the science extensions
+        sci_dicts: dictionary of the numbers of the science extensions
     """
     hdulist = fits.open(fits_file_name)
-    sci_dicts = {}
+    sci_dicts = collections.OrderedDict()
     for ext, hdu in enumerate(hdulist):
         if hdu.name == "SCI":
-            sci_list[hdu.header['SLTNAME']] = ext
-    return sci_list
+            sci_dicts[hdu.header['SLTNAME']] = ext
+    return sci_dicts
 
 
 def get_step_inandout_filename(step, initial_input_file, working_directory, debug=False):
@@ -545,6 +546,9 @@ def set_inandout_filenames(step, config):
     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
     initial_input_file_basename = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(data_directory, initial_input_file_basename)
+    # Get the detector used
+    det = fits.getval(initial_input_file, "DETECTOR", 0)
+    True_steps_suffix_map = "full_run_map_"+det+".txt"
     if os.path.isfile(initial_input_file):
         print("\n Taking initial input file from data_directory:")
     else:
@@ -552,13 +556,12 @@ def set_inandout_filenames(step, config):
         print("\n Taking initial file from working_directory: ")
     print(" Initial input file = ", initial_input_file , "\n")
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
+
     if not run_calwebb_spec2:
-        True_steps_suffix_map = config.get("calwebb_spec2_input_file", "True_steps_suffix_map")
         pytests_directory = os.getcwd()
         True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
         print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map, ", located in working directory.")
     else:
-        True_steps_suffix_map = "full_run_map.txt"
         print("Pipeline was set to run in full. Suffix map named: full_run_map.txt, located in working directory.")
     suffix_and_filenames = get_step_inandout_filename(step, initial_input_file, working_directory)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames

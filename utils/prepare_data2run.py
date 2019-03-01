@@ -24,10 +24,11 @@ Example usage:
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Feb 2019 - Version 1.1: made changes to be able to process 491 and 492 files in the same directory
 
 
 def modify_PTT_cfg_file(fits_file, mode):
@@ -86,6 +87,9 @@ mode = args.mode
 rm_prep_data = args.rm_prep_data
 only_update = args.only_update
 
+# Get the detector used
+det = fits.getval(fits_file, "DETECTOR", 0)
+
 # Create the directory to run the create_data script
 subprocess.call(["mkdir", "prep_data"])
 
@@ -119,7 +123,7 @@ with open(datapropfile, "w") as dpf:
 subprocess.run(["create_data", "prep_data"])
 
 # if create_data was successfull the new uncalibrated file must have appeared in the prep_data directory
-uncal_file = glob("prep_data/*_uncal.fits")[0]
+uncal_file = glob("prep_data/*"+det+"*_uncal.fits")[0]
 if os.path.isfile(uncal_file):
 
     # move the fixed uncal file out of prep_data
@@ -163,7 +167,7 @@ if os.path.isfile(uncal_file):
     fits.setval(uncal_file, 'FILTER', 0, value=filt, after='DETECTOR')
 
     # add the missing header keywords and fix the format to the one the pipeline expects
-    uncal_file = glob("*_uncal.fits")[0]
+    #uncal_file = glob("*_uncal.fits")[0]
     hkch.perform_check(uncal_file, only_update, mode)
 
 else:

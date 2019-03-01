@@ -26,11 +26,12 @@ print("\n*** Using jwst pipeline version: ", jwst.__version__, " *** \n")
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.0"
+__version__ = "2.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
+# Feb 2019 - Version 2.1: Maria made changes to be able to process 491 and 492 files in the same directory
 
 
 
@@ -84,6 +85,9 @@ def output_hdul(set_inandout_filenames, config):
     # get main header from input file
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
 
+    # Get the detector used
+    det = fits.getval(step_input_file, "DETECTOR", 0)
+
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -112,7 +116,7 @@ def output_hdul(set_inandout_filenames, config):
         print ("*** Will run calwebb_spec2... ")
 
         # create the map
-        txt_name = "full_run_map.txt"
+        txt_name = "full_run_map_"+det+".txt"
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
 
         # start the timer to compute the step running time of PTT
@@ -151,7 +155,7 @@ def output_hdul(set_inandout_filenames, config):
         #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
 
         # add the running time for all steps
-        calspec2_screenout = "calspec2_screenout.txt"
+        calspec2_screenout = "calspec2_screenout_"+det+".txt"
         # make sure we are able to find calspec2_screenout either in the calwebb_spec2 directory or in the working dir
         if not os.path.isfile(calspec2_screenout):
             calspec2_screenout = os.path.join(working_directory, calspec2_screenout)
