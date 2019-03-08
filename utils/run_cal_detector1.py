@@ -150,6 +150,9 @@ args = parser.parse_args()
 fits_input_uncal_file = args.fits_input_uncal_file
 step_by_step = args.step_by_step
 
+# Get the detector used
+det = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
+
 # Get the cfg file
 calwebb_detector1_cfg, calwebb_tso1_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
 if mode_used != "BOTS":
@@ -159,16 +162,13 @@ else:
 print ("Using this configuration file: ", cfg_file)
 
 # create the text file to record the names of the output files and the time the pipeline took to run
-txt_outputs_summary = "cal_detector1_outputs_and_times.txt"
+txt_outputs_summary = "cal_detector1_outputs_and_times_"+det+".txt"
 end_time_total = []
 line0 = "# {:<20}".format("Input file: "+fits_input_uncal_file)
 line1 = "# {:<16} {:<19} {:<20}".format("Step", "Output file", "Time to run [s]")
 with open(txt_outputs_summary, "w+") as tf:
     tf.write(line0+"\n")
     tf.write(line1+"\n")
-
-# Get the detector used
-det = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
 
 # Name of the text file containing all the pipeline output
 caldetector1_screenout = "caldetector1_screenout_"+det+".txt"
