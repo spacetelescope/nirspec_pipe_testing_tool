@@ -6,8 +6,9 @@ py.test module for unit testing the flat field step.
 import os
 import subprocess
 import time
-
 import pytest
+from astropy.io import fits
+
 from jwst.flatfield.flat_field_step import FlatFieldStep
 
 from . import flat_field_utils
@@ -21,10 +22,11 @@ from .. auxiliary_code import change_filter_opaque2science
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Mar 2019 - Version 1.1: modified reference file tests and separated completion from validation tests
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -54,7 +56,12 @@ def output_hdul(set_inandout_filenames, config):
     flattest_paths = [step_output_file, msa_shutter_conf, dflat_path, sflat_path, fflat_path]
     flattest_switches = [flattest_threshold_diff, save_flattest_plot, write_flattest_files]
     run_pipe_step = config.getboolean("run_pipe_steps", step)
-    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
+    # determine which tests are to be run
+    flat_field_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
+    flat_field_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
+    flat_field_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    run_pytests = [flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests]
+
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -120,7 +127,9 @@ def output_hdul(set_inandout_filenames, config):
                 print("Skipping running pipeline step ", step)
                 # add the running time for this step
                 working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-                end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+                # Get the detector used
+                det = fits.getval(step_input_file, "DETECTOR", 0)
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, det, working_directory)
             step_completed = True
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
@@ -183,7 +192,8 @@ def validate_flat_field(output_hdul):
 
 def test_s_flat_exists(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[4]
+    # output_hdul[4] = flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests
+    run_pytests = output_hdul[4][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -192,20 +202,22 @@ def test_s_flat_exists(output_hdul):
         print("\n * Running completion pytest...\n")
         assert flat_field_utils.s_flat_exists(output_hdul[0]), "The keyword S_FLAT was not added to the header --> flat_field step was not completed."
 
-def test_validate_flat_field(output_hdul, request):
+def test_validate_flat_field(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[4]
+    # output_hdul[4] = flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests
+    run_pytests = output_hdul[4][2]
     if not run_pytests:
         msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
         pytest.skip(msg)
     else:
         print("\n * Running validation pytest...\n")
-        assert request.get_fixture_result('validate_flat_field'), "Output value from flattest.py is greater than threshold."
+        assert validate_flat_field(output_hdul), "Output value from flattest.py is greater than threshold."
 
 def test_fflat_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[4]
+    # output_hdul[4] = flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests
+    run_pytests = output_hdul[4][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -217,7 +229,8 @@ def test_fflat_rfile(output_hdul):
 
 def test_sflat_sfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[4]
+    # output_hdul[4] = flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests
+    run_pytests = output_hdul[4][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -229,7 +242,8 @@ def test_sflat_sfile(output_hdul):
 
 def test_dflat_dfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[4]
+    # output_hdul[4] = flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests
+    run_pytests = output_hdul[4][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)

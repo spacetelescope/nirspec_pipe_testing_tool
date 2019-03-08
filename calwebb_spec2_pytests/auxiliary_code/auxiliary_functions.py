@@ -235,13 +235,14 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
     esafile = "ESA file not found"
     if all(item_not_dir==True for item_not_dir in dirs_not_in_list):
         raw_file_name = rawdatroot.split("_")[0].replace("NRS", "")
-        #print("raw_file_name = ", raw_file_name)
         for item in subdir_list:
             if raw_file_name in item:
                 if "List" not in item:
                     nidrawfile = fits.getval(item, "GS_JOBID", 0).split("_")[1].replace("000", "")
                     #print("nidrawfile =", nidrawfile)
                     same_nid_files.append(item)
+            else:
+                nidrawfile = ""
         nid = nidrawfile
     else:
         same_nid_files = []
@@ -564,7 +565,7 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
     This function creates and shows/saves one figure with the 2D plot for the given array and the
     corresponding histogram.
     Args:
-        img: nunpy array to be ploted in top figure
+        img: numpy array to be ploted in top figure
         hist_data: numpy array to be plotted in bottom figure
         info_img: list, contains title, label_x, and label_y information for top figure
         info_hist: list, contains xlabel, ylabel, bins, and stats information for bottom figure, where stats is
@@ -584,7 +585,7 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
             'size'   : 16}
     matplotlib.rc('font', **font)
     fig = plt.figure(1, figsize=(12, 10))
-    plt.subplots_adjust(hspace=.4)
+    plt.subplots_adjust(hspace=0.4)
     alpha = 0.2
     fontsize = 15
 

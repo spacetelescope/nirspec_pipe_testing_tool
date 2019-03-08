@@ -4,10 +4,9 @@ py.test module for unit testing the barshadow step.
 """
 
 import os
-import subprocess
 import time
-
 import pytest
+from astropy.io import fits
 from jwst.barshadow.barshadow_step import BarShadowStep
 
 from . import barshadow_utils
@@ -18,10 +17,11 @@ from .. auxiliary_code import change_filter_opaque2science
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Mar 2019 - Version 1.1: separated completion from other tests
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -41,7 +41,12 @@ def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
-    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
+    # determine which tests are to be run
+    barshadow_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
+    #barshadow_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
+    #barshadow_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    run_pytests = [barshadow_completion_tests]#, barshadow_reffile_tests, barshadow_validation_tests]
+
     end_time = '0.0'
 
     # Only run step if data is MOS
@@ -56,7 +61,7 @@ def output_hdul(set_inandout_filenames, config):
         if change_filter_opaque:
             is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
             if is_filter_opaque:
-                print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip.")
+                print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Barshadow pytest now set to Skip.")
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
@@ -88,7 +93,9 @@ def output_hdul(set_inandout_filenames, config):
                     print("Skipping running pipeline step ", step)
                     # add the running time for this step
                     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-                    end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+                    # Get the detector used
+                    det = fits.getval(step_input_file, "DETECTOR", 0)
+                    end_time = core_utils.get_stp_run_time_from_screenfile(step, det, working_directory)
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
@@ -108,7 +115,8 @@ def output_hdul(set_inandout_filenames, config):
 
 def test_s_barsha_exists(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[2]
+    # output_hdul[2] = barshadow_completion_tests, barshadow_reffile_tests, barshadow_validation_tests
+    run_pytests = output_hdul[2][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)

@@ -35,11 +35,12 @@ This script will perform calwebb_detector1 in one single run, outputing intermed
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Jul 2018 - Version 1.1: Added functions to calculate running times from screen log
+# Feb 2019 - Version 1.2: made changes to be able to process 491 and 492 files in the same directory
 
 
 def get_caldet1cfg_and_workingdir():
@@ -149,6 +150,9 @@ args = parser.parse_args()
 fits_input_uncal_file = args.fits_input_uncal_file
 step_by_step = args.step_by_step
 
+# Get the detector used
+det = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
+
 # Get the cfg file
 calwebb_detector1_cfg, calwebb_tso1_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
 if mode_used != "BOTS":
@@ -158,7 +162,7 @@ else:
 print ("Using this configuration file: ", cfg_file)
 
 # create the text file to record the names of the output files and the time the pipeline took to run
-txt_outputs_summary = "cal_detector1_outputs_and_times.txt"
+txt_outputs_summary = "cal_detector1_outputs_and_times_"+det+".txt"
 end_time_total = []
 line0 = "# {:<20}".format("Input file: "+fits_input_uncal_file)
 line1 = "# {:<16} {:<19} {:<20}".format("Step", "Output file", "Time to run [s]")
@@ -166,8 +170,8 @@ with open(txt_outputs_summary, "w+") as tf:
     tf.write(line0+"\n")
     tf.write(line1+"\n")
 
-# Get the detector used
-det = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
+# Name of the text file containing all the pipeline output
+caldetector1_screenout = "caldetector1_screenout_"+det+".txt"
 
 #final_output_caldet1 = "gain_scale.fits"
 final_output_caldet1 = "final_output_caldet1_"+det+".fits"
@@ -196,7 +200,6 @@ if not step_by_step:
     total_time = "{:<18} {:<20} {:<20}".format("", "total_time = ", repr(end_time)+"  ="+tot_time)
 
     # get the running time for the individual steps
-    caldetector1_screenout = "caldetector1_screenout.txt"
     step_running_times = calculate_step_run_time(caldetector1_screenout, output_names)
 
     # write step running times in the text file

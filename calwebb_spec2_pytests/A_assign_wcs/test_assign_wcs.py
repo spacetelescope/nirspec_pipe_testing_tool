@@ -26,11 +26,12 @@ print("\n*** Using jwst pipeline version: ", jwst.__version__, " *** \n")
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.0"
+__version__ = "2.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
+# Feb 2019 - Version 2.1: Maria made changes to be able to process 491 and 492 files in the same directory
 
 
 
@@ -40,7 +41,6 @@ __version__ = "2.0"
 @pytest.fixture(scope="module")
 def set_inandout_filenames(config):
     step = "assign_wcs"
-    True_steps_suffix_map = config.get("calwebb_spec2_input_file", "True_steps_suffix_map")
     data_directory = config.get("calwebb_spec2_input_file", "data_directory")
     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
     initial_input_file_basename = config.get("calwebb_spec2_input_file", "input_file")
@@ -51,6 +51,9 @@ def set_inandout_filenames(config):
         initial_input_file = os.path.join(working_directory, initial_input_file_basename)
         print("\n Taking initial file from working_directory: ")
     print(" Initial input file = ", initial_input_file , "\n")
+    # Get the detector used
+    detector = fits.getval(initial_input_file, "DETECTOR", 0)
+    True_steps_suffix_map = "True_steps_suffix_map_"+detector+".txt"
     pytests_directory = os.getcwd()
     True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
     suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, working_directory)
@@ -73,9 +76,17 @@ def output_hdul(set_inandout_filenames, config):
         _, step_input_file = change_filter_opaque2science.change_filter_opaque(step_input_file)
         print (" * With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Further steps will be skipped. \n")
 
+    # determine if the pipeline is to be run in full
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
+    # determine which steps are to be run, if not run in full
     run_pipe_step = config.getboolean("run_pipe_steps", step)
-    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
+    # determine which tests are to be run
+    assign_wcs_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
+    assign_wcs_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
+    assign_wcs_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    run_pytests = [assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests]
+
+    # get other relevant info from PTT config file
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
@@ -83,6 +94,9 @@ def output_hdul(set_inandout_filenames, config):
 
     # get main header from input file
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+
+    # Get the detector used
+    detector = fits.getval(step_input_file, "DETECTOR", 0)
 
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
@@ -112,7 +126,7 @@ def output_hdul(set_inandout_filenames, config):
         print ("*** Will run calwebb_spec2... ")
 
         # create the map
-        txt_name = "full_run_map.txt"
+        txt_name = "full_run_map_"+detector+".txt"
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
 
         # start the timer to compute the step running time of PTT
@@ -125,6 +139,8 @@ def output_hdul(set_inandout_filenames, config):
         input_file = config.get("calwebb_spec2_input_file", "input_file")
         if "_uncal_rate" in input_file:
             input_file = input_file.replace("_uncal_rate", "")
+        if "_uncal" in input_file:
+            input_file = input_file.replace("_uncal", "")
         final_output_name = input_file.replace(".fits", "_cal.fits")
         if core_utils.check_MOS_true(inhdu):
             # copy the MSA shutter configuration file into the pytest directory
@@ -132,7 +148,7 @@ def output_hdul(set_inandout_filenames, config):
 
         # start the timer to compute the step running time
         start_time = time.time()
-        Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)
+        Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)#, logcfg="stpipe-log.cfg")
 
         # end the timer to compute calwebb_spec2 running time
         end_time = repr(time.time() - start_time)   # this is in seconds
@@ -151,7 +167,7 @@ def output_hdul(set_inandout_filenames, config):
         #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
 
         # add the running time for all steps
-        calspec2_screenout = "calspec2_screenout.txt"
+        calspec2_screenout = "calspec2_screenout_"+detector+".txt"
         # make sure we are able to find calspec2_screenout either in the calwebb_spec2 directory or in the working dir
         if not os.path.isfile(calspec2_screenout):
             calspec2_screenout = os.path.join(working_directory, calspec2_screenout)
@@ -187,7 +203,6 @@ def output_hdul(set_inandout_filenames, config):
         # start the timer to compute the step running time of PTT
         core_utils.start_end_PTT_time(txt_name, start_time=PTT_start_time, end_time=None)
         print("Pipeline and PTT run times will be written in file: ", os.path.basename(txt_name), "in working directory. \n")
-
         if os.path.isfile(step_input_file):
             if run_pipe_step:
                 print ("*** Step "+step+" set to True")
@@ -219,7 +234,7 @@ def output_hdul(set_inandout_filenames, config):
             else:
                 print("Skipping running pipeline step ", step)
                 # add the running time for this step
-                end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
 
             step_completed = True
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
@@ -281,7 +296,8 @@ def validate_wcs(output_hdul):
 # reference files from running calwebb_spec1
 def test_rmask_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -293,7 +309,8 @@ def test_rmask_rfile(output_hdul):
 
 def test_saturation_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -305,7 +322,8 @@ def test_saturation_rfile(output_hdul):
 
 def test_superbias_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -317,7 +335,8 @@ def test_superbias_rfile(output_hdul):
 
 def test_linearity_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -329,7 +348,8 @@ def test_linearity_rfile(output_hdul):
 
 def test_dark_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -341,7 +361,8 @@ def test_dark_rfile(output_hdul):
 
 def test_readnoise_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -353,7 +374,8 @@ def test_readnoise_rfile(output_hdul):
 
 def test_gain_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -367,7 +389,8 @@ def test_gain_rfile(output_hdul):
 # reference files specific to the WCS step
 def test_camera_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -379,7 +402,8 @@ def test_camera_rfile(output_hdul):
 
 def test_colimator_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -391,7 +415,8 @@ def test_colimator_rfile(output_hdul):
 
 def test_disperser_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -403,7 +428,8 @@ def test_disperser_rfile(output_hdul):
 
 def test_fore_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -415,7 +441,8 @@ def test_fore_rfile(output_hdul):
 
 def test_fpa_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -427,7 +454,8 @@ def test_fpa_rfile(output_hdul):
 
 def test_ifufore_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -439,7 +467,8 @@ def test_ifufore_rfile(output_hdul):
 
 def test_ifupost_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -451,7 +480,8 @@ def test_ifupost_rfile(output_hdul):
 
 def test_ifuslicer_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -463,7 +493,8 @@ def test_ifuslicer_rfile(output_hdul):
 
 def test_msa_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -475,7 +506,8 @@ def test_msa_rfile(output_hdul):
 
 def test_ote_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -487,7 +519,8 @@ def test_ote_rfile(output_hdul):
 
 def test_wavran_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -502,7 +535,8 @@ def test_wavran_rfile(output_hdul):
 """
 def test_wavstart_exists(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][0]
     if not run_pytests:
         msg = "Skipping pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -513,7 +547,8 @@ def test_wavstart_exists(output_hdul):
 
 def test_sporder_exists(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][0]
     if not run_pytests:
         msg = "Skipping pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -525,7 +560,8 @@ def test_sporder_exists(output_hdul):
 
 def test_s_wcs_exists(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -536,7 +572,8 @@ def test_s_wcs_exists(output_hdul):
 
 def test_validate_wcs(output_hdul, request):
     # want to run this pytest?
-    run_pytests = output_hdul[6]
+    # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[6][2]
     if not run_pytests:
         msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)

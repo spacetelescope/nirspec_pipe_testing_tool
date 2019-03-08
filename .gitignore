@@ -21,4 +21,4 @@ cal_detector1_outputs_and_times.txt
 /screenlog.0
 /*/screen_output.txt
 pytest_only.txt
-calspec2_screenout.txt
+cal*_screenout*.txt

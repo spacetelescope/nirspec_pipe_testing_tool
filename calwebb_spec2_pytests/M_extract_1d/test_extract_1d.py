@@ -4,10 +4,9 @@ py.test module for unit testing the extract_1d step.
 """
 
 import os
-import subprocess
 import time
-
 import pytest
+from astropy.io import fits
 from jwst.extract_1d.extract_1d_step import Extract1dStep
 
 from .. auxiliary_code import change_filter_opaque2science
@@ -17,11 +16,12 @@ from .. import core_utils
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.0"
+__version__ = "2.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
+# Mar 2019 - Version 2.1: Maria added infrastructure to separate completion from other tests.
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
@@ -39,23 +39,31 @@ def set_inandout_filenames(request, config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
-    run_pipe_step = config.getboolean("run_pipe_steps", step)
-    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    run_pipe_step = config.getboolean("run_pipe_steps", step)
+    # determine which tests are to be run
+    extract_1d_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
+    extract_1d_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
+    #extract_1d_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    run_pytests = [extract_1d_completion_tests, extract_1d_reffile_tests]#, extract_1d_validation_tests]
+
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
+
+    # Get the detector used
+    detector = fits.getval(step_input_file, "DETECTOR", 0)
 
     # check if the filter is to be changed
     change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
     if change_filter_opaque:
         is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
         if is_filter_opaque:
-            print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip.")
+            print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Extract_1d pytest now set to Skip.")
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             #core_utils.convert_html2pdf()   # convert the html report into a pdf file
             # move the final reporting files to the working directory
-            core_utils.move_latest_report_and_txt_2workdir()
+            core_utils.move_latest_report_and_txt_2workdir(detector)
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
     if run_calwebb_spec2:
@@ -63,7 +71,7 @@ def output_hdul(set_inandout_filenames, config):
         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
 
         # move the final reporting files to the working directory
-        core_utils.move_latest_report_and_txt_2workdir()
+        core_utils.move_latest_report_and_txt_2workdir(detector)
 
         # end the timer to compute the step running time of PTT
         PTT_end_time = time.time()
@@ -72,6 +80,8 @@ def output_hdul(set_inandout_filenames, config):
         return hdul, step_output_file, run_pytests
 
     else:
+        print("txt_name = ", txt_name)
+        input()
         if os.path.isfile(step_input_file):
             if run_pipe_step:
                 print ("*** Step "+step+" set to True")
@@ -96,7 +106,7 @@ def output_hdul(set_inandout_filenames, config):
             else:
                 print("Skipping running pipeline step ", step)
                 # get the running time for this step
-                end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
 
             # add the running time for this step
             step_completed = True
@@ -121,7 +131,7 @@ def output_hdul(set_inandout_filenames, config):
             core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
 
             # move the final reporting files to the working directory
-            core_utils.move_latest_report_and_txt_2workdir()
+            core_utils.move_latest_report_and_txt_2workdir(detector)
 
             return hdul, step_output_file, run_pytests
 
@@ -133,7 +143,7 @@ def output_hdul(set_inandout_filenames, config):
             PTT_end_time = time.time()
             core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
             # move the final reporting files to the working directory
-            core_utils.move_latest_report_and_txt_2workdir()
+            core_utils.move_latest_report_and_txt_2workdir(detector)
             # skip the test if input file does not exist
             pytest.skip("Skipping "+step+" because the input file does not exist.")
 
@@ -145,7 +155,7 @@ def move_output_files(request):
     def fin():
         #core_utils.convert_html2pdf()
         # move the final reporting files to the working directory
-        core_utils.move_latest_report_and_txt_2workdir()
+        core_utils.move_latest_report_and_txt_2workdir(detector)
         print("Output report files have been moved to the working_directory path indicated in the PTT_config file.")
     request.addfinalizer(fin)
 
@@ -160,7 +170,8 @@ def move_output_files(request):
 
 def test_extract1d_rfile(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[2]
+    # output_hdul[2] = extract_1d_completion_tests, extract_1d_reffile_tests, extract_1d_validation_tests
+    run_pytests = output_hdul[2][1]
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -172,7 +183,8 @@ def test_extract1d_rfile(output_hdul):
 
 def test_s_extr1d_exists(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[2]
+    # output_hdul[2] = extract_1d_completion_tests, extract_1d_reffile_tests, extract_1d_validation_tests
+    run_pytests = output_hdul[2][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)

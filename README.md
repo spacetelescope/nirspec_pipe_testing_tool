@@ -193,12 +193,13 @@ get the data go to
 There you will find a FS raw file, a ```PTT_config.cfg``` file, and a directory called
 ```results_491```, which contains all the intermediary fits products obtained from running
 ```calwebb_detector1```, the output text files from running the corresponding script 
-(which include the ```cal_detector1_outputs_and_times.txt``` and the added keywords to 
-the ```_uncal``` file), the all the intermediary fits products obtained from running 
-```calwebb_spec2```, all the plots created with the PTT, the ```report.html```, and the 
-PTT text file outputs (```screen_output.txt``` and ```True_steps_suffix_map.txt```). 
-You can use the ```PTT_config.cfg``` (changing the paths appropriately) provided to make 
-sure you obtain the same results from the PTT run.
+(which include the ```cal_detector1_outputs_and_times_DETECTOR.txt``` and the added 
+keywords to the ```_uncal``` file), the all the intermediary fits products obtained from 
+running ```calwebb_spec2```, all the plots created with the PTT, the ```report.html```, 
+and the PTT text file outputs (```screen_output_DETECTOR.txt``` and 
+```True_steps_suffix_map_DETECTOR.txt```). You can use the ```PTT_config.cfg```
+(changing the paths appropriately) provided to make sure you obtain the same results 
+from the PTT run.
 
 
 b. In the directory where you copied the test data, you will need to run a script PER
@@ -262,16 +263,23 @@ correct, e.g. threshold values, figure switches, and additional fits files.
 7. Run the ```calwebb_detector1``` pipeline. The final output of this is the level 2 data
 required to run the PTT. In a terminal, go into the directory where the testing tool lives 
 (i.e. at the level of the ```calwebb_spec2_pytests``` directory), and make sure that the 
-testing conda environment is on. Now type:
+testing conda environment is on. Please check the name used in the ```DETECTOR``` 
+keyword in the fits file (you can use the ```read_hdr.py``` script in the ```utils``` 
+directory to dump the header into the screen and/or a text file). Now type the following 
+command making sure that the appropriate detector name is used in the name of the output 
+text file:
 ```bash
-script -a -t 0 caldetector1_screenout.txt python ../utils/run_cal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits
+script -a -t 0 caldetector1_screenout_DETECTOR.txt python ../utils/run_cal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits
 ```
-The first part of the command will create the text file ```caldetector1_screenout.txt```
+The first part of the command will create the text file ```caldetector1_screenout_DETECTOR.txt```
 which will contain all the screen output of the pipeline run. This text file will be used 
 to determine the time that each step took to run. The next part of the command is what 
 actually runs the ```run_cal_detector1.py``` script, which executes the calwebb detector 1
 pipeline in a single run, using the configuration file that you have for it in 
 the ```utils``` directory. 
+
+WARNING: Do not change the name of the output text file, as it is referenced with that 
+name in the PTT code. 
 
 To run calwebb detector 1 step-by-step, simply add ```-sbs``` at the end of  
 the previous command. Note that running the pipeline in full for calwebb detector 1 takes 
@@ -283,9 +291,10 @@ steps:
 
 i) Make sure you are in ```bash```.
 
-ii) In the terminal type:
+ii) In the terminal type the following command making sure you have the appropriate 
+detector name in the output text file:
 ```bash
-python ../utils/run_cal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits 2>&1 | tee caldetector1_screenout.txt
+python ../utils/run_cal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits 2>&1 | tee caldetector1_screenout_DETECTOR.txt
 ```
 
 The command means the following:
@@ -295,9 +304,9 @@ The command means the following:
 
 
 If everything went well, you will see a text file called 
-```cal_detector1_outputs_and_times.txt```, which contains the steps ran, the name of the 
-output fits file, and the time each step took to run. This text file, along with the 
-intermediary products will be located in the path you set for the 
+```cal_detector1_outputs_and_times_DETECTOR.txt```, which contains the steps ran, the 
+name of the output fits file, and the time each step took to run. This text file, along 
+with the intermediary products will be located in the path you set for the 
 ```working_directory``` variable in the configuration file of the PTT.
 
 NOTE ON ```calwebb_detector1``` ERRORS:
@@ -353,14 +362,16 @@ file, ```report.html```, and an intermediary product file name map will appear i
 ```calwebb_spec2_pytests``` directory, and at the end it will be moved to the path you 
 indicated at the ```PTT_config.cfg``` file with the variable ```working_directory```. The 
 output fits files of intermediary products will also be saved in the working directory. 
-In the terminal type:
+Please check the name used in the ```DETECTOR``` keyword in the fits file (you can use 
+the ```read_hdr.py``` script in the ```utils``` directory to dump the header into the 
+screen and/or a text file). In the terminal type:
 ```bash
-script -a -t 0 calspec2_screenout.txt pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html
+script -a -t 0 calspec2_screenout_DETECTOR.txt pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html
 ```
-The first part of the command will create the text file ```calspec2_screenout.txt``` in the 
-```calweb_spec2_pytests``` directory. The text file will contain all the screen output of 
-the pipeline run, and it will be moved to the working directory at the end. The contents 
-of the text file will be used to determine the time that each step took to run. 
+The first part of the command will create the text file ```calspec2_screenout_DETECTOR.txt``` 
+in the ```calweb_spec2_pytests``` directory. The text file will contain all the screen 
+output of the pipeline run, and it will be moved to the working directory at the end. The 
+contents of the text file will be used to determine the time that each step took to run. 
 
 The next part of the above command runs the pytest scripts; the ```-s``` will capture all 
 the print statements in the code on screen. For now, the report will always be saved in 
@@ -373,10 +384,10 @@ NOTE:
 NOTE ON SCRIPT COMMAND of step 7 of this guide.
 
 - If you are doing a re-run of the pytest only, be careful not to overwrite the 
-```calspec2_screenout.txt``` file, in this case you should use the following command to
-run the pytest:
+```calspec2_screenout_DETECTOR.txt``` file, in this case you should use the following 
+command to run the pytest:
 ```bash
-pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html > pytest_only.txt
+pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html > pytest_only_DETECTOR.txt
 ```
 
 -> To only run a few pipeline steps you need to:
