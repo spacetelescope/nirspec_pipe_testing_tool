@@ -6,8 +6,7 @@ py.test module for unit testing the bkg_subtract step.
 import pytest
 import os
 import time
-import subprocess
-import copy
+from astropy.io import fits
 from jwst.background.background_step import BackgroundStep
 
 from .. import core_utils
@@ -17,10 +16,11 @@ from . import bkg_subtract_utils
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# March 2019 - Version 1.1: separated completion from numerical tests
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -39,8 +39,14 @@ def set_inandout_filenames(request, config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
+    # determine which steps are to be run, if not run in full
     run_pipe_step = config.getboolean("run_pipe_steps", step)
-    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
+    # determine which tests are to be run
+    bkg_subtract_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
+    #bkg_subtract_numerical_tests = config.getboolean("run_pytest", "_".join((step, "numerical", "tests")))
+    #bkg_subtract_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    run_pytests = [bkg_subtract_completion_tests]#, bkg_subtract_numerical_tests, bkg_subtract_validation_tests]
+
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -96,7 +102,9 @@ def output_hdul(set_inandout_filenames, config):
                         print("Skipping running pipeline step ", step)
                         # add the running time for this step
                         working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-                        end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+                        # Get the detector used
+                        det = fits.getval(step_input_file, "DETECTOR", 0)
+                        end_time = core_utils.get_stp_run_time_from_screenfile(step, det, working_directory)
                         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                         step_completed = True
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
@@ -139,7 +147,8 @@ def output_hdul(set_inandout_filenames, config):
 
 def test_s_bkdsub_exists(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[3]
+    # output_hdu[3] = bkg_subtract_completion_tests, bkg_subtract_numerical_tests, bkg_subtract_validation_tests
+    run_pytests = output_hdul[3][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)

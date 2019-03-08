@@ -6,6 +6,7 @@ py.test module for unit testing the extract_2d step.
 import pytest
 import os
 import time
+from astropy.io import fits
 
 from jwst.extract_2d.extract_2d_step import Extract2dStep
 from .. import core_utils
@@ -15,12 +16,12 @@ from .. auxiliary_code import compare_wcs_mos
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & G. Kanarek"
-__version__ = "2.0"
+__version__ = "2.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Jan 2019 - Version 2.0: test separated from assign_wcs
-
+# Mar 2019 - Version 2.1: separated completion from validation tests
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -40,8 +41,12 @@ def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
-    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
-    run_pytests_assign_wcs = config.getboolean("run_pytest", "_".join(("assign_wcs", "tests")))
+    # determine which tests are to be run
+    extract_2d_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
+    extract_2d_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    assign_wcs_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    run_pytests = [extract_2d_completion_tests, extract_2d_validation_tests, assign_wcs_validation_tests]
+    # get other relevat info from PTT config file
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
     msa_conf_name = config.get("esa_intermediary_products", "msa_conf_name")
     
@@ -58,7 +63,7 @@ def output_hdul(set_inandout_filenames, config):
     if not core_utils.check_IFU_true(inhdu):
         if run_calwebb_spec2:
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, run_pytests_assign_wcs
+            return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots
             
         else:
             if os.path.isfile(step_input_file):
@@ -86,12 +91,14 @@ def output_hdul(set_inandout_filenames, config):
                     print("Skipping running pipeline step ", step)
                     # add the running time for this step
                     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-                    end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+                    # Get the detector used
+                    det = fits.getval(step_input_file, "DETECTOR", 0)
+                    end_time = core_utils.get_stp_run_time_from_screenfile(step, det, working_directory)
 
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, run_pytests_assign_wcs
+                return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots
         
             else:
                 print (" The input file does not exist. Skipping step.")
@@ -173,7 +180,8 @@ def validate_extract2d(output_hdul):
 
 def test_s_ext2d_exists(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[4]
+    # output_hdul[4] = extract_2d_completion_tests, extract_2d_validation_tests
+    run_pytests = output_hdul[4][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -185,8 +193,9 @@ def test_s_ext2d_exists(output_hdul):
 
 def test_validate_wcs_extract2d(output_hdul, request):
     # want to run this pytest? For this particular case, check both for the extract_2d step and for assign_wcs
-    run_pytests = output_hdul[4]
-    assign_wcs_pytests = output_hdul[8]
+    # output_hdul[4] = extract_2d_completion_tests, extract_2d_validation_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[4][1]
+    assign_wcs_pytests = output_hdul[4][2]
     if not run_pytests and not assign_wcs_pytests:
         msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -198,7 +207,8 @@ def test_validate_wcs_extract2d(output_hdul, request):
 
 def test_validate_extract2d(output_hdul, request):
     # want to run this pytest?
-    run_pytests = output_hdul[4]
+    # output_hdul[4] = extract_2d_completion_tests, extract_2d_validation_tests, assign_wcs_validation_tests
+    run_pytests = output_hdul[4][1]
     if not run_pytests:
         msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)

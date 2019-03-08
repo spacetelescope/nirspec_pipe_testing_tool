@@ -143,12 +143,12 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
     """
 
     # make sure the input file name has the detector included in the name of the output files
-    det = fits.getval(initial_input_file, "DETECTOR", 0)
+    detector = fits.getval(initial_input_file, "DETECTOR", 0)
     initial_input_file_basename = os.path.basename(initial_input_file)
     if "_uncal_rate" in initial_input_file_basename:
         initial_input_file_basename = initial_input_file_basename.replace("_uncal_rate", "")
-    if det.lower() not in initial_input_file_basename.lower():
-        initial_input_file_basename = initial_input_file_basename.replace(".fits", "_"+det+".fits")
+    if detector.lower() not in initial_input_file_basename.lower():
+        initial_input_file_basename = initial_input_file_basename.replace(".fits", "_"+detector+".fits")
 
     # get the right input and output name according to the steps dictionary
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = "", "", "", ""
@@ -166,12 +166,12 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                 if debug:
                     print("Will enter while loop to find the appropriate input file name for this step.")
                 while not exit_while_loop:
-                    # look for the input file starting from the end of the dictionary (made into a list)
+                    # look for the input file starting from the end of the dictionary
                     j = len(step_string_dict.items())-1
                     for s in reversed(step_string_dict.items()):
                         # This is to make sure we do not enter an infinite while loop
-                        counter = counter + 1
-                        if counter > 13:   # 13 is the number of steps of calwebb_spec2
+                        counter =+ counter
+                        if counter > len(step_string_dict.items()):   # 13 is the number of steps of calwebb_spec2
                             exit_while_loop = True
                             print("Limiting number of iterations reached. No input file found. ")
                             print("PTT will use initial input file for step ", step)
@@ -187,6 +187,8 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                             if outfile:
                                 in_file_suffix = step_string_dict[s[0]]["suffix"]
                                 step_input_basename = initial_input_file_basename.replace(".fits", in_file_suffix+".fits")
+                                if "gain_scale" in step_input_basename:
+                                    step_input_basename = step_input_basename.replace("_gain_scale", "")
                                 step_input_filename = os.path.join(working_directory, step_input_basename)
                                 # make sure the input file exists
                                 if debug:
@@ -225,6 +227,9 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                 inhdu = read_hdrfits(initial_input_file, info=False, show_hdr=False)
                 if check_BOTS_true(inhdu):
                     step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix+"ints.fits")
+            # remove the step name _gain_scale if it is still in the base name
+            if "_gain_scale".lower() in step_output_basename.lower():
+                step_output_basename = step_output_basename.replace("_gain_scale", "")
             step_output_filename = os.path.join(working_directory, step_output_basename)
             # now exit the for loop because step was reached
             break
@@ -386,12 +391,13 @@ def calculate_step_run_time(screen_output_txt):
     return step_running_times
 
 
-def get_stp_run_time_from_screenfile(step, working_directory):
+def get_stp_run_time_from_screenfile(step, det, working_directory):
     """
     This function calculates the running time for the given step from the screen output file. It is used when PTT
     is told to skip running the pipeline step.
     Args:
         step: string, name of step
+        det: string, detector used - DETECTOR keyword value
         working_directory: string, path to the working directory
 
     Returns:
@@ -399,7 +405,7 @@ def get_stp_run_time_from_screenfile(step, working_directory):
 
     """
     # add the running time for this step
-    calspec2_screenout = "calspec2_screenout.txt"
+    calspec2_screenout = "calspec2_screenout_"+det+".txt"
     # make sure we are able to find calspec2_screenout either in the calwebb_spec2 directory or in the working dir
     if not os.path.isfile(calspec2_screenout):
         calspec2_screenout = os.path.join(working_directory, calspec2_screenout)
@@ -414,7 +420,7 @@ def get_stp_run_time_from_screenfile(step, working_directory):
         else:
             continue
     if end_time is None:
-        print("\n * PTT unable to calculate time from calspec2_screenout.txt for step ", step, " ! \n")
+        print("\n * PTT unable to calculate time from "+calspec2_screenout+" for step ", step, " ! \n")
         end_time = "0.0"
     return end_time
 
@@ -547,8 +553,8 @@ def set_inandout_filenames(step, config):
     initial_input_file_basename = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(data_directory, initial_input_file_basename)
     # Get the detector used
-    det = fits.getval(initial_input_file, "DETECTOR", 0)
-    True_steps_suffix_map = "full_run_map_"+det+".txt"
+    detector = fits.getval(initial_input_file, "DETECTOR", 0)
+    True_steps_suffix_map = "full_run_map_"+detector+".txt"
     if os.path.isfile(initial_input_file):
         print("\n Taking initial input file from data_directory:")
     else:
@@ -559,10 +565,10 @@ def set_inandout_filenames(step, config):
 
     if not run_calwebb_spec2:
         pytests_directory = os.getcwd()
-        True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
+        True_steps_suffix_map = os.path.join(pytests_directory, "True_steps_suffix_map_"+detector+".txt")
         print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map, ", located in working directory.")
     else:
-        print("Pipeline was set to run in full. Suffix map named: full_run_map.txt, located in working directory.")
+        print("Pipeline was set to run in full. Suffix map named: full_run_map_DETECTOR.txt, located in working directory.")
     suffix_and_filenames = get_step_inandout_filename(step, initial_input_file, working_directory)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames
     print ("step_input_filename = ", step_input_filename)
@@ -796,13 +802,15 @@ def get_reffile_used(output_hdul):
     return ref_files_used_so_far
 
 
-def get_latest_file(filetype, disregard_known_files=False):
+def get_latest_file(filetype, detector=None, disregard_known_files=False):
     """
     This function gets the latest modified file of filetype. This function will look into the calwebb_spec2_pytests
     directory for the given file.
     Args:
-        filetype: string, name/type of file type, e.g. *.txt, *.html, full_run_map.txt
-        disregard_known_files: boolean, if True function will not look for True_steps_suffix_map.txt or full_run_map.txt
+        filetype: string, name/type of file type, e.g. *.txt, *.html, full_run_map_DETECTOR.txt
+        detector: string, name in header keyword DETECTOR
+        disregard_known_files: boolean, if True function will not look for True_steps_suffix_map_DETECTOR.txt
+        or full_run_map_DETECTOR.txt
 
     Returns:
         latest_filetypefile: string, name of the latest file modified of type filetype
@@ -811,11 +819,14 @@ def get_latest_file(filetype, disregard_known_files=False):
     list_of_filetypefiles = glob.glob(filetype)
     # find the latest of the filetype files but exclude known file names
     if disregard_known_files:
-        if "True_steps_suffix_map.txt" in list_of_filetypefiles:
-            idx = list_of_filetypefiles.index("True_steps_suffix_map.txt")
+        if detector is None:
+            print("get_latest_file: DETECTOR not defined.")
+            exit()
+        if "True_steps_suffix_map_"+detector+".txt" in list_of_filetypefiles:
+            idx = list_of_filetypefiles.index("True_steps_suffix_map_"+detector+".txt")
             list_of_filetypefiles.pop(idx)
-        if "full_run_map.txt" in list_of_filetypefiles:
-            idx = list_of_filetypefiles.index("full_run_map.txt")
+        if "full_run_map_"+detector+".txt" in list_of_filetypefiles:
+            idx = list_of_filetypefiles.index("full_run_map_"+detector+".txt")
             list_of_filetypefiles.pop(idx)
     latest_filetypefile = "File not found."
     if len(list_of_filetypefiles) > 0:
@@ -824,7 +835,7 @@ def get_latest_file(filetype, disregard_known_files=False):
     return latest_filetypefile
 
 
-def convert_html2pdf():
+def convert_html2pdf(detector):
     """
     This function converts the latest html file into a pdf.
     In order to work it needs this plugin (https://pypi.org/project/pdfkit/#description):
@@ -832,7 +843,7 @@ def convert_html2pdf():
     and the OSX 64-bit download from: https://wkhtmltopdf.org/downloads.html
     """
     # get a list of all the html files in the calwebb_spec2_pytests dir
-    latest_htmlfile = get_latest_file("*.html")
+    latest_htmlfile = get_latest_file("*"+detector+"*.html")
     # create the pdf output name
     pdf_file = latest_htmlfile.replace(".html", ".pdf")
     # convert the html report into a pdf file
@@ -842,11 +853,11 @@ def convert_html2pdf():
     print ("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
 
 
-def move_latest_report_and_txt_2workdir():
+def move_latest_report_and_txt_2workdir(detector):
     """
     This function moves the PTT output reporting files into the working directory.
     Args:
-        Nothing
+        detector: string, name in keyword DETECTOR
 
     Returns:
         Nothing
@@ -856,11 +867,11 @@ def move_latest_report_and_txt_2workdir():
     config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
     working_dir = config.get("calwebb_spec2_input_file", "working_directory")
     # get a list of all the html and txt files in the calwebb_spec2_pytests dir
-    #latest_htmlfile = get_latest_file("*.html")   # this will pick up the report.html just created/modified
+    #latest_htmlfile = get_latest_file("*"+detector+"*.html")   # this will pick up the report.html just created/modified
     #latest_pdffile = latest_htmlfile.replace(".html", ".pdf")   # this will pick up the report.html converted to pdf
-    latest_screenoutputtxtfile = get_latest_file("*.txt", disregard_known_files=True) # this should pick up the output_screen.txt
-    latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map.txt")
-    latest_fullrunmaptxtfile = get_latest_file("full_run_map.txt")
+    latest_screenoutputtxtfile = get_latest_file("*screen*"+detector+"*.txt", detector, disregard_known_files=True) # this should pick up the output_screen file
+    latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map_"+detector+".txt")
+    latest_fullrunmaptxtfile = get_latest_file("full_run_map_"+detector+".txt")
     # move these files into the working directory
     files2move = [#latest_htmlfile, latest_pdffile,
                   latest_screenoutputtxtfile,

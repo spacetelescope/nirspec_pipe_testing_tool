@@ -6,7 +6,7 @@ py.test module for unit testing the msa_flagging step.
 import pytest
 import os
 import time
-import subprocess
+from astropy.io import fits
 from jwst.msaflagopen.msaflagopen_step import MSAFlagOpenStep
 
 from .. import core_utils
@@ -15,10 +15,11 @@ from . import msa_flagging_utils
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Mar 2019 - Version 1.1: separated completion tests from future tests
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -37,8 +38,12 @@ def set_inandout_filenames(request, config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
-    run_pipe_step = config.getboolean("run_pipe_steps", step)
-    run_pytests = config.getboolean("run_pytest", "_".join((step, "tests")))
+    # determine which tests are to be run
+    msa_flagging_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
+    #msa_flagging_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
+    #msa_flagging_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    run_pytests = [msa_flagging_completion_tests]#, msa_flagging_reffile_tests, msa_flagging_validation_tests]
+
     end_time = '0.0'
 
     # Only run step if data is MOS or IFU
@@ -75,7 +80,9 @@ def output_hdul(set_inandout_filenames, config):
                     print("Skipping running pipeline step ", step)
                     # add the running time for this step
                     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-                    end_time = core_utils.get_stp_run_time_from_screenfile(step, working_directory)
+                    # Get the detector used
+                    det = fits.getval(step_input_file, "DETECTOR", 0)
+                    end_time = core_utils.get_stp_run_time_from_screenfile(step, det, working_directory)
                 step_completed = True
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
@@ -95,7 +102,8 @@ def output_hdul(set_inandout_filenames, config):
 
 def test_msa_failed_open_exists(output_hdul):
     # want to run this pytest?
-    run_pytests = output_hdul[2]
+    # output_hdu[2] = msa_flagging_completion_tests, msa_flagging_reffile_tests, msa_flagging_validation_tests
+    run_pytests = output_hdul[2][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)

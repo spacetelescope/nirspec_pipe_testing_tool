@@ -21,13 +21,14 @@ This script tests the pipeline flat field step output for IFU data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.2"
+__version__ = "2.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
 #                         script, and added new routines for statistics calculations.
 # Jun 2018 - Version 2.2: Removed function reverse_cols because it was not behaving as expected.
+# Feb 2019 - Version 2.3: Maria added lines to properly rotate NRS2 s- and d-flats.
 
 
 

@@ -7,10 +7,11 @@ from ..auxiliary_code import auxiliary_functions as auxfunc
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Jan 2019 - Version 1.1: Maria modified and added Gray's code for validation tests
 
 
 """
