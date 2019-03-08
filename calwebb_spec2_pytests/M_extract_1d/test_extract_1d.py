@@ -80,8 +80,6 @@ def output_hdul(set_inandout_filenames, config):
         return hdul, step_output_file, run_pytests
 
     else:
-        print("txt_name = ", txt_name)
-        input()
         if os.path.isfile(step_input_file):
             if run_pipe_step:
                 print ("*** Step "+step+" set to True")
