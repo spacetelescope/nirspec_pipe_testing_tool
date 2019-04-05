@@ -21,10 +21,10 @@ the primary and science headers.
 Example usage:
     The code works from the terminal.
     To create a NEW FS fits file with the updated header type:
-        > python /path_to_this_script/hdr_keywd_check.py blah.fits IFU
+        > python /path_to_this_script/level2b_hdr_keywd_check.py blah.fits IFU
 
     To simply update the header of the existing fits file type:
-        > python /path_to_this_script/hdr_keywd_check.py blah.fits IFU -u
+        > python /path_to_this_script/level2b_hdr_keywd_check.py blah.fits IFU -u
 
 where the mode is either FS, MOS, IFU, BOTS. If a mode is not provided, the code will look for a mode_used variable
 in the pytests configuration file, and it will crash if this config file does not exist.
