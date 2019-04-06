@@ -6,6 +6,7 @@ py.test module for unit testing the msa_flagging step.
 import pytest
 import os
 import time
+import logging
 from astropy.io import fits
 from jwst.msaflagopen.msaflagopen_step import MSAFlagOpenStep
 
@@ -15,11 +16,12 @@ from . import msa_flagging_utils
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Mar 2019 - Version 1.1: separated completion tests from future tests
+# Apr 2019 - Version 1.2: implemented logging capability
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -43,6 +45,8 @@ def output_hdul(set_inandout_filenames, config):
     #msa_flagging_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
     #msa_flagging_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
     run_pytests = [msa_flagging_completion_tests]#, msa_flagging_reffile_tests, msa_flagging_validation_tests]
+    # determine which steps are to be run, if not run in full
+    run_pipe_step = config.getboolean("run_pipe_steps", step)
 
     end_time = '0.0'
 
@@ -57,9 +61,28 @@ def output_hdul(set_inandout_filenames, config):
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
             return hdul, step_output_file, run_pytests
         else:
+
+            # Create the logfile for PTT, but erase the previous one if it exists
+            working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+            detector = fits.getval(step_input_file, "DETECTOR", 0)
+            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'_'+'.log')
+            if os.path.isfile(PTTcalspec2_log):
+                os.remove(PTTcalspec2_log)
+            print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
+            for handler in logging.root.handlers[:]:
+                logging.root.removeHandler(handler)
+            logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
+            # print pipeline version
+            import jwst
+            pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
+            print(pipeline_version)
+            logging.info(pipeline_version)
+
             if os.path.isfile(step_input_file):
                 if run_pipe_step:
-                    print ("*** Step "+step+" set to True")
+                    msg = " The input file "+step_input_file+" exists... will run step "+step
+                    print(msg)
+                    logging.info(msg)
                     stp = MSAFlagOpenStep()
 
                     # check that previous pipeline steps were run up to this point
@@ -75,9 +98,14 @@ def output_hdul(set_inandout_filenames, config):
                     #    result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/NOCONFIGFI.cfg')
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
-                    print("Step "+step+" took "+end_time+" seconds to finish")
+                    msg = "Step "+step+" took "+end_time+" seconds to finish"
+                    print(msg)
+                    logging.info(msg)
+
                 else:
-                    print("Skipping running pipeline step ", step)
+                    msg = "Skipping running pipeline step "+step
+                    print(msg)
+                    logging.info(msg)
                     # add the running time for this step
                     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
                     # Get the detector used
@@ -89,7 +117,9 @@ def output_hdul(set_inandout_filenames, config):
                 return hdul, step_output_file, run_pytests
 
             else:
-                print (" The input file does not exist. Skipping step.")
+                msg = " The input file does not exist. Skipping step."
+                print(msg)
+                logging.info(msg)
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
 
@@ -107,7 +137,10 @@ def test_msa_failed_open_exists(output_hdul):
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
+        logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n * Running completion pytest...\n")
+        msg = "\n * Running completion pytest...\n"
+        print(msg)
+        logging.info(msg)
         assert msa_flagging_utils.msa_failed_open_exists(output_hdul[0]), "The keyword S_MSAFLG was not added to the header --> msa_flagging step was not completed."

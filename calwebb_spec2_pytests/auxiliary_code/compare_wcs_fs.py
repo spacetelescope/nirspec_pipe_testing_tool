@@ -17,7 +17,7 @@ This script compares pipeline WCS info with ESA results for FIXED SLIT.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.2"
+__version__ = "2.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -25,12 +25,13 @@ __version__ = "2.2"
 #                         script, and added new routines for plot making and statistics calculations.
 # Jun 2018 - Version 2.1: Fixed code to work for subarrays too.
 # Aug 2018 - Version 2.2: Modified slit-y differences to be reported in absolute numbers rather than relative
+# Apr 2019 - Version 2.3: Added capability to log on-screen messages
 
 
 def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=False, threshold_diff=1.0e-7, debug=False):
     """
-    This function does the WCS comparison from the world coordinates calculated using the
-    compute_world_coordinates.py script with the ESA files. The function calls that script.
+    This function does the WCS comparison from the world coordinates calculated using the pipeline
+    data model with the ESA intermediary files.
 
     Args:
         infile_name: str, name of the output fits file from the assign_wcs step (with full path)
@@ -43,24 +44,29 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
     Returns:
         - plots, if told to save and/or show them.
         - median_diff: Boolean, True if smaller or equal to threshold
+        - log_msgs: list, all print statements captured in this variable
 
     """
 
+    log_msgs = []
+
     # get grating and filter info from the rate file header
     det = fits.getval(infile_name, "DETECTOR", 0)
-    print('infile_name=', infile_name)
+    msg = 'infile_name='+infile_name
+    print(msg)
+    log_msgs.append(msg)
     lamp = fits.getval(infile_name, "LAMP", 0)
     grat = fits.getval(infile_name, "GRATING", 0)
     filt = fits.getval(infile_name, "FILTER", 0)
-    print ("from assign_wcs file  -->     Detector:", det, "   Grating:", grat, "   Filter:", filt, "   Lamp:", lamp)
+    msg = "from assign_wcs file  -->     Detector: "+det+"   Grating: "+grat+"   Filter: "+filt+"   Lamp: "+lamp
+    print(msg)
+    log_msgs.append(msg)
 
     # get the datamodel from the assign_wcs output file
     img = datamodels.ImageModel(infile_name)
 
     # loop over the slits
     sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1"]
-    #sci_ext_list = auxfunc.get_sci_extensions(infile_name)
-    #print ('sci_ext_list=', sci_ext_list, '\n')
 
     # mapping the ESA slit names to pipeline names
     map_slit_names = {'SLIT_A_1600' : 'S1600A1',
@@ -85,7 +91,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
     open_slits = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
     for opslit in open_slits:
         pipeslit = opslit.name
-        print ("\nWorking with slit: ", pipeslit)
+        msg = "\nWorking with slit: "+pipeslit
+        print(msg)
+        log_msgs.append(msg)
 
         # Get the ESA trace
         #raw_data_root_file = "NRSV84600010001P0000000002101_4_491_SE_2016-01-17T17h34m08.fits"  # for testing with G140M FULLFRAME
@@ -103,29 +111,43 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                                 "NRSSMOS-MOD-G3H-02-5344120942_1_492_SE_2015-12-10T12h18m25.fits"]
         if raw_data_root_file in special_cutout_files:
             nid = NIDs[special_cutout_files.index(raw_data_root_file)]
-            print("Using NID = ", nid)
+            msg = "Using NID = "+nid
+            print(msg)
+            log_msgs.append(msg)
         else:
             nid = None
-        esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
+        esafile, esafile_log_msgs = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
+        for msg in esafile_log_msgs:
+            log_msgs.append(msg)
 
         # skip the test if the esafile was not found
         if esafile == "ESA file not found":
-            print(" * compare_wcs_fs.py is exiting because the corresponding ESA file was not found.")
-            print("   -> The WCS test is now set to skip and no plots will be generated. ")
+            msg1 = " * compare_wcs_fs.py is exiting because the corresponding ESA file was not found."
+            msg2 = "   -> The WCS test is now set to skip and no plots will be generated. "
+            print(msg1)
+            print(msg2)
+            log_msgs.append(msg1)
+            log_msgs.append(msg2)
             FINAL_TEST_RESULT = "skip"
-            return FINAL_TEST_RESULT
+            return FINAL_TEST_RESULT, log_msgs
 
         # Open the trace in the esafile
-        print ("Using this ESA file: \n", esafile)
+        msg = "Using this ESA file: \n"+esafile
+        print(msg)
+        log_msgs.append(msg)
         with fits.open(esafile) as esahdulist:
-            print ("* ESA file contents ")
+            print("* ESA file contents ")
             esahdulist.info()
             esa_slit_id = map_slit_names[esahdulist[0].header['SLITID']]
             # first check is esa_slit == to pipe_slit?
             if pipeslit == esa_slit_id:
-                print("\n -> Same slit found for pipeline and ESA data: ", pipeslit, "\n")
+                msg = "\n -> Same slit found for pipeline and ESA data: "+pipeslit+"\n"
+                print(msg)
+                log_msgs.append(msg)
             else:
-                print("\n -> Missmatch of slits for pipeline and ESA data: ", pipeslit, esa_slit_id, "\n")
+                msg = "\n -> Missmatch of slits for pipeline and ESA data: "+pipeslit, esa_slit_id+"\n"
+                print(msg)
+                log_msgs.append(msg)
 
             # Assign variables according to detector
             skipv2v3test = True
@@ -142,7 +164,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     skipv2v3test = False
                 except:
                     KeyError
-                    print("Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions.")
+                    msg = "Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions."
+                    print(msg)
+                    log_msgs.append(msg)
             if det == "NRS2":
                 try:
                     esa_flux = fits.getdata(esafile, "DATA2")
@@ -157,13 +181,19 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                         skipv2v3test = False
                     except:
                         KeyError
-                        print("Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions.")
+                        msg = "Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions."
+                        print(msg)
+                        log_msgs.append(msg)
                 except:
                     KeyError
-                    print("\n * compare_wcs_fs.py is exiting because there are no extensions that match detector NRS2 in the ESA file.")
-                    print("   -> The WCS test is now set to skip and no plots will be generated. \n")
+                    msg1 = "\n * compare_wcs_fs.py is exiting because there are no extensions that match detector NRS2 in the ESA file."
+                    msg2 = "   -> The WCS test is now set to skip and no plots will be generated. \n"
+                    print(msg1)
+                    print(msg2)
+                    log_msgs.append(msg1)
+                    log_msgs.append(msg2)
                     FINAL_TEST_RESULT = "skip"
-                    return FINAL_TEST_RESULT
+                    return FINAL_TEST_RESULT, log_msgs
 
 
         # get the WCS object for this particular slit
@@ -201,9 +231,15 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         if det == "NRS2":
             esax = 2049-esax
             esay = 2049-esay
-            print("flipped coords")
-            print(esax-1)
-            print(esay-1)
+            msg = "flipped coords"
+            print(msg)
+            log_msgs.append(msg)
+            msg1 = esax-1
+            msg2 = esay-1
+            print(msg1)
+            print(msg2)
+            log_msgs.append(msg1)
+            log_msgs.append(msg2)
 
         # check if subarray is not FULL FRAME
         subarray = fits.getval(infile_name, "SUBARRAY", 0)
@@ -222,8 +258,13 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         # calculate and print statistics for slit-y and x relative differences
         tested_quantity = "Wavelength Difference"
         rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
-        rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats = rel_diff_pwave_data
+        rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats, print_stats = rel_diff_pwave_data
+        for msg in print_stats:
+            log_msgs.append(msg)
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
+        msg = "\n * Result of the test for"+tested_quantity+":  "+test_result+"\n"
+        print(msg)
+        log_msgs.append(msg)
         total_test_result[pipeslit] = {tested_quantity : test_result}
 
         # get the transforms for pipeline slit-y
@@ -234,8 +275,15 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity)
         # calculate and print statistics for slit-y and x absolute differences
         #rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_slity, slity, tested_quantity, abs=True)
-        rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats = rel_diff_pslity_data
+        for msg in print_stats:
+            log_msgs.append(msg)
+        rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats, print_stats = rel_diff_pslity_data
+        for msg in print_stats:
+            log_msgs.append(msg)
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
+        msg = "\n * Result of the test for"+tested_quantity+":  "+test_result+"\n"
+        print(msg)
+        log_msgs.append(msg)
         total_test_result[pipeslit] = {tested_quantity : test_result}
 
         # do the same for MSA x, y and V2, V3
@@ -244,14 +292,24 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         # MSA-x
         tested_quantity = "MSA_X Difference"
         reldiffpmsax_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msax, pmsax, tested_quantity)
-        reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats = reldiffpmsax_data
+        reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats, print_stats = reldiffpmsax_data
+        for msg in print_stats:
+            log_msgs.append(msg)
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsax_stats[1], threshold_diff)
+        msg = "\n * Result of the test for"+tested_quantity+":  "+test_result+"\n"
+        print(msg)
+        log_msgs.append(msg)
         total_test_result[pipeslit] = {tested_quantity : test_result}
         # MSA-y
         tested_quantity = "MSA_Y Difference"
         reldiffpmsay_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msay, pmsay, tested_quantity)
-        reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats = reldiffpmsay_data
+        reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats, print_stats = reldiffpmsay_data
+        for msg in print_stats:
+            log_msgs.append(msg)
         test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsay_stats[1], threshold_diff)
+        msg = "\n * Result of the test for"+tested_quantity+":  "+test_result+"\n"
+        print(msg)
+        log_msgs.append(msg)
         total_test_result[pipeslit] = {tested_quantity : test_result}
 
         # V2 and V3
@@ -260,13 +318,20 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             pv2, pv3, _ = detector2v2v3(esax-1, esay-1)   # => RETURNS: v2, v3, LAMBDA (lam *= 10**-6 to convert to microns)
             tested_quantity = "V2 difference"
             reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3x, pv2, tested_quantity)
-            reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats = reldiffpv2_data
+            reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats, print_stats = reldiffpv2_data
+            for msg in print_stats:
+                log_msgs.append(msg)
             test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
             total_test_result[pipeslit] = {tested_quantity : test_result}
             tested_quantity = "V3 difference"
             reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
-            reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats = reldiffpv3_data
+            reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats, print_stats = reldiffpv3_data
+            for msg in print_stats:
+                log_msgs.append(msg)
             test_result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
+            msg = "\n * Result of the test for"+tested_quantity+":  "+test_result+"\n"
+            print(msg)
+            log_msgs.append(msg)
             total_test_result[pipeslit] = {tested_quantity : test_result}
 
         # PLOTS
@@ -284,7 +349,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             xlabel, ylabel = r"Relative $\Delta \lambda$ = ($\lambda_{pipe} - \lambda_{ESA}) / \lambda_{ESA}$", "N"
             info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pwave_stats]
             if notnan_rel_diff_pwave_stats[1] is np.nan:
-                print("Unable to create plot of relative wavelength difference.")
+                msg = "Unable to create plot of relative wavelength difference."
+                print(msg)
+                log_msgs.append(msg)
             else:
                 plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_wave_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
@@ -296,7 +363,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             xlabel, ylabel = r"Relative $\Delta$slit_y = (slit_y$_{pipe}$ - slit_y$_{ESA}$)/slit_y$_{ESA}$", "N"
             info_hist = [xlabel, ylabel, bins, notnan_rel_diff_pslity_stats]
             if notnan_rel_diff_pslity_stats[1] is np.nan:
-                print("Unable to create plot of relative slit position.")
+                msg = "Unable to create plot of relative slit position."
+                print(msg)
+                log_msgs.append(msg)
             else:
                 plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_slitY_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
@@ -308,7 +377,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             xlabel, ylabel = r"Relative $\Delta$MSA_x = (MSA_x$_{pipe}$ - MSA_x$_{ESA}$)/MSA_x$_{ESA}$", "N"
             info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsax_stats]
             if notnan_reldiffpmsax_stats[1] is np.nan:
-                print("Unable to create plot of relative MSA-x difference.")
+                msg = "Unable to create plot of relative MSA-x difference."
+                print(msg)
+                log_msgs.append(msg)
             else:
                 plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAx_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
@@ -320,7 +391,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             xlabel, ylabel = r"Relative $\Delta$MSA_y = (MSA_y$_{pipe}$ - MSA_y$_{ESA}$)/MSA_y$_{ESA}$", "N"
             info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
             if notnan_reldiffpmsay_stats[1] is np.nan:
-                print("Unable to create plot of relative MSA-y difference.")
+                msg = "Unable to create plot of relative MSA-y difference."
+                print(msg)
+                log_msgs.append(msg)
             else:
                 plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAy_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
@@ -334,7 +407,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 hist_data = notnan_reldiffpv2
                 info_hist = [xlabel, ylabel, bins, notnan_reldiffpv2_stats]
                 if notnan_reldiffpv2_stats[1] is np.nan:
-                    print("Unable to create plot of relative V2 difference.")
+                    msg = "Unable to create plot of relative V2 difference."
+                    print(msg)
+                    log_msgs.append(msg)
                 else:
                     plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V2_diffs.jpg")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
@@ -347,7 +422,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 hist_data = notnan_reldiffpv3
                 info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
                 if notnan_reldiffpv3_stats[1] is np.nan:
-                    print("Unable to create plot of relative V3 difference.")
+                    msg = "Unable to create plot of relative V3 difference."
+                    print(msg)
+                    log_msgs.append(msg)
                 else:
                     plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V3_diffs.jpg")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
@@ -355,7 +432,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
 
         else:
-            print ("NO plots were made because show_figs and save_figs were both set to False. \n")
+            msg = "NO plots were made because show_figs and save_figs were both set to False. \n"
+            print(msg)
+            log_msgs.append(msg)
 
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
@@ -364,18 +443,24 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         for t, tr in testdir.items():
             if tr == "FAILED":
                 FINAL_TEST_RESULT = "FAILED"
-                print("\n * The test of", t, "for slit", sl, " FAILED.")
+                msg = "\n * The test of "+t+" for slit "+sl+" FAILED."
+                print(msg)
+                log_msgs.append(msg)
             else:
                 FINAL_TEST_RESULT = "PASSED"
-                print("\n * The test of", t, "for slit", sl, " PASSED.")
+                msg = "\n * The test of "+t+" for slit "+sl+" PASSED."
+                print(msg)
+                log_msgs.append(msg)
 
     if FINAL_TEST_RESULT == "PASSED":
-        print("\n *** Final result for assign_wcs test will be reported as PASSED *** \n")
+        msg = "\n *** Final result for assign_wcs test will be reported as PASSED *** \n"
     else:
-        print("\n *** Final result for assign_wcs test will be reported as FAILED *** \n")
+        msg = "\n *** Final result for assign_wcs test will be reported as FAILED *** \n"
+    print(msg)
+    log_msgs.append(msg)
 
 
-    return FINAL_TEST_RESULT
+    return FINAL_TEST_RESULT, log_msgs
 
 
 
@@ -388,10 +473,10 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G235H_opaque/491_results"
-    #data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140H_opaque/491_results"
+    data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results"
     #data_dir = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G235M_F170LP/491_results"
-    #infile_name = data_dir+"/final_output_caldet1_NRS1_assign_wcs.fits"
-    infile_name = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140H_opaque/jwdata0010010_11010_0001_NRS1_assign_wcs.fits"
+    infile_name = data_dir+"/gain_scale_NRS1_assign_wcs.fits"
+    #infile_name = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140H_opaque/jwdata0010010_11010_0001_NRS1_assign_wcs.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
     #esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3/ESA_Int_products"
@@ -401,8 +486,8 @@ if __name__ == '__main__':
     print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script
-    result = compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=True, save_figs=False,
-                         threshold_diff=1.0e-7, debug=False)
+    result, log_msgs = compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=True, save_figs=False,
+                                    threshold_diff=1.0e-7, debug=False)
 
 
 

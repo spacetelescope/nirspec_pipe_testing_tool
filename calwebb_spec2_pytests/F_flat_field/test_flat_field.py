@@ -7,6 +7,7 @@ import os
 import subprocess
 import time
 import pytest
+import logging
 from astropy.io import fits
 
 from jwst.flatfield.flat_field_step import FlatFieldStep
@@ -22,11 +23,12 @@ from .. auxiliary_code import change_filter_opaque2science
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Mar 2019 - Version 1.1: modified reference file tests and separated completion from validation tests
+# Apr 2019 - Version 1.2: implemented logging capability
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -71,7 +73,8 @@ def output_hdul(set_inandout_filenames, config):
     if change_filter_opaque:
         is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
         if is_filter_opaque:
-            print ("With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip.")
+            filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip."
+            print(filter_opaque_msg)
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
@@ -82,9 +85,29 @@ def output_hdul(set_inandout_filenames, config):
         flattest_paths = [step_output_file, msa_shutter_conf, dflat_path, sflat_path, fflat_path]
         return hdul, step_output_file, flattest_paths, flattest_switches, run_pytests
     else:
+        # Create the logfile for PTT, but erase the previous one if it exists
+        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+        detector = fits.getval(step_input_file, "DETECTOR", 0)
+        PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'_'+'.log')
+        if os.path.isfile(PTTcalspec2_log):
+            os.remove(PTTcalspec2_log)
+        print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
+        # print pipeline version
+        import jwst
+        pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
+        print(pipeline_version)
+        logging.info(pipeline_version)
+        if change_filter_opaque:
+            logging.info(filter_opaque_msg)
+
         if os.path.isfile(step_input_file):
             if run_pipe_step:
-                print ("*** Step "+step+" set to True")
+                msg = " *** Step "+step+" set to True"
+                print(msg)
+                logging.info(msg)
                 stp = FlatFieldStep()
 
                 # check that previous pipeline steps were run up to this point
@@ -96,9 +119,13 @@ def output_hdul(set_inandout_filenames, config):
                     subprocess.run(["cp", msa_shutter_conf, "."])
                 # start the timer to compute the step running time
                 ontheflyflat = step_output_file.replace("flat_field.fits", "intflat.fits")
-                print ("Step product will be saved as: ", step_output_file)
-                print ("on-the-fly flat will be saved as: ", ontheflyflat)
+                msg1 = "Step product will be saved as: "+step_output_file
+                msg2 = "on-the-fly flat will be saved as: "+ontheflyflat
                 # get the right configuration files to run the step
+                print(msg1)
+                print(msg2)
+                logging.info(msg1)
+                logging.info(msg2)
                 local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
                 if core_utils.check_IFU_true(inhdu):
                     flat_suffix = "intflat"
@@ -114,7 +141,9 @@ def output_hdul(set_inandout_filenames, config):
                              config_file=local_pipe_cfg_path+'/flat_field.cfg')
                 # end the timer to compute the step running time
                 end_time = repr(time.time() - start_time)   # this is in seconds
-                print("Step "+step+" took "+end_time+" seconds to finish")
+                msg = "Step "+step+" took "+end_time+" seconds to finish"
+                print(msg)
+                logging.info(msg)
                 # move the on-the-fly flat to the working directory
                 subprocess.run(["mv", os.path.basename(ontheflyflat), ontheflyflat])
                 # raname and move the flat_field output
@@ -124,7 +153,9 @@ def output_hdul(set_inandout_filenames, config):
                     # remove the copy of the MSA shutter configuration file
                     subprocess.run(["rm", msametfl])
             else:
-                print("Skipping running pipeline step ", step)
+                msg = "Skipping running pipeline step "+step
+                print(msg)
+                logging.info(msg)
                 # add the running time for this step
                 working_directory = config.get("calwebb_spec2_input_file", "working_directory")
                 # Get the detector used
@@ -136,7 +167,9 @@ def output_hdul(set_inandout_filenames, config):
             return hdul, step_output_file, flattest_paths, flattest_switches, run_pytests
 
         else:
-            print (" The input file does not exist. Skipping step.")
+            msg = " The input file does not exist. Skipping step."
+            print(msg)
+            logging.info(msg)
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+" because the input file does not exist.")
 
@@ -155,21 +188,23 @@ def validate_flat_field(output_hdul):
     # show the figures
     show_figs = False
 
+    log_msgs = None
+
     if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
-        median_diff, msg = flattest_fs.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
+        median_diff, result_msg, log_msgs = flattest_fs.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
                                                 fflat_path=fflat_path, writefile=write_flattest_files,
                                                 show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
                                                 threshold_diff=flattest_threshold_diff, debug=False)
 
     elif core_utils.check_MOS_true(hdu):
-        median_diff, msg = flattest_mos.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
+        median_diff, result_msg, log_msgs = flattest_mos.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
                                                fflat_path=fflat_path, msa_shutter_conf=msa_shutter_conf,
                                                writefile=write_flattest_files,
                                                show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
                                                threshold_diff=flattest_threshold_diff, debug=False)
 
     elif core_utils.check_IFU_true(hdu):
-        median_diff, msg = flattest_ifu.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
+        median_diff, result_msg, log_msgs = flattest_ifu.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
                                                 fflat_path=fflat_path, writefile=write_flattest_files,
                                                 mk_all_slices_plt=False, show_figs=show_figs,
                                                 save_figs=save_flattest_plot, plot_name=None,
@@ -179,10 +214,16 @@ def validate_flat_field(output_hdul):
         pytest.skip("Skipping pytest: The input fits file is not FS, MOS, or IFU. This tool does not yet include the "
                     "routine to verify this kind of file.")
 
+    if log_msgs is not None:
+        for msg in log_msgs:
+            logging.info(msg)
+
     if median_diff == "skip":
-        pytest.skip(msg)
+        print(result_msg)
+        logging.info(result_msg)
     else:
-        print(msg)
+        print(result_msg)
+        logging.info(result_msg)
 
     return median_diff
 
@@ -197,22 +238,28 @@ def test_s_flat_exists(output_hdul):
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
+        logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n * Running completion pytest...\n")
+        msg = "\n * Running completion pytest...\n"
+        print(msg)
+        logging.info(msg)
         assert flat_field_utils.s_flat_exists(output_hdul[0]), "The keyword S_FLAT was not added to the header --> flat_field step was not completed."
 
-def test_validate_flat_field(output_hdul):
+def test_validate_flat_field(output_hdul, request):
     # want to run this pytest?
     # output_hdul[4] = flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests
     run_pytests = output_hdul[4][2]
     if not run_pytests:
         msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
+        logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n * Running validation pytest...\n")
-        assert validate_flat_field(output_hdul), "Output value from flattest.py is greater than threshold."
+        msg = "\n * Running validation pytest...\n"
+        print(msg)
+        logging.info(msg)
+        assert request.getfixturevalue("validate_flat_field"), "Output value from flattest.py is greater than threshold."
 
 def test_fflat_rfile(output_hdul):
     # want to run this pytest?
@@ -221,9 +268,12 @@ def test_fflat_rfile(output_hdul):
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
+        logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n * Running reference file pytest...\n")
+        msg = "\n * Running reference file pytest...\n"
+        print(msg)
+        logging.info(msg)
         result = flat_field_utils.fflat_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -234,9 +284,12 @@ def test_sflat_sfile(output_hdul):
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
+        logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n * Running reference file pytest...\n")
+        msg = "\n * Running reference file pytest...\n"
+        print(msg)
+        logging.info(msg)
         result = flat_field_utils.sflat_rfile_is_correct(output_hdul)
         assert not result, result
 
@@ -247,9 +300,12 @@ def test_dflat_dfile(output_hdul):
     if not run_pytests:
         msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
+        logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n * Running reference file pytest...\n")
+        msg = "\n * Running reference file pytest...\n"
+        print(msg)
+        logging.info(msg)
         result = flat_field_utils.dflat_rfile_is_correct(output_hdul)
         assert not result, result
 
