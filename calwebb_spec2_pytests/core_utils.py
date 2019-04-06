@@ -405,11 +405,11 @@ def get_stp_run_time_from_screenfile(step, det, working_directory):
 
     """
     # add the running time for this step
-    calspec2_screenout = "calspec2_screenout_"+det+".txt"
-    # make sure we are able to find calspec2_screenout either in the calwebb_spec2 directory or in the working dir
-    if not os.path.isfile(calspec2_screenout):
-        calspec2_screenout = os.path.join(working_directory, calspec2_screenout)
-    step_running_times = calculate_step_run_time(calspec2_screenout)
+    calspec2_pilelog = "calspec2_pipeline_"+det+".log"
+    # make sure we are able to find calspec2_pilelog either in the calwebb_spec2 directory or in the working dir
+    if not os.path.isfile(calspec2_pilelog):
+        calspec2_pilelog = os.path.join(working_directory, calspec2_pilelog)
+    step_running_times = calculate_step_run_time(calspec2_pilelog)
     end_time = None
     for stp in step_string_dict:
         if stp in step_running_times:
@@ -420,7 +420,7 @@ def get_stp_run_time_from_screenfile(step, det, working_directory):
         else:
             continue
     if end_time is None:
-        print("\n * PTT unable to calculate time from "+calspec2_screenout+" for step ", step, " ! \n")
+        print("\n * PTT unable to calculate time from "+calspec2_pilelog+" for step ", step, " ! \n")
         end_time = "0.0"
     return end_time
 
