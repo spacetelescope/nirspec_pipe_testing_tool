@@ -135,6 +135,7 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
 
     Returns:
         esafile: str, full path of the ESA file corresponding to input given
+        log_msgs: list, all screen messages are captured here
     """
 
     def convert_sltname2esaformat(specifics, esafiles=None):
@@ -214,6 +215,8 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
     else:
         esaroot = rawdatroot.replace(".fits", "")   # captures simulation data
 
+    log_msgs = []
+
     # go into the esa_files_path directory and enter the the mode to get the right esafile
     # get all subdirectories within esa_files_path
     subdir_list = glob(esa_files_path+"/*")
@@ -233,6 +236,7 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
     same_nid_files = []
     jlab88_list = []
     esafile = "ESA file not found"
+    nidrawfile = ""
     if all(item_not_dir==True for item_not_dir in dirs_not_in_list):
         raw_file_name = rawdatroot.split("_")[0].replace("NRS", "")
         for item in subdir_list:
@@ -241,8 +245,6 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
                     nidrawfile = fits.getval(item, "GS_JOBID", 0).split("_")[1].replace("000", "")
                     #print("nidrawfile =", nidrawfile)
                     same_nid_files.append(item)
-            else:
-                nidrawfile = ""
         nid = nidrawfile
     else:
         same_nid_files = []
@@ -305,14 +307,22 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
                     esafile.append(esaf)
                     # check if we got the right esafile
                     root_filename = fits.getval(esaf, "FILENAME", 0)
-                    print("root_filename = ", root_filename)
-                    print("rawdatroot = ", rawdatroot)
+                    root_filename_msg = "root_filename = "+root_filename
+                    rawdatroot_msg = "rawdatroot = "+rawdatroot
+                    print(root_filename_msg)
+                    print(rawdatroot_msg)
+                    log_msgs.append(root_filename_msg)
+                    log_msgs.append(rawdatroot_msg)
                     if rawdatroot.replace(".fits", "") in root_filename:
-                        print (" * File name matches raw file used for create_data.")
+                        msg = " * File name matches raw file used for create_data."
+                        print(msg)
+                        log_msgs.append(msg)
                     else:
-                        print (" * WARNING: Raw data file name used for create_data does not match esa root file name.")
+                        msg = " * WARNING: Raw data file name used for create_data does not match esa root file name."
+                        print(msg)
+                        log_msgs.append(msg)
 
-    return esafile
+    return esafile, log_msgs
 
 
 
@@ -470,6 +480,7 @@ def print_stats(arrX, xname, threshold_diff, abs=False):
 
     Returns:
         x_stats: list, all quantities calculated for arrX
+        stats_print_strings: list, contains all print statements
     """
     if abs:
         type_of_calculations = "  Absolute"
@@ -478,20 +489,33 @@ def print_stats(arrX, xname, threshold_diff, abs=False):
         type_of_calculations = "  Relative"
         type_of_percentages = "relative differences"
     # calculate statistics
+    stats_print_strings = []
     arrX_mean, arrX_median, arrX_stdev = np.mean(arrX), np.median(arrX), np.std(arrX)
     print("\n", type_of_calculations, xname, " :   mean = %0.3e"%(arrX_mean), "   median = %0.3e"%(arrX_median),
           "   stdev = %0.3e"%(arrX_stdev))
     rel_max = np.max(arrX)
     rel_min = np.min(arrX)
     percentage_results = compute_percentage(arrX, threshold_diff)
-    print ("    Maximum", type_of_calculations, xname, " = %0.3e"%(rel_max))
-    print ("    Minimum", type_of_calculations, xname, " = %0.3e"%(rel_min))
-    print ("    Percentage of pixels where median of", type_of_percentages, "is greater than: ")
-    print ("                            ->  1xtheshold = ", int(round(percentage_results[0], 0)), "%")
-    print ("                            ->  3xtheshold = ", int(round(percentage_results[1], 0)), "%")
-    print ("                            ->  5xtheshold = ", int(round(percentage_results[2], 0)), "%")
+    max_str = "    Maximum "+type_of_calculations+xname+" = %0.3e"%(rel_max)
+    min_str = "    Minimum "+type_of_calculations+xname+" = %0.3e"%(rel_min)
+    pix_percentage_greater_than_min = "    Percentage of pixels where median of "+type_of_percentages+" is greater than: "
+    threshold1 = "                            ->  1xtheshold = "+str(int(round(percentage_results[0], 0)))+"%"
+    threshold3 = "                            ->  3xtheshold = "+str(int(round(percentage_results[1], 0)))+"%"
+    threshold5 = "                            ->  5xtheshold = "+str(int(round(percentage_results[2], 0)))+"%"
+    print(max_str)
+    print(min_str)
+    print(pix_percentage_greater_than_min)
+    print(threshold1)
+    print(threshold3)
+    print(threshold5)
+    stats_print_strings.append(max_str)
+    stats_print_strings.append(min_str)
+    stats_print_strings.append(pix_percentage_greater_than_min)
+    stats_print_strings.append(threshold1)
+    stats_print_strings.append(threshold3)
+    stats_print_strings.append(threshold5)
     x_stats = [arrX_mean, arrX_median, arrX_stdev]
-    return x_stats
+    return x_stats, stats_print_strings
 
 
 def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, abs=False):
@@ -531,10 +555,10 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, abs=Fa
     else:
         # calculate and print stats
         if abs:
-            notnan_reldiffarr_stats = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=True)
+            notnan_reldiffarr_stats, stats_print_strings = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=True)
         else:
-            notnan_reldiffarr_stats = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=False)
-    return DATAMODEL_diff, DATAMODEL_diff[notnan], notnan_reldiffarr_stats
+            notnan_reldiffarr_stats, stats_print_strings = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=False)
+    return DATAMODEL_diff, DATAMODEL_diff[notnan], notnan_reldiffarr_stats, stats_print_strings
 
 
 def does_median_pass_tes(tested_quantity, arr_median, threshold_diff):
@@ -555,7 +579,6 @@ def does_median_pass_tes(tested_quantity, arr_median, threshold_diff):
         test_result = "PASSED"
     else:
         test_result = "FAILED"
-    print ("\n * Result of the test for", tested_quantity, ":  ", test_result, "\n")
     return test_result
 
 

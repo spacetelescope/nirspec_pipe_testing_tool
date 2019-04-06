@@ -6,6 +6,7 @@ py.test module for unit testing the extract_2d step.
 import pytest
 import os
 import time
+import logging
 from astropy.io import fits
 
 from jwst.extract_2d.extract_2d_step import Extract2dStep
@@ -16,12 +17,13 @@ from .. auxiliary_code import compare_wcs_mos
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & G. Kanarek"
-__version__ = "2.1"
+__version__ = "2.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Jan 2019 - Version 2.0: test separated from assign_wcs
 # Mar 2019 - Version 2.1: separated completion from validation tests
+# Apr 2019 - Version 2.2: implemented logging capability
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -66,9 +68,28 @@ def output_hdul(set_inandout_filenames, config):
             return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots
             
         else:
+
+            # Create the logfile for PTT, but erase the previous one if it exists
+            working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+            detector = fits.getval(step_input_file, "DETECTOR", 0)
+            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'_'+'.log')
+            if os.path.isfile(PTTcalspec2_log):
+                os.remove(PTTcalspec2_log)
+            print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
+            for handler in logging.root.handlers[:]:
+                logging.root.removeHandler(handler)
+            logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
+            # print pipeline version
+            import jwst
+            pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
+            print(pipeline_version)
+            logging.info(pipeline_version)
+
             if os.path.isfile(step_input_file):
                 if run_pipe_step:
-                    print ("*** Step "+step+" set to True")
+                    msg = " The input file "+step_input_file+" exists... will run step "+step
+                    print(msg)
+                    logging.info(msg)
                     stp = Extract2dStep()
                         
                     # check that previous pipeline steps were run up to this point
@@ -85,10 +106,14 @@ def output_hdul(set_inandout_filenames, config):
                     result.save(step_output_file)
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
-                    print("Step "+step+" took "+end_time+" seconds to finish")
+                    msg = "Step "+step+" took "+end_time+" seconds to finish"
+                    print(msg)
+                    logging.info(msg)
 
                 else:
-                    print("Skipping running pipeline step ", step)
+                    msg = "Skipping running pipeline step "+step
+                    print(msg)
+                    logging.info(msg)
                     # add the running time for this step
                     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
                     # Get the detector used
@@ -101,7 +126,9 @@ def output_hdul(set_inandout_filenames, config):
                 return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots
         
             else:
-                print (" The input file does not exist. Skipping step.")
+                msg = " The input file does not exist. Skipping step."
+                print(msg)
+                logging.info(msg)
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skiping "+step+" because the input file does not exist.")
 
@@ -130,11 +157,16 @@ def validate_wcs_extract2d(output_hdul):
     # show the figures
     show_figs = False
     
+    msg = "\n Performing WCS validation test... "
+    print(msg)
+    logging.info(msg)
     if mode_used == "MOS_sim":
-        result = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
+        result, log_msgs = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
                                              show_figs=show_figs, save_figs=save_wcs_plots,
                                              threshold_diff=threshold_diff, mode_used=mode_used, debug=False)
-    
+        for msg in log_msgs:
+            logging.info(msg)
+
     else:
         pytest.skip("Skipping pytest for WCS validation: The fits file is not MOS simulated data, the validation test was done after the assign_wcs step.")
     
@@ -150,11 +182,14 @@ def validate_extract2d(output_hdul):
     # get the input information for the wcs routine
     hdu, infile_name, msa_conf_name, esa_files_path, *_ = output_hdul
 
+    msg = "\n Performing extract_2d validation test... "
+    print(msg)
+    logging.info(msg)
     if core_utils.check_FS_true(hdu):
-        result = extract_2d_utils.find_FSwindowcorners(infile_name, esa_files_path)
+        result, log_msgs = extract_2d_utils.find_FSwindowcorners(infile_name, esa_files_path)
 
     elif core_utils.check_MOS_true(hdu):
-        result = extract_2d_utils.find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path)
+        result, log_msgs = extract_2d_utils.find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path)
         
     else:
         pytest.skip("Skipping pytest: The fits file is not FS or MOS.")
@@ -185,9 +220,12 @@ def test_s_ext2d_exists(output_hdul):
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
+        logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n * Running completion pytest...\n")
+        msg = "\n * Running completion pytest...\n"
+        print(msg)
+        logging.info(msg)
         assert extract_2d_utils.s_ext2d_exists(output_hdul[0]), "The keyword S_EXTR2D was not added to the header --> extract_2d step was not completed."
 
 
@@ -199,9 +237,12 @@ def test_validate_wcs_extract2d(output_hdul, request):
     if not run_pytests and not assign_wcs_pytests:
         msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
+        logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n * Running validation pytest...\n")
+        msg = "\n * Running validation pytest...\n"
+        print(msg)
+        logging.info(msg)
         assert request.getfixturevalue("validate_wcs_extract2d"), "Output value from compare_wcs.py is greater than threshold."
 
 
@@ -212,7 +253,10 @@ def test_validate_extract2d(output_hdul, request):
     if not run_pytests:
         msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
+        logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n * Running validation pytest...\n")
+        msg = "\n * Running validation pytest...\n"
+        print(msg)
+        logging.info(msg)
         assert request.getfixturevalue("validate_wcs_extract2d")

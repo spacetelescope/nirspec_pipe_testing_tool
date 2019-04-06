@@ -7,11 +7,12 @@ from ..auxiliary_code import auxiliary_functions as auxfunc
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Jan 2019 - Version 1.1: Maria modified and added Gray's code for validation tests
+# Apr 2019 - Version 1.2: implemented logging capability
 
 
 """
@@ -51,6 +52,7 @@ def find_FSwindowcorners(infile_name, esa_files_path):
 	"""
 
     result = OrderedDict()
+    log_msgs = []
 
     #iterate over slits
     sci_ext_list = auxfunc.get_sci_extensions(infile_name)
@@ -90,10 +92,14 @@ def find_FSwindowcorners(infile_name, esa_files_path):
         esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
 
         if esafile == "ESA file not found":
-            print(" * validate_wcs_extract2d is exiting because the corresponding ESA file was not found.")
-            print("   -> The extract_2d test is now set to skip. ")
+            msg1 = " * validate_wcs_extract2d is exiting because the corresponding ESA file was not found."
+            msg2 = "   -> The extract_2d test is now set to skip. "
+            print(msg1)
+            print(msg2)
+            log_msgs.append(msg1)
+            log_msgs.append(msg2)
             result = "skip"
-            return result
+            return result, log_msgs
 
         if not isinstance(esafile, list):
             esafile_list = [esafile]
@@ -125,8 +131,8 @@ def find_FSwindowcorners(infile_name, esa_files_path):
                 eflux = fits.getdata(esafile, "DATA2")
             except:
                 IndexError
-                print(" * Exiting extract_2d test because there are no extensions that match detector NRS2 in the ESA file.")
-                print("   -> The extract_2d test is now set to skip. ")
+                msg1 = " * Exiting extract_2d test because there are no extensions that match detector NRS2 in the ESA file."
+                msg2 = "   -> The extract_2d test is now set to skip. "
                 result = "skip"
                 continue
         esahdulist.close()
@@ -145,9 +151,28 @@ def find_FSwindowcorners(infile_name, esa_files_path):
 
         ecorners = {(ex0, ey0), (ex1, ey0), (ex1, ey1), (ex0, ey1)}
 
+        # Pytest pass/fail criterion: if esa corners match pipeline corners then True, else False
         result[sltname] = ecorners == icorners
 
-    return result
+        msg1 = "* Corners for slit "+sltname+":"
+        msg2 = "         ESA corners: "+repr(ecorners)
+        msg3 = "    Pipeline corners: "+repr(icorners)
+        print(msg1)
+        print(msg2)
+        print(msg3)
+        log_msgs.append(msg1)
+        log_msgs.append(msg2)
+        log_msgs.append(msg3)
+        if result[sltname]:
+            msg = "* Pytest PASSED "
+            print(msg)
+            log_msgs.append(msg)
+        else:
+            msg = "* Pytest FAILED "
+            print(msg)
+            log_msgs.append(msg)
+
+    return result, log_msgs
 
 
 def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
@@ -161,9 +186,11 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
 		result - string or dictionary
 				if string, test is set to skip
 				if dictionary, contains a boolean per slit test
+		log_msgs - list of print statements to in the log file
 	"""
 
-    result = OrderedDict
+    result = OrderedDict()
+    log_msgs = []
 
     # Grab initial metadata
     primary_header = fits.getheader(infile_name, ext=0)
@@ -172,7 +199,9 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
 
     # check that shutter configuration file in header is the same as given in PTT_config file
     if msametfl != os.path.basename(msa_conf_name):
-        print ("* WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.\n")
+        msg = "* WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.\n"
+        print(msg)
+        log_msgs.append(msg)
 
     # Get shutter info from metadata
     shutter_info = fits.getdata(msa_conf_name, extname="SHUTTER_INFO") # this is generally ext=2
@@ -185,11 +214,17 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
     try:
         subprocess.run(["cp", msa_conf_name, "."])
     except FileNotFoundError:
-        print(" * PTT is not able to locat the MSA shutter configuration file. Please make sure that the msa_conf_name variable in")
-        print("   the PTT_config.cfg file is pointing exactly to where the fits file exists. ")
-        print("   -> The extract_2d test is now set to skip. ")
+        msg1 = " * PTT is not able to locat the MSA shutter configuration file. Please make sure that the msa_conf_name variable in"
+        msg2 = "   the PTT_config.cfg file is pointing exactly to where the fits file exists. "
+        msg3 = "   -> The extract_2d test is now set to skip. "
+        print(msg1)
+        print(msg2)
+        print(msg3)
+        log_msgs.append(msg1)
+        log_msgs.append(msg2)
+        log_msgs.append(msg3)
         result = "skip"
-        return result
+        return result, log_msgs
 
     # Identify the science extensions
     sci_ext_list = auxfunc.get_sci_extensions(infile_name)
@@ -198,7 +233,9 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
     for i, s_ext in enumerate(sci_ext_list):
         sci_header = fits.getheader(infile_name, ext=s_ext)
         name = sci_header['SLTNAME']
-        print ("\nWorking with slit: ", name)
+        msg = "\nWorking with slit: "+name
+        print(msg)
+        log_msgs.append(msg)
 
         slitlet_idx = slit_ids.tolist().index(int(name))
 
@@ -215,9 +252,13 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
 
         # Identify the associated ESA file
         _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
-        print("Using this raw data file to find the corresponding ESA file: ", raw_data_root_file)
+        msg = "Using this raw data file to find the corresponding ESA file: "+raw_data_root_file
+        print(msg)
+        log_msgs.append(msg)
         q, r, c = quad[slitlet_idx], row[slitlet_idx], col[slitlet_idx]
-        print("Pipeline shutter info:   quadrant=", q, "   row=", r, "   col=", c)
+        msg = "Pipeline shutter info:   quadrant="+str(q)+"   row="+str(r)+"   col="+str(c)
+        print(msg)
+        log_msgs.append(msg)
         specifics = [q, r, c]
         esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "MOS", specifics)
 
@@ -232,19 +273,33 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
             esa_shutter_j = esahdulist[0].header['SHUTTERJ']
             esa_quadrant = esahdulist[0].header['QUADRANT']
             # first check if ESA shutter info is the same as pipeline
-            print("For slitlet", name)
+            msg = "For slitlet"+name
+            print(msg)
+            log_msgs.append(msg)
             if q == esa_quadrant:
-                print("\n -> Same quadrant for pipeline and ESA data: ", q)
+                msg = "\n -> Same quadrant for pipeline and ESA data: "+str(q)
+                print(msg)
+                log_msgs.append(msg)
             else:
-                print("\n -> Missmatch of quadrant for pipeline and ESA data: ", q, esa_quadrant)
+                msg = "\n -> Missmatch of quadrant for pipeline and ESA data: "+str(q)+esa_quadrant
+                print(msg)
+                log_msgs.append(msg)
             if r == esa_shutter_i:
-                    print("\n -> Same row for pipeline and ESA data: ", r)
+                msg = "\n -> Same row for pipeline and ESA data: "+str(r)
+                print(msg)
+                log_msgs.append(msg)
             else:
-                print("\n -> Missmatch of row for pipeline and ESA data: ", r, esa_shutter_i)
+                msg = "\n -> Missmatch of row for pipeline and ESA data: "+str(r)+esa_shutter_i
+                print(msg)
+                log_msgs.append(msg)
             if c == esa_shutter_j:
-                print("\n -> Same column for pipeline and ESA data: ", c, "\n")
+                msg = "\n -> Same column for pipeline and ESA data: "+str(c)+"\n"
+                print(msg)
+                log_msgs.append(msg)
             else:
-                print("\n -> Missmatch of column for pipeline and ESA data: ", c, esa_shutter_j, "\n")
+                msg = "\n -> Missmatch of column for pipeline and ESA data: "+str(c)+esa_shutter_j+"\n"
+                print(msg)
+                log_msgs.append(msg)
 
             if detector == "NRS1":
                 esahdr = esahdulist['DATA1'].header
@@ -264,5 +319,23 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
 
             result[name] = ecorners == icorners
 
-    return result
+            msg1 = "* Corners for slitlet "+name+":"
+            msg2 = "         ESA corners: "+repr(ecorners)
+            msg3 = "    Pipeline corners: "+repr(icorners)
+            print(msg1)
+            print(msg2)
+            print(msg3)
+            log_msgs.append(msg1)
+            log_msgs.append(msg2)
+            log_msgs.append(msg3)
+            if result[name]:
+                msg = "* Pytest PASSED "
+                print(msg)
+                log_msgs.append(msg)
+            else:
+                msg = "* Pytest FAILED "
+                print(msg)
+                log_msgs.append(msg)
+
+    return result, log_msgs
 

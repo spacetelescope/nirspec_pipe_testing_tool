@@ -4,6 +4,7 @@ import time
 import argparse
 import subprocess
 import configparser
+import logging
 from glob import glob
 from astropy.io import fits
 
@@ -35,12 +36,13 @@ This script will perform calwebb_detector1 in one single run, outputing intermed
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.2"
+__version__ = "1.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Jul 2018 - Version 1.1: Added functions to calculate running times from screen log
 # Feb 2019 - Version 1.2: made changes to be able to process 491 and 492 files in the same directory
+# Mar 2019 - Version 1.3: added logging capability
 
 
 def get_caldet1cfg_and_workingdir():
@@ -60,11 +62,11 @@ def get_caldet1cfg_and_workingdir():
     return calwebb_detector1_cfg, calwebb_tso1_cfg, working_dir, mode_used, raw_data_root_file
 
 
-def calculate_step_run_time(screen_output_txt, pipe_steps):
+def calculate_step_run_time(pipelog_file, pipe_steps):
     """
-    This function calculates the step run times from the screen_output_txt file.
+    This function calculates the step run times from the pipelog_file.
     Args:
-        screen_output_txt: string, path and name of the text file
+        pipelog_file: string, path and name of the log file
         pipe_steps: list, steps ran in calwebb_detector_1
 
     Returns:
@@ -73,7 +75,7 @@ def calculate_step_run_time(screen_output_txt, pipe_steps):
     """
     def get_timestamp(time_list):
         """
-        This sub-function obtains a time stamp from the time strings read from the screen output text file.
+        This sub-function obtains a time stamp from the time strings read from the pipelog_file.
         Args:
             time_list: list, contains 2 strings (date and time)
 
@@ -108,9 +110,9 @@ def calculate_step_run_time(screen_output_txt, pipe_steps):
         timestamp = time.mktime(time_tuple)
         return timestamp
 
-    # read the screen_output_txt file
+    # read the pipelog_file
     step_running_times = {}
-    with open(screen_output_txt, "r") as sot:
+    with open(pipelog_file, "r") as sot:
         for line in sot.readlines():
             line = line.replace("\n", "")
             if "Ending" in line:   # make sure not to overwrite the dictionary
@@ -151,7 +153,7 @@ fits_input_uncal_file = args.fits_input_uncal_file
 step_by_step = args.step_by_step
 
 # Get the detector used
-det = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
+detector = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
 
 # Get the cfg file
 calwebb_detector1_cfg, calwebb_tso1_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
@@ -159,10 +161,20 @@ if mode_used != "BOTS":
     cfg_file = calwebb_detector1_cfg
 else:
     cfg_file = calwebb_tso1_cfg
-print ("Using this configuration file: ", cfg_file)
+configfile_used = "Using this configuration file: "+cfg_file
+
+# Initiate the PTT log file
+PTTcaldetector1_log = os.path.join(working_dir, 'PTT_caldetector1_'+detector+'.log')
+print("Information outputed to screen from this script will be logged in file: ", PTTcaldetector1_log)
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+logging.basicConfig(filename=PTTcaldetector1_log, level=logging.DEBUG)
+
+print(configfile_used)
+logging.info(configfile_used)
 
 # create the text file to record the names of the output files and the time the pipeline took to run
-txt_outputs_summary = "cal_detector1_outputs_and_times_"+det+".txt"
+txt_outputs_summary = "cal_detector1_outputs_and_times_"+detector+".txt"
 end_time_total = []
 line0 = "# {:<20}".format("Input file: "+fits_input_uncal_file)
 line1 = "# {:<16} {:<19} {:<20}".format("Step", "Output file", "Time to run [s]")
@@ -170,25 +182,27 @@ with open(txt_outputs_summary, "w+") as tf:
     tf.write(line0+"\n")
     tf.write(line1+"\n")
 
-# Name of the text file containing all the pipeline output
-caldetector1_screenout = "caldetector1_screenout_"+det+".txt"
+# Name of the file containing all the pipeline output
+caldetector1_pipeline_log = "pipeline.log"
 
 #final_output_caldet1 = "gain_scale.fits"
-final_output_caldet1 = "final_output_caldet1_"+det+".fits"
+final_output_caldet1 = "final_output_caldet1_"+detector+".fits"
 output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits",
                 "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits", final_output_caldet1]
 
-# Get and save the value of the raw data root name to add at the end of calwebb_detector1
-#rawdatrt = fits.getval(fits_input_uncal_file, 'rawdatrt', 0)
-
 if not step_by_step:
+    print("Got arguments and will run the calwebb_detector1 pipeline in full. This may take a while...")
+
     # start the timer to compute the step running time
     start_time = time.time()
     result = Detector1Pipeline.call(fits_input_uncal_file, config_file=cfg_file)
     result.save(final_output_caldet1)
-    # end the timer to compute calwebb_spec2 running time
+
+    # end the timer to compute pipeline running time
     end_time = time.time() - start_time  # this is in seconds
-    print(" * calwebb_detector1 took "+repr(end_time)+" seconds to finish *")
+    time2finish_string = " * calwebb_detector1 took "+repr(end_time)+" seconds to finish *"
+    print(time2finish_string)
+    logging.info(time2finish_string)
     if end_time > 60.0:
         end_time_min = round(end_time / 60.0, 1)   # in minutes
         tot_time = repr(end_time_min)+"min"
@@ -200,7 +214,7 @@ if not step_by_step:
     total_time = "{:<18} {:<20} {:<20}".format("", "total_time = ", repr(end_time)+"  ="+tot_time)
 
     # get the running time for the individual steps
-    step_running_times = calculate_step_run_time(caldetector1_screenout, output_names)
+    step_running_times = calculate_step_run_time(caldetector1_pipeline_log, output_names)
 
     # write step running times in the text file
     end_time_list = []
@@ -216,6 +230,8 @@ if not step_by_step:
             tf.write(line2write+"\n")
 
 else:
+    print("Got arguments and will run the calwebb_detector1 pipeline step by step.")
+
     # steps to be ran, in order
     steps_to_run = [GroupScaleStep(), DQInitStep(), SaturationStep(), SuperBiasStep(), RefPixStep(),
                     LastFrameStep(), LinearityStep(), DarkCurrentStep(), JumpStep(), RampFitStep(), GainScaleStep()]
@@ -241,14 +257,20 @@ else:
                     break
                 if os.path.isfile(step_input_file):
                     completion_key_val = fits.getval(step_input_file, comp_keys[i-j])
-                    print("Checking for next step... ")
-                    print (" * Completion keyword: ", comp_keys[i-j], completion_key_val)
+                    msg = "Checking for next step... "
+                    completion_keywd_msg = " * Completion keyword: "+comp_keys[i-j]+"   and value: "+completion_key_val
+                    print(msg)
+                    print(completion_keywd_msg)
+                    logging.info(msg)
+                    logging.info(completion_keywd_msg)
                     if "SKIPPED" in completion_key_val:
                         j += 1
                     elif "COMPLETE" in completion_key_val:
                         continue_while = False
-        print ("\n-> Running step: ", stp, "   with input file: ", step_input_file)
-        print ("   output will be saved as: ", output_names[i])
+        running_stp_msg = "\n-> Running step: "+stp+"   with input file: "+step_input_file
+        output_msg = "   output will be saved as: "+output_names[i]
+        logging.info(running_stp_msg)
+        logging.info(output_msg)
 
         # start the timer to compute the step running time
         start_time = time.time()
@@ -266,14 +288,18 @@ else:
                 int_slope.save("ramp_fit_int.fits")
             except:
                 AttributeError
-                print ("File has only 1 integration.")
+                msg = "File has only 1 integration."
+                print(msg)
+                logging.info(msg)
 
         # end the timer to compute cal_detector1 running time
         et = time.time() - start_time   # this is in seconds
         end_time = repr(et)
         end_time_total.append(et)
         step = output_names[i].replace(".fits", "")
-        print(" * calwebb_detector1 step ", step, " took "+end_time+" seconds to finish * \n")
+        msg = " * calwebb_detector1 step "+step+" took "+end_time+" seconds to finish * \n"
+        print(msg)
+        logging.info(msg)
         if et > 60.0:
             end_time_min = round(et / 60.0, 1)   # in minutes
             end_time = repr(end_time_min)+"min"
@@ -305,24 +331,41 @@ else:
 # record total time in text file
 with open(txt_outputs_summary, "a") as tf:
     tf.write(total_time+"\n")
-print ("\n ** Calwebb_detector 1 took "+repr(tot_time)+" to complete **")
+msg = "\n ** Calwebb_detector 1 took "+repr(tot_time)+" to complete **"
+print(msg)
+logging.info(msg)
 
-# Move fits products to working dir
+
+# Move products to working dir
+
+# rename and move the pipeline log file
+pytest_workdir = os.getcwd()
+logfile = glob(pytest_workdir+"/*pipeline*.log")[0]
+new_name = "caldetector1_pipeline_"+detector+".log"
+os.rename(logfile, os.path.join(working_dir, new_name))
+
+# move the PTT log file and the fits intermediary product files
 fits_list = glob("*.fits")
 if len(fits_list) >= 1:
-    print("Output fits files are located at: ", working_dir)
+    msg = "Output fits files are located at: "+working_dir
+    print(msg)
+    logging.info(msg)
     for ff in fits_list:
         if "step_" in ff:
             ff_newname = os.path.join(working_dir, ff.replace("step_", ""))
         else:
             ff_newname = os.path.join(working_dir, ff)
-        if det.lower() not in ff.lower():
-            ff_newname = ff_newname.replace(".fits", "_"+det+".fits")
+        if detector.lower() not in ff.lower():
+            ff_newname = ff_newname.replace(".fits", "_"+detector+".fits")
         subprocess.run(["mv", ff, ff_newname])
     # move text files too
     subprocess.run(["mv", txt_outputs_summary, working_dir])
-    subprocess.run(["mv", caldetector1_screenout, working_dir])
-else:
-    print("No fits files detected after calwbb_detector1 finished. Exiting script.")
 
-print ("Script  run_cal_detector1.py  finished.")
+else:
+    msg = "No fits files detected after calwbb_detector1 finished. Exiting script."
+    print(msg)
+    logging.info(msg)
+
+msg = "Script  run_cal_detector1.py  finished."
+print(msg)
+logging.info(msg)
