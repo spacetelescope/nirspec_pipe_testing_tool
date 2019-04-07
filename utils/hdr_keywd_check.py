@@ -35,10 +35,11 @@ in the pytests configuration file.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Apr 2019 - Version 1.1: added dictionary to choose right GWA_XTIL keyword value according to GRATING
 
 
 ### General functions
@@ -278,6 +279,31 @@ def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='
         return warning
 
 
+def get_gwaxtil_val(grating):
+    """
+    This function gets the right GWA_XTIL value according to the grating given
+    Args:
+        grating: string, value from GRATING keyword
+
+    Returns:
+        gwaxtil: float, corresponding GWA_XTIL value to the grating
+    """
+    # dictionary containing default XTILT values
+    # (taken from "Zeroreadings 1" parameter in "disperser_*_TiltY.gtp" reference files)
+    default_xtil = {
+            "G140H" : 0.361956834793,
+            "G140M" : 0.331874251366,
+            "G235H" : 0.353678375483,
+            "G235M" : 0.321180671453,
+            "G395H" : 0.323275774717,
+            "G395M" : 0.28645208478,
+            "MIRROR" : 0.347495883703,
+            "PRISM" : 0.336739093065
+            }
+    gwaxtil = default_xtil[grating]
+    return gwaxtil
+
+
 ### keyword and format check
 
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used):
@@ -369,6 +395,15 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         #fits.setval(ff, key, 0, value='GENERIC')
                         specific_keys_dict[key] = 'GENERIC'
                         missing_keywds.append(key)
+
+                # choose right value for GWA_XTIL according to the grating
+                if key == "GWA_XTIL":
+                    grating = fits.getval(ff, "GRATING", 0)
+                    gwa_xtil = get_gwaxtil_val(grating)
+                    print("Replacing value of keyword ", key, " corresponding to GRATING=", grating,
+                          "and value ", gwa_xtil)
+                    specific_keys_dict[key] = gwa_xtil
+                    missing_keywds.append(key)
 
                 # specific check for SUBARRAY
                 if key == 'SUBARRAY':
