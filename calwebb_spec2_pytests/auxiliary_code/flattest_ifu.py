@@ -21,7 +21,7 @@ This script tests the pipeline flat field step output for IFU data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.4"
+__version__ = "2.5"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -30,6 +30,7 @@ __version__ = "2.4"
 # Jun 2018 - Version 2.2: Removed function reverse_cols because it was not behaving as expected.
 # Feb 2019 - Version 2.3: Maria added lines to properly rotate NRS2 s- and d-flats.
 # Apr 2019 - Version 2.4: Implemented logging capability.
+# May 2019 - Version 2.5: Implemented plot of residuals as well as histogram.
 
 
 
@@ -267,15 +268,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
         # get the wavelength
         # slice.x(y)start are 1-based, turn them to 0-based for extraction
-        # xstart, xend = slice.xstart - 1, slice.xstart -1 + slice.xsize
-        # ystart, yend = slice.ystart - 1, slice.ystart -1 + slice.ysize
-        # y, x = np.mgrid[ystart: yend, xstart: xend]
         x, y = wcstools.grid_from_bounding_box(slice.bounding_box, (1, 1), center=True)
         ra, dec, wave = slice(x, y)
-        #detector2slit = slice.meta.wcs.get_transform('detector', 'slit_frame')
-        #sx, sy, ls = detector2slit(x, y)
-        #world_coordinates = np.array([wave, ra, dec, sy])#, x, y])
-        #print('wcs_slice.bounding_box: ', slice.bounding_box)
 
         # get the subwindow origin (technically no subwindows for IFU, but need this for comparing to the
         # full frame on-the-fly flat image).
@@ -462,8 +456,29 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 # create histogram
                 t = (file_basename, det, pslice, "IFUflatcomp_histogram")
                 title =  filt+"   "+grat+"   SLICE="+pslice+"\n"
-                plot_name = "".join((file_path, ("_".join(t))+".pdf"))
-                mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name=plot_name)
+                plot_name = "".join((file_path, ("_".join(t))+".jpg"))
+                #mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name=plot_name)
+                bins = None   # binning for the histograms, if None the function will select them automatically
+                title = title+"Residuals"
+                info_img = [title, "x (pixels)", "y (pixels)"]
+                xlabel, ylabel = "flat$_{pipe}$ - flat$_{calc}$", "N"
+                info_hist = [xlabel, ylabel, bins, stats]
+                if delfg[1] is np.nan:
+                    msg = "Unable to create plot of relative wavelength difference."
+                    print(msg)
+                    log_msgs.append(msg)
+                else:
+                    plt_name = os.path.join(file_path, plot_name)
+                    difference_img = (pipeflat - calc_flat)#/calc_flat
+                    in_slit = np.logical_and(difference_img<900.0, difference_img>-900.0) # ignore points out of the slit,
+                    difference_img[~in_slit] = np.nan   # Set values outside the slit to NaN
+                    nanind = np.isnan(difference_img)   # get all the nan indexes
+                    difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
+                    plt_origin = None
+                    limits = [px0-5, px0+1500, py0-5, py0+55]
+                    auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name, limits=limits,
+                                                 plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+
             elif not save_figs and not show_figs:
                 msg = "Not making plots because both show_figs and save_figs were set to False."
                 print(msg)
@@ -517,7 +532,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             mean_of_delfg_mean = np.mean(all_delfg_mean_arr)
             median_of_delfg_median = np.median(all_delfg_median_arr)
             medians_std = np.std(median_of_delfg_median)
-            plot_name = "".join((file_path, title))
+            plot_name = "".join((file_path, title, ".jpg"))
             mk_hist(title, all_delfg_median_arr, mean_of_delfg_mean, median_of_delfg_median, medians_std, save_figs, show_figs,
                     plot_name=plot_name)
         elif not save_figs and not show_figs:

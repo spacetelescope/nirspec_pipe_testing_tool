@@ -1,4 +1,5 @@
 import time
+import os
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -17,7 +18,7 @@ This script tests the pipeline flat field step output for MOS data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "3.3"
+__version__ = "3.4"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -28,6 +29,7 @@ __version__ = "3.3"
 # Jun 2018 - Version 3.1: Removed function reverse_cols because it was not behaving as expected.
 # Aug 2018 - Version 3.2: Fixed bugs per Phil Hodge recommendations.
 # Apr 2019 - Version 3.3: Implemented capability to return logging messages.
+# May 2019 - Version 3.4: Implemented images of the residuals.
 
 
 
@@ -458,7 +460,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         xmin = wave[k, j]-0.01
                         xmax = wave[k, j]+0.01
                         plt.xlim(xmin, xmax)
-                        #plt.ylim(min(dfim[:, pind[0], pind[1]])*0.9, max(dfim[:, pind[0], pind[1]])*1.1)
                         plt.plot(dfwave, dfim[:, pind[0], pind[1]], linewidth=7, marker='D', color='k', label="dflat_im")
                         plt.plot(wave[k, j], dfs, linewidth=7, marker='D', color='r')
                         plt.plot(dfrqe_wav, dfrqe_rqe, linewidth=7, marker='D', c='k', label="dflat_vec")
@@ -553,45 +554,36 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     msg = "Making histogram plot for this slitlet..."
                     print(msg)
                     log_msgs.append(msg)
-                    font = {#'family' : 'normal',
-                            'weight' : 'normal',
-                            'size'   : 16}
-                    matplotlib.rc('font', **font)
-                    alpha = 0.2
-                    fontsize = 15
-                    fig = plt.figure(1, figsize=(8, 6))
-                    plt.subplots_adjust(hspace=.4)
-                    ax = plt.subplot(111)
-                    t= (filt, grat, "   SLIT", slit_id)
-                    plt.title(" ".join(t))
-                    plt.xlabel("flat$_{pipe}$ - flat$_{calc}$")
-                    plt.ylabel("N")
-                    xmin = delfg_median - delfg_std*5
-                    xmax = delfg_median + delfg_std*5
-                    plt.xlim(xmin, xmax)
-                    #x_median = "median = {:0.3}".format(delfg_median)
-                    x_stddev = "stddev = {:0.3}".format(delfg_std)
-                    # add vertical line at mean and median
-                    plt.axvline(delfg_mean, label="mean = %0.3e"%(delfg_mean), color="g")
-                    plt.axvline(delfg_median, label="median = %0.3e"%(delfg_median), linestyle="-.", color="b")
-                    plt.legend()
-                    # add standard deviation
-                    ax.text(0.62, 0.76, x_stddev, transform=ax.transAxes, fontsize=fontsize)
-                    plt.tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-                    binwidth = (xmax-xmin)/40.
-                    _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k',
-                                      facecolor="red", alpha=alpha)
-                    if save_figs:
-                        #if plot_name is None:
-                        file_basename = step_input_filename.replace(".fits", "")
-                        plot_name = file_basename+"_"+slitlet_id+"_MOS_flattest_histogram.pdf"
-                        plt.savefig(plot_name)
-                        msg = '\n Plot saved: '+plot_name
+                    # set the plot variables
+                    main_title = filt+"   "+grat+"   SLIT="+slit_id+"\n"
+                    bins = None   # binning for the histograms, if None the function will select them automatically
+                    #             lolim_x, uplim_x, lolim_y, uplim_y
+                    plt_origin = None
+
+                    # Residuals img and histogram
+                    title = main_title+"Residuals"
+                    info_img = [title, "x (pixels)", "y (pixels)"]
+                    xlabel, ylabel = "flat$_{pipe}$ - flat$_{calc}$", "N"
+                    info_hist = [xlabel, ylabel, bins, stats]
+                    if delfg[1] is np.nan:
+                        msg = "Unable to create plot of relative wavelength difference."
                         print(msg)
                         log_msgs.append(msg)
-                    if show_figs:
-                        plt.show()
-                    plt.close()
+                    else:
+                        file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
+                        file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
+                        t = (file_basename, "MOS_flattest_"+slitlet_id+"_histogram.jpg")
+                        plt_name = "_".join(t)
+                        plt_name = os.path.join(file_path, plt_name)
+                        difference_img = (pipeflat - flatcor)#/flatcor
+                        in_slit = np.logical_and(difference_img<900.0, difference_img>-900.0) # ignore out of slitlet
+                        difference_img[~in_slit] = np.nan   # Set values outside the slit to NaN
+                        nanind = np.isnan(difference_img)   # get all the nan indexes
+                        difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
+                        auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
+                                                     plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+
+
                 elif not save_figs and not show_figs:
                     msg = "Not making plots because both show_figs and save_figs were set to False."
                     print(msg)
@@ -711,5 +703,5 @@ if __name__ == '__main__':
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
                            fflat_path=fflat_path, msa_shutter_conf=msa_shutter_conf, writefile=writefile,
-                           show_figs=False, save_figs=True, plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
+                           show_figs=True, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
 

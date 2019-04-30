@@ -339,7 +339,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             # set the common variables
             basenameinfile_name = os.path.basename(infile_name)
             main_title = filt+"   "+grat+"   SLIT="+pipeslit+"\n"
-            bins = 15   # binning for the histograms
+            bins = 15   # binning for the histograms, if None the function will automatically calculate number
             #             lolim_x, uplim_x, lolim_y, uplim_y
             plt_origin = None
 
@@ -353,7 +353,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_wave_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_wave_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -367,7 +367,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_slitY_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_slitY_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -381,7 +381,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAx_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_MSAx_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -395,7 +395,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_MSAy_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_MSAy_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -411,7 +411,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V2_diffs.jpg")
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_V2_diffs.jpg")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -426,7 +426,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_rel_V3_diffs.jpg")
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_V3_diffs.jpg")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -473,9 +473,10 @@ if __name__ == '__main__':
 
     # input parameters that the script expects
     #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G235H_opaque/491_results"
-    data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results"
+    data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140H_opaque"
     #data_dir = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G235M_F170LP/491_results"
-    infile_name = data_dir+"/gain_scale_NRS1_assign_wcs.fits"
+    infile_name = data_dir+"/jwdata0010010_11010_0001_NRS1_assign_wcs.fits"   # for G140H
+    #infile_name = data_dir+"/gain_scale_NRS1_assign_wcs.fits"
     #infile_name = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140H_opaque/jwdata0010010_11010_0001_NRS1_assign_wcs.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
