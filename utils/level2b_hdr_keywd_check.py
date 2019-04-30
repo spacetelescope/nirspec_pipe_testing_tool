@@ -403,6 +403,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 if key == "GWA_XTIL":
                     grating = fits.getval(ff, "GRATING", 0)
                     gwa_xtil = get_gwaxtil_val(grating)
+                    print("Replacing value of keyword ", key, " corresponding to GRATING=", grating,
+                          "and value ", gwa_xtil)
                     specific_keys_dict[key] = gwa_xtil
                     missing_keywds.append(key)
 
