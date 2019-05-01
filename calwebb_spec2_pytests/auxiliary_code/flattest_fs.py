@@ -1,8 +1,6 @@
 import time
 import os
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
 from astropy.io import fits
 
 from gwcs import wcstools
@@ -19,7 +17,7 @@ This script tests the pipeline flat field step output for MOS data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.3"
+__version__ = "2.4"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -28,6 +26,7 @@ __version__ = "2.3"
 # Jun 2018 - Version 2.1: Changed extension numbers for the name of the extension in the D-, F-, and S-flats.
 # Jun 2018 - Version 2.2: Removed function reverse_cols because it was not behaving as expected.
 # Apr 2019 - Version 2.3: Implemented logging capability.
+# May 2019 - Version 2.4: Implemented images of the residuals.
 
 
 
@@ -471,50 +470,36 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
         # make histogram
         if show_figs or save_figs:
-            if np.isfinite(delfg_median):
-                msg = "Making the plot for this slit..."
+
+            # set plot variables
+            main_title = filt+"   "+grat+"   SLIT="+slit_id+"\n"
+            bins = None   # binning for the histograms, if None the function will select them automatically
+            #             lolim_x, uplim_x, lolim_y, uplim_y
+            plt_origin = None
+
+            # Residuals img and histogram
+            title = main_title+"Residuals"
+            info_img = [title, "x (pixels)", "y (pixels)"]
+            xlabel, ylabel = "flat$_{pipe}$ - flat$_{calc}$", "N"
+            info_hist = [xlabel, ylabel, bins, stats]
+            if delfg[1] is np.nan:
+                msg = "Unable to create plot of relative wavelength difference."
                 print(msg)
                 log_msgs.append(msg)
-                font = {#'family' : 'normal',
-                        'weight' : 'normal',
-                        'size'   : 16}
-                matplotlib.rc('font', **font)
-                alpha = 0.2
-                fontsize = 15
-                fig = plt.figure(1, figsize=(10, 8))
-                plt.subplots_adjust(hspace=.4)
-                ax = plt.subplot(111)
-                t = (filt, grat, slit_id)
-                plt.title("_".join(t))
-                plt.xlabel("flat$_{pipe}$ - flat$_{calc}$")
-                plt.ylabel("N")
-                xmin = delfg_median - delfg_std*5
-                xmax = delfg_median + delfg_std*5
-                plt.xlim(xmin, xmax)
-                x_stddev = "stddev = {:0.3}".format(delfg_std)
-                # add vertical line at mean and median
-                plt.axvline(delfg_mean, label="mean = %0.3e"%(delfg_mean), color="g")
-                plt.axvline(delfg_median, label="median = %0.3e"%(delfg_median), linestyle="-.", color="b")
-                plt.legend()
-                # add standard deviation
-                ax.text(0.62, 0.78, x_stddev, transform=ax.transAxes, fontsize=fontsize)
-                plt.tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-                binwidth = (xmax-xmin)/40.
-                _, _, _ = ax.hist(delfg, bins=np.arange(xmin, xmax + binwidth, binwidth), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+            else:
+                file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
+                file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
+                t = (file_basename, "FS_flattest_"+slit_id+"_histogram.jpg")
+                plt_name = "_".join(t)
+                plt_name = os.path.join(file_path, plt_name)
+                difference_img = (pipeflat - flatcor)#/flatcor
+                in_slit = np.logical_and(difference_img<900.0, difference_img>-900.0) # ignore points out of the slit,
+                difference_img[~in_slit] = np.nan   # Set values outside the slit to NaN
+                nanind = np.isnan(difference_img)   # get all the nan indexes
+                difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
+                auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
+                                             plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
-                if save_figs:
-                    #if plot_name is None:
-                    file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
-                    file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
-                    t = (file_basename, "FS_flattest_"+slit_id+"_histogram.pdf")
-                    plot_name = "_".join(t)
-                    plt.savefig("/".join((file_path, plot_name)))
-                    msg = '\n Plot saved: '+plot_name
-                    print(msg)
-                    log_msgs.append(msg)
-                if show_figs:
-                    plt.show()
-                plt.close()
         elif not save_figs and not show_figs:
             msg = "Not making plots because both show_figs and save_figs were set to False."
             print(msg)
@@ -612,7 +597,7 @@ if __name__ == '__main__':
     pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
 
     # input parameters that the script expects
-    working_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque/491_results"
+    working_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque"
     step_input_filename = working_dir+"/gain_scale_NRS1_flat_field.fits"
     #working_dir = pipeline_path+"/build7.1/part2/BOTS/NRSSRAD-G2H-PS-6007132838_1_491_SE_2016-01-07T17h03m08_491results"
     #step_input_filename = working_dir+"/gain_scale_NRS1_flat_field.fits"
@@ -632,6 +617,6 @@ if __name__ == '__main__':
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                           fflat_path=fflat_path, writefile=writefile, show_figs=False, save_figs=False,
+                           fflat_path=fflat_path, writefile=writefile, show_figs=True, save_figs=True,
                            plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
 

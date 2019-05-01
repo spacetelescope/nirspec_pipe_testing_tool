@@ -317,7 +317,6 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         pra, pdec, pwave = wcs_slice(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
         pwave *= 10**-6
         # calculate and print statistics for slit-y and x relative differences
-        #slitlet_name = "slitlet"+repr(name)
         slitlet_name = repr(r)+"_"+repr(c)
         tested_quantity = "Wavelength Difference"
         rel_diff_pwave_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_wave, pwave, tested_quantity)
@@ -385,7 +384,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             # set the common variables
             basenameinfile_name = os.path.basename(infile_name)
             main_title = filt+"   "+grat+"   SLITLET="+slitlet_name+"\n"
-            bins = 15   # binning for the histograms
+            bins = 15   # binning for the histograms, if None the function will automatically calculate them
             #             lolim_x, uplim_x, lolim_y, uplim_y
             plt_origin = None
 
@@ -399,7 +398,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_rel_wave_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+"_rel_wave_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -413,7 +412,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_rel_slitY_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+"_rel_slitY_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -427,7 +426,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_rel_MSAx_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+"_rel_MSAx_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -441,7 +440,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_rel_MSAy_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+"_rel_MSAy_diffs.jpg")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -457,7 +456,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_rel_V2_diffs.jpg")
+                    plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+"_rel_V2_diffs.jpg")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -472,7 +471,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_rel_V3_diffs.jpg")
+                    plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+"_rel_V3_diffs.jpg")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 

@@ -582,7 +582,7 @@ def does_median_pass_tes(tested_quantity, arr_median, threshold_diff):
     return test_result
 
 
-def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt_origin=None,
+def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt_origin=None, limits=None,
                          show_figs=False, save_figs=False):
     """
     This function creates and shows/saves one figure with the 2D plot for the given array and the
@@ -595,7 +595,8 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
                     also a list containing the mean, median, and standard deviation for hist_data
         plt_name: None or string, if not None the string is the full path and name with which the figure will be saved
         plt_origin: None or list, if not None, code is expecting a list with the following content,
-                    plt_origin = title, label_x, and label_y info
+                    plt_origin = lolim_x, uplim_x, lolim_y, uplim_y, this re-sets the origin of the plot
+        limits: list, limits of x- and y-axis
         show_figs: boolean, if True the plot will be showed on-screen
         save_figs: boolean, if True the figure will be saved using the plt_name input
 
@@ -619,13 +620,16 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
     else:
         lolim_x, uplim_x, lolim_y, uplim_y = plt_origin
         im = ax.imshow(img, aspect="auto", origin='lower', extent=[lolim_x, uplim_x, lolim_y, uplim_y])
-    plt.tick_params(axis='both', which='both', bottom='on', top='on', right='on', direction='in', labelbottom='on')
+    plt.tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
     plt.minorticks_on()
     plt.colorbar(im, ax=ax)
     title, label_x, label_y = info_img
     plt.title(title)
     plt.xlabel(label_x)
     plt.ylabel(label_y)
+    if limits is not None:
+        ax.set_xlim(limits[0], limits[1])
+        ax.set_ylim(limits[2], limits[3])
 
     # Bottom figure - histogram
     ax = plt.subplot(212)
@@ -635,19 +639,29 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     ax.text(0.73, 0.67, str_x_stddev, transform=ax.transAxes, fontsize=fontsize)
+    if bins is None:
+        try:
+            xmin = x_median - x_stddev*5
+            xmax = x_median + x_stddev*5
+            binwidth = (xmax-xmin)/40.
+            bins = np.arange(xmin, xmax + binwidth, binwidth)
+        except:
+            ValueError
+            bins = 15
     n, bins, patches = ax.hist(hist_data, bins=bins, histtype='bar', ec='k', facecolor="red", alpha=alpha)
-    ax.xaxis.set_major_locator(MaxNLocator(6))
+    ax.xaxis.set_major_locator(MaxNLocator(8))
     from matplotlib.ticker import FuncFormatter
     def MyFormatter(x, lim):
         if x == 0:
             return 0
-        return "%0.3E" % Decimal(x)
+        return "%0.1E" % Decimal(x)
     majorFormatter = FuncFormatter(MyFormatter)
     ax.xaxis.set_major_formatter(majorFormatter)
     # add vertical line at mean and median
     plt.axvline(x_mean, label="mean = %0.3e"%(x_mean), color="g")
     plt.axvline(x_median, label="median = %0.3e"%(x_median), linestyle="-.", color="b")
     plt.legend()
+    plt.minorticks_on()
 
     # Show and/or save figures
     if save_figs:

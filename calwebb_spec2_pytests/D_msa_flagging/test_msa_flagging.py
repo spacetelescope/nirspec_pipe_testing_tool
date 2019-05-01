@@ -52,8 +52,8 @@ def output_hdul(set_inandout_filenames, config):
 
     # Only run step if data is MOS or IFU
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
-    print ("Is data FS or BOTS?", core_utils.check_FS_true(inhdu), core_utils.check_BOTS_true(inhdu))
-    if not core_utils.check_FS_true(inhdu) and not core_utils.check_BOTS_true(inhdu):
+    print ("Is data MOS or IFU?", core_utils.check_MOS_true(inhdu), core_utils.check_IFU_true(inhdu))
+    if core_utils.check_MOS_true(inhdu) or core_utils.check_IFU_true(inhdu):
 
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
@@ -124,7 +124,7 @@ def output_hdul(set_inandout_filenames, config):
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
 
     else:
-        pytest.skip("Skipping "+step+" because data is FS or BOTS.")
+        pytest.skip("Skipping "+step+" because data is neither MOS or IFU.")
 
 
 

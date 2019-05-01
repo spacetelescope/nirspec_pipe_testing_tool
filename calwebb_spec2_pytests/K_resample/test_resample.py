@@ -135,7 +135,7 @@ def output_hdul(set_inandout_filenames, config):
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
 
     else:
-        pytest.skip("Skipping "+step+" because data is IFU or BOTS.")
+        pytest.skip("Skipping "+step+" because data is either IFU or BOTS.")
 
 
 
