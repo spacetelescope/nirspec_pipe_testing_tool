@@ -36,13 +36,14 @@ This script will perform calwebb_detector1 in one single run, outputing intermed
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.3"
+__version__ = "1.4"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Jul 2018 - Version 1.1: Added functions to calculate running times from screen log
 # Feb 2019 - Version 1.2: made changes to be able to process 491 and 492 files in the same directory
 # Mar 2019 - Version 1.3: added logging capability
+# May 2019 - Version 1.4: added capability to process darks
 
 
 def get_caldet1cfg_and_workingdir():
@@ -56,10 +57,11 @@ def get_caldet1cfg_and_workingdir():
     pipe_testing_tool_path = config.get("calwebb_spec2_input_file", "pipe_testing_tool_path")
     calwebb_detector1_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_detector1.cfg")
     calwebb_tso1_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_tso1.cfg")
+    calwebb_dark_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_dark.cfg")
     working_dir = config.get("calwebb_spec2_input_file", "working_directory")
     mode_used = config.get("calwebb_spec2_input_file", "mode_used")
     raw_data_root_file = config.get("calwebb_spec2_input_file", "raw_data_root_file")
-    return calwebb_detector1_cfg, calwebb_tso1_cfg, working_dir, mode_used, raw_data_root_file
+    return calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, working_dir, mode_used, raw_data_root_file
 
 
 def calculate_step_run_time(pipelog_file, pipe_steps):
@@ -156,11 +158,13 @@ step_by_step = args.step_by_step
 detector = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
 
 # Get the cfg file
-calwebb_detector1_cfg, calwebb_tso1_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
-if mode_used != "BOTS":
+calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
+if mode_used != "BOTS" and mode_used.lower() != "dark":
     cfg_file = calwebb_detector1_cfg
-else:
+elif mode_used == "BOTS":
     cfg_file = calwebb_tso1_cfg
+elif mode_used.lower() == "dark":
+    cfg_file = calwebb_dark_cfg
 configfile_used = "Using this configuration file: "+cfg_file
 
 # Initiate the PTT log file

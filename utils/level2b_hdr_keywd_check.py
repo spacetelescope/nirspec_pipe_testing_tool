@@ -3,7 +3,6 @@ import collections
 import os
 import re
 import subprocess
-import string
 import numpy as np
 from datetime import datetime
 from astropy.io import fits
@@ -448,7 +447,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = 'NRS_MSASPEC'
                     if mode_used == "BOTS":
                         val = 'NRS_BRIGHTOBJ'
-                    if string.lower(mode_used) == "dark":
+                    if mode_used.lower() == "dark":
                         val = 'NRS_DARK'
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
