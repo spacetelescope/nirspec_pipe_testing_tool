@@ -211,12 +211,12 @@ terminal type:
 ```bash
 python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/prepare_data2run.py fits_file.fits MODE -u
 ```
-where the MODE is expected to be one of: FS, MOS, IFU, BOTS, or MOS_sim (use this last one
-only for MOS simulations, simulations for other modes should use the corresponding mode). 
-This command will update the uncal keyword header without creating a new file, and will 
-also keep the subdirectory. To remove it, simply add ```-rm``` at the end. To save the 
-keyword changes in a new fits file (instead of updating), remove the ```-u```. The new 
-uncal fits file is now ready for pipeline ingest.
+where the MODE is expected to be one of: FS, MOS, IFU, BOTS, dark, or MOS_sim (use this 
+last one only for MOS simulations, simulations for other modes should use the 
+corresponding mode). This command will update the uncal keyword header without creating 
+a new file, and will also keep the subdirectory. To remove it, simply add ```-rm``` at 
+the end. To save the keyword changes in a new fits file (instead of updating), remove the
+```-u```. The new uncal fits file is now ready for pipeline ingest.
 
 For now, this script sets the FILTER keyword to default to the corresponding science 
 configuration. This is because the pipeline does not know yet what steps to do with
@@ -245,7 +245,7 @@ make sure that:
 the pipeline and the tool, will run faster if the files are local on your computer.
 - The input file for the PTT is the final output file from ```calwebb_detector1```.
 - The adequate mode for the data to be tested is set correctly, choices are: FS, IFU,
-MOS, BOTS, or MOS_sim.
+MOS, BOTS, dark, or MOS_sim.
 - The variable ```change_filter_opaque``` should be set to False unless you want to change
 the FILTER keyword back to OPAQUE.
 - The variable ```raw_data_root_file``` should be the name of the raw file you downloaded
