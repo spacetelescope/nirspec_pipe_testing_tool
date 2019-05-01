@@ -3,6 +3,7 @@ import collections
 import os
 import re
 import subprocess
+import string
 import numpy as np
 from datetime import datetime
 from astropy.io import fits
@@ -26,18 +27,19 @@ Example usage:
     To simply update the header of the existing fits file type:
         > python /path_to_this_script/level2b_hdr_keywd_check.py blah.fits IFU -u
 
-where the mode is either FS, MOS, IFU, BOTS. If a mode is not provided, the code will look for a mode_used variable
-in the pytests configuration file, and it will crash if this config file does not exist.
+where the mode is either FS, MOS, IFU, BOTS, dark. If a mode is not provided, the code will look for a mode_used
+variable in the pytests configuration file, and it will crash if this config file does not exist.
 
 '''
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Apr 2019 - Version 1.1: added dictionary to choose right GWA_XTIL keyword value according to GRATING
+# May 2019 - Version 1.2: added logic for dark processing
 
 
 ### General functions
@@ -446,6 +448,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = 'NRS_MSASPEC'
                     if mode_used == "BOTS":
                         val = 'NRS_BRIGHTOBJ'
+                    if string.lower(mode_used) == "dark":
+                        val = 'NRS_DARK'
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
                     print('     Setting value of ', key, ' to ', val)
