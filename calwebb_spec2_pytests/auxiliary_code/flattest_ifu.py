@@ -254,7 +254,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # loop over the slices
     all_delfg_mean, all_delfg_mean_arr, all_delfg_median, all_test_result = [], [], [], []
-    msg = "\nLooping through the slices... "
+    msg = "\n Now looping through the slices, this may take some time... "
     print(msg)
     log_msgs.append(msg)
     for n_ext, slice in enumerate(ifu_slits):
@@ -476,8 +476,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
                     plt_origin = None
                     limits = [px0-5, px0+1500, py0-5, py0+55]
+                    vminmax = [-5*delfg_std, 5*delfg_std]   # set the range of values to be shown in the image, will affect color scale
                     auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name, limits=limits,
-                                                 plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+                                                 vminmax=vminmax, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
             elif not save_figs and not show_figs:
                 msg = "Not making plots because both show_figs and save_figs were set to False."
