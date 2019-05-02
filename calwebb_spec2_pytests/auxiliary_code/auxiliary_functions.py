@@ -582,7 +582,7 @@ def does_median_pass_tes(tested_quantity, arr_median, threshold_diff):
     return test_result
 
 
-def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt_origin=None, limits=None,
+def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt_origin=None, limits=None, vminmax=None,
                          show_figs=False, save_figs=False):
     """
     This function creates and shows/saves one figure with the 2D plot for the given array and the
@@ -597,6 +597,7 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
         plt_origin: None or list, if not None, code is expecting a list with the following content,
                     plt_origin = lolim_x, uplim_x, lolim_y, uplim_y, this re-sets the origin of the plot
         limits: list, limits of x- and y-axis
+        vminmax: list, minimum and maximum values to show in the image (will affect the color scale)
         show_figs: boolean, if True the plot will be showed on-screen
         save_figs: boolean, if True the figure will be saved using the plt_name input
 
@@ -615,11 +616,13 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
 
     # Top figure - 2D plot
     ax = plt.subplot(211)
+    if vminmax is None:
+        vminmax = [None, None]
     if plt_origin is None:
-        im = ax.imshow(img, aspect="auto", origin='lower')
+        im = ax.imshow(img, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
     else:
         lolim_x, uplim_x, lolim_y, uplim_y = plt_origin
-        im = ax.imshow(img, aspect="auto", origin='lower', extent=[lolim_x, uplim_x, lolim_y, uplim_y])
+        im = ax.imshow(img, aspect="auto", origin='lower', extent=[lolim_x, uplim_x, lolim_y, uplim_y], vmin=vminmax[0], vmax=vminmax[1])
     plt.tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
     plt.minorticks_on()
     plt.colorbar(im, ax=ax)

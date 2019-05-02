@@ -321,7 +321,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             ffv = ffvq4
 
         # loop through the pixels
-        msg = "looping through the pixels, this may take a little time ... "
+        msg = "Now looping through the pixels, this may take a while ... "
         print(msg)
         log_msgs.append(msg)
         wave_shape = np.shape(wave)
@@ -580,7 +580,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         difference_img[~in_slit] = np.nan   # Set values outside the slit to NaN
                         nanind = np.isnan(difference_img)   # get all the nan indexes
                         difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
-                        auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
+                        vminmax = [-5*delfg_std, 5*delfg_std]   # set the range of values to be shown in the image, will affect color scale
+                        auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name, vminmax=vminmax,
                                                      plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
 
