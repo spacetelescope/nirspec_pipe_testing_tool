@@ -7,6 +7,7 @@ import os
 import time
 import pytest
 import logging
+from glob import glob
 from astropy.io import fits
 from jwst.photom.photom_step import PhotomStep
 
@@ -54,6 +55,13 @@ def output_hdul(set_inandout_filenames, config):
     step_completed = False
     end_time = '0.0'
 
+    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
+    initial_input_file = os.path.join(working_directory, initial_input_file)
+    detector = fits.getval(initial_input_file, "DETECTOR", 0)
+    if not os.path.isfile(initial_input_file):
+        pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
+
     # check if the filter is to be changed
     change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
     if change_filter_opaque:
@@ -69,9 +77,7 @@ def output_hdul(set_inandout_filenames, config):
         return hdul, step_output_file, run_pytests
     else:
         # Create the logfile for PTT, but erase the previous one if it exists
-        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-        detector = fits.getval(step_input_file, "DETECTOR", 0)
-        PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'_'+'.log')
+        PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
         if os.path.isfile(PTTcalspec2_log):
             os.remove(PTTcalspec2_log)
         print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
@@ -115,14 +121,16 @@ def output_hdul(set_inandout_filenames, config):
                 msg = "Skipping running pipeline step "+step
                 print(msg)
                 logging.info(msg)
-                # add the running time for this step
-                working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-                # Get the detector used
-                det = fits.getval(step_input_file, "DETECTOR", 0)
-                end_time = core_utils.get_stp_run_time_from_screenfile(step, det, working_directory)
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
             step_completed = True
-            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+            # rename and move the pipeline log file
+            calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+            pytest_workdir = os.getcwd()
+            logfile = glob(pytest_workdir+"/pipeline.log")[0]
+            os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+            # add the running time for this step
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             return hdul, step_output_file, run_pytests
 
         else:

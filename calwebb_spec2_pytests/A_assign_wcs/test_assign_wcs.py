@@ -226,31 +226,32 @@ def output_hdul(set_inandout_filenames, config):
 
     else:
 
-        # Create the logfile for PTT, but erase the previous one if it exists
-        PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'_'+'.log')
-        if os.path.isfile(PTTcalspec2_log):
-            os.remove(PTTcalspec2_log)
-        print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
-        for handler in logging.root.handlers[:]:
-            logging.root.removeHandler(handler)
-        logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
-        logging.info(pipeline_version)
-        if change_filter_opaque:
-            logging.info(change_filter_opaque_msg)
+        if run_pipe_step:
+            # Create the logfile for PTT, but erase the previous one if it exists
+            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+            if os.path.isfile(PTTcalspec2_log):
+                os.remove(PTTcalspec2_log)
+            print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
+            for handler in logging.root.handlers[:]:
+                logging.root.removeHandler(handler)
+            logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
+            logging.info(pipeline_version)
+            if change_filter_opaque:
+                logging.info(change_filter_opaque_msg)
 
-        # create the Map of file names
-        assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
+            # create the Map of file names
+            assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
 
-        # check that previous pipeline steps were run up to this point
-        core_utils.check_completed_steps(step, step_input_file)
+            # check that previous pipeline steps were run up to this point
+            core_utils.check_completed_steps(step, step_input_file)
 
-        # start the timer to compute the step running time of PTT
-        core_utils.start_end_PTT_time(txt_name, start_time=PTT_start_time, end_time=None)
-        msg = "\n Pipeline and PTT run times will be written in file: "+os.path.basename(txt_name)+" in working directory. \n"
-        print(msg)
-        logging.info(msg)
-        if os.path.isfile(step_input_file):
-            if run_pipe_step:
+            # start the timer to compute the step running time of PTT
+            core_utils.start_end_PTT_time(txt_name, start_time=PTT_start_time, end_time=None)
+            msg = "\n Pipeline and PTT run times will be written in file: "+os.path.basename(txt_name)+" in working directory. \n"
+            print(msg)
+            logging.info(msg)
+
+            if os.path.isfile(step_input_file):
                 msg = " *** Step "+step+" set to True"
                 print(msg)
                 logging.info(msg)
@@ -264,6 +265,7 @@ def output_hdul(set_inandout_filenames, config):
                 local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
 
                 # start the timer to compute the step running time
+                print("running pipeline...")
                 start_time = time.time()
                 if local_pipe_cfg_path == "pipe_source_tree_code":
                     result = stp.call(step_input_file)
@@ -281,23 +283,31 @@ def output_hdul(set_inandout_filenames, config):
                     # remove the copy of the MSA shutter configuration file
                     subprocess.run(["rm", msametfl])
 
-            else:
-                print("Skipping running pipeline step ", step)
-                # add the running time for this step
-                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+                # rename and move the pipeline log file
+                calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                pytest_workdir = os.getcwd()
+                logfile = glob(pytest_workdir+"/pipeline.log")[0]
+                os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
 
-            step_completed = True
-            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
-            #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-            return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
+            else:
+                msg = "Skipping step. Intput file "+step_input_file+" does not exit."
+                print(msg)
+                logging.info(msg)
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                pytest.skip("Skipping "+step+" because the input file does not exist.")
+
 
         else:
-            msg = "Skipping step. Intput file "+step_input_file+" does not exit."
-            print(msg)
-            logging.info(msg)
-            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            pytest.skip("Skipping "+step+" because the input file does not exist.")
+            print("Skipping running pipeline step ", step)
+            # add the running time for this step
+            end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+
+        step_completed = True
+        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+        hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
+        #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+        return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
+
 
 
 

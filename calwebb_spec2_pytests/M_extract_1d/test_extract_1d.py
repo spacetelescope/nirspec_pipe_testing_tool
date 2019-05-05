@@ -8,6 +8,7 @@ import time
 import pytest
 import logging
 from astropy.io import fits
+from glob import glob
 from jwst.extract_1d.extract_1d_step import Extract1dStep
 
 from .. auxiliary_code import change_filter_opaque2science
@@ -54,7 +55,13 @@ def output_hdul(set_inandout_filenames, config):
     end_time = '0.0'
 
     # Get the detector used
-    detector = fits.getval(step_input_file, "DETECTOR", 0)
+    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
+    initial_input_file = os.path.join(working_directory, initial_input_file)
+    if os.path.isfile(initial_input_file):
+        detector = fits.getval(initial_input_file, "DETECTOR", 0)
+    else:
+        pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
 
     # check if the filter is to be changed
     change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
@@ -85,9 +92,7 @@ def output_hdul(set_inandout_filenames, config):
     else:
 
         # Create the logfile for PTT, but erase the previous one if it exists
-        working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-        detector = fits.getval(step_input_file, "DETECTOR", 0)
-        PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'_'+'.log')
+        PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
         if os.path.isfile(PTTcalspec2_log):
             os.remove(PTTcalspec2_log)
         print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
@@ -133,6 +138,12 @@ def output_hdul(set_inandout_filenames, config):
                 logging.info(msg)
                 # get the running time for this step
                 end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+
+            # rename and move the pipeline log file
+            calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+            pytest_workdir = os.getcwd()
+            logfile = glob(pytest_workdir+"/pipeline.log")[0]
+            os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
 
             # add the running time for this step
             step_completed = True

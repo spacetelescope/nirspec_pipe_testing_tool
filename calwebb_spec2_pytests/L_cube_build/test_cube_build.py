@@ -52,7 +52,15 @@ def output_hdul(set_inandout_filenames, config):
     run_pytests = [cube_build_completion_tests]#, cube_build_reffile_tests, cube_build_validation_tests]
 
     # Only run step if data is IFU
-    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
+    initial_input_file = os.path.join(working_directory, initial_input_file)
+    if os.path.isfile(initial_input_file):
+        inhdu = core_utils.read_hdrfits(initial_input_file, info=False, show_hdr=False)
+        detector = fits.getval(initial_input_file, "DETECTOR", 0)
+    else:
+        pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
+
     end_time = '0.0'
     if core_utils.check_IFU_true(inhdu):
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
@@ -74,9 +82,7 @@ def output_hdul(set_inandout_filenames, config):
         else:
 
             # Create the logfile for PTT, but erase the previous one if it exists
-            working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-            detector = fits.getval(step_input_file, "DETECTOR", 0)
-            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'_'+'.log')
+            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
             if os.path.isfile(PTTcalspec2_log):
                 os.remove(PTTcalspec2_log)
             print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
@@ -120,11 +126,7 @@ def output_hdul(set_inandout_filenames, config):
                     msg = "Skipping running pipeline step "+step
                     print(msg)
                     logging.info(msg)
-                    # add the running time for this step
-                    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-                    # Get the detector used
-                    det = fits.getval(step_input_file, "DETECTOR", 0)
-                    end_time = core_utils.get_stp_run_time_from_screenfile(step, det, working_directory)
+                    end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
                 # determine the specific output of the cube step
                 filt = fits.getval(step_input_file, 'filter')
                 grat = fits.getval(step_input_file, 'grating')
@@ -133,8 +135,14 @@ def output_hdul(set_inandout_filenames, config):
                 cube_suffix = specific_output_file.split('cube_build_')[-1].replace('.fits', '')
                 # record info
                 step_completed = True
-                core_utils.add_completed_steps(txt_name, step, "_"+cube_suffix, step_completed, end_time)
                 hdul = core_utils.read_hdrfits(specific_output_file, info=False, show_hdr=False)
+                # rename and move the pipeline log file
+                calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                pytest_workdir = os.getcwd()
+                logfile = glob(pytest_workdir+"/pipeline.log")[0]
+                os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+                # add the running time for this step
+                core_utils.add_completed_steps(txt_name, step, "_"+cube_suffix, step_completed, end_time)
                 return hdul, step_output_file, run_pytests
 
             else:

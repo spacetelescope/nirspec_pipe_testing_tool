@@ -180,7 +180,7 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                             break
 
                         if debug:
-                            print("In the for loop of reversed steps at step: ", s[0])
+                            print("In the for loop of reversed steps at step: ", s[0], "   j=", j, " i=", i)
                         # only go through the loop if at the step before the goal step
                         if j < i:
                             outfile = step_string_dict[s[0]]["outfile"]
@@ -201,7 +201,8 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                                 else:
                                     if debug:
                                         print("Step did not run to create product file.")
-                                    continue
+                                    exit_while_loop = True
+                                    break
                             else:
                                 if debug:
                                     print("Step does not produce an outfile, continuing in the while loop...")
@@ -216,6 +217,7 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                         else:
                             j -= 1
                             continue
+
             # determine the output suffix according to the step
             if step_string_dict[stp]["outfile"]:
                 out_file_suffix = step_string_dict[stp]["suffix"]
@@ -409,6 +411,9 @@ def get_stp_run_time_from_screenfile(step, det, working_directory):
     # make sure we are able to find calspec2_pilelog either in the calwebb_spec2 directory or in the working dir
     if not os.path.isfile(calspec2_pilelog):
         calspec2_pilelog = os.path.join(working_directory, calspec2_pilelog)
+    # if the pipelog is not found look for the step pipelog
+    if not os.path.isfile(calspec2_pilelog):
+        calspec2_pilelog = calspec2_pilelog.replace(det+".log", step+"_"+det+".log")
     step_running_times = calculate_step_run_time(calspec2_pilelog)
     end_time = None
     for stp in step_string_dict:
