@@ -7,6 +7,7 @@ import pytest
 import os
 import time
 import logging
+from glob import glob
 from astropy.io import fits
 from jwst.msaflagopen.msaflagopen_step import MSAFlagOpenStep
 
@@ -51,7 +52,15 @@ def output_hdul(set_inandout_filenames, config):
     end_time = '0.0'
 
     # Only run step if data is MOS or IFU
-    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
+    initial_input_file = os.path.join(working_directory, initial_input_file)
+    if os.path.isfile(initial_input_file):
+        inhdu = core_utils.read_hdrfits(initial_input_file, info=False, show_hdr=False)
+        detector = fits.getval(initial_input_file, "DETECTOR", 0)
+    else:
+        pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
+
     print ("Is data MOS or IFU?", core_utils.check_MOS_true(inhdu), core_utils.check_IFU_true(inhdu))
     if core_utils.check_MOS_true(inhdu) or core_utils.check_IFU_true(inhdu):
 
@@ -61,25 +70,10 @@ def output_hdul(set_inandout_filenames, config):
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
             return hdul, step_output_file, run_pytests
         else:
+            if run_pipe_step:
 
-            # Create the logfile for PTT, but erase the previous one if it exists
-            working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-            detector = fits.getval(step_input_file, "DETECTOR", 0)
-            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'_'+'.log')
-            if os.path.isfile(PTTcalspec2_log):
-                os.remove(PTTcalspec2_log)
-            print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
-            for handler in logging.root.handlers[:]:
-                logging.root.removeHandler(handler)
-            logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
-            # print pipeline version
-            import jwst
-            pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
-            print(pipeline_version)
-            logging.info(pipeline_version)
+                if os.path.isfile(step_input_file):
 
-            if os.path.isfile(step_input_file):
-                if run_pipe_step:
                     msg = " The input file "+step_input_file+" exists... will run step "+step
                     print(msg)
                     logging.info(msg)
@@ -87,6 +81,20 @@ def output_hdul(set_inandout_filenames, config):
 
                     # check that previous pipeline steps were run up to this point
                     core_utils.check_completed_steps(step, step_input_file)
+
+                    # Create the logfile for PTT, but erase the previous one if it exists
+                    PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+                    if os.path.isfile(PTTcalspec2_log):
+                        os.remove(PTTcalspec2_log)
+                    print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
+                    for handler in logging.root.handlers[:]:
+                        logging.root.removeHandler(handler)
+                    logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
+                    # print pipeline version
+                    import jwst
+                    pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
+                    print(pipeline_version)
+                    logging.info(pipeline_version)
 
                     # get the right configuration files to run the step
                     #local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
@@ -103,25 +111,27 @@ def output_hdul(set_inandout_filenames, config):
                     logging.info(msg)
 
                 else:
-                    msg = "Skipping running pipeline step "+step
+                    msg = " The input file does not exist. Skipping step."
                     print(msg)
                     logging.info(msg)
-                    # add the running time for this step
-                    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
-                    # Get the detector used
-                    det = fits.getval(step_input_file, "DETECTOR", 0)
-                    end_time = core_utils.get_stp_run_time_from_screenfile(step, det, working_directory)
-                step_completed = True
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                return hdul, step_output_file, run_pytests
-
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip("Skipping "+step+" because the input file does not exist.")
             else:
-                msg = " The input file does not exist. Skipping step."
+                msg = "Skipping running pipeline step "+step
                 print(msg)
                 logging.info(msg)
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+                step_completed = True
+                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                # rename and move the pipeline log file
+                calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                pytest_workdir = os.getcwd()
+                logfile = glob(pytest_workdir+"/pipeline.log")[0]
+                os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+                # add the running time for this step
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
+                return hdul, step_output_file, run_pytests
+
 
     else:
         pytest.skip("Skipping "+step+" because data is neither MOS or IFU.")
