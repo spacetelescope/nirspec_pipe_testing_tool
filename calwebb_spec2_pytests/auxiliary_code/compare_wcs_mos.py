@@ -323,7 +323,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats, print_stats_strings = rel_diff_pwave_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pwave_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_tes(notnan_rel_diff_pwave_stats[1], threshold_diff)
         total_test_result[slitlet_name] = {tested_quantity : result}
 
         # get the transforms for pipeline slit-y
@@ -337,7 +337,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats, print_stats_strings = rel_diff_pslity_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(tested_quantity, notnan_rel_diff_pslity_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_tes(notnan_rel_diff_pslity_stats[1], threshold_diff)
         total_test_result[slitlet_name] = {tested_quantity : result}
 
         # do the same for MSA x, y and V2, V3
@@ -349,7 +349,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats, print_stats_strings = reldiffpmsax_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsax_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_tes(notnan_reldiffpmsax_stats[1], threshold_diff)
         total_test_result[slitlet_name] = {tested_quantity : result}
         # MSA-y
         tested_quantity = "MSA_Y Difference"
@@ -357,7 +357,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats, print_stats_strings = reldiffpmsay_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpmsay_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_tes(notnan_reldiffpmsay_stats[1], threshold_diff)
         total_test_result[slitlet_name] = {tested_quantity : result}
 
         # V2 and V3
@@ -369,14 +369,14 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats, print_stats_strings = reldiffpv2_data
             for msg in print_stats_strings:
                 log_msgs.append(msg)
-            result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv2_stats[1], threshold_diff)
+            result = auxfunc.does_median_pass_tes(notnan_reldiffpv2_stats[1], threshold_diff)
             total_test_result[slitlet_name] = {tested_quantity : result}
             tested_quantity = "V3 difference"
             reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
             reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats, print_stats_strings = reldiffpv3_data
             for msg in print_stats_strings:
                 log_msgs.append(msg)
-            result = auxfunc.does_median_pass_tes(tested_quantity, notnan_reldiffpv3_stats[1], threshold_diff)
+            result = auxfunc.does_median_pass_tes(notnan_reldiffpv3_stats[1], threshold_diff)
             total_test_result[slitlet_name] = {tested_quantity : result}
 
         # PLOTS

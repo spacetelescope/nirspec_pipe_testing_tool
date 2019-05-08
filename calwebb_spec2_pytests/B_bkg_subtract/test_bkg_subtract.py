@@ -58,6 +58,10 @@ def output_hdul(set_inandout_filenames, config):
     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(working_directory, initial_input_file)
+    detector = fits.getval(initial_input_file, "DETECTOR", 0)
+    calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
+    pytest_workdir = os.getcwd()
+
     if os.path.isfile(initial_input_file):
         inhdu = core_utils.read_hdrfits(initial_input_file, info=False, show_hdr=False)
     else:
@@ -71,40 +75,43 @@ def output_hdul(set_inandout_filenames, config):
             else:
                 pytest.skip("Skipping "+step+" because the output file does not exist.")
             return hdul, step_output_file, step_input_file, run_pytests
+
         else:
 
-            # Create the logfile for PTT, but erase the previous one if it exists
-            detector = fits.getval(step_input_file, "DETECTOR", 0)
-            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
-            if os.path.isfile(PTTcalspec2_log):
-                os.remove(PTTcalspec2_log)
-            print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
-            for handler in logging.root.handlers[:]:
-                logging.root.removeHandler(handler)
-            logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
-            # print pipeline version
-            import jwst
-            pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
-            print(pipeline_version)
-            logging.info(pipeline_version)
+            if run_pipe_step:
 
-            if os.path.isfile(step_input_file):
-                msg = " The input file "+step_input_file+" exists... will run step "+step
-                print(msg)
-                logging.info(msg)
-                bkg_list = core_utils.getlist("additional_arguments", "bkg_list")
-                existing_bgfiles = 0
-                for bg_file in bkg_list:
-                    if os.path.isfile(bg_file):
-                        existing_bgfiles += 1
-                if existing_bgfiles == 0:
-                    msg = " Need at least one background file to continue. Step will be skipped."
+                # Create the logfile for PTT, but erase the previous one if it exists
+                PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+                if os.path.isfile(PTTcalspec2_log):
+                    os.remove(PTTcalspec2_log)
+                print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
+                for handler in logging.root.handlers[:]:
+                    logging.root.removeHandler(handler)
+                logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
+                # print pipeline version
+                import jwst
+                pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
+                print(pipeline_version)
+                logging.info(pipeline_version)
+
+                if os.path.isfile(step_input_file):
+                    msg = " The input file "+step_input_file+" exists... will run step "+step
                     print(msg)
                     logging.info(msg)
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    pytest.skip("Skipping "+step+" because files listed on bkg_list in the configuration file do not exist.")
-                else:
-                    if run_pipe_step:
+                    bkg_list = core_utils.getlist("additional_arguments", "bkg_list")
+                    existing_bgfiles = 0
+                    for bg_file in bkg_list:
+                        if os.path.isfile(bg_file):
+                            existing_bgfiles += 1
+                    if existing_bgfiles == 0:
+                        msg = " Need at least one background file to continue. Step will be skipped."
+                        print(msg)
+                        logging.info(msg)
+                        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                        pytest.skip("Skipping "+step+" because files listed on bkg_list in the configuration file do not exist.")
+                    else:
+                        # continue since the file(s) exist
+
                         msg = "*** Step "+step+" set to True"
                         print(msg)
                         logging.info(msg)
@@ -122,6 +129,7 @@ def output_hdul(set_inandout_filenames, config):
                             result = stp.call(step_input_file, bkg_list)
                         else:
                             result = stp.call(step_input_file, bkg_list, config_file=local_pipe_cfg_path+'/background.cfg')
+
                         if result is not None:
                             result.save(step_output_file)
                             # end the timer to compute the step running time
@@ -131,28 +139,37 @@ def output_hdul(set_inandout_filenames, config):
                             logging.info(msg)
                             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                             step_completed = True
-                        else:
-                            hdul = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
-                    else:
-                        msg = "Skipping running pipeline step "+step
-                        print(msg)
-                        logging.info(msg)
-                        end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
-                        hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                        step_completed = True
-                    # rename and move the pipeline log file
-                    calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
-                    pytest_workdir = os.getcwd()
-                    logfile = glob(pytest_workdir+"/pipeline.log")[0]
-                    os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+
+                            # rename and move the pipeline log file
+                            logfile = glob(pytest_workdir + "/pipeline.log")[0]
+                            os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+
+                            # add the running time for this step
+                            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                            return hdul, step_output_file, step_input_file, run_pytests
+
+                else:
+                    print (" The input file does not exist. Skipping step.")
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip("Skipping "+step+" because the input file does not exist.")
+
+            else:
+                msg = "Skipping running pipeline step "+step
+                print(msg)
+                logging.info(msg)
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+                if os.path.isfile(step_output_file):
+                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    step_completed = True
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     return hdul, step_output_file, step_input_file, run_pytests
+                else:
+                    step_completed = False
+                    # add the running time for this step
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip()
 
-            else:
-                print (" The input file does not exist. Skipping step.")
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
 
     else:
         msg = "Skipping "+step+" because data is BOTS."

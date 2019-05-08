@@ -59,6 +59,10 @@ def output_hdul(set_inandout_filenames, config):
     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(working_directory, initial_input_file)
+    detector = fits.getval(initial_input_file, "DETECTOR", 0)
+    calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
+    pytest_workdir = os.getcwd()
+
     if os.path.isfile(initial_input_file):
         inhdu = core_utils.read_hdrfits(initial_input_file, info=False, show_hdr=False)
     else:
@@ -77,38 +81,38 @@ def output_hdul(set_inandout_filenames, config):
 
         else:
 
-            # Create the logfile for PTT, but erase the previous one if it exists
-            detector = fits.getval(step_input_file, "DETECTOR", 0)
-            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
-            if os.path.isfile(PTTcalspec2_log):
-                os.remove(PTTcalspec2_log)
-            print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
-            for handler in logging.root.handlers[:]:
-                logging.root.removeHandler(handler)
-            logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
-            # print pipeline version
-            import jwst
-            pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
-            print(pipeline_version)
-            logging.info(pipeline_version)
+            if run_pipe_step:
 
-            if os.path.isfile(step_input_file):
-                msg = " The input file "+step_input_file+" exists... will run step "+step
-                print(msg)
-                logging.info(msg)
-                msa_imprint_structure = config.get("additional_arguments", "msa_imprint_structure")
-                msg = "msa_imprint_structure file: "+msa_imprint_structure
-                print(msg)
-                logging.info(msg)
+                # Create the logfile for PTT, but erase the previous one if it exists
+                PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+                if os.path.isfile(PTTcalspec2_log):
+                    os.remove(PTTcalspec2_log)
+                print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
+                for handler in logging.root.handlers[:]:
+                    logging.root.removeHandler(handler)
+                logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
+                # print pipeline version
+                import jwst
+                pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
+                print(pipeline_version)
+                logging.info(pipeline_version)
 
-                if not os.path.isfile(msa_imprint_structure):
-                    print (" Need msa_imprint_structure file to continue. Step will be skipped.")
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    pytest.skip("Skipping "+step+" because msa_imprint_structure file in the configuration file does not exist.")
+                if os.path.isfile(step_input_file):
+                    msg = " The input file "+step_input_file+" exists... will run step "+step
+                    print(msg)
+                    logging.info(msg)
+                    msa_imprint_structure = config.get("additional_arguments", "msa_imprint_structure")
+                    msg = "msa_imprint_structure file: "+msa_imprint_structure
+                    print(msg)
+                    logging.info(msg)
 
-                else:
+                    if not os.path.isfile(msa_imprint_structure):
+                        print (" Need msa_imprint_structure file to continue. Step will be skipped.")
+                        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                        pytest.skip("Skipping "+step+" because msa_imprint_structure file in the configuration file does not exist.")
 
-                    if run_pipe_step:
+                    else:
+
                         msg = "*** Step "+step+" set to True"
                         print(msg)
                         logging.info(msg)
@@ -138,31 +142,38 @@ def output_hdul(set_inandout_filenames, config):
                         else:
                             hdul = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
 
-                        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                        return hdul, step_output_file, run_pipe_step, step_input_file, run_pytests
-
-                    else:
-                        msg = "Skipping running pipeline step "+step
-                        print(msg)
-                        logging.info(msg)
-                        end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
-                        hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                        step_completed = True
                         # rename and move the pipeline log file
-                        calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
-                        pytest_workdir = os.getcwd()
-                        logfile = glob(pytest_workdir+"/pipeline.log")[0]
+                        logfile = glob(pytest_workdir + "/pipeline.log")[0]
                         os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+
                         # add the running time for this step
                         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                         return hdul, step_output_file, run_pipe_step, step_input_file, run_pytests
 
+                else:
+                    msg = " The input file does not exist. Skipping step."
+                    print(msg)
+                    logging.info(msg)
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip("Skipping "+step+" because the input file does not exist.")
+
             else:
-                msg = " The input file does not exist. Skipping step."
+                msg = "Skipping running pipeline step "+step
                 print(msg)
                 logging.info(msg)
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+                if os.path.isfile(step_output_file):
+                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    step_completed = True
+                    # add the running time for this step
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    return hdul, step_output_file, step_input_file, run_pytests
+                else:
+                    step_completed = False
+                    # add the running time for this step
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip()
+
 
     else:
         pytest.skip("Skipping "+step+" because data is neither IFU or MOS.")

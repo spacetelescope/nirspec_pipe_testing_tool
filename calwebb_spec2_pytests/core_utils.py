@@ -411,22 +411,31 @@ def get_stp_run_time_from_screenfile(step, det, working_directory):
     # make sure we are able to find calspec2_pilelog either in the calwebb_spec2 directory or in the working dir
     if not os.path.isfile(calspec2_pilelog):
         calspec2_pilelog = os.path.join(working_directory, calspec2_pilelog)
+
     # if the pipelog is not found look for the step pipelog
     if not os.path.isfile(calspec2_pilelog):
         calspec2_pilelog = calspec2_pilelog.replace(det+".log", step+"_"+det+".log")
-    step_running_times = calculate_step_run_time(calspec2_pilelog)
+
+
+    # if PTT can find either log file
     end_time = None
-    for stp in step_string_dict:
-        if stp in step_running_times:
-            if stp == step:
-                step_time = step_running_times[stp]["run_time"]
-                end_time = step_time
-                break
-        else:
-            continue
+    if os.path.isfile(calspec2_pilelog):
+        step_running_times = calculate_step_run_time(calspec2_pilelog)
+
+        for stp in step_string_dict:
+            if stp in step_running_times:
+                if stp == step:
+                    step_time = step_running_times[stp]["run_time"]
+                    end_time = step_time
+                    break
+            else:
+                continue
+
     if end_time is None:
-        print("\n * PTT unable to calculate time from "+calspec2_pilelog+" for step ", step, " ! \n")
+        print("\n * PTT unable to calculate time from "+calspec2_pilelog+" for step ", step)
+        print("   - This means that the step has not been run yet, or was set not to run in PTT_config. \n")
         end_time = "0.0"
+
     return end_time
 
 
