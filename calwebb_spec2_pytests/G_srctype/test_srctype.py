@@ -78,26 +78,27 @@ def output_hdul(set_inandout_filenames, config):
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
             #print ("Step srctype does not produce an output product.")
             return hdul, step_output_file, run_pytests
+
         else:
+            if run_pipe_step:
 
-            # Create the logfile for PTT, but erase the previous one if it exists
-            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
-            if os.path.isfile(PTTcalspec2_log):
-                os.remove(PTTcalspec2_log)
-            print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
-            for handler in logging.root.handlers[:]:
-                logging.root.removeHandler(handler)
-            logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
-            # print pipeline version
-            import jwst
-            pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
-            print(pipeline_version)
-            logging.info(pipeline_version)
-            if change_filter_opaque:
-                logging.info(filter_opaque_msg)
+                # Create the logfile for PTT, but erase the previous one if it exists
+                PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+                if os.path.isfile(PTTcalspec2_log):
+                    os.remove(PTTcalspec2_log)
+                print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
+                for handler in logging.root.handlers[:]:
+                    logging.root.removeHandler(handler)
+                logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
+                # print pipeline version
+                import jwst
+                pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
+                print(pipeline_version)
+                logging.info(pipeline_version)
+                if change_filter_opaque:
+                    logging.info(filter_opaque_msg)
 
-            if os.path.isfile(step_input_file):
-                if run_pipe_step:
+                if os.path.isfile(step_input_file):
                     msg = " *** Step "+step+" set to True"
                     print(msg)
                     logging.info(msg)
@@ -121,30 +122,43 @@ def output_hdul(set_inandout_filenames, config):
                     print(msg)
                     logging.info(msg)
 
+                    step_completed = True
+                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+
+                    # rename and move the pipeline log file
+                    calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                    pytest_workdir = os.getcwd()
+                    logfile = glob(pytest_workdir+"/pipeline.log")[0]
+                    os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+
+                    # add the running time for this step
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    return hdul, step_output_file, run_pytests
+
                 else:
-                    msg = "Skipping running pipeline step "+step
+                    msg = " The input file does not exist. Skipping step."
                     print(msg)
                     logging.info(msg)
-                    # Get the detector used
-                    det = fits.getval(step_input_file, "DETECTOR", 0)
-                    end_time = core_utils.get_stp_run_time_from_screenfile(step, det, working_directory)
-                step_completed = True
-                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                # rename and move the pipeline log file
-                calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
-                pytest_workdir = os.getcwd()
-                logfile = glob(pytest_workdir+"/pipeline.log")[0]
-                os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
-                # add the running time for this step
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                return hdul, step_output_file, run_pytests
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip("Skipping "+step+" because the input file does not exist.")
 
             else:
-                msg = " The input file does not exist. Skipping step."
+                msg = "Skipping running pipeline step "+step
                 print(msg)
                 logging.info(msg)
-                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+                if os.path.isfile(step_output_file):
+                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    step_completed = True
+                    # add the running time for this step
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    return hdul, step_output_file, step_input_file, run_pytests
+                else:
+                    step_completed = False
+                    # add the running time for this step
+                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                    pytest.skip()
+
 
     else:
         pytest.skip("Skipping "+step+" because data is BOTS.")

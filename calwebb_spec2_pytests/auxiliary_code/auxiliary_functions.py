@@ -5,6 +5,7 @@ from scipy import interpolate
 from astropy.io import fits
 from glob import glob
 import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from decimal import Decimal
@@ -544,7 +545,9 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, abs=Fa
     arr[nanind] = np.nan   # set all nan indexes to have a value of nan
     # Set the values to NaN in the ESA lambda extension
     esa_arr[nanind] = np.nan
+
     # Compute the difference in wavelength
+    stats_print_strings = []
     if abs:
         DATAMODEL_diff = arr / esa_arr
     else:
@@ -555,17 +558,17 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, abs=Fa
     else:
         # calculate and print stats
         if abs:
-            notnan_reldiffarr_stats, stats_print_strings = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=True)
+            abs_difference = True
         else:
-            notnan_reldiffarr_stats, stats_print_strings = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=False)
+            abs_difference = False
+        notnan_reldiffarr_stats, stats_print_strings = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=abs_difference)
     return DATAMODEL_diff, DATAMODEL_diff[notnan], notnan_reldiffarr_stats, stats_print_strings
 
 
-def does_median_pass_tes(tested_quantity, arr_median, threshold_diff):
+def does_median_pass_tes(arr_median, threshold_diff):
     """
     This function determines if the given median is less than or equal to the given threshold
     Args:
-        tested_quantity: string, name of the calculated median
         arr_median: float, calculated median
         threshold_diff: float, threshold to compare against
 
@@ -573,6 +576,8 @@ def does_median_pass_tes(tested_quantity, arr_median, threshold_diff):
         test_result: string, result of the test, i.e. PASSED or FAILED
     """
     median_diff = False
+    if arr_median == np.nan:
+        return "FAILED"
     if abs(arr_median) <= threshold_diff:
         median_diff = True
     if median_diff:
