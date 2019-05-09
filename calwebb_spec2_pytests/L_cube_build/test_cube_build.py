@@ -158,21 +158,21 @@ def output_hdul(set_inandout_filenames, config):
                 logging.info(msg)
                 end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
 
-                # determine the specific output of the cube step
-                specific_output_file = glob(step_output_file.replace('cube.fits', (gratfilt+'*.fits').lower()))[0]
-                cube_suffix = specific_output_file.split('cube_build_')[-1].replace('.fits', '')
-
                 # record info
+                # specific cube step suffix
+                cube_suffix = "_s3d"
                 if os.path.isfile(step_output_file):
+
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                     step_completed = True
                     # add the running time for this step
-                    core_utils.add_completed_steps(txt_name, step, "_"+cube_suffix, step_completed, end_time)
+                    core_utils.add_completed_steps(txt_name, step, cube_suffix, step_completed, end_time)
                     return hdul, step_output_file, run_pytests
                 else:
+
                     step_completed = False
                     # add the running time for this step
-                    core_utils.add_completed_steps(txt_name, step, "_"+cube_suffix, step_completed, end_time)
+                    core_utils.add_completed_steps(txt_name, step, cube_suffix, step_completed, end_time)
                     pytest.skip()
 
 
