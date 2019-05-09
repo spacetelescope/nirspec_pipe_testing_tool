@@ -150,7 +150,7 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = True
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, step_input_file, run_pytests
+                    return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots
                 else:
                     step_completed = False
                     # add the running time for this step
