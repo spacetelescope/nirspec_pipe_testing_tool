@@ -166,7 +166,7 @@ def output_hdul(set_inandout_filenames, config):
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
             step_completed = True
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            return hdul, step_output_file, step_input_file, run_pytests
+
         else:
             step_completed = False
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)

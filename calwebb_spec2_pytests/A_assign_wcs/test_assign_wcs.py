@@ -147,6 +147,8 @@ def output_hdul(set_inandout_filenames, config):
 
         # create the map
         txt_name = "full_run_map_"+detector+".txt"
+        if os.path.isfile(txt_name):
+            os.remove(txt_name)
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
 
         # start the timer to compute the step running time of PTT
@@ -226,7 +228,18 @@ def output_hdul(set_inandout_filenames, config):
 
     else:
 
+        # create the Map of file names
+        assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
+
+        # start the timer to compute the step running time of PTT
+        core_utils.start_end_PTT_time(txt_name, start_time=PTT_start_time, end_time=None)
+        msg = "\n Pipeline and PTT run times will be written in file: " + os.path.basename(
+            txt_name) + " in working directory. \n"
+        print(msg)
+        logging.info(msg)
+
         if run_pipe_step:
+
             # Create the logfile for PTT, but erase the previous one if it exists
             PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
             if os.path.isfile(PTTcalspec2_log):
@@ -239,17 +252,8 @@ def output_hdul(set_inandout_filenames, config):
             if change_filter_opaque:
                 logging.info(change_filter_opaque_msg)
 
-            # create the Map of file names
-            assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
-
             # check that previous pipeline steps were run up to this point
             core_utils.check_completed_steps(step, step_input_file)
-
-            # start the timer to compute the step running time of PTT
-            core_utils.start_end_PTT_time(txt_name, start_time=PTT_start_time, end_time=None)
-            msg = "\n Pipeline and PTT run times will be written in file: "+os.path.basename(txt_name)+" in working directory. \n"
-            print(msg)
-            logging.info(msg)
 
             if os.path.isfile(step_input_file):
                 msg = " *** Step "+step+" set to True"
@@ -302,11 +306,17 @@ def output_hdul(set_inandout_filenames, config):
             # add the running time for this step
             end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
 
-        step_completed = True
-        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-        hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=0)
-        #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-        return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
+        if os.path.isfile(step_output_file):
+            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+            step_completed = True
+            # add the running time for this step
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
+        else:
+            step_completed = False
+            # add the running time for this step
+            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            pytest.skip()
 
 
 
@@ -348,14 +358,15 @@ def validate_wcs(output_hdul):
     elif core_utils.check_IFU_true(hdu):
         result, log_msgs = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
                                             save_figs=save_wcs_plots, threshold_diff=threshold_diff, debug=False)
-    if log_msgs is not None:
-        for msg in log_msgs:
-            logging.info(msg)
 
     if core_utils.check_BOTS_true(hdu):
         pytest.skip("Skipping pytest: BOTS files at the moment are not being compared against an ESA intermediary product.")
-    else:
-        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU.")
+    #else:
+    #    pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU.")
+
+    if log_msgs is not None:
+        for msg in log_msgs:
+            logging.info(msg)
 
     return result
 
@@ -708,10 +719,10 @@ def test_validate_wcs(output_hdul, request):
         logging.info(msg)
         pytest.skip(msg)
     else:
-        print("\n", validate_wcs, "\n")
         msg = "\n * Running validation pytest...\n"
         print(msg)
         logging.info(msg)
+        print("\n", validate_wcs, "\n")
         assert request.getfixturevalue('validate_wcs'), "Output value from compare_wcs.py is greater than threshold."
 
 

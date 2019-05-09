@@ -773,15 +773,14 @@ def get_time_to_run_pipeline(True_steps_suffix_map):
         for line in tf.readlines():
             if '#' in line:
                 continue
-            # this is for "msa_flagging" and "srctype"
+            # this is in case there are = signs in the line
             if "=" in line:
-                line  = line.split("=")[0]
-            if len(line.split()) < 4:
-                t=line.split()[2]
-            else:
-                t=line.split()[3]
+                line = line.split("=")[0]
+            t=line.split()[3]
             t = float(t)
             times_per_step.append(t)
+            if "extract_1d" in line:
+                break
     total_time = sum(times_per_step)
     return total_time
 
