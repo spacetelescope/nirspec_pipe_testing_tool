@@ -50,6 +50,12 @@ def output_hdul(set_inandout_filenames, config):
     #extract_1d_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
     run_pytests = [extract_1d_completion_tests, extract_1d_reffile_tests]#, extract_1d_validation_tests]
 
+    # Make sure at this point the MSA shutter configuration file is removed from the calwebb_spec2_pytests directory
+    msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
+    msametfl = os.path.basename(msa_shutter_conf)
+    if os.path.isfile(msametfl):
+        os.remove(msametfl)
+
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
     end_time = '0.0'
@@ -80,12 +86,12 @@ def output_hdul(set_inandout_filenames, config):
         # read the output header
         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
 
-        # move the final reporting files to the working directory
-        core_utils.move_latest_report_and_txt_2workdir(detector)
-
         # end the timer to compute the step running time of PTT
         PTT_end_time = time.time()
         core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
+
+        # move the final reporting files to the working directory
+        core_utils.move_latest_report_and_txt_2workdir(detector)
 
         return hdul, step_output_file, run_pytests
 
@@ -193,6 +199,12 @@ def output_hdul(set_inandout_filenames, config):
 
         # move the final reporting files to the working directory
         core_utils.move_latest_report_and_txt_2workdir(detector)
+
+        # rename and move the PTT log file
+        PTT_calspec2_log = "PTT_calspec2_" + detector + ".log"
+        pytest_workdir = os.getcwd()
+        logfile = glob(pytest_workdir + "/pipeline.log")[0]
+        os.rename(logfile, os.path.join(working_directory, PTT_calspec2_log))
 
         return hdul, step_output_file, run_pytests
 
