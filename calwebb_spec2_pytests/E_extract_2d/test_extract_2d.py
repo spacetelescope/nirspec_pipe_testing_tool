@@ -159,6 +159,7 @@ def output_hdul(set_inandout_filenames, config):
         
 
     else:
+        core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
         pytest.skip("Skipping "+step+" because data is IFU.")
 
 
@@ -167,7 +168,7 @@ def output_hdul(set_inandout_filenames, config):
 
 # fixture to validate the WCS and extract 2d steps only for MOS simulations
 @pytest.fixture(scope="module")
-def validate_wcs_extract2d(output_hdul):
+def validate_MOSsim_wcs_extract2d(output_hdul):
     # get the input information for the wcs routine
     infile_name = output_hdul[1]
     msa_conf_name = output_hdul[2]
@@ -223,6 +224,9 @@ def validate_extract2d(output_hdul):
     if result == "skip":
         pytest.skip("Extract_2d validation will be skipped.")
         
+    for msg in log_msgs:
+        logging.info(msg)
+
     final_result = True
     fails = []
     for sname, res in result.items():
@@ -255,7 +259,7 @@ def test_s_ext2d_exists(output_hdul):
         assert extract_2d_utils.s_ext2d_exists(output_hdul[0]), "The keyword S_EXTR2D was not added to the header --> extract_2d step was not completed."
 
 
-def test_validate_wcs_extract2d(output_hdul, request):
+def test_validate_MOSsim_wcs_extract2d(output_hdul, request):
     # want to run this pytest? For this particular case, check both for the extract_2d step and for assign_wcs
     # output_hdul[4] = extract_2d_completion_tests, extract_2d_validation_tests, assign_wcs_validation_tests
     run_pytests = output_hdul[4][1]
@@ -269,7 +273,7 @@ def test_validate_wcs_extract2d(output_hdul, request):
         msg = "\n * Running validation pytest...\n"
         print(msg)
         logging.info(msg)
-        assert request.getfixturevalue("validate_wcs_extract2d"), "Output value from compare_wcs.py is greater than threshold."
+        assert request.getfixturevalue("validate_MOSsim_wcs_extract2d"), "Output value from compare_wcs.py is greater than threshold."
 
 
 def test_validate_extract2d(output_hdul, request):
@@ -285,4 +289,4 @@ def test_validate_extract2d(output_hdul, request):
         msg = "\n * Running validation pytest...\n"
         print(msg)
         logging.info(msg)
-        assert request.getfixturevalue("validate_wcs_extract2d")
+        assert request.getfixturevalue("validate_extract2d")

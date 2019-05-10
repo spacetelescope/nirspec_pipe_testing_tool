@@ -55,13 +55,14 @@ def find_FSwindowcorners(infile_name, esa_files_path):
     log_msgs = []
 
     #iterate over slits
-    sci_ext_list = auxfunc.get_sci_extensions(infile_name)
+    sci_dict = auxfunc.get_sci_extensions(infile_name)
 
     primary_header = fits.getheader(infile_name, ext=0)
     detector = primary_header["DETECTOR"]
 
-    for i, s_ext in enumerate(sci_ext_list):
-        sci_header = fits.getheader(infile_name, ext=s_ext)
+    for i, s_ext in enumerate(sci_dict):
+        s_ext_number = sci_dict[s_ext]
+        sci_header = fits.getheader(infile_name, ext=s_ext_number)
 
         #grab corners of extracted subwindow
         px0 = sci_header["SLTSTRT1"] + primary_header["SUBSTRT1"] - 1
@@ -116,61 +117,62 @@ def find_FSwindowcorners(infile_name, esa_files_path):
         for esafile in esafile_list:
             if slit in esafile:
                 print ("Using this ESA file: \n", esafile)
-                esahdulist = fits.open(esafile)
-                break
+                with fits.open(esafile) as esahdulist:
+                    # Find corners from ESA file
+                    esahdr1 = esahdulist["DATA1"].header
+                    enext = []
+                    for ext in esahdulist:
+                        enext.append(ext)
+                    if detector == "NRS1":
+                        eflux = fits.getdata(esafile, "DATA1")
+                    if detector == "NRS2":
+                        try:
+                            eflux = fits.getdata(esafile, "DATA2")
+                        except:
+                            IndexError
+                            msg1 = " * Exiting extract_2d test because there are no extensions that match detector NRS2 in the ESA file."
+                            msg2 = "   -> The extract_2d test is now set to skip. "
+                            print(msg1)
+                            print(msg2)
+                            log_msgs.append(msg1)
+                            log_msgs.append(msg2)
+                            result = "skip"
+                            continue
 
-        # Find corners from ESA file
-        esahdr1 = esahdulist["DATA1"].header
-        enext = []
-        for ext in esahdulist:
-            enext.append(ext)
-        if detector == "NRS1":
-            eflux = fits.getdata(esafile, "DATA1")
-        if detector == "NRS2":
-            try:
-                eflux = fits.getdata(esafile, "DATA2")
-            except:
-                IndexError
-                msg1 = " * Exiting extract_2d test because there are no extensions that match detector NRS2 in the ESA file."
-                msg2 = "   -> The extract_2d test is now set to skip. "
-                result = "skip"
-                continue
-        esahdulist.close()
+                            # get the origin of the subwindow
+                            ney, nex = eflux.shape
+                            if detector == "NRS1":
+                                ex0 = esahdr1["CRVAL1"] - esahdr1["CRPIX1"] + 1
+                                ey0 = esahdr1["CRVAL2"] - esahdr1["CRPIX2"] + 1
+                            else:
+                                ex0 = 2048.0 - esahdr1["CRPIX1"] + esahdr1["CRVAL1"]
+                                ey0 = 2048.0 - esahdr1["CRVAL2"] + esahdr1["CRPIX2"]
 
-        # get the origin of the subwindow
-        ney, nex = eflux.shape
-        if detector == "NRS1":
-            ex0 = esahdr1["CRVAL1"] - esahdr1["CRPIX1"] + 1
-            ey0 = esahdr1["CRVAL2"] - esahdr1["CRPIX2"] + 1
-        else:
-            ex0 = 2048.0 - esahdr1["CRPIX1"] + esahdr1["CRVAL1"]
-            ey0 = 2048.0 - esahdr1["CRVAL2"] + esahdr1["CRPIX2"]
+                            ex1 = ex0 + nex
+                            ey1 = ey0 + ney
 
-        ex1 = ex0 + nex
-        ey1 = ey0 + ney
+                            ecorners = {(ex0, ey0), (ex1, ey0), (ex1, ey1), (ex0, ey1)}
 
-        ecorners = {(ex0, ey0), (ex1, ey0), (ex1, ey1), (ex0, ey1)}
+                            # Pytest pass/fail criterion: if esa corners match pipeline corners then True, else False
+                            result[sltname] = ecorners == icorners
 
-        # Pytest pass/fail criterion: if esa corners match pipeline corners then True, else False
-        result[sltname] = ecorners == icorners
-
-        msg1 = "* Corners for slit "+sltname+":"
-        msg2 = "         ESA corners: "+repr(ecorners)
-        msg3 = "    Pipeline corners: "+repr(icorners)
-        print(msg1)
-        print(msg2)
-        print(msg3)
-        log_msgs.append(msg1)
-        log_msgs.append(msg2)
-        log_msgs.append(msg3)
-        if result[sltname]:
-            msg = "* Pytest PASSED "
-            print(msg)
-            log_msgs.append(msg)
-        else:
-            msg = "* Pytest FAILED "
-            print(msg)
-            log_msgs.append(msg)
+                            msg1 = "* Corners for slit "+sltname+":"
+                            msg2 = "         ESA corners: "+repr(ecorners)
+                            msg3 = "    Pipeline corners: "+repr(icorners)
+                            print(msg1)
+                            print(msg2)
+                            print(msg3)
+                            log_msgs.append(msg1)
+                            log_msgs.append(msg2)
+                            log_msgs.append(msg3)
+                            if result[sltname]:
+                                msg = "* Pytest PASSED "
+                                print(msg)
+                                log_msgs.append(msg)
+                            else:
+                                msg = "* Pytest FAILED "
+                                print(msg)
+                                log_msgs.append(msg)
 
     return result, log_msgs
 
@@ -227,11 +229,12 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
         return result, log_msgs
 
     # Identify the science extensions
-    sci_ext_list = auxfunc.get_sci_extensions(infile_name)
+    sci_ext_dict = auxfunc.get_sci_extensions(infile_name)
 
     # Iterate over sci extensions
-    for i, s_ext in enumerate(sci_ext_list):
-        sci_header = fits.getheader(infile_name, ext=s_ext)
+    for i, s_ext in enumerate(sci_ext_dict):
+        s_ext_number = sci_ext_dict[s_ext]
+        sci_header = fits.getheader(infile_name, ext=s_ext_number)
         name = sci_header['SLTNAME']
         msg = "\nWorking with slit: "+name
         print(msg)
@@ -261,10 +264,21 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
         log_msgs.append(msg)
         specifics = [q, r, c]
         esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "MOS", specifics)
+        if len(esafile) == 2:
+            print(len(esafile[-1]))
+            if len(esafile[-1]) == 0:
+                esafile = esafile[0]
+        msg = "Using this ESA file: \n"+esafile
+        print(msg)
+        log_msgs.append(msg)
 
         # skip the test if the esafile was not found
-        if esafile == "ESA file not found":
+        if "ESA file not found" in esafile:
             result[name] = "skip"
+            msg = "ESA file not found, skipping test for this shutter."
+            print(msg)
+            log_msgs.append(msg)
+            continue
 
         # Open esafile and grab subarray coordinates
         with fits.open(esafile) as esahdulist:

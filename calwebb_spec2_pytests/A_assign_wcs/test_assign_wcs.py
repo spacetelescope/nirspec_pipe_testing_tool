@@ -359,14 +359,16 @@ def validate_wcs(output_hdul):
         result, log_msgs = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
                                             save_figs=save_wcs_plots, threshold_diff=threshold_diff, debug=False)
 
-    if core_utils.check_BOTS_true(hdu):
-        pytest.skip("Skipping pytest: BOTS files at the moment are not being compared against an ESA intermediary product.")
-    #else:
-    #    pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU.")
+    else:#if core_utils.check_BOTS_true(hdu):
+        #pytest.skip("Skipping pytest: BOTS files at the moment are not being compared against an ESA intermediary product.")
+        pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU.")
 
     if log_msgs is not None:
         for msg in log_msgs:
             logging.info(msg)
+
+    if "skip" in result:
+        pytest.skip("Skipping assign_wcs pytest.")
 
     return result
 

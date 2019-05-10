@@ -168,6 +168,10 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             return FINAL_TEST_RESULT, log_msgs
 
         # Open the trace in the esafile
+        if len(esafile) == 2:
+            print(len(esafile[-1]))
+            if len(esafile[-1]) == 0:
+                esafile = esafile[0]
         msg = "Using this ESA file: \n"+str(esafile)
         print(msg)
         log_msgs.append(msg)
@@ -308,10 +312,6 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             esax = 2049-esax
             esay = 2049-esay
 
-        # make sure the extracting coordinates are correct
-        #xstart, xend = img.meta.subarray.xstart - 1, img.meta.subarray.xstart -1 + esa_wave.shape[1]
-        #ystart, yend = img.meta.subarray.ystart - 1, img.meta.subarray.ystart -1 + esa_wave.shape[0]
-        #esax, esay = esax - xstart, esay - ystart
 
         # Compute pipeline RA, DEC, and lambda
         pra, pdec, pwave = wcs_slice(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
