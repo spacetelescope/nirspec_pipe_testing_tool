@@ -211,14 +211,13 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         if det == "NRS2":
             esax = 2049-esax
             esay = 2049-esay
-        msg = "x,y: "+repr(esax-1)+repr(esay-1)
+        #print( "x,y: "+repr(esax-1)+repr(esay-1) )
 
         # Compute pipeline RA, DEC, and lambda
         pra, pdec, pwave = wcs_slice(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
         pwave *= 10**-6
-        msg = "wavelengths: "+repr(pwave)
-        print(msg)
-        log_msgs.append(msg)
+        #print( "wavelengths: "+repr(pwave) )
+
         # calculate and print statistics for slit-y and x relative differences
         tested_quantity = "Wavelength Difference"
         #print(" ESA wavelength: ", esa_wave)
