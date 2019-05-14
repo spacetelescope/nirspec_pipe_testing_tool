@@ -201,8 +201,8 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                                 else:
                                     if debug:
                                         print("Step did not run to create product file.")
-                                    exit_while_loop = True
-                                    break
+                                    j -= 1
+                                    continue
                             else:
                                 if debug:
                                     print("Step does not produce an outfile, continuing in the while loop...")
@@ -235,11 +235,6 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
             step_output_filename = os.path.join(working_directory, step_output_basename)
             # now exit the for loop because step was reached
             break
-
-    # Make sure to get the right name for the input file in case of IFU
-    if "IFU" in fits.getval(initial_input_file, "EXP_TYPE", 0):
-        if "extract_2d" in step_input_filename:
-            step_input_filename = step_input_filename.replace("extract_2d", "msa_flagging")
 
     return in_file_suffix, out_file_suffix, step_input_filename, step_output_filename
 
