@@ -124,10 +124,13 @@ def output_hdul(set_inandout_filenames, config):
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
 
                     # rename and move the pipeline log file
-                    calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
-                    pytest_workdir = os.getcwd()
-                    logfile = glob(pytest_workdir+"/pipeline.log")[0]
-                    os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+                    try:
+                        calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                        pytest_workdir = os.getcwd()
+                        logfile = glob(pytest_workdir+"/pipeline.log")[0]
+                        os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+                    except:
+                        IndexError
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
