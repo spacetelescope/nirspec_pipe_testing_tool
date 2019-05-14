@@ -193,10 +193,13 @@ def output_hdul(set_inandout_filenames, config):
         #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
 
         # rename and move the pipeline log file
-        calspec2_pilelog = "calspec2_pipeline_"+detector+".log"
-        pytest_workdir = os.getcwd()
-        logfile = glob(pytest_workdir+"/pipeline.log")[0]
-        os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+        try:
+            calspec2_pilelog = "calspec2_pipeline_"+detector+".log"
+            pytest_workdir = os.getcwd()
+            logfile = glob(pytest_workdir+"/pipeline.log")[0]
+            os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+        except:
+            IndexError
 
         # make sure we are able to find calspec2_pilelog either in the calwebb_spec2 directory or in the working dir
         if not os.path.isfile(calspec2_pilelog):
@@ -288,10 +291,13 @@ def output_hdul(set_inandout_filenames, config):
                     subprocess.run(["rm", msametfl])
 
                 # rename and move the pipeline log file
-                calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
-                pytest_workdir = os.getcwd()
-                logfile = glob(pytest_workdir+"/pipeline.log")[0]
-                os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+                try:
+                    calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                    pytest_workdir = os.getcwd()
+                    logfile = glob(pytest_workdir+"/pipeline.log")[0]
+                    os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+                except:
+                    IndexError
 
             else:
                 msg = "Skipping step. Intput file "+step_input_file+" does not exit."
