@@ -201,10 +201,13 @@ def output_hdul(set_inandout_filenames, config):
         core_utils.move_latest_report_and_txt_2workdir(detector)
 
         # rename and move the PTT log file
-        PTT_calspec2_log = "PTT_calspec2_" + detector + ".log"
-        pytest_workdir = os.getcwd()
-        logfile = glob(pytest_workdir + "/pipeline.log")[0]
-        os.rename(logfile, os.path.join(working_directory, PTT_calspec2_log))
+        try:
+            PTT_calspec2_log = "PTT_calspec2_" + detector + ".log"
+            pytest_workdir = os.getcwd()
+            logfile = glob(pytest_workdir + "/pipeline.log")[0]
+            os.rename(logfile, os.path.join(working_directory, PTT_calspec2_log))
+        except:
+            IndexError
 
         return hdul, step_output_file, run_pytests
 

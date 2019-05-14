@@ -482,6 +482,7 @@ def start_end_PTT_time(txt_name, start_time=None, end_time=None):
         # start the timer to compute the step running time of PTT
         #print("PTT starting time: ", repr(start_time), "\n")
         line2write = "{:<20} {:<20}".format('# Starting PTT running time: ', repr(start_time))
+        print (line2write)
         with open(txt_name, "a") as tf:
             tf.write(line2write+"\n")
 
