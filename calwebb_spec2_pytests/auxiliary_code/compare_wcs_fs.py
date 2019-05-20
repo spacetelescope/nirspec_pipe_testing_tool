@@ -90,8 +90,8 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         #raw_data_root_file = "NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits"  # for testing with G140H FULLFRAME
         #raw_data_root_file = "NRSSDRK-ALLSLITS-5345150216_1_491_SE_2015-12-11T15h40m25.fits"  # for testing with G140H ALLSLITS
         #raw_data_root_file = "NRSV84600002001P0000000002101_1_491_SE_2016-01-17T15h09m16.fits"  # for testing with G140M ALLSLITS
-        raw_data_root_file = "NRSV84600004001P0000000002101_1_491_SE_2016-01-17T15h41m16.fits"  # for testing with G235H ALLSLITS
-        #_, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
+        #raw_data_root_file = "NRSV84600004001P0000000002101_1_491_SE_2016-01-17T15h41m16.fits"  # for testing with G235H ALLSLITS
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
         specifics = [pipeslit]
 
         # check if ESA data is not in the regular directory tree, these files are exceptions
@@ -108,10 +108,11 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             log_msgs.append(msg)
         else:
             nid = None
-        #esafile, esafile_log_msgs = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
-        #for msg in esafile_log_msgs:
-        #    log_msgs.append(msg)
-        esafile= "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3/ESA_Int_products/Trace_SLIT_A_1600_V84600004001P0000000002101_39530_JLAB88_000001.fits"
+
+        #esafile= "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3/ESA_Int_products/Trace_SLIT_A_1600_V84600004001P0000000002101_39530_JLAB88_000001.fits"
+        esafile, esafile_log_msgs = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
+        for msg in esafile_log_msgs:
+            log_msgs.append(msg)
 
         # skip the test if the esafile was not found
         if esafile == "ESA file not found":
