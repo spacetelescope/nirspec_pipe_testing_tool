@@ -714,7 +714,7 @@ def check_completed_steps(step, step_input_file, caldet1=False):
                     if val == "COMPLETE" or val == "SKIPPED":
                         continue
                 else:
-                    print("*** WARNING: calwebb_detector1 step ", pstp, " was not ran. Please make sure this is intentional. \n")
+                    print("*** WARNING: calwebb_detector1 step ", pstp, " was not run. Please make sure this is intentional. \n")
         # check that calwebb_spec2 steps up to relevant step were ran
         for pstp in steps_calwebbspec2:
             if step == pstp:

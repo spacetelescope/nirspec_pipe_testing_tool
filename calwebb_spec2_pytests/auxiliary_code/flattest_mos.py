@@ -18,7 +18,7 @@ This script tests the pipeline flat field step output for MOS data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "3.4"
+__version__ = "3.5"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -30,6 +30,7 @@ __version__ = "3.4"
 # Aug 2018 - Version 3.2: Fixed bugs per Phil Hodge recommendations.
 # Apr 2019 - Version 3.3: Implemented capability to return logging messages.
 # May 2019 - Version 3.4: Implemented images of the residuals.
+# Jun 2019 - Version 3.5: Updated name of interpolated flat to be the default pipeline name for this file.
 
 
 
@@ -79,7 +80,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     log_msgs.append(msg)
 
     # read in the on-the-fly flat image
-    flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")
+    flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
 
     # get the reference files
     # D-Flat
@@ -521,7 +522,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             print(msg2)
             log_msgs.append(msg1)
             log_msgs.append(msg2)
-            delfg_median = np.nan
         else:
             msg = "Calculating statistics... "
             print(msg)
@@ -534,7 +534,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 print(msg2)
                 log_msgs.append(msg1)
                 log_msgs.append(msg2)
-                delfg_median = np.nan
             else:
                 stats_and_strings = auxfunc.print_stats(delfg, "Flat Difference", float(threshold_diff), abs=True)
                 stats, stats_print_strings = stats_and_strings

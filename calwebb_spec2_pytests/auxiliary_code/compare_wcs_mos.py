@@ -365,14 +365,24 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             detector2v2v3 = wcs_slice.get_transform("detector", "v2v3")
             pv2, pv3, _ = detector2v2v3(esax-1, esay-1)   # => RETURNS: v2, v3, LAMBDA (lam *= 10**-6 to convert to microns)
             tested_quantity = "V2 difference"
+            # converting to degrees to compare with ESA
             reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3x, pv2, tested_quantity)
+            if reldiffpv2_data[-2][0] > 0.0:
+                print("\nConverting pipeline results to degrees to compare with ESA")
+                pv2 = pv2/3600.
+                reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3x, pv2, tested_quantity)
             reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats, print_stats_strings = reldiffpv2_data
             for msg in print_stats_strings:
                 log_msgs.append(msg)
             result = auxfunc.does_median_pass_tes(notnan_reldiffpv2_stats[1], threshold_diff)
             total_test_result[slitlet_name] = {tested_quantity : result}
             tested_quantity = "V3 difference"
+            # converting to degrees to compare with ESA
             reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
+            if reldiffpv3_data[-2][0] > 0.0:
+                print("\nConverting pipeline results to degrees to compare with ESA")
+                pv3 = pv3/3600.
+                reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
             reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats, print_stats_strings = reldiffpv3_data
             for msg in print_stats_strings:
                 log_msgs.append(msg)
@@ -465,7 +475,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 info_img = [title, "x (pixels)", "y (pixels)"]
                 xlabel, ylabel = r"Relative $\Delta$V3 = (V3$_{pipe}$ - V3$_{ESA}$)/V3$_{ESA}$", "N"
                 hist_data = notnan_reldiffpv3
-                info_hist = [xlabel, ylabel, bins, notnan_reldiffpmsay_stats]
+                info_hist = [xlabel, ylabel, bins, notnan_reldiffpv3_stats]
                 if notnan_reldiffpv3_stats[1] is np.nan:
                     msg = "Unable to create plot of relative V3 difference."
                     print(msg)

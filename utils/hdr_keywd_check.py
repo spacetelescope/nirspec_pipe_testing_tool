@@ -7,6 +7,7 @@ import numpy as np
 from datetime import datetime
 from astropy.io import fits
 from collections import OrderedDict
+from glob import glob
 
 # import the header keyword dictionaries
 import hdr_keywd_dict as hkwd
@@ -42,6 +43,8 @@ __version__ = "1.2"
 # Apr 2019 - Version 1.1: added dictionary to choose right GWA_XTIL keyword value according to GRATING
 # May 2019 - Version 1.2: added logic for dark processing
 
+### Paths
+path_to_tilt_files = "/grp/jwst/wit4/nirspec/CDP3/03_Instrument_model/3.1_Files/NIRS_FM2_05_CV3_FIT1/Description"
 
 ### General functions
 
@@ -280,7 +283,7 @@ def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='
         return warning
 
 
-def get_gwaxtil_val(grating):
+def get_gwa_Xtil_val(grating, path_to_tilt_files):
     """
     This function gets the right GWA_XTIL value according to the grating given
     Args:
@@ -289,20 +292,47 @@ def get_gwaxtil_val(grating):
     Returns:
         gwaxtil: float, corresponding GWA_XTIL value to the grating
     """
-    # dictionary containing default XTILT values
-    # (taken from "Zeroreadings 1" parameter in "disperser_*_TiltY.gtp" reference files)
-    default_xtil = {
-            "G140H" : 0.361956834793,
-            "G140M" : 0.331874251366,
-            "G235H" : 0.353678375483,
-            "G235M" : 0.321180671453,
-            "G395H" : 0.323275774717,
-            "G395M" : 0.28645208478,
-            "MIRROR" : 0.347495883703,
-            "PRISM" : 0.336739093065
-            }
-    gwaxtil = default_xtil[grating]
-    return gwaxtil
+    dispersion_files_list = glob(os.path.join(path_to_tilt_files, "disperser_*_TiltX.gtp"))
+    gwa_xtil_found = False
+    for dispersion_file in dispersion_files_list:
+        if grating in dispersion_file:
+            print("Using this file for setting the GWA_XTIL keyword: \n", dispersion_file)
+            with open(dispersion_file, "r") as df:
+                for line in df.readlines():
+                    if "*Zeroreadings 1" in line:
+                        gwa_xtil_found = True
+                        continue
+                    if gwa_xtil_found:
+                        line = line.replace("\n", "")
+                        gwa_xtil = float(line)
+                        break
+    return gwa_xtil
+
+
+def get_gwa_Ytil_val(grating, path_to_tilt_files):
+    """
+    This function gets the right GWA_YTIL value according to the grating given
+    Args:
+        grating: string, value from GRATING keyword
+
+    Returns:
+        gwaxtil: float, corresponding GWA_YTIL value to the grating
+    """
+    dispersion_files_list = glob(os.path.join(path_to_tilt_files, "disperser_*_TiltY.gtp"))
+    gwa_ytil_found = False
+    for dispersion_file in dispersion_files_list:
+        if grating in dispersion_file:
+            print("Using this file for setting the GWA_YTIL keyword: \n", dispersion_file)
+            with open(dispersion_file, "r") as df:
+                for line in df.readlines():
+                    if "*Zeroreadings 1" in line:
+                        gwa_ytil_found = True
+                        continue
+                    if gwa_ytil_found:
+                        line = line.replace("\n", "")
+                        gwa_ytil = float(line)
+                        break
+    return gwa_ytil
 
 
 ### keyword and format check
@@ -321,10 +351,21 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
     Returns:
         specific_keys_dict: dictionary with specific keys and values that need to be changed
     """
+    # get the name and path of the input fits file
     ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
+
+    # get the instrument mode used either from the input of the script or from the configuration file
     if mode_used is None:
         mode_used = get_modeused_PTT_cfg_file()
+
+    # initialize the dictionary to hold keyword values that will be changed and written to the file
     specific_keys_dict = {}
+
+    # get the detector and grating from the input file
+    detector = fits.getval(ff, "DETECTOR", 0)
+    grating = fits.getval(ff, "GRATING", 0)
+
+    # loop through the keywords and values of the PTT dictionary and add keywords that are not in input file
     for hkwd_key, hkwd_val in hkwd.keywd_dict.items():
         # start by making the warning for each keyword None and assigning key and val
         key = hkwd_key
@@ -397,15 +438,6 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         specific_keys_dict[key] = 'GENERIC'
                         missing_keywds.append(key)
 
-                # choose right value for GWA_XTIL according to the grating
-                if key == "GWA_XTIL":
-                    grating = fits.getval(ff, "GRATING", 0)
-                    gwa_xtil = get_gwaxtil_val(grating)
-                    print("Replacing value of keyword ", key, " corresponding to GRATING=", grating,
-                          "and value ", gwa_xtil)
-                    specific_keys_dict[key] = gwa_xtil
-                    missing_keywds.append(key)
-
                 # specific check for SUBARRAY
                 if key == 'SUBARRAY':
                     if 'IFU' in mode_used  or  "MOS" in mode_used:
@@ -415,24 +447,32 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             missing_keywds.append(key)
                     elif mode_used == "FS"  or  mode_used == "BOTS":
                         # set the subarray according to size
-                        substrt1 = fits.getval(ff, "SUBSTRT1", 0)
-                        substrt2 = fits.getval(ff, "SUBSTRT2", 0)
-                        subsize1 = fits.getval(ff, "SUBSIZE1", 0)
-                        subsize2 = fits.getval(ff, "SUBSIZE2", 0)
-                        print ("substrt1=", substrt1, "  substrt2=", substrt2,  "  subsize1=", subsize1, "  subsize2=", subsize2)
+                        substrt1 = fits.getval(ff, "substrt1", 0)
+                        substrt2 = fits.getval(ff, "substrt2", 0)
+                        subsize1 = fits.getval(ff, "subsize1", 0)
+                        subsize2 = fits.getval(ff, "subsize2", 0)
                         for subarrd_key, subarrd_vals_dir in subdict.subarray_dict.items():
                             sst1 = subarrd_vals_dir["substrt1"]
-                            sst2_list = subarrd_vals_dir["substrt2"]
+                            sst2_dict = subarrd_vals_dir["substrt2"]
                             ssz1 = subarrd_vals_dir["subsize1"]
                             ssz2 = subarrd_vals_dir["subsize2"]
                             #print ("sst1=", sst1, "  sst2_list=", sst2_list, "  ssz1=", ssz1, "  ssz2=", ssz2)
                             if substrt1 == sst1  and  subsize1 == ssz1  and  subsize2 == ssz2:
-                                for sst2 in sst2_list:
-                                    if substrt2 == sst2:
+                                for grat, sst2_tuple in sst2_dict.items():
+                                    if grat.lower() == grating.lower():
                                         specific_keys_dict[key] = subarrd_key
-                                        #print ("sst1=", sst1, "  sst2=", sst2, "  ssz1=", ssz1, "  ssz2=", ssz2)
                                         print ("changing subarray keyword to ", subarrd_key)
                                         missing_keywds.append(key)
+                                        # this part is simply to check that the subarray values are correct
+                                        # but no values will be changed in the input file
+                                        if "1" in detector:
+                                            sst2 = sst2_tuple[0]
+                                        elif "2" in detector:
+                                            sst2 = sst2_tuple[1]
+                                        print ("Subarray values in input file: \n", )
+                                        print("substrt1=", substrt1, " substrt2=", substrt2,  " subsize1=", subsize1, " subsize2=", subsize2)
+                                        print ("Subarray values in PTT dictionary: \n", )
+                                        print("substrt1=", sst1, " substrt2=", sst2,  " subsize1=", ssz1, " subsize2=", ssz2)
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
@@ -521,6 +561,16 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
             after_key = list(shkvd.keywd_dict.keys())[prev_key_idx-1]
         if key != 'wcsinfo':
             print("adding keyword: ", key, " in extension: primary    after: ", after_key)
+            # choose right value for GWA_XTIL according to the grating
+            if key == "GWA_XTIL":
+                grating = fits.getval(fits_file, "GRATING", 0)
+                new_value = get_gwa_Xtil_val(grating, path_to_tilt_files)
+                print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
+            # choose right value for GWA_YTIL according to the grating
+            if key == "GWA_YTIL":
+                grating = fits.getval(fits_file, "GRATING", 0)
+                new_value = get_gwa_Ytil_val(grating, path_to_tilt_files)
+                print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
             fits.setval(updated_fitsfile, key, 0, value=new_value, after=after_key)
         else:
             # go into the subdictionary for WCS keywords
