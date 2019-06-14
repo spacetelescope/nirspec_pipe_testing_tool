@@ -17,7 +17,7 @@ This script tests the pipeline flat field step output for MOS data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.4"
+__version__ = "2.5"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -27,6 +27,7 @@ __version__ = "2.4"
 # Jun 2018 - Version 2.2: Removed function reverse_cols because it was not behaving as expected.
 # Apr 2019 - Version 2.3: Implemented logging capability.
 # May 2019 - Version 2.4: Implemented images of the residuals.
+# Jun 2019 - Version 2.5: Updated name of interpolated flat to be the default pipeline name for this file.
 
 
 
@@ -74,7 +75,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     log_msgs.append(msg)
 
     # read in the on-the-fly flat image
-    flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")
+    flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
+    #flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")  # for testing code only!
 
     # get the reference files
     # D-Flat
@@ -86,8 +88,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     msg = "Using D-flat: "+dfile
     print(msg)
     log_msgs.append(msg)
-    dfim = fits.getdata(dfile, "SCI")#1)
-    dfimdq = fits.getdata(dfile, "DQ")#4)
+    dfim = fits.getdata(dfile, "SCI")
+    dfimdq = fits.getdata(dfile, "DQ")
     # need to flip/rotate the image into science orientation
     ns = np.shape(dfim)
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
@@ -162,12 +164,12 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print("np.shape(sfim) = ", np.shape(sfim))
         print("np.shape(sfimdq) = ", np.shape(sfimdq))
 
-    sfv_a2001 = fits.getdata(sfile, "SLIT_A_200_1")#5)
-    sfv_a2002 = fits.getdata(sfile, "SLIT_A_200_2")#6)
-    sfv_a400 = fits.getdata(sfile, "SLIT_A_400")#7)
-    sfv_a1600 = fits.getdata(sfile, "SLIT_A_1600")#8)
+    sfv_a2001 = fits.getdata(sfile, "SLIT_A_200_1")
+    sfv_a2002 = fits.getdata(sfile, "SLIT_A_200_2")
+    sfv_a400 = fits.getdata(sfile, "SLIT_A_400")
+    sfv_a1600 = fits.getdata(sfile, "SLIT_A_1600")
     if det == "NRS2":
-        sfv_b200 = fits.getdata(sfile, "SLIT_B_200")#5)
+        sfv_b200 = fits.getdata(sfile, "SLIT_B_200")
 
     # F-Flat
     fflat_ending = "01.01.fits"
@@ -426,13 +428,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         delf = delf[notnan]   # get rid of NaNs
         if delf.size == 0:
             msg1 = " * Unable to calculate statistics because difference array has all values as NaN."
-            msg2 = "   Test will be set to FAILED and NO plots will be made."
+            msg2 = "   Test will be set to FAILED."
             print(msg1)
             print(msg2)
             log_msgs.append(msg1)
             log_msgs.append(msg2)
             test_result = "FAILED"
-            delfg_median = np.nan
+            delfg_mean, delfg_median, delfg_std = np.nan, np.nan, np.nan
+            stats = [delfg_mean, delfg_median, delfg_std]
         else:
             msg = "Calculating statistics... "
             print(msg)
@@ -440,13 +443,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             delfg = delf[np.where((delf != 999.0) & (delf < 0.1) & (delf > -0.1))]   # ignore outliers
             if delfg.size == 0:
                 msg1 = " * Unable to calculate statistics because difference array has all outlier values."
-                msg2 = "   Test will be set to FAILED and NO plots will be made."
+                msg2 = "   Test will be set to FAILED."
                 print(msg1)
                 print(msg2)
                 log_msgs.append(msg1)
                 log_msgs.append(msg2)
                 test_result = "FAILED"
-                delfg_median = np.nan
+                delfg_mean, delfg_median, delfg_std = np.nan, np.nan, np.nan
+                stats = [delfg_mean, delfg_median, delfg_std]
             else:
                 stats_and_strings = auxfunc.print_stats(delfg, "Flat Difference", float(threshold_diff), abs=True)
                 stats, stats_print_strings = stats_and_strings
@@ -482,7 +486,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             info_img = [title, "x (pixels)", "y (pixels)"]
             xlabel, ylabel = "flat$_{pipe}$ - flat$_{calc}$", "N"
             info_hist = [xlabel, ylabel, bins, stats]
-            if delfg[1] is np.nan:
+            if delfg.size != 0 and delfg[1] is np.nan:
                 msg = "Unable to create plot of relative wavelength difference."
                 print(msg)
                 log_msgs.append(msg)
@@ -598,8 +602,8 @@ if __name__ == '__main__':
     pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
 
     # input parameters that the script expects
-    working_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque"
-    step_input_filename = working_dir+"/gain_scale_NRS1_flat_field.fits"
+    #step_input_filename = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque/gain_scale_NRS1_flat_field.fits"
+    step_input_filename = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G235H_F170LP/final_output_caldet1_NRS1_flat_field.fits"
     #working_dir = pipeline_path+"/build7.1/part2/BOTS/NRSSRAD-G2H-PS-6007132838_1_491_SE_2016-01-07T17h03m08_491results"
     #step_input_filename = working_dir+"/gain_scale_NRS1_flat_field.fits"
 

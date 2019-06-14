@@ -161,6 +161,10 @@ keywd_dict['FRMDIVSR']= 1  # integer, Divisor applied to frame-averaged groups
 keywd_dict['XOFFSET']= 0.0  # float, x offset from pattern starting position
 keywd_dict['YOFFSET']= 0.0  # float, y offset from pattern starting position
 
+# added for build 7.3
+keywd_dict['PATT_NUM']= 1 # position number within primary pattern
+keywd_dict['PATTSIZE']= None   # [arcsec] primary dither pattern size: SMALL, MEDIUM, LARGE, None
+
 # NIRSpec MSA supporting files (NIRSpec MSA only)
 keywd_dict['MSAMETFL']= 'N/A' # MSA configuration file name, e.g. 'blah.fits'
 keywd_dict['MSAMETID']= 1 # int, MSA meta data ID for the exposure, e.g. 1

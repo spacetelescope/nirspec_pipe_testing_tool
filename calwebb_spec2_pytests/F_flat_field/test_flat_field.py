@@ -121,12 +121,11 @@ def output_hdul(set_inandout_filenames, config):
                 # check that previous pipeline steps were run up to this point
                 core_utils.check_completed_steps(step, step_input_file)
 
-                flat_suffix = "intflat"
                 if core_utils.check_MOS_true(inhdu):
                     # copy the MSA shutter configuration file into the pytest directory
                     subprocess.run(["cp", msa_shutter_conf, "."])
                 # start the timer to compute the step running time
-                ontheflyflat = step_output_file.replace("flat_field.fits", "intflat.fits")
+                ontheflyflat = step_output_file.replace("flat_field.fits", "interpolatedflat.fits")
                 msg1 = "Step product will be saved as: "+step_output_file
                 msg2 = "on-the-fly flat will be saved as: "+ontheflyflat
                 # get the right configuration files to run the step
@@ -135,17 +134,15 @@ def output_hdul(set_inandout_filenames, config):
                 logging.info(msg1)
                 logging.info(msg2)
                 local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
-                if core_utils.check_IFU_true(inhdu):
-                    flat_suffix = "intflat"
                 # start the timer to compute the step running time
                 start_time = time.time()
                 if local_pipe_cfg_path == "pipe_source_tree_code":
-                    stp.call(step_input_file, output_file=step_output_file, flat_suffix=flat_suffix)
+                    stp.call(step_input_file, output_file=step_output_file, save_interpolated_flat=True)
                               #override_dflat="/grp/crds/jwst/references/jwst/jwst_nirspec_dflat_0001.fits",
                               #override_fflat="/grp/crds/jwst/references/jwst/jwst_nirspec_fflat_0015.fits",
                               #override_sflat="/grp/crds/jwst/references/jwst/jwst_nirspec_sflat_0034.fits")
                 else:
-                    stp.call(step_input_file, output_file=step_output_file, flat_suffix=flat_suffix,
+                    stp.call(step_input_file, output_file=step_output_file, save_interpolated_flat=True,
                              config_file=local_pipe_cfg_path+'/flat_field.cfg')
                 # end the timer to compute the step running time
                 end_time = repr(time.time() - start_time)   # this is in seconds

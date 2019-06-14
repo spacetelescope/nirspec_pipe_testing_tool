@@ -168,11 +168,13 @@ keywd_dict['SUBSIZE2']= 2048 # number of pixels in the SIAS y direction, e.g. 25
 keywd_dict['FASTAXIS']= 2 # Direction of fast readout, options are: 1, 2, -1, -2
 keywd_dict['SLOWAXIS']= 1 # Direction of slow readout, options are: 1, 2, -1, -2
 
-
 # Dither information
 keywd_dict['XOFFSET']= 0.0  # float, x offset from pattern starting position
 keywd_dict['YOFFSET']= 0.0  # float, y offset from pattern starting position
 
+# added for build 7.3
+keywd_dict['PATT_NUM']= 1 # position number within primary pattern
+keywd_dict['PATTSIZE']= "SMALL"  # [arcsec] primary dither pattern size: SMALL, MEDIUM, LARGE, None
 
 # JWST ephemeris information
 keywd_dict['REFFRAME']= 'N/A' # ephemeris coordinate system, e.g. 'N/A'

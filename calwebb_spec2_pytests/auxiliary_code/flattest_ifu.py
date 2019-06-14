@@ -21,7 +21,7 @@ This script tests the pipeline flat field step output for IFU data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.5"
+__version__ = "2.6"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -31,6 +31,7 @@ __version__ = "2.5"
 # Feb 2019 - Version 2.3: Maria added lines to properly rotate NRS2 s- and d-flats.
 # Apr 2019 - Version 2.4: Implemented logging capability.
 # May 2019 - Version 2.5: Implemented plot of residuals as well as histogram.
+# Jun 2019 - Version 2.6: Updated name of interpolated flat to be the default pipeline name for this file.
 
 
 
@@ -131,7 +132,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     log_msgs.append(msg2)
 
     # read in the on-the-fly flat image
-    flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")
+    flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
     pipeflat = fits.getdata(flatfile, "SCI")
 
     # get the reference files
