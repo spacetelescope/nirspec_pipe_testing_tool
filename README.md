@@ -304,13 +304,13 @@ for this first pipeline.
 
 NOTE FOR SIMULATIONS:
 If you are working with simulations you may need to convert the count rate map to an STScI
-pipeline ingestible file (with all the keyword header modificatndi all). In order to do this, use the
+pipeline ingestible file (with all the keyword header modifications). In order to do this, use the
 script called ```crm2STpipeline.py``` that lives in the ```ulits``` directory. To run this type:
 ```bash
 python ../calwebb_spec2_pytests/utils/crm2STpipeline.py /path_tor_file/file.fits mode 
 ```
 where mode is FS, MOS, IFU, BOTS, or dark. The input file for this scritp generally has a suffix 
-.crm or .cts.
+.crm or .cts. The output files of this script can be directly ingested into the cal_spec2 pipeline.
 
  
 8. Ready to run PTT. Go back to the directory where PTT lives and into the 
