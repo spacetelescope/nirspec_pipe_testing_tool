@@ -302,6 +302,16 @@ If all went well and you have a ```gain_scale_DETECTOR.fits``` file. The MESA te
 tool for calwebb detector 1 is currently being modified so we are SKIPPING the tests
 for this first pipeline.
 
+NOTE FOR SIMULATIONS:
+If you are working with simulations you may need to convert the count rate map to an STScI
+pipeline ingestible file (with all the keyword header modificatndi all). In order to do this, use the
+script called ```crm2STpipeline.py``` that lives in the ```ulits``` directory. To run this type:
+```bash
+python ../calwebb_spec2_pytests/utils/crm2STpipeline.py /path_tor_file/file.fits mode 
+```
+where mode is FS, MOS, IFU, BOTS, or dark. The input file for this scritp generally has a suffix 
+.crm or .cts.
+
  
 8. Ready to run PTT. Go back to the directory where PTT lives and into the 
 ```calwebb_spec2_pytests``` directory, copy final output file from calwebb detector1 into 
