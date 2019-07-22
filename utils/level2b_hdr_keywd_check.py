@@ -61,7 +61,7 @@ def read_hdrfits(fits_file_name):
     #  Read the fits file
     hdulist = fits.open(fits_file_name)
     # print on screen what extensions are in the file
-    #print ('\n FILE INFORMATION: \n')
+    print ('File contents')
     hdulist.info()
     # get and print header
     #print ('\n FILE HEADER: \n')
@@ -343,7 +343,7 @@ def get_gwa_Ytil_val(grating, path_to_tilt_files):
 
 ### keyword and format check
 
-def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used):
+def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used, detector=None):
     """
     This function will check keywords against those in hdr_keywod_dict.py
     Args:
@@ -353,6 +353,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         missing_keywds: list of the keywords not in the original the header
         mode_used: str or None, observation mode used FS, MOS, or IFU (if None then a configuration file
                     is expected to exist and contain a variable named mode_used)
+        detector: string, expects NRS1, NRS2, or None (in this case it will be read from the header)
 
     Returns:
         specific_keys_dict: dictionary with specific keys and values that need to be changed
@@ -366,8 +367,12 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
     specific_keys_dict = {}
 
     # get the detector and grating from the input file
-    detector = fits.getval(ff, "DETECTOR", 0)
-    grating = fits.getval(ff, "GRATING", 0)
+    try:
+        if detector is None:
+            detector = fits.getval(ff, "DETECTOR", 0)
+        grating = fits.getval(ff, "GRATING", 0)
+    except KeyError:
+        grating = fits.getval(ff, "GWA_POS", 0)
 
     # loop through the keywords and values of the PTT dictionary and add keywords that are not in input file
     for lev2bdict_key, lev2bdict_val in lev2bdict.keywd_dict.items():
@@ -524,7 +529,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
     return specific_keys_dict
 
 
-def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
+def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_used):
     '''
     This function adds the missing keywords from the hdr_keywords_dictionary.py (hkwd) file and gives
     the fake values taken from the dictionary sample_hdr_keywd_vals_dict.py (shkvd).
@@ -533,6 +538,8 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
                      updated header.
         missing_keywds: list, missing keywords will be appended here
         specific_keys_dict: dictionary with specific keys and values that need to be changed
+        mode_used: str or None, observation mode used FS, MOS, or IFU (if None then a configuration file
+                    is expected to exist and contain a variable named mode_used)
     '''
     missing_keywds = list(OrderedDict.fromkeys(missing_keywds))
     # create name for updated fits file
@@ -573,16 +580,15 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
                     new_value = 'ImageModel'
             if key == 'GRATING':
                 new_value = fits.getval(updated_fitsfile, 'GWA_POS', 0)
+                grating = new_value
             if key == 'FILTER':
                 new_value = fits.getval(updated_fitsfile, 'FWA_POS', 0)
             # choose right value for GWA_XTIL according to the grating
             if key == "GWA_XTIL":
-                grating = fits.getval(fits_file, "GRATING", 0)
                 new_value = get_gwa_Xtil_val(grating, path_to_tilt_files)
                 print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
             # choose right value for GWA_YTIL according to the grating
             if key == "GWA_YTIL":
-                grating = fits.getval(fits_file, "GRATING", 0)
                 new_value = get_gwa_Ytil_val(grating, path_to_tilt_files)
                 print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
             fits.setval(updated_fitsfile, key, 0, value=new_value, after=after_key)
@@ -617,12 +623,15 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
 
 
 
-def perform_check(fits_file, only_update, mode_used):
+def perform_check(fits_file, only_update, mode_used, detector=None):
     """
     This is the function that does all the work in this script (i.e. uses all other functions) to update the header
     Args:
         fits_file: string, name of the input file to be checked
         only_update: boolean, if False a new file will be created; True will only update
+        mode_used: str or None, observation mode used FS, MOS, or IFU (if None then a configuration file
+                    is expected to exist and contain a variable named mode_used)
+        detector: string, expects NRS1, NRS2, or None (in this case it will be read from the header)
 
     Returns:
         Nothing. The outputs are a text file with all the added keywords and the new/updated fits file.
@@ -638,14 +647,15 @@ def perform_check(fits_file, only_update, mode_used):
     # check the keywords
     print('\n   Starting keyword check...')
     warnings_list, missing_keywds = [], []
-    specific_keys_dict = check_keywds(file_keywd_dict, addedkeywds_file_name, warnings_list, missing_keywds, mode_used)
+    specific_keys_dict = check_keywds(file_keywd_dict, addedkeywds_file_name, warnings_list, missing_keywds, mode_used,
+                                      detector)
 
     # if warnings text file is empty erase it
     check_addedkeywds_file(addedkeywds_file_name)
 
     # create new file with updated header or simply update the input fits file
     print('\n   Adding keywords...')
-    add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict)
+    add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_used)
 
 
 
@@ -661,21 +671,27 @@ if __name__ == '__main__':
                         #dest="mode_used",
                         action='store',
                         default=None,
-                        help='Observation mode used: FS, MOS, or IFU.')
+                        help='Observation mode used: FS, MOS, IFU, BOTS, dark.')
     parser.add_argument("-u",
                         dest="only_update",
                         action='store_true',
                         default=False,
                         help='Use -u if NOT wanting to create a new file with updated header.')
+    parser.add_argument("-d",
+                        dest="detector",
+                        action='store',
+                        default=None,
+                        help='Use -d to provide the detector: -d=NRS1 or -d=NRS2.')
     args = parser.parse_args()
 
     # Set the variables
     fits_file = args.fits_file
     mode_used = args.mode_used
     only_update = args.only_update
+    detector = args.detector
 
     # Perform the keyword check
-    perform_check(fits_file, only_update, mode_used)
+    perform_check(fits_file, only_update, mode_used, detector)
 
     print ('\n * Script  level2b_hdr_keywd_check.py  finished * \n')
 

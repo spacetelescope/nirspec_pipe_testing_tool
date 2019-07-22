@@ -176,6 +176,8 @@ keywd_dict['LAMP']    = 'LINE1' # internal lamp state, e.g. 'ARGON', the combina
                                 # F290LP LINE3  FLAT3
                                 # CLEAR  LINE4  FLAT5
                                 # F070LP FLAT4
+keywd_dict['LAMPMODE']= 'FIXEDSLIT' # NIRSpec internal lamp exposures, possible values: BRIGHTOBJ, FIXEDSLIT,
+                                    # GRATING-ONLY, IFU, MSASPEC, NULL
 
 # Guide star information
 keywd_dict['GS_ORDER']= 1 # index of guide star, e.g. 'N/A'
