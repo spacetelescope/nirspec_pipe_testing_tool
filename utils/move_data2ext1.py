@@ -44,6 +44,7 @@ def move_data(input_fits_file, detector='NRS1', add_ref_pix=False):
     
     # create the fits list to hold the calculated flat values for each slit
     original_hdulist = fits.open(input_fits_file)
+    #print(original_hdulist.info())
     outfile = fits.HDUList()
     outfile.append(original_hdulist[0])
     

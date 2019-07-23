@@ -115,6 +115,8 @@ keywd_dict['LAMP']    = 'LINE1' # internal lamp state, e.g. 'ARGON', the combina
                                 # F290LP LINE3  FLAT3
                                 # CLEAR  LINE4  FLAT5
                                 # F070LP FLAT4
+keywd_dict['LAMPMODE']= 'FIXEDSLIT' # NIRSpec internal lamp exposures, possible values: BRIGHTOBJ, FIXEDSLIT,
+                                    # GRATING-ONLY, IFU, MSASPEC, NULL
 keywd_dict['GWA_XTIL']= 0.3622055649757385 # grating y tilt, e.g. 0.3622055649757385
 keywd_dict['GWA_YTIL']= 0.1346436440944672 # grating y tilt, e.g. 0.1346436440944672
 keywd_dict['GWA_TILT']= 4.028447479156018e+01 # GWA temperature ave [K], e.g. 4.028447479156018e+01

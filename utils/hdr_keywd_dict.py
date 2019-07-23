@@ -165,6 +165,8 @@ keywd_dict['MSAMETID']= [int] # MSA meta data ID for the exposure, e.g. 1
 
 # lamp configuration
 keywd_dict['LAMP']    = [str] # internal lamp state, e.g. 'ARGON'
+keywd_dict['LAMPMODE']= [str] # NIRSpec internal lamp exposures, possible values: BRIGHTOBJ, FIXEDSLIT,
+                              # GRATING-ONLY, IFU, MSASPEC, NULL
 
 # Guide star information
 keywd_dict['GS_ORDER']= [str, int] # index of guide star, e.g. 'N/A'
