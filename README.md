@@ -303,16 +303,7 @@ tool for calwebb detector 1 is currently being modified so we are SKIPPING the t
 for this first pipeline.
 
 
-8. Ready to run PTT. Go back to the directory where PTT lives and into the 
-```calwebb_spec2_pytests``` directory, copy final output file from calwebb detector1 into 
-the working directory you indicated in the ```PTT_config.cfg``` file, and make sure 
-that the input file for the PTT matches the file you just copied into the working 
-directory. Now, to ensure that everything is in order, and to see what pytests will be 
-executed and in which order type:
-```bash
-pytest --collect-only
-```
-
+*****
 
 NOTE FOR SIMULATIONS:
 If you are working with simulations you may need to convert the count rate map to an STScI
@@ -326,7 +317,20 @@ where mode is FS, MOS, IFU, BOTS, or dark. The input file for this scritp genera
 a .crm or .cts suffix. The output files of this script can be directly ingested into 
 the cal_spec2 pipeline, no need to run cal_dedector1.
 
- 
+*****
+
+
+
+8. Ready to run PTT. Go back to the directory where PTT lives and into the 
+```calwebb_spec2_pytests``` directory, copy final output file from calwebb detector1 into 
+the working directory you indicated in the ```PTT_config.cfg``` file, and make sure 
+that the input file for the PTT matches the file you just copied into the working 
+directory. Now, to ensure that everything is in order, and to see what pytests will be 
+executed and in which order type:
+```bash
+pytest --collect-only
+```
+
 
 9. Do the first PTT run. As an output of the testing tool you will see an html 
 file, ```report.html```, and an intermediary product file name map will appear in the 
