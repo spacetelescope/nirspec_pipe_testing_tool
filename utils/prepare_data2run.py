@@ -148,6 +148,7 @@ if os.path.isfile(uncal_file):
     # make sure the lamp, filter, and grating values are correctly propagated
     lamp = fits.getval(fits_file, 'CAA_LAMP')
     filt = ""
+    grat = fits.getval(fits_file, "GWA_POS")
 
     if dont_change_opaque2sci:
         filt = fits.getval(fits_file, "FWA_POS")
@@ -168,12 +169,16 @@ if os.path.isfile(uncal_file):
             filt = 'F170LP'
         elif 'LINE3' in lamp:
             filt = 'F290LP'
-        elif 'LINE4' in lamp:
+        elif 'LINE4' in lamp  or 'FLAT5' in lamp:
             filt = 'CLEAR'
         elif 'FLAT4' in lamp:
             filt = 'F070LP'
-        elif 'REF' in lamp:
+        elif 'REF' in lamp  and '140' in grat:
             filt = 'F100LP'
+        elif 'REF' in lamp  and '235' in grat:
+            filt = 'F170LP'
+        elif 'REF' in lamp  and '395' in grat:
+            filt = 'F290LP'
 
     fits.setval(uncal_file, 'LAMP', 0, value=lamp)
     fits.setval(uncal_file, 'FILTER', 0, value=filt, after='DETECTOR')
