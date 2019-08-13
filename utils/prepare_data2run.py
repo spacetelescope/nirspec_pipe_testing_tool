@@ -19,6 +19,8 @@ Example usage:
     In the directory where you want to store the uncalibrated data, type:
         > python /path_to_this_script/prepare_data2run.py blah.fits MODE
     where MODE is either FS, IFU, MOS, BOTS
+    
+    * use -d at the end of the command if NOT wanting to modify the filter value from OPAQUE to science
 """
 
 
@@ -79,6 +81,11 @@ parser.add_argument("-u",
                     action='store_true',
                     default=False,
                     help='Use -u if NOT wanting to create a new file with updated header.')
+parser.add_argument("-d",
+                    dest="dont_change_opaque2sci",
+                    action='store_true',
+                    default=False,
+                    help='Use -d if NOT wanting to change the filter from OPAQUE to science value.')
 args = parser.parse_args()
 
 # Set the variables inputed from the command line
@@ -86,6 +93,7 @@ fits_file = args.fits_file
 mode = args.mode
 rm_prep_data = args.rm_prep_data
 only_update = args.only_update
+dont_change_opaque2sci = args.dont_change_opaque2sci
 
 # Get the detector used
 det = fits.getval(fits_file, "DETECTOR", 0)
@@ -139,29 +147,38 @@ if os.path.isfile(uncal_file):
 
     # make sure the lamp, filter, and grating values are correctly propagated
     lamp = fits.getval(fits_file, 'CAA_LAMP')
-    #filt = fits.getval(fits_file, "FWA_POS")
     filt = ""
+    grat = fits.getval(fits_file, "GWA_POS")
 
-    if "NO_LAMP" in lamp:
-        try:
-            filt = fits.getval(fits_file, "FWA_POS")
-        except:
-            print (" *** Unable to determine what was the FILTER used...  :(  ")
-            print (" The FILTER keyword has to be set up manually in order for the pipeline to be able to process data.")
-            KeyError
+    if dont_change_opaque2sci:
+        filt = fits.getval(fits_file, "FWA_POS")
+    else:
 
-    elif 'LINE1' in lamp:
-        filt = 'F100LP'
-    elif 'LINE2' in lamp:
-        filt = 'F170LP'
-    elif 'LINE3' in lamp:
-        filt = 'F290LP'
-    elif 'LINE4' in lamp:
-        filt = 'CLEAR'
-    elif 'FLAT4' in lamp:
-        filt = 'F070LP'
-    elif 'REF' in lamp:
-        filt = 'F100LP'
+        # modify the filter value from OPAQUE to science in order to test pipeline
+        if "NO_LAMP" in lamp:
+            try:
+                filt = fits.getval(fits_file, "FWA_POS")
+            except:
+                print (" *** Unable to determine what was the FILTER used...  :(  ")
+                print (" The FILTER keyword has to be set up manually in order for the pipeline to be able to process data.")
+                KeyError
+
+        elif 'LINE1' in lamp:
+            filt = 'F100LP'
+        elif 'LINE2' in lamp:
+            filt = 'F170LP'
+        elif 'LINE3' in lamp:
+            filt = 'F290LP'
+        elif 'LINE4' in lamp  or 'FLAT5' in lamp:
+            filt = 'CLEAR'
+        elif 'FLAT4' in lamp:
+            filt = 'F070LP'
+        elif 'REF' in lamp  and '140' in grat:
+            filt = 'F100LP'
+        elif 'REF' in lamp  and '235' in grat:
+            filt = 'F170LP'
+        elif 'REF' in lamp  and '395' in grat:
+            filt = 'F290LP'
 
     fits.setval(uncal_file, 'LAMP', 0, value=lamp)
     fits.setval(uncal_file, 'FILTER', 0, value=filt, after='DETECTOR')

@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 from astropy.io import fits
 
 # import the modules needed within our tool
@@ -79,12 +80,12 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
         detectors = ["NRS2"]
 
     if not data_ext and not var_ext and not quality_ext:
-        print("The extension names do not match te expected: DATA, VAR, QUALITY or SCI, DQ, ERR.")
+        print("The extension names do not match the expected: DATA, VAR, QUALITY or SCI, DQ, ERR.")
         print("Please make sure you are using the correct file. Exiting script.")
         exit()
 
     if not sci_ext and not dq_ext and not err_ext:
-        print("Renaming extensions for ST pipeline")
+        print("Renaming extensions for ST pipeline...")
         for det in detectors:
             move_data2ext1.move_data(input_fits_file, det, add_ref_pix)
             st_pipe_file = input_fits_file.replace(".fits", "_" + det + "_modified.fits")
@@ -96,12 +97,12 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
             print("Done with detector", det, "\n")
 
     else:
-        print(hdulist.info())
         print("The extension names are correct.")
         if len(hdulist) > 4:
             for det in detectors:
-                print("Removing the extra extensions for ST pipeline ingestion.")
-                outfile_name = rm_extra_exts(input_fits_file, det)
+                print("Removing the extra extensions and rotating data for ST pipeline ingestion.")
+                outfile_name = rm_extra_exts_and_rotate(input_fits_file, det)
+
                 # Perform the keyword check on the file with the right number of extensions
                 print("Fixing the header keywords")
                 lev2bcheck.perform_check(outfile_name, only_update, mode_used, det)
@@ -111,10 +112,19 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
             exit()
 
 
-def rm_extra_exts(input_fits_file, detector):
+def transpose(arr, detector):
+    transposed_array = np.transpose(arr)
+    if "2" in detector:
+        # rotate dq data by 180 degrees
+        transposed_array = np.rot90(transposed_array)
+        transposed_array = np.rot90(transposed_array)
+    return transposed_array
+
+
+def rm_extra_exts_and_rotate(input_fits_file, detector):
     """
-    This function removes the extra extensions too the ones needed for ingestion in the STScI pipeline, these are
-    SCI, DQ, and ERR.
+    This function removes the extra extensions for the ones needed for ingestion in the STScI pipeline - these are
+    SCI, DQ, and ERR. Rotate the data if necessary.
     Args:
         input_fits_file: string, name and path of the fits input file
         detector: list, expected to have one or both strings, NRS1, NRS2
@@ -123,16 +133,24 @@ def rm_extra_exts(input_fits_file, detector):
         outfile_name: string, name and path of the fits file with the 3 extensions the pipeline expects
 
     """
+
     # create the fits list to hold the calculated flat values for each slit
     original_hdulist = fits.open(input_fits_file)
+
+    # append the extensions with the right name and orientation
     outfile = fits.HDUList()
     outfile.append(original_hdulist[0])
     input_fits_file_data = fits.getdata(input_fits_file, "SCI")
-    outfile.append(fits.ImageHDU(input_fits_file_data, name="SCI"))
+    transposed_array = transpose(input_fits_file_data, detector)   # Correct the orientation for pipeline processing
+    outfile.append(fits.ImageHDU(transposed_array, name="SCI"))
+
     input_fits_file_data = fits.getdata(input_fits_file, "ERR")
-    outfile.append(fits.ImageHDU(input_fits_file_data, name="ERR"))
+    transposed_array = transpose(input_fits_file_data, detector)   # Correct the orientation for pipeline processing
+    outfile.append(fits.ImageHDU(transposed_array, name="ERR"))
+
     input_fits_file_data = fits.getdata(input_fits_file, "DQ")
-    outfile.append(fits.ImageHDU(input_fits_file_data, name="DQ"))
+    transposed_array = transpose(input_fits_file_data, detector)   # Correct the orientation for pipeline processing
+    outfile.append(fits.ImageHDU(transposed_array, name="DQ"))
 
     # write the new output file
     outfile_name = input_fits_file.replace(".fits", "_" + detector + "_modified.fits")
