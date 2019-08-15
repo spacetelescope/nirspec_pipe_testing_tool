@@ -26,7 +26,7 @@ step_string_dict = collections.OrderedDict()
 step_string_dict["assign_wcs"]       = {"outfile" : True, "suffix" : "_assign_wcs"}
 step_string_dict["bkg_subtract"]     = {"outfile" : True, "suffix" : "_subtract_images"}
 step_string_dict["imprint_subtract"] = {"outfile" : True, "suffix" : "_imprint"}
-step_string_dict["msa_flagging"]     = {"outfile" : True, "suffix" : "_msa_flagging"}
+step_string_dict["msa_flagging"]     = {"outfile" : True, "suffix" : "_msaflagopenstep"}
 step_string_dict["extract_2d"]       = {"outfile" : True, "suffix" : "_extract_2d"}
 step_string_dict["flat_field"]       = {"outfile" : True, "suffix" : "_flat_field"}
 step_string_dict["srctype"]          = {"outfile" : False, "suffix" : "N/A"}
@@ -459,7 +459,7 @@ def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_c
         end_time_min = float(end_time)/60.  # this is in minutes
         if end_time_min > 60.0:
             end_time_hr = end_time_min/60.  # this is in hours
-            end_time = repr(end_time)+"  ="+repr(round(end_time_hr, 1))+"hr"
+            end_time = end_time+"  ="+repr(round(end_time_hr, 1))+"hr"
         else:
             end_time = repr(end_time)+"  ="+repr(round(end_time_min, 1))+"min"
     line2write = "{:<20} {:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed), end_time)
@@ -716,15 +716,17 @@ def check_completed_steps(step, step_input_file, caldet1=False):
                 else:
                     print("*** WARNING: calwebb_detector1 step ", pstp, " was not run. Please make sure this is intentional. \n")
         # check that calwebb_spec2 steps up to relevant step were ran
+        step_list = []
         for pstp in steps_calwebbspec2:
             if step == pstp:
                 break
-            if "S_"+steps_calwebbspec2[pstp] in hdr:
-                if val == "COMPLETE" or val == "SKIPPED":
-                    continue
-            else:
-                print("*** WARNING: calwebb_spec2 step ", pstp, " was not ran. Please make sure this is intentional or ")
-                print("             output products beyond this step may be wrong. \n")
+            step_list.append(pstp)
+
+    for s in step_list:
+        keyword = "S_"+steps_calwebbspec2[s]
+        if keyword not in hdr:
+            print("*** WARNING: Keyword ", keyword, " for step completion does not appear in the header of the input file. This means the step may not have been ran, ")
+            print("             please make sure this is intentional or output products beyond this step may be incorrect. \n")
 
 
 def find_which_slit(output_hdul):

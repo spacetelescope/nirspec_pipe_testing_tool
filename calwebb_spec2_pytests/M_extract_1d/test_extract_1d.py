@@ -166,6 +166,8 @@ def output_hdul(set_inandout_filenames, config):
             logging.info(msg)
             # get the running time for this step
             end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+            # move the final reporting files to the working directory
+            core_utils.move_latest_report_and_txt_2workdir(detector)
 
         # add the running time for this step
         if os.path.isfile(step_output_file):
@@ -176,6 +178,8 @@ def output_hdul(set_inandout_filenames, config):
         else:
             step_completed = False
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+            # move the final reporting files to the working directory
+            core_utils.move_latest_report_and_txt_2workdir(detector)
             pytest.skip()
 
         # get the total running time and print it in the file

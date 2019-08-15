@@ -499,6 +499,24 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         specific_keys_dict[key] = val
                         missing_keywds.append(key)
 
+                # only modify these keywords if present
+                if key == 'GWA_XP_V':
+                    val = float(val)
+                    specific_keys_dict[key] = val
+                    missing_keywds.append(key)
+                if key == 'GWA_YP_V':
+                    val = float(val)
+                    specific_keys_dict[key] = val
+                    missing_keywds.append(key)
+                if key == 'GWA_PXAV':
+                    val = float(val)
+                    specific_keys_dict[key] = val
+                    missing_keywds.append(key)
+                if key == 'GWA_PYAV':
+                    val = float(val)
+                    specific_keys_dict[key] = val
+                    missing_keywds.append(key)
+
             if warning is not None:
                 missing_keywds.append(key)
                 warnings_list.append(warning)

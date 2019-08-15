@@ -300,7 +300,7 @@ def output_hdul(set_inandout_filenames, config):
                     IndexError
 
             else:
-                msg = "Skipping step. Intput file "+step_input_file+" does not exit."
+                msg = "Skipping step. Input file "+step_input_file+" does not exit."
                 print(msg)
                 logging.info(msg)
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
