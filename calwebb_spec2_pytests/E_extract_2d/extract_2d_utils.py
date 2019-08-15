@@ -282,7 +282,11 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
 
         # Open esafile and grab subarray coordinates
         with fits.open(esafile) as esahdulist:
-            esahdr1 = esahdulist["DATA1"].header
+            if "NRS1" in esafile  or  "491" in esafile:
+                dat = "DATA1"
+            else:
+                dat = "DATA2"
+            esahdr1 = esahdulist[dat].header
             esa_shutter_i = esahdulist[0].header['SHUTTERI']
             esa_shutter_j = esahdulist[0].header['SHUTTERJ']
             esa_quadrant = esahdulist[0].header['QUADRANT']

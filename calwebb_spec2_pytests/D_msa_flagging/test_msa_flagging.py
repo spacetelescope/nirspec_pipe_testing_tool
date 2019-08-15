@@ -104,6 +104,7 @@ def output_hdul(set_inandout_filenames, config):
                     result = stp.call(step_input_file)
                     #else:
                     #    result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/NOCONFIGFI.cfg')
+                    result.save(step_output_file)
                     # end the timer to compute the step running time
                     end_time = repr(time.time() - start_time)   # this is in seconds
                     msg = "Step "+step+" took "+end_time+" seconds to finish"
@@ -120,7 +121,6 @@ def output_hdul(set_inandout_filenames, config):
                         IndexError
 
                     # add the running time for this step
-                    end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
                     step_completed = True
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
