@@ -119,7 +119,11 @@ def find_FSwindowcorners(infile_name, esa_files_path):
                 print ("Using this ESA file: \n", esafile)
                 with fits.open(esafile) as esahdulist:
                     # Find corners from ESA file
-                    esahdr1 = esahdulist["DATA1"].header
+                    if "NRS1" in esafile or "491" in esafile:
+                        dat = "DATA1"
+                    else:
+                        dat = "DATA2"
+                    esahdr1 = esahdulist[dat].header
                     enext = []
                     for ext in esahdulist:
                         enext.append(ext)
@@ -139,40 +143,40 @@ def find_FSwindowcorners(infile_name, esa_files_path):
                             result = "skip"
                             continue
 
-                            # get the origin of the subwindow
-                            ney, nex = eflux.shape
-                            if detector == "NRS1":
-                                ex0 = esahdr1["CRVAL1"] - esahdr1["CRPIX1"] + 1
-                                ey0 = esahdr1["CRVAL2"] - esahdr1["CRPIX2"] + 1
-                            else:
-                                ex0 = 2048.0 - esahdr1["CRPIX1"] + esahdr1["CRVAL1"]
-                                ey0 = 2048.0 - esahdr1["CRVAL2"] + esahdr1["CRPIX2"]
+                    # get the origin of the subwindow
+                    ney, nex = eflux.shape
+                    if detector == "NRS1":
+                        ex0 = esahdr1["CRVAL1"] - esahdr1["CRPIX1"] + 1
+                        ey0 = esahdr1["CRVAL2"] - esahdr1["CRPIX2"] + 1
+                    else:
+                        ex0 = 2048.0 - esahdr1["CRPIX1"] + esahdr1["CRVAL1"]
+                        ey0 = 2048.0 - esahdr1["CRVAL2"] + esahdr1["CRPIX2"]
 
-                            ex1 = ex0 + nex
-                            ey1 = ey0 + ney
+                    ex1 = ex0 + nex
+                    ey1 = ey0 + ney
 
-                            ecorners = {(ex0, ey0), (ex1, ey0), (ex1, ey1), (ex0, ey1)}
+                    ecorners = {(ex0, ey0), (ex1, ey0), (ex1, ey1), (ex0, ey1)}
 
-                            # Pytest pass/fail criterion: if esa corners match pipeline corners then True, else False
-                            result[sltname] = ecorners == icorners
+                    # Pytest pass/fail criterion: if esa corners match pipeline corners then True, else False
+                    result[sltname] = ecorners == icorners
 
-                            msg1 = "* Corners for slit "+sltname+":"
-                            msg2 = "         ESA corners: "+repr(ecorners)
-                            msg3 = "    Pipeline corners: "+repr(icorners)
-                            print(msg1)
-                            print(msg2)
-                            print(msg3)
-                            log_msgs.append(msg1)
-                            log_msgs.append(msg2)
-                            log_msgs.append(msg3)
-                            if result[sltname]:
-                                msg = "* Pytest PASSED "
-                                print(msg)
-                                log_msgs.append(msg)
-                            else:
-                                msg = "* Pytest FAILED "
-                                print(msg)
-                                log_msgs.append(msg)
+                    msg1 = "* Corners for slit "+sltname+":"
+                    msg2 = "         ESA corners: "+repr(ecorners)
+                    msg3 = "    Pipeline corners: "+repr(icorners)
+                    print(msg1)
+                    print(msg2)
+                    print(msg3)
+                    log_msgs.append(msg1)
+                    log_msgs.append(msg2)
+                    log_msgs.append(msg3)
+                    if result[sltname]:
+                        msg = "* Pytest PASSED "
+                        print(msg)
+                        log_msgs.append(msg)
+                    else:
+                        msg = "* Pytest FAILED "
+                        print(msg)
+                        log_msgs.append(msg)
 
     return result, log_msgs
 
