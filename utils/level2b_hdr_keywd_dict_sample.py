@@ -125,7 +125,7 @@ keywd_dict['GWA_TILT']= 4.028447479156018e+01 # GWA temperature ave [K], e.g. 4.
 # Exposure parameters
 keywd_dict['PNTG_SEQ']= 1 # pointing sequence number, e.g. 1
 keywd_dict['EXPCOUNT']= 1 # count of the exposures in visit, e.g. 1
-keywd_dict['EXP_TYPE']= 'NRS_IFU' # type of data in exposure, options are:
+keywd_dict['EXP_TYPE']= 'NRS_MSASPEC' # type of data in exposure, options are:
 #                         'NRS_TASLIT', 'NRS_TACQ', 'NRS_TACONFIRM', 'NRS_CONFIRM', 'NRS_FIXEDSLIT', 'NRS_AUTOWAVE',
 #                         'NRS_IFU', 'NRS_MSASPEC', ' NRS_AUTOFLAT', ' NRS_IMAGE', ' NRS_FOCUS', ' NRS_DARK',
 #                         'NRS_LAMP', 'NRS_BOTA', 'NRS_BRIGHTOBJ'

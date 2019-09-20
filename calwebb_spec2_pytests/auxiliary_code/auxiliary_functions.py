@@ -18,13 +18,14 @@ This script contains the auxiliary functions that the wcs FS, MOS, and IFU WCS s
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.1"
+__version__ = "2.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Added routines for plot making and statistics calculations for assign_wcs with using
 #                         the datamodel instead of the compute_world_coordinates script.
 # Aug 2018 - Version 2.1: Added case to catch simulation rawdataroot names for the ESA files
+# Sep 2019 - Version 2.2: Modified function to identify science extensions to work with build 7.3
 
 
 def find_nearest(arr, value):
@@ -51,9 +52,17 @@ def get_sci_extensions(fits_file_name):
     hdulist = fits.open(fits_file_name)
     hdulist.info()
     sci_dict = {}
+    s=0
     for ext, hdu in enumerate(hdulist):
         if hdu.name == "SCI":
-            sci_dict[hdu.header["SLTNAME"]] = ext
+            try:
+                sltname = hdu.header["SLTNAME"]
+                sci_dict[sltname] = ext
+            except:
+                KeyError
+                sltname = "Slit_"+repr(s+1)
+                sci_dict[sltname] = ext
+
     return sci_dict
 
 
