@@ -1,0 +1,41 @@
+{
+  "paths":{
+    "input_path":"/Users/epuga/JWST_NIRSpec/NIRSpec_Calibration/IPS/IPSSimulations/Pthl_FS200A1",
+    "output_path":"/Users/epuga/JWST_NIRSpec/NIRSpec_Calibration/IPS/IPSErm2Crm/Archive"
+    },
+  "spectrograph_configuration":{
+    "fwa": "CLEAR",
+    "gwa": "PRISM",
+    "mode": "FS"
+    },
+  "detector_settings": {
+    "configuration": {
+      "readout_mode": "traditional",
+      "exposure_type": "subarray",
+      "subarray_id":"S200A1"
+      },
+    "multiaccum": {"nint": 8, "ng": 10, "nf": 1},
+    "nexp": 1
+    },
+  "crm_parameters":{
+    "sampling_grid": {"dither_pts": 1, "nod_pts": 1},
+    "erm_rep": 0,
+    "erm_components": ["object", "background", "flatfield"],
+    "erm_apertures": {"FS": ["slit"], "MOS": ["mos", "slit"], "IFS": ["ifs", "mos", "slit"]},
+    "object_suffix": "fluxcal",
+    "background_suffix": "background",
+    "flatfield_suffix": null,
+    "factor": 1.0
+    },
+  "crm_input_list": {
+    "target_erm": [["CLEAR-PRISM_SLIT_fluxcal11_d01_000.erm"]],
+    "bckg_erm": [["CLEAR-PRISM_SLIT_fluxcal01_bgk_000.erm"]]
+    },
+  "archive_structure": {
+    "base_obs_id": "fluxcal",
+    "datetime_start": "20180518T120000.000",
+    "datetime_end": "20180518T124800.000",
+    "datetime_file": "2018-03-03T12h50m00",
+    "daily_folder": "Day2018138"
+    }
+}

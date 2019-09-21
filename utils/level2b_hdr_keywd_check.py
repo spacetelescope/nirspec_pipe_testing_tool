@@ -491,6 +491,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = 'NRS_FIXEDSLIT'
                     if 'IFU' in mode_used:
                         val = 'NRS_IFU'
+                        specific_keys_dict['DATAMODL'] = 'IFUImageModel'
                         missing_keywds.append('DATAMODL')
                     if 'MOS' in mode_used:
                         val = 'NRS_MSASPEC'

@@ -1,0 +1,44 @@
+{
+  "paths":{
+    "input_path":"/Users/epuga/JWST_NIRSpec/NIRSpec_Calibration/IPS/IPSScenesPreparation/DataPackage/data/erm",
+    "output_path":"/Users/epuga/JWST_NIRSpec/NIRSpec_Calibration/IPS/IPSErm2Crm/Archive"
+    },
+  "spectrograph_configuration":{
+    "fwa": "CLEAR",
+    "gwa": "PRISM",
+    "mode": "MOS"
+    },
+  "detector_settings": {
+    "configuration": {
+      "readout_mode": "IRS2",
+      "exposure_type": "full-frame",
+      "subarray_id": null
+      },
+    "multiaccum": {"nint": 2, "ng": 19, "nf": 5},
+    "nexp": 4
+    },
+  "crm_parameters":{
+    "sampling_grid": {"dither_pts": 3, "nod_pts": 3},
+    "erm_rep": 0,
+    "erm_components": ["object", "background", "flatfield"],
+    "erm_apertures": {"FS": ["slit"], "MOS": ["mos", "slit"], "IFS": ["ifs", "mos", "slit"]},
+    "object_suffix": "fluxcal",
+    "background_suffix": "background",
+    "flatfield_suffix": null,
+    "factor": 1.0
+    },
+  "crm_input_list": {
+    "target_erm": [["CLEAR-PRISM_MOS_dither_00_n0_002.erm","CLEAR-PRISM_MOS_dither_00_n1_002.erm", "CLEAR-PRISM_MOS_dither_00_n2_001.erm"],
+      ["CLEAR-PRISM_MOS_dither_1a_n0_001.erm", "CLEAR-PRISM_MOS_dither_1a_n1_001.erm", "CLEAR-PRISM_MOS_dither_1a_n2_001.erm"],
+      ["CLEAR-PRISM_MOS_dither_2a_n0_001.erm", "CLEAR-PRISM_MOS_dither_2a_n1_001.erm", "CLEAR-PRISM_MOS_dither_2a_n2_001.erm"]],
+    "bckg_erm": [["CLEAR-PRISM_MOS_background_000.erm", "CLEAR-PRISM_MOS_background_001.erm", "CLEAR-PRISM_MOS_background_002.erm"],
+                ["CLEAR-PRISM_SLIT_background_000.erm","CLEAR-PRISM_SLIT_background_001.erm", "CLEAR-PRISM_SLIT_background_002.erm"]]
+    },
+  "archive_structure": {
+    "base_obs_id": "DEEP-PRISM",
+    "datetime_start": "20180518T120000.000",
+    "datetime_end": "20180518T124800.000",
+    "datetime_file": "2018-03-03T12h50m00",
+    "daily_folder": "Day2018138"
+    }
+}
