@@ -79,7 +79,7 @@ def output_hdul(set_inandout_filenames, config):
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             #core_utils.convert_html2pdf()   # convert the html report into a pdf file
             # move the final reporting files to the working directory
-            core_utils.move_latest_report_and_txt_2workdir(detector)
+            core_utils.move_txt_files_2workdir(detector)
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
     if run_calwebb_spec2:
@@ -91,7 +91,7 @@ def output_hdul(set_inandout_filenames, config):
         core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
 
         # move the final reporting files to the working directory
-        core_utils.move_latest_report_and_txt_2workdir(detector)
+        core_utils.move_txt_files_2workdir(detector)
 
         return hdul, step_output_file, run_pytests
 
@@ -156,7 +156,7 @@ def output_hdul(set_inandout_filenames, config):
                 PTT_end_time = time.time()
                 core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
                 # move the final reporting files to the working directory
-                core_utils.move_latest_report_and_txt_2workdir(detector)
+                core_utils.move_txt_files_2workdir(detector)
                 # skip the test if input file does not exist
                 pytest.skip("Skipping "+step+" because the input file does not exist.")
 
@@ -166,8 +166,6 @@ def output_hdul(set_inandout_filenames, config):
             logging.info(msg)
             # get the running time for this step
             end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
-            # move the final reporting files to the working directory
-            core_utils.move_latest_report_and_txt_2workdir(detector)
 
         # add the running time for this step
         if os.path.isfile(step_output_file):
@@ -179,7 +177,7 @@ def output_hdul(set_inandout_filenames, config):
             step_completed = False
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             # move the final reporting files to the working directory
-            core_utils.move_latest_report_and_txt_2workdir(detector)
+            core_utils.move_txt_files_2workdir(detector)
             pytest.skip()
 
         # get the total running time and print it in the file
@@ -201,8 +199,8 @@ def output_hdul(set_inandout_filenames, config):
         PTT_end_time = time.time()
         core_utils.start_end_PTT_time(txt_name, start_time=None, end_time=PTT_end_time)
 
-        # move the final reporting files to the working directory
-        core_utils.move_latest_report_and_txt_2workdir(detector)
+        # move the final reporting text files to the working directory
+        core_utils.move_txt_files_2workdir(detector)
 
         # rename and move the PTT log file
         try:
@@ -224,7 +222,7 @@ def move_output_files(request):
     def fin():
         #core_utils.convert_html2pdf()
         # move the final reporting files to the working directory
-        core_utils.move_latest_report_and_txt_2workdir(detector)
+        core_utils.move_txt_files_2workdir(detector)
         msg = "Output report files have been moved to the working_directory path indicated in the PTT_config file."
         print(msg)
         logging.info(msg)
