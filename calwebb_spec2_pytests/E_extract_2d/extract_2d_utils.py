@@ -178,7 +178,30 @@ def find_FSwindowcorners(infile_name, esa_files_path):
                         print(msg)
                         log_msgs.append(msg)
 
-    return result, log_msgs
+    # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
+    for t, v in result.items():
+        if not v:
+            FINAL_TEST_RESULT = False
+            break
+        else:
+            FINAL_TEST_RESULT = True
+
+    if FINAL_TEST_RESULT:
+        msg = "\n *** Final result for extract_2d test will be reported as PASSED *** \n"
+        print(msg)
+        log_msgs.append(msg)
+        result_msg = "All slits PASSED extract_2d test."
+        print(result_msg)
+        log_msgs.append(msg)
+    else:
+        msg = "\n *** Final result for extract_2d test will be reported as FAILED *** \n"
+        print(msg)
+        log_msgs.append(msg)
+        result_msg = "One or more slits FAILED extract_2d test."
+        print(result_msg)
+        log_msgs.append(msg)
+
+    return FINAL_TEST_RESULT, log_msgs
 
 
 def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
@@ -249,13 +272,14 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
         # grab corners of extracted subwindow
         px0 = sci_header["SLTSTRT1"] + primary_header["SUBSTRT1"] - 1
         py0 = sci_header["SLTSTRT2"] + primary_header["SUBSTRT2"] - 1
+
         pnx = sci_header["SLTSIZE1"]
         pny = sci_header["SLTSIZE2"]
 
         px1 = px0 + pnx
         py1 = py0 + pny
 
-        icorners = {(px0, py0), (px1, py0), (px1, py1), (px1, py0)}
+        icorners = {(px0, py0), (px1, py0), (px1, py1), (px0, py1)}
 
         # Identify the associated ESA file
         _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
@@ -269,7 +293,6 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
         specifics = [q, r, c]
         esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "MOS", specifics)
         if len(esafile) == 2:
-            print(len(esafile[-1]))
             if len(esafile[-1]) == 0:
                 esafile = esafile[0]
         msg = "Using this ESA file: \n"+esafile
@@ -290,7 +313,7 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
                 dat = "DATA1"
             else:
                 dat = "DATA2"
-            esahdr1 = esahdulist[dat].header
+            esahdr = esahdulist[dat].header
             esa_shutter_i = esahdulist[0].header['SHUTTERI']
             esa_shutter_j = esahdulist[0].header['SHUTTERJ']
             esa_quadrant = esahdulist[0].header['QUADRANT']
@@ -324,15 +347,13 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
                 log_msgs.append(msg)
 
             if detector == "NRS1":
-                esahdr = esahdulist['DATA1'].header
                 ney, nex = esahdulist['DATA1'].data.shape
-                ex0 = esahdr["CRVAL1"] - esahdr["CRPIX1"] + 1
-                ey0 = esahdr["CRVAL2"] - esahdr["CRPIX2"] + 1
+                ex0 = int(esahdr["CRVAL1"] - esahdr["CRPIX1"] + 1)
+                ey0 = int(esahdr["CRVAL2"] - esahdr["CRPIX2"] + 1)
             else:
-                esahdr = esahdulist['DATA2'].header
                 ney, nex = esahdulist['DATA2'].data.shape
-                ex0 = 2048.0 - esahdr1["CRPIX1"] + esahdr1["CRVAL1"]
-                ey0 = 2048.0 - esahdr1["CRVAL2"] + esahdr1["CRPIX2"]
+                ex0 = int(2048 - esahdr["CRPIX1"] + esahdr["CRVAL1"])
+                ey0 = int(2048 - esahdr["CRVAL2"] + esahdr["CRPIX2"])
 
             ex1 = ex0 + nex
             ey1 = ey0 + ney
@@ -341,7 +362,10 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
 
             result[name] = ecorners == icorners
 
-            msg1 = "* Corners for slitlet "+name+":"
+            print('ESA slit size      = ', nex, ney)
+            print('Pipeline slit size = ', pnx, pny)
+
+            msg1 = "\n* Corners for slitlet "+name+":"
             msg2 = "         ESA corners: "+repr(ecorners)
             msg3 = "    Pipeline corners: "+repr(icorners)
             print(msg1)
@@ -359,5 +383,29 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
                 print(msg)
                 log_msgs.append(msg)
 
-    return result, log_msgs
+    # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
+    FINAL_TEST_RESULT = False
+    for t, v in result.items():
+        if not v:
+            FINAL_TEST_RESULT = False
+            break
+        else:
+            FINAL_TEST_RESULT = True
+
+    if FINAL_TEST_RESULT:
+        msg = "\n *** Final result for extract_2d test will be reported as PASSED *** \n"
+        print(msg)
+        log_msgs.append(msg)
+        result_msg = "All slitlets PASSED extract_2d test."
+        print(result_msg)
+        log_msgs.append(msg)
+    else:
+        msg = "\n *** Final result for extract_2d test will be reported as FAILED *** \n"
+        print(msg)
+        log_msgs.append(msg)
+        result_msg = "One or more slitlets FAILED extract_2d test."
+        print(result_msg)
+        log_msgs.append(msg)
+
+    return FINAL_TEST_RESULT, log_msgs
 

@@ -333,13 +333,45 @@ pytest --collect-only
 
 
 9. Do the first PTT run. As an output of the testing tool you will see an html 
-file, ```report.html```, and an intermediary product file name map will appear in the 
+file, ```report.html```, and an intermediary product text file name map will appear in the 
 ```calwebb_spec2_pytests``` directory, and at the end it will be moved to the path you 
 indicated at the ```PTT_config.cfg``` file with the variable ```working_directory```. The 
 output fits files of intermediary products will also be saved in the working directory. 
 Please check the name used in the ```DETECTOR``` keyword in the fits file (you can use 
 the ```read_hdr.py``` script in the ```utils``` directory to dump the header into the 
 screen and/or a text file). In the terminal type:
+```bash
+python run_PTT.py name_of_the_html_report
+```
+
+TO RUN A SINGLE PIPELINE STEP: 
+-> If you are running a single pipeline step (or only the corresponding pytest), PTT will
+create a log file specifically named with the step you are studying. At the end of the 
+run you will see 2 log files, one from the pipeline and one from PTT. This will not 
+overwrite the full pipeline run log files.
+
+TO RUN A FEW PIPELINE STEPS: 
+-> To only run a few pipeline steps you need to:
+a) Make sure that the variable ```run_calwebb_spec2``` in the ```PTT_config.cfg``` file
+is set to False (otherwise the pipeline will run in full and we have no control of
+individual steps).
+b) Turn off (i.e. set to False) the steps you do not want to run in the ```PTT_config.cfg``` 
+file, which are located in the section ```run_pipe_steps``` of the file.
+
+TO RUN A FEW PYTEST: 
+-> To run a few pytest you need to select which pytest to run (i.e. set to True) in the 
+```PTT_config.cfg``` file, which are located in the section ```run_pytest``` of the file.
+
+-> To only run pytest and skip running the pipeline entirely:
+a) Make sure that the variable ```run_calwebb_spec2``` in the ```PTT_config.cfg``` file
+is set to False.
+b) Set to False all the pipeline steps in the ```PTT_config.cfg``` file. The steps are 
+located in the section ```run_pipe_steps``` of the file.
+c) Set to True all pytest you want to run in the ```PTT_config.cfg``` file. These are 
+located in the section ```run_pytest``` of the file.
+
+NOTE: 
+The pytest set can also be run directly with the following command:
 ```bash
 pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html
 ```
@@ -352,30 +384,6 @@ the calwebb spec2 pipeline log (named ```calspec2_pipeline_DETECTOR.log```), and
 be used to determine the time that each step took to run. The second log file
 is the PTT log file (named ```PTT_calspec2_DETECTOR.log```). This log file contains
 all the information regarding the pytest ran, files used, and results of the tests.
-
-NOTE: 
-- If you are running a single pipeline step (or only the corresponding pytest), PTT will
-create a log file specifically named with the step you are studying. At the end of the 
-run you will see 2 log files, one from the pipeline and one from PTT. This will not 
-overwrite the full pipeline run log files.
-
--> To only run a few pipeline steps you need to:
-a) Make sure that the variable ```run_calwebb_spec2``` in the ```PTT_config.cfg``` file
-is set to False (otherwise the pipeline will run in full and we have no control of
-individual steps).
-b) Turn off (i.e. set to False) the steps you do not want to run in the ```PTT_config.cfg``` 
-file, which are located in the section ```run_pipe_steps``` of the file.
-
--> To run a few pytest you need to select which pytest to run (i.e. set to True) in the 
-```PTT_config.cfg``` file, which are located in the section ```run_pytest``` of the file.
-
--> To only run pytest and skip running the pipeline entirely:
-a) Make sure that the variable ```run_calwebb_spec2``` in the ```PTT_config.cfg``` file
-is set to False.
-b) Set to False all the pipeline steps in the ```PTT_config.cfg``` file. The steps are 
-located in the section ```run_pipe_steps``` of the file.
-c) Set to True all pytest you want to run in the ```PTT_config.cfg``` file. These are 
-located in the section ```run_pytest``` of the file.
 
 
 10. Report your findings. If all went well, you should have the html report in the 

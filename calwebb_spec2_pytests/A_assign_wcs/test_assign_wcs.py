@@ -216,7 +216,7 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, stp, out_suffix, step_completed, step_time)
                 end_time_list.append(step_time)
 
-        # print total running time in the text file
+        # print total running time in the text file and move it to the indicated directory
         string2print = "pipeline_total_time"
         if float(end_time) <= sum(end_time_list):
             tot_time = repr(sum(end_time_list))
@@ -227,11 +227,16 @@ def output_hdul(set_inandout_filenames, config):
         print(PTT_runtimes_msg)
         logging.info(PTT_runtimes_msg)
 
+        # move the final reporting text files to the working directory
+        core_utils.move_txt_files_2workdir(detector)
+
         return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
 
     else:
 
-        # create the Map of file names
+        # create the map but remove a previous one if it exists
+        if os.path.isfile(txt_name):
+            os.remove(txt_name)
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
 
         # start the timer to compute the step running time of PTT
@@ -730,7 +735,7 @@ def test_validate_wcs(output_hdul, request):
         msg = "\n * Running validation pytest...\n"
         print(msg)
         logging.info(msg)
-        print("\n", validate_wcs, "\n")
+        #print("\n", validate_wcs, "\n")
         assert request.getfixturevalue('validate_wcs'), "Output value from compare_wcs.py is greater than threshold."
 
 

@@ -307,6 +307,8 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None):
                         print (" * File name matches raw file used for create_data.")
                     else:
                         print (" * WARNING: Raw data file name used for create_data does not match esa root file name.")
+                        print ("            Expected: ", rawdatroot.replace(".fits", ""))
+                        print ("            Obtained: ", root_filename.split('.')[0])
                         break
                 except KeyError:
                     print("* WARNING: PTT is unable to confirm the raw file name used matches the esa file root name.")

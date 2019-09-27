@@ -26,7 +26,7 @@ step_string_dict = collections.OrderedDict()
 step_string_dict["assign_wcs"]       = {"outfile" : True, "suffix" : "_assign_wcs"}
 step_string_dict["bkg_subtract"]     = {"outfile" : True, "suffix" : "_subtract_images"}
 step_string_dict["imprint_subtract"] = {"outfile" : True, "suffix" : "_imprint"}
-step_string_dict["msa_flagging"]     = {"outfile" : True, "suffix" : "_msaflagopenstep"}
+step_string_dict["msa_flagging"]     = {"outfile" : True, "suffix" : "_msa_flagging"}
 step_string_dict["extract_2d"]       = {"outfile" : True, "suffix" : "_extract_2d"}
 step_string_dict["flat_field"]       = {"outfile" : True, "suffix" : "_flat_field"}
 step_string_dict["srctype"]          = {"outfile" : False, "suffix" : "N/A"}
@@ -170,7 +170,7 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                     j = len(step_string_dict.items())-1
                     for s in reversed(step_string_dict.items()):
                         # This is to make sure we do not enter an infinite while loop
-                        counter =+ counter
+                        counter += 1
                         if counter > len(step_string_dict.items()):   # 13 is the number of steps of calwebb_spec2
                             exit_while_loop = True
                             print("Limiting number of iterations reached. No input file found. ")
@@ -194,11 +194,17 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                                 if debug:
                                     print("Step creates output file, checking if it exists: ", step_input_filename)
                                 if os.path.isfile(step_input_filename):
-                                    # break the while loop
+                                    # break and exit the while loop
                                     exit_while_loop = True
-                                    # now exit the for loop
                                     break
                                 else:
+                                    # maybe the initial file had _rate and the output does not
+                                    if '_rate' in step_input_filename:
+                                        print("File does not exist, checking without '_rate' suffix... ")
+                                        step_input_filename = step_input_filename.replace('_rate', '')
+                                        # break and exit the while loop
+                                        exit_while_loop = True
+                                        break
                                     if debug:
                                         print("Step did not run to create product file.")
                                     j -= 1
@@ -224,6 +230,8 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
             else:
                 out_file_suffix = in_file_suffix
             step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix+".fits")
+            if '_rate' in step_output_basename:
+                step_output_basename = step_output_basename.replace('_rate', '')
             # Special case for BOTS files after extract_1d
             if "extract_1d" in stp:
                 inhdu = read_hdrfits(initial_input_file, info=False, show_hdr=False)
@@ -253,11 +261,11 @@ def add_detector2filename(working_directory, step_input_file):
     # dictionary of the steps and corresponding strings to be added to the file name after the step has ran
     step_strings = ["_assign_wcs", "_bkg_subtract", "_imprint_subtract", "_msa_flagging", "_extract_2d", "_flat_field",
                    "_srctype", "_pathloss", "_barshadow", "_photom", "_resample_spec", "_cube_build", "_extract_1d",
-                    "_intflat", "_s2d", "_s3d", "_x1d", "_cal"]
+                    "_interpolatedflat", "_s2d", "_s3d", "_x1d", "_cal"]
 
     # get the detector name and add it
     det = fits.getval(step_input_file, "DETECTOR", 0)
-    step_input_file_basename = os.path.basename(step_input_file).replace(".fits", "")
+    #step_input_file_basename = os.path.basename(step_input_file).replace(".fits", "")
     ptt_directory = os.getcwd()  # directory where PTT lives
     #step_files = glob.glob(os.path.join(ptt_directory, step_input_file_basename+"*.fits"))  # get all fits files just created
     #if len(step_files) == 0:
@@ -266,6 +274,9 @@ def add_detector2filename(working_directory, step_input_file):
     for sf in step_files:
         for stp_str in step_strings:
             if stp_str in sf.lower():  # look for the step string appearing in the name of the files
+                # make sure to get the right name for the MSA flagging step output file
+                if "msaflagopenstep" in sf:
+                    sf = sf.replace("msaflagopenstep", "msa_flagging")
                 if det.lower() not in sf.lower():  # only add the detector to the name if it is not part of the basename
                     new_name = os.path.basename(sf.replace(stp_str+".fits", "_"+det+stp_str+".fits"))
                 else:
@@ -870,7 +881,7 @@ def convert_html2pdf(detector):
     print ("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
 
 
-def move_latest_report_and_txt_2workdir(detector):
+def move_txt_files_2workdir(detector):
     """
     This function moves the PTT output reporting files into the working directory.
     Args:
@@ -883,15 +894,12 @@ def move_latest_report_and_txt_2workdir(detector):
     config = configparser.ConfigParser()
     config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
     working_dir = config.get("calwebb_spec2_input_file", "working_directory")
-    # get a list of all the html and txt files in the calwebb_spec2_pytests dir
-    #latest_htmlfile = get_latest_file("*"+detector+"*.html")   # this will pick up the report.html just created/modified
-    #latest_pdffile = latest_htmlfile.replace(".html", ".pdf")   # this will pick up the report.html converted to pdf
+    # get a list of all the txt files in the calwebb_spec2_pytests dir
     latest_screenoutputtxtfile = get_latest_file("*screen*"+detector+"*.txt", detector, disregard_known_files=True) # this should pick up the output_screen file
     latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map_"+detector+".txt")
     latest_fullrunmaptxtfile = get_latest_file("full_run_map_"+detector+".txt")
     # move these files into the working directory
-    files2move = [#latest_htmlfile, latest_pdffile,
-                  latest_screenoutputtxtfile,
+    files2move = [latest_screenoutputtxtfile,
                   latest_suffixmaptxtfile, latest_fullrunmaptxtfile]
     for f in files2move:
         if f != "File not found."  and  os.path.isfile(f):

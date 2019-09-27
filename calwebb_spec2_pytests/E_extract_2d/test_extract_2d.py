@@ -230,17 +230,7 @@ def validate_extract2d(output_hdul):
     for msg in log_msgs:
         logging.info(msg)
 
-    final_result = True
-    fails = []
-    for sname, res in result.items():
-        final_result = final_result and res
-        if not res:
-            fails.append(sname)
-    if final_result:
-        return True, ""
-    if len(fails) == 1:
-        return False, "Subarray for slit {} did not match.".format(fails[0])
-    return False, "Subarrays for slits {} did not match.".format(", ".join(fails))
+    return result
 
 
 

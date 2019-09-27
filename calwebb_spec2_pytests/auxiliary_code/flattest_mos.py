@@ -322,7 +322,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             ffv = ffvq4
 
         # loop through the pixels
-        msg = "Now looping through the pixels, this may take a while ... "
+        msg = "Now looping through the pixels, this will take a while ... "
         print(msg)
         log_msgs.append(msg)
         wave_shape = np.shape(wave)

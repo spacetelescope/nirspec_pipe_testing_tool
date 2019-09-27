@@ -96,14 +96,21 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         import pdb; pdb.set_trace()
     
     tests = {} #store all the tests in a single dictionary
-    
+
+    # add instrument name in the expected keyword
+    match_criteria['META.INSTRUMENT.NAME'] = 'NIRSPEC'
+
     #Test whether the recommended reference file was actually selected
-    recommended_reffile = getrecommendations(match_criteria, 
+    recommended_reffile = getrecommendations(match_criteria,
                                              reftypes=[pipeline_step],
                                              context=context,
                                              fast=True)
-    recommended_reffile = os.path.basename(recommended_reffile) #remove path, only want to test filename
-    tests['RECOMMENDATION'] = recommended_reffile == reffile_name
+    #tests['RECOMMENDATION'] = False
+    if isinstance(recommended_reffile, str):
+        recommended_reffile = os.path.basename(recommended_reffile) #remove path, only want to test filename
+        tests['RECOMMENDATION'] = recommended_reffile == reffile_name
+    else:
+        print(recommended_reffile)
         
     #Remove irrelevant match criteria
     del match_criteria['observatory']
