@@ -73,11 +73,11 @@ a. Conda environment for this testing campaign:
 - Current testing version is 7.1.3 Please install this version by typing the following 
 command in a terminal:
 ```bash
-conda create -n jwst_b7131 --file url_depending_on_your_system 
+conda create -n jwst_b73 --file url_depending_on_your_system 
 ```
 for the current release candidate, the ulr options are:
-- Linux: http://ssb.stsci.edu/releases/jwstdp/0.9.6/latest-linux
-- OS X: http://ssb.stsci.edu/releases/jwstdp/0.9.6/latest-osx
+- Linux: http://ssb.stsci.edu/releases/jwstdp/0.13.7/latest-linux
+- OS X: http://ssb.stsci.edu/releases/jwstdp/0.13.7/latest-osx
 
 As bugfixes are announced your current pipeline software may be updated by issuing the 
 command:
@@ -345,12 +345,14 @@ python run_PTT.py name_of_the_html_report
 ```
 
 TO RUN A SINGLE PIPELINE STEP: 
+
 -> If you are running a single pipeline step (or only the corresponding pytest), PTT will
 create a log file specifically named with the step you are studying. At the end of the 
 run you will see 2 log files, one from the pipeline and one from PTT. This will not 
 overwrite the full pipeline run log files.
 
 TO RUN A FEW PIPELINE STEPS: 
+
 -> To only run a few pipeline steps you need to:
 a) Make sure that the variable ```run_calwebb_spec2``` in the ```PTT_config.cfg``` file
 is set to False (otherwise the pipeline will run in full and we have no control of
@@ -359,6 +361,7 @@ b) Turn off (i.e. set to False) the steps you do not want to run in the ```PTT_c
 file, which are located in the section ```run_pipe_steps``` of the file.
 
 TO RUN A FEW PYTEST: 
+
 -> To run a few pytest you need to select which pytest to run (i.e. set to True) in the 
 ```PTT_config.cfg``` file, which are located in the section ```run_pytest``` of the file.
 
