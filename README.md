@@ -70,7 +70,7 @@ QUICK START GUIDE
 1. Create the conda environment for testing and get the configuration files.  
 
 a. Conda environment for this testing campaign:
-- Current testing version is 7.1.3 Please install this version by typing the following 
+- Current testing version is 7.3 Please install this version by typing the following 
 command in a terminal:
 ```bash
 conda create -n jwst_b73 --file url_depending_on_your_system 
@@ -79,48 +79,41 @@ for the current release candidate, the ulr options are:
 - Linux: http://ssb.stsci.edu/releases/jwstdp/0.13.7/latest-linux
 - OS X: http://ssb.stsci.edu/releases/jwstdp/0.13.7/latest-osx
 
-As bugfixes are announced your current pipeline software may be updated by issuing the 
-command:
-```bash
-conda update --file http://ssb.stsci.edu/releases/jwstdp/0.9.6/latest-osx
-```
 
-Please note that this is the most stable release candidate since 06/08/2018, and until
+Please note that this is the most stable release candidate as of 07/05/2019, and until
 further notice from SCSB. To be completely sure that this is the latest stable version 
 you can go to the GitHub repo of SCSB: https://github.com/spacetelescope/jwst. In the 
 README file you will find a table called "Software vs DMS build version map", there you 
 will see at the top which one is the latest stable release candidate.
 
-NOTE:
-If you need to use the development version of the pipeline then do the following:
-```bash
-conda create -n jwst_dev -c http://ssb.stsci.edu/conda-dev jwst python=3.6.8
-```
-Then, to update the development environment, activate the environment and then type:
-```bash
-conda update --override-channels -c http://ssb.stsci.edu/conda-dev -c defaults --all
-```
-To get a specific version of the pipeline you need to do 2 steps:
-i) Find the version you want with (newest at the bottom)
-```bash
-conda search -c http://ssb.stsci.edu/astroconda-dev jwst
-```
-ii) Install the version you want
-```bash
-conda install --override-channels -c https://ssb.stsci.edu/astroconda-dev -c defaults jwst=version_you_want
-```
-where ```jwst=version_you_want``` is usually something like ```jwst=1.2.3dev456```.
+PLEASE NOTE:
 
+a. The development version of the pipeline is being phased out, and a new way to install ```jwst``` 
+package will be used. We will still use a conda environment but the installation will be through ```pip```. SCSB recommends creating a new environment:
+```bash
+conda create -n jwst_env python
+conda activate jwst_env
+```
+To install build 7.3 in this new way you would type (with the activated environment):
+```bash
+pip install numpy
+pip install git+https://github.com/spacetelescope/jwst#0.13.7
+```
+or for the latest development version:
+```bash
+pip install numpy
+pip install git+https://github.com/spacetelescope/jwst
+```
 
 b. Configuration files corresponding to this build. Create a directory (e.g. 
-```b713cfg_files```) somewhere in your testing working space, and ```cd``` into it. Now 
+```build_XX_cfg_files```) somewhere in your testing working space, and ```cd``` into it. Now 
 type the following command within the conda environment you just created (see step 2).
 ```bash
 collect_pipeline_cfgs .
 ```
 
 
-2. Activate the conda environment for testing the pipeline, e.g. type:
+2. Activate the conda environment for testing the pipeline, if you have not already done so, e.g. type:
 ```bash
 source activate your_newly_created_environment
 ```
@@ -131,18 +124,20 @@ conda activate your_newly_created_environment
 From here on, every step of this guide should happen within the conda testig environment.
 
 NOTE: 
+
 - If you forget what did you name your new environment type:
 ```bash
 conda env list
 ```
 this will list all environments you have created.
+
 - If you want to remove an old testing environment type:
 ```bash
 conda env remove -n name_of_your_old_environment
 ```
 
 
-3. Install the following plugins for the pytests to work properly. Within the conda 
+3. Install the following plugins for PTT to work properly. Within the conda 
 testing environment, type:
 ```bash
 pip install msgpack
