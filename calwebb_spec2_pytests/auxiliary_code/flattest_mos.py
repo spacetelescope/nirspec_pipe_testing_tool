@@ -514,6 +514,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         nanind = np.isnan(delf)   # get all the nan indexes
         notnan = ~nanind   # get all the not-nan indexes
         delf = delf[notnan]   # get rid of NaNs
+        delf_shape = np.shape(delf)
         test_result = "FAILED"
         if delf.size == 0:
             msg1 = " * Unable to calculate statistics because difference array has all values as NaN."
@@ -607,7 +608,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             outfile.append(outfile_ext)
 
             # this is the file to hold the image of pipeline-calculated difference values
-            complfile_ext = fits.ImageHDU(delf.reshape(wave_shape), name=slitlet_id)
+            complfile_ext = fits.ImageHDU(delf.reshape(delf_shape), name=slitlet_id)
             complfile.append(complfile_ext)
 
             # the file is not yet written, indicate that this slit was appended to list to be written
