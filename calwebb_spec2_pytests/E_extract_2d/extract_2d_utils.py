@@ -75,8 +75,7 @@ def find_FSwindowcorners(infile_name, esa_files_path):
         px1 = px0 + pnx
         py1 = py0 + pny
 
-        icorners = {(px0, py0), (px1, py0), (px1, py1), (px1, py0)}
-        #print('corners of pipeline extracted subwindow: ', icorners)
+        icorners = {(px0, py0), (px1, py0), (px1, py1), (px0, py1)}
 
         # Find esafile (most of this copy-pasted from compare_wcs_fs)
         sltname = sci_header["SLTNAME"]
@@ -157,11 +156,11 @@ def find_FSwindowcorners(infile_name, esa_files_path):
                     # get the origin of the subwindow
                     ney, nex = eflux.shape
                     if detector == "NRS1":
-                        ex0 = esahdr1["CRVAL1"] - esahdr1["CRPIX1"] + 1
-                        ey0 = esahdr1["CRVAL2"] - esahdr1["CRPIX2"] + 1
+                        ex0 = int(esahdr1["CRVAL1"]) - int(esahdr1["CRPIX1"]) + 1
+                        ey0 = int(esahdr1["CRVAL2"]) - int(esahdr1["CRPIX2"]) + 1
                     else:
-                        ex0 = 2048.0 - esahdr1["CRPIX1"] + esahdr1["CRVAL1"]
-                        ey0 = 2048.0 - esahdr1["CRVAL2"] + esahdr1["CRPIX2"]
+                        ex0 = 2048 - int(esahdr1["CRPIX1"]) + int(esahdr1["CRVAL1"])
+                        ey0 = 2048 - int(esahdr1["CRVAL2"]) + int(esahdr1["CRPIX2"])
 
                     ex1 = ex0 + nex
                     ey1 = ey0 + ney
@@ -170,6 +169,9 @@ def find_FSwindowcorners(infile_name, esa_files_path):
 
                     # Pytest pass/fail criterion: if esa corners match pipeline corners then True, else False
                     result[sltname] = ecorners == icorners
+
+                    print('ESA slit size      = ', nex, ney)
+                    print('Pipeline slit size = ', pnx, pny)
 
                     msg1 = "* Corners for slit "+sltname+":"
                     msg2 = "         ESA corners: "+repr(ecorners)
@@ -358,12 +360,12 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path):
 
             if detector == "NRS1":
                 ney, nex = esahdulist['DATA1'].data.shape
-                ex0 = int(esahdr["CRVAL1"] - esahdr["CRPIX1"] + 1)
-                ey0 = int(esahdr["CRVAL2"] - esahdr["CRPIX2"] + 1)
+                ex0 = int(esahdr["CRVAL1"]) - int(esahdr["CRPIX1"]) + 1
+                ey0 = int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"]) + 1
             else:
                 ney, nex = esahdulist['DATA2'].data.shape
-                ex0 = int(2048 - esahdr["CRPIX1"] + esahdr["CRVAL1"])
-                ey0 = int(2048 - esahdr["CRVAL2"] + esahdr["CRPIX2"])
+                ex0 = 2048 - int(esahdr["CRPIX1"]) + int(esahdr["CRVAL1"])
+                ey0 = 2048 - int(esahdr["CRVAL2"]) + int(esahdr["CRPIX2"])
 
             ex1 = ex0 + nex
             ey1 = ey0 + ney
