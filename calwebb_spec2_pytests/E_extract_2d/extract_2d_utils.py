@@ -59,12 +59,14 @@ def find_FSwindowcorners(infile_name, esa_files_path):
 
     primary_header = fits.getheader(infile_name, ext=0)
     detector = primary_header["DETECTOR"]
+    grating = primary_header["GRATING"]
 
     for i, s_ext in enumerate(sci_dict):
         s_ext_number = sci_dict[s_ext]
+        print('Working on slit ', s_ext)
         sci_header = fits.getheader(infile_name, ext=s_ext_number)
 
-        #grab corners of extracted subwindow
+        # grab corners of extracted subwindow
         px0 = sci_header["SLTSTRT1"] + primary_header["SUBSTRT1"] - 1
         py0 = sci_header["SLTSTRT2"] + primary_header["SUBSTRT2"] - 1
         pnx = sci_header["SLTSIZE1"]
@@ -74,6 +76,7 @@ def find_FSwindowcorners(infile_name, esa_files_path):
         py1 = py0 + pny
 
         icorners = {(px0, py0), (px1, py0), (px1, py1), (px1, py0)}
+        #print('corners of pipeline extracted subwindow: ', icorners)
 
         # Find esafile (most of this copy-pasted from compare_wcs_fs)
         sltname = sci_header["SLTNAME"]
@@ -91,6 +94,7 @@ def find_FSwindowcorners(infile_name, esa_files_path):
         else:
             nid = None
         esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
+        #print('got the ESA file:', esafile)
 
         if esafile == "ESA file not found":
             msg1 = " * validate_wcs_extract2d is exiting because the corresponding ESA file was not found."
@@ -103,7 +107,13 @@ def find_FSwindowcorners(infile_name, esa_files_path):
             return result, log_msgs
 
         if not isinstance(esafile, list):
-            esafile_list = [esafile]
+            if isinstance(esafile, tuple):
+                esafile_list = []
+                for ef in esafile:
+                    if ef:
+                        esafile_list.append(ef)
+            else:
+                esafile_list = [esafile]
         else:
             esafile_list = esafile
 
@@ -119,7 +129,8 @@ def find_FSwindowcorners(infile_name, esa_files_path):
                 print ("Using this ESA file: \n", esafile)
                 with fits.open(esafile) as esahdulist:
                     # Find corners from ESA file
-                    if "NRS1" in esafile or "491" in esafile:
+                    #print(esahdulist.info())
+                    if "M" in grating  or  "NRS1" in esafile  or  "491" in esafile:
                         dat = "DATA1"
                     else:
                         dat = "DATA2"
@@ -179,6 +190,8 @@ def find_FSwindowcorners(infile_name, esa_files_path):
                         log_msgs.append(msg)
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
+    print('\nSummary of test results: \n', result)
+    FINAL_TEST_RESULT = False
     for t, v in result.items():
         if not v:
             FINAL_TEST_RESULT = False
@@ -196,9 +209,6 @@ def find_FSwindowcorners(infile_name, esa_files_path):
     else:
         msg = "\n *** Final result for extract_2d test will be reported as FAILED *** \n"
         print(msg)
-        log_msgs.append(msg)
-        result_msg = "One or more slits FAILED extract_2d test."
-        print(result_msg)
         log_msgs.append(msg)
 
     return FINAL_TEST_RESULT, log_msgs
