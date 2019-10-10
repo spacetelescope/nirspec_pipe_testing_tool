@@ -52,6 +52,7 @@ def output_hdul(set_inandout_filenames, config):
     # get other relevat info from PTT config file
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
     msa_conf_name = config.get("esa_intermediary_products", "msa_conf_name")
+    extract_2d_threshold_diff = int(config.get("additional_arguments", "extract_2d_threshold_diff"))
     
     # Check if the mode used is MOS_sim and get the threshold for the assign_wcs test
     mode_used = config.get("calwebb_spec2_input_file", "mode_used")
@@ -75,7 +76,7 @@ def output_hdul(set_inandout_filenames, config):
     if not core_utils.check_IFU_true(inhdu):
         if run_calwebb_spec2:
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots
+            return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, extract_2d_threshold_diff
             
         else:
             if run_pipe_step:
@@ -133,7 +134,7 @@ def output_hdul(set_inandout_filenames, config):
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots
+                    return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, extract_2d_threshold_diff
 
                 else:
                     msg = " The input file does not exist. Skipping step."
@@ -153,7 +154,7 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = True
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots
+                    return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, extract_2d_threshold_diff
                 else:
                     step_completed = False
                     # add the running time for this step
@@ -210,7 +211,8 @@ def validate_MOSsim_wcs_extract2d(output_hdul):
 @pytest.fixture(scope="module")
 def validate_extract2d(output_hdul):
     # get the input information for the wcs routine
-    hdu, infile_name, msa_conf_name, esa_files_path, *_ = output_hdul
+    hdu, infile_name, msa_conf_name, esa_files_path, _, _, _, _, extract_2d_threshold_diff = output_hdul
+    print('Will be using this number of pixels as threshold for extract_2d test: ', extract_2d_threshold_diff)
 
     msg = "\n Performing extract_2d validation test... "
     print(msg)
