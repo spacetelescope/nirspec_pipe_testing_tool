@@ -470,6 +470,16 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             if substrt1 == sst1  and  subsize1 == ssz1  and  subsize2 == ssz2:
                                 for grat, sst2_tuple in sst2_dict.items():
                                     if grat.lower() == grating.lower():
+                                        if 'FULL' in subarrd_key:
+                                            subarrd_key = 'FULL'
+                                        elif '200A1' in subarrd_key:
+                                            subarrd_key = 'SUBS200A1'
+                                        elif '200A2' in subarrd_key:
+                                            subarrd_key = 'SUBS200A2'
+                                        elif '200B1' in subarrd_key:
+                                            subarrd_key = 'SUBS200B1'
+                                        elif '400A1' in subarrd_key:
+                                            subarrd_key = 'SUBS400A1'
                                         specific_keys_dict[key] = subarrd_key
                                         print ("changing subarray keyword to ", subarrd_key)
                                         missing_keywds.append(key)

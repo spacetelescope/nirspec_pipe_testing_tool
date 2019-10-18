@@ -13,6 +13,11 @@ from astropy.time import Time
 from crds.matches import find_match_paths_as_dict as ref_matches
 from crds import getrecommendations
 
+# import the subarrays dictionary
+sys.path.insert(0, '../../utils')
+from utils import subarray_dict as subdict
+
+
 def check_meta(input_file, match_key, match_val):
     input_val = input_file[match_key.lower()]
     #direct comparison for numeric types; "in" comparison for string types
@@ -49,7 +54,49 @@ def load_input_file(path_to_input_file, logstream=None):
     return input_file
     
     
-def reffile_test(path_to_input_file, pipeline_step, logfile=None, 
+def get_subarray(fits_file):
+    print('Determining subarray')
+    # set the subarray according to size
+    detector = fits.getval(fits_file, "DETECTOR", 0)
+    grating = fits.getval(fits_file, "GRATING", 0)
+    substrt1 = fits.getval(fits_file, "substrt1", 0)
+    substrt2 = fits.getval(fits_file, "substrt2", 0)
+    subsize1 = fits.getval(fits_file, "subsize1", 0)
+    subsize2 = fits.getval(fits_file, "subsize2", 0)
+    for subarrd_key, subarrd_vals_dir in subdict.subarray_dict.items():
+        sst1 = subarrd_vals_dir["substrt1"]
+        sst2_dict = subarrd_vals_dir["substrt2"]
+        ssz1 = subarrd_vals_dir["subsize1"]
+        ssz2 = subarrd_vals_dir["subsize2"]
+        # print ("sst1=", sst1, "  sst2_list=", sst2_list, "  ssz1=", ssz1, "  ssz2=", ssz2)
+        if substrt1 == sst1 and subsize1 == ssz1 and subsize2 == ssz2:
+            for grat, sst2_tuple in sst2_dict.items():
+                if grat.lower() == grating.lower():
+                    if 'FULL' in subarrd_key:
+                        subarrd_key = 'FULL'
+                    elif '200A1' in subarrd_key:
+                        subarrd_key = 'SUBS200A1'
+                    elif '200A2' in subarrd_key:
+                        subarrd_key = 'SUBS200A2'
+                    elif '200B1' in subarrd_key:
+                        subarrd_key = 'SUBS200B1'
+                    elif '400A1' in subarrd_key:
+                        subarrd_key = 'SUBS400A1'
+                    # this part is simply to check that the subarray values are correct
+                    # but no values will be changed in the input file
+                    if "1" in detector:
+                        sst2 = sst2_tuple[0]
+                    elif "2" in detector:
+                        sst2 = sst2_tuple[1]
+                    print("\nSubarray values in input file:", )
+                    print("substrt1=", substrt1, " substrt2=", substrt2, " subsize1=", subsize1, " subsize2=", subsize2)
+                    print("Subarray values in PTT dictionary:", )
+                    print("substrt1=", sst1, " substrt2=", sst2, " subsize1=", ssz1, " subsize2=", ssz2)
+                    print("Setting subarray keyword to ", subarrd_key, "\n")
+    return subarrd_key
+
+
+def reffile_test(path_to_input_file, pipeline_step, logfile=None,
                  input_file=None):
     """
     This is a new version of reffile_test which uses crds.matches instead of
@@ -100,18 +147,24 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     # add instrument name in the expected keyword
     match_criteria['META.INSTRUMENT.NAME'] = 'NIRSPEC'
 
+    # make sure that the subarray keyword is correct for the size of the data
+    subarray = get_subarray(path_to_input_file)
+    match_criteria['META.SUBARRAY.NAME'] = subarray
+
     #Test whether the recommended reference file was actually selected
     recommended_reffile = getrecommendations(match_criteria,
                                              reftypes=[pipeline_step],
                                              context=context,
                                              fast=True)
-    #tests['RECOMMENDATION'] = False
+
     if isinstance(recommended_reffile, str):
         recommended_reffile = os.path.basename(recommended_reffile) #remove path, only want to test filename
         tests['RECOMMENDATION'] = recommended_reffile == reffile_name
     else:
-        print(recommended_reffile)
-        
+        print('* WARNING: Unable to find recommendation for the reference file:')
+        print('        Match criteria determined by pipeline to find reference file: ', match_criteria)
+        print('        Recommendation dictionary = ', recommended_reffile)
+
     #Remove irrelevant match criteria
     del match_criteria['observatory']
     del match_criteria['instrument']

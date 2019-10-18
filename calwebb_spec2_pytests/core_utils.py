@@ -792,6 +792,8 @@ def get_time_to_run_pipeline(True_steps_suffix_map):
             if "=" in line:
                 line = line.split("=")[0]
             t=line.split()[3]
+            if "'" in t:
+                t = t.replace("'", "")
             t = float(t)
             times_per_step.append(t)
             if "extract_1d" in line:
