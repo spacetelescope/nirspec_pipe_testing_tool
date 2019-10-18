@@ -61,11 +61,12 @@ def run_PTT(report_name):
     
     # get the detector and make sure it is in the name of the output html report
     detector = fits.getval(cfg_info[1], "DETECTOR", 0)
-    if detector not in report_name:
-        print('-> The detector used is being added to the html report name.')
-        report_name = report_name+'_'+detector
     if 'html' not in report_name:
         report_name = report_name+'.html'
+    if detector not in report_name:
+        report_name_list = report_name.split(".html")
+        report_name = report_name_list[0]+'_'+detector+".html"
+        print('-> The detector used added to the html report name: ', report_name)
 
     # run PTT
     cmd = ['pytest', '-s', '--config_file=PTT_config.cfg', '--html='+report_name,

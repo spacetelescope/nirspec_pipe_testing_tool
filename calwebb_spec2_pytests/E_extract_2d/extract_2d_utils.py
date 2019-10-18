@@ -132,11 +132,12 @@ def find_FSwindowcorners(infile_name, esa_files_path, extract_2d_threshold_diff=
                 with fits.open(esafile) as esahdulist:
                     # Find corners from ESA file
                     #print(esahdulist.info())
-                    if "M" in grating  or  "NRS1" in esafile  or  "491" in esafile:
+                    if detector=="NRS1" or "NRS1" in infile_name  or  "491" in infile_name:
                         dat = "DATA1"
                     else:
                         dat = "DATA2"
-                    esahdr1 = esahdulist[dat].header
+                    print("For detector=", detector, " reading data of extension name=", dat)
+                    esahdr = esahdulist[dat].header
                     enext = []
                     for ext in esahdulist:
                         enext.append(ext)
@@ -159,11 +160,11 @@ def find_FSwindowcorners(infile_name, esa_files_path, extract_2d_threshold_diff=
                     # get the origin of the subwindow
                     ney, nex = eflux.shape
                     if detector == "NRS1":
-                        ex0 = int(esahdr1["CRVAL1"]) - int(esahdr1["CRPIX1"]) + 1
-                        ey0 = int(esahdr1["CRVAL2"]) - int(esahdr1["CRPIX2"]) + 1
+                        ex0 = int(esahdr["CRVAL1"]) - int(esahdr["CRPIX1"]) + 1
+                        ey0 = int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"]) + 1
                     else:
-                        ex0 = 2048 - int(esahdr1["CRPIX1"]) + int(esahdr1["CRVAL1"])
-                        ey0 = 2048 - int(esahdr1["CRVAL2"]) + int(esahdr1["CRPIX2"])
+                        ex0 = 2049 - int(esahdr["CRPIX1"]) - int(esahdr["CRVAL1"])
+                        ey0 = 2049 - int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"])
 
                     ex1 = ex0 + nex
                     ey1 = ey0 + ney
@@ -215,10 +216,10 @@ def find_FSwindowcorners(infile_name, esa_files_path, extract_2d_threshold_diff=
         print(result_msg)
         log_msgs.append(msg)
     else:
-        print('These slitlets have corners with differences larger than threshold of', extract_2d_threshold_diff, 'pixels: ')
+        print('These slits have corners with differences larger than threshold of', extract_2d_threshold_diff, 'pixels: ')
         print('   ESA corners', '        Pipeline corners')
         for sltname, corners in large_diff_corners_dict.items():
-            print('slitlet ', sltname)
+            print('slit ', sltname)
             print('', corners)
         msg = "\n *** Final result for extract_2d test will be reported as FAILED *** \n"
         print(msg)
@@ -396,8 +397,8 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path, extract_2d
                 ey0 = int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"]) + 1
             else:
                 ney, nex = esahdulist['DATA2'].data.shape
-                ex0 = 2048 - int(esahdr["CRPIX1"]) - int(esahdr["CRVAL1"]) + 1
-                ey0 = 2048 - int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"]) + 1
+                ex0 = 2049 - int(esahdr["CRPIX1"]) - int(esahdr["CRVAL1"])
+                ey0 = 2049 - int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"])
 
             ex1 = ex0 + nex
             ey1 = ey0 + ney

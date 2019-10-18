@@ -247,15 +247,9 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         if det == "NRS2":
             esax = 2049-esax
             esay = 2049-esay
-            msg = "flipped coords"
+            msg = "Flipped ESA data for detector NRS2 comparison with pipeline."
             print(msg)
             log_msgs.append(msg)
-            msg1 = esax-1
-            msg2 = esay-1
-            print(msg1)
-            print(msg2)
-            log_msgs.append(msg1)
-            log_msgs.append(msg2)
 
         # check if subarray is not FULL FRAME
         subarray = fits.getval(infile_name, "SUBARRAY", 0)
