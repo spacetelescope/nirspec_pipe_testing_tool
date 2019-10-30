@@ -183,7 +183,7 @@ def output_hdul(set_inandout_filenames, config):
         # get the total running time and print it in the file
         total_time = repr(core_utils.get_time_to_run_pipeline(txt_name))
         total_time_min = repr(round(float(total_time)/60.0, 2))
-        msg = "The total time for the pipeline to run was "+total_time+" seconds."
+        msg = "\n\n **** The total time for the pipeline to run was "+total_time+" seconds."
         print(msg)
         logging.info(msg)
         line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'total_time  ', total_time+'  ='+total_time_min+'min')
@@ -251,7 +251,10 @@ def test_extract1d_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = extract_1d_utils.extract1d_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_s_extr1d_exists(output_hdul):
     # want to run this pytest?

@@ -299,7 +299,10 @@ def test_fflat_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = flat_field_utils.fflat_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_sflat_sfile(output_hdul):
     # want to run this pytest?
@@ -315,7 +318,10 @@ def test_sflat_sfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = flat_field_utils.sflat_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_dflat_dfile(output_hdul):
     # want to run this pytest?
@@ -331,5 +337,8 @@ def test_dflat_dfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = flat_field_utils.dflat_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 

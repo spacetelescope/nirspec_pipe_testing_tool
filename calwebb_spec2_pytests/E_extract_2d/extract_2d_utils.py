@@ -172,13 +172,15 @@ def find_FSwindowcorners(infile_name, esa_files_path, extract_2d_threshold_diff=
                     esa_corners = [ex0, ey0, ex1, ey1]
 
                     # Pytest pass/fail criterion: if esa corners match pipeline corners then True, else False
-                    result[sltname] = esa_corners_in_pipeline_corners(esa_corners, pipeline_corners,
+                    result[sltname], msgs = esa_corners_in_pipeline_corners(esa_corners, pipeline_corners,
                                                                    extract_2d_threshold_diff=extract_2d_threshold_diff)
+                    for msg in msgs:
+                        log_msgs.append(msg)
 
                     print('ESA slit size      = ', nex, ney)
                     print('Pipeline slit size = ', pnx, pny)
 
-                    msg1 = "* Corners for slit "+sltname+":  [x0, y0, x1, y1]"
+                    msg1 = "Corners for slit "+sltname+":  [x0, y0, x1, y1]"
                     msg2 = "         ESA corners: "+repr(esa_corners)
                     msg3 = "    Pipeline corners: "+repr(pipeline_corners)
                     print(msg1)
@@ -216,11 +218,19 @@ def find_FSwindowcorners(infile_name, esa_files_path, extract_2d_threshold_diff=
         print(result_msg)
         log_msgs.append(msg)
     else:
-        print('These slits have corners with differences larger than threshold of', extract_2d_threshold_diff, 'pixels: ')
-        print('   ESA corners', '        Pipeline corners')
+        msg1 = '\n\n *** These slits have corners with differences larger than threshold of '+repr(extract_2d_threshold_diff)+' pixels: '
+        msg2 = '   ESA corners                   Pipeline corners'
+        log_msgs.append(msg1)
+        log_msgs.append(msg2)
+        print(msg1)
+        print(msg2)
         for sltname, corners in large_diff_corners_dict.items():
-            print('slit ', sltname)
-            print('', corners)
+            msg1 = 'slit '+sltname
+            msg2 = ''+ repr(corners)
+            log_msgs.append(msg1)
+            log_msgs.append(msg2)
+            print(msg1)
+            print(msg2)
         msg = "\n *** Final result for extract_2d test will be reported as FAILED *** \n"
         print(msg)
         log_msgs.append(msg)
@@ -239,12 +249,23 @@ def esa_corners_in_pipeline_corners(esa_corners, pipeline_corners, extract_2d_th
     Returns:
         results: list of booleans
     """
-    result = True
+    result = False
+    msgs = []
     for ei, pi in zip(esa_corners, pipeline_corners):
+        # absolute difference <= threshold, then pass
         diff_within_threshold = math.isclose(ei, pi, abs_tol=extract_2d_threshold_diff)
-        if not diff_within_threshold:
-            result = False
-    return result
+        if diff_within_threshold:
+            result = True
+        else:
+            # if difference of pipeline - ESA is positive, then pass because pipe extraction includes ESA extraction
+            diff_within_threshold = pi - ei
+            if diff_within_threshold > 0.0:
+                msg = "* WARNING: Difference of pipeline - ESA extraction window is larger than threshold BUT the ESA excraction is fully within the pipeline extraction window."
+                msgs.append(msg)
+                result = True
+            else:
+                result = False
+    return result, msgs
 
 
 def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path, extract_2d_threshold_diff=4):
@@ -273,7 +294,7 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path, extract_2d
 
     # check that shutter configuration file in header is the same as given in PTT_config file
     if msametfl != os.path.basename(msa_conf_name):
-        msg = "* WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.\n"
+        msg = " *** WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL keyword in main header.\n"
         print(msg)
         log_msgs.append(msg)
 
@@ -354,7 +375,7 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path, extract_2d
 
         # Open esafile and grab subarray coordinates
         with fits.open(esafile) as esahdulist:
-            if "NRS1" in esafile  or  "491" in esafile:
+            if "NRS1" in detector  or  "491" in detector:
                 dat = "DATA1"
             else:
                 dat = "DATA2"
@@ -405,12 +426,15 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path, extract_2d
 
             esa_corners = [ex0, ey0, ex1, ey1]
 
-            result[name] = esa_corners_in_pipeline_corners(esa_corners, pipeline_corners, extract_2d_threshold_diff=extract_2d_threshold_diff)
+            result[name], msgs = esa_corners_in_pipeline_corners(esa_corners, pipeline_corners,
+                                                                 extract_2d_threshold_diff=extract_2d_threshold_diff)
+            for msg in msgs:
+                log_msgs.append(msg)
 
             print('ESA slit size      = ', nex, ney)
             print('Pipeline slit size = ', pnx, pny)
 
-            msg1 = "\n* Corners for slitlet "+name+":  [x0, y0, x1, y1]"
+            msg1 = "\n Corners for slitlet "+name+":  [x0, y0, x1, y1]"
             msg2 = "         ESA corners: "+repr(esa_corners)
             msg3 = "    Pipeline corners: "+repr(pipeline_corners)
             print(msg1)
@@ -440,18 +464,26 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path, extract_2d
             FINAL_TEST_RESULT = True
 
     if FINAL_TEST_RESULT:
-        msg = "\n *** Final result for extract_2d test will be reported as PASSED *** \n"
+        msg = "\n\n *** Final result for extract_2d test will be reported as PASSED *** \n"
         print(msg)
         log_msgs.append(msg)
         result_msg = "All slitlets PASSED extract_2d test."
         print(result_msg)
         log_msgs.append(msg)
     else:
-        print('These slitlets have corners with differences larger than threshold of', extract_2d_threshold_diff, 'pixels: ')
-        print('   ESA corners', '        Pipeline corners')
+        msg1 = '\n\n *** These slitlets have corners with differences larger than threshold of '+repr(extract_2d_threshold_diff)+' pixels: '
+        msg2 = '      ESA corners            Pipeline corners'
+        log_msgs.append(msg1)
+        log_msgs.append(msg2)
+        print(msg1)
+        print(msg2)
         for sltname, corners in large_diff_corners_dict.items():
-            print('slitlet ', sltname)
-            print('', corners)
+            msg1 = 'slitlet '+sltname
+            msg2 = ''+repr(corners)
+            log_msgs.append(msg1)
+            log_msgs.append(msg2)
+            print(msg1)
+            print(msg2)
         msg = "\n *** Final result for extract_2d test will be reported as FAILED *** \n"
         print(msg)
         log_msgs.append(msg)

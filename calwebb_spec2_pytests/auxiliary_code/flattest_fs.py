@@ -639,10 +639,10 @@ if __name__ == '__main__':
     pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
 
     # input parameters that the script expects
-    #step_input_filename = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140M_opaque/gain_scale_NRS1_flat_field.fits"
-    #step_input_filename = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G235H_F170LP/final_output_caldet1_NRS1_flat_field.fits"
-    working_dir ='/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/BOTS/NID_41203'
-    #working_dir = pipeline_path+"/build7.1/part2/BOTS/NRSSRAD-G2H-PS-6007132838_1_491_SE_2016-01-07T17h03m08_491results"
+    #step_input_filename = pipeline_path+"/testing_data/FS_FULL_FRAME/G140M_opaque/gain_scale_NRS1_flat_field.fits"
+    #step_input_filename = pipeline_path+"/testing_data/FS_ALLSLITS/G235H_F170LP/final_output_caldet1_NRS1_flat_field.fits"
+    working_dir ='/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/testing_data/BOTS/NID_41203'
+    #working_dir = pipeline_path+"/testing_data/BOTS/NRSSRAD-G2H-PS-6007132838_1_491_SE_2016-01-07T17h03m08_491results"
     step_input_filename = working_dir+"/final_output_caldet1_NRS1_flat_field.fits"
 
     dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
