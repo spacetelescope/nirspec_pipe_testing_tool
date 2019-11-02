@@ -13,10 +13,6 @@ from astropy.time import Time
 from crds.matches import find_match_paths_as_dict as ref_matches
 from crds import getrecommendations
 
-# import the subarrays dictionary
-sys.path.insert(0, '../../utils')
-from utils import subarray_dict as subdict
-
 
 def check_meta(input_file, match_key, match_val):
     input_val = input_file[match_key.lower()]
@@ -53,6 +49,11 @@ def load_input_file(path_to_input_file, logstream=None):
     
     return input_file
     
+
+'''
+# import the subarrays dictionary
+sys.path.insert(0, '../../utils')
+from utils import subarray_dict as subdict
     
 def get_subarray(fits_file):
     print('Determining subarray')
@@ -94,6 +95,7 @@ def get_subarray(fits_file):
                     print("substrt1=", sst1, " substrt2=", sst2, " subsize1=", ssz1, " subsize2=", ssz2)
                     print("Setting subarray keyword to ", subarrd_key, "\n")
     return subarrd_key
+    '''
 
 
 def reffile_test(path_to_input_file, pipeline_step, logfile=None,
@@ -152,7 +154,8 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     match_criteria['META.INSTRUMENT.NAME'] = 'NIRSPEC'
 
     # make sure that the subarray keyword is correct for the size of the data
-    subarray = get_subarray(path_to_input_file)
+    #subarray = get_subarray(path_to_input_file)
+    subarray = fits.getval(path_to_input_file, 'SUBARRAY', 0)
     match_criteria['META.SUBARRAY.NAME'] = subarray
 
     #Test whether the recommended reference file was actually selected

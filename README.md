@@ -306,7 +306,7 @@ pipeline ingestible file (with all the keyword header modifications). In order t
 use the script called ```crm2STpipeline.py``` that lives in the ```ulits``` directory. 
 To run this type:
 ```bash
-python ../calwebb_spec2_pytests/utils/crm2STpipeline.py /path_tor_file/file.fits mode 
+python ../calwebb_spec2_pytests/utils/crm2STpipeline.py /path_to_file/file.fits mode 
 ```
 where mode is FS, MOS, IFU, BOTS, or dark. The input file for this scritp generally has
 a .crm or .cts suffix. The output files of this script can be directly ingested into 
@@ -325,6 +325,39 @@ executed and in which order type:
 ```bash
 pytest --collect-only
 ```
+
+*****
+
+NOTE FOR MOS DATA:
+
+If you are working with MOS data, you may need to create the shutter configuration file to be able
+to process the data through  the ```cal_spec2``` stage. To create the shutter configuration file
+you need the ```.msa.fits``` files from APT, or for simulations, you need the nod ```.csv```
+files. Once you have those files you can use the script called ```create_metafile.py```  that 
+lives in the ```calwebb_spec2_pytests/auxuliary_code``` directory. You can use this script
+for MOS data, simulations, or to fix an old sutter configuration file (to update the format for 
+build 7.3). 
+
+To create a new shutter configuration file:
+```bash
+python /path_to_PTT/calwebb_spec2_pytests/auxuliary_code/create_metafile.py /path_to_file/blah.msa.fits  
+```
+
+To fix an old  shutter configuration file:
+```bash
+python /path_to_PTT/calwebb_spec2_pytests/auxuliary_code/create_metafile.py /path_to_file/blah_metafile_msa.fits -f
+```
+
+To create new shutter configuration file for simulations:
+```bash
+python /path_to_PTT/calwebb_spec2_pytests/auxuliary_code/create_metafile.py /path_to_file/blah.msa.fits -s=obs1.csv,obs2.csv,obs3.csv
+```
+Note that for the simulations, the nod files are in a list separated by commas without spaces.
+
+In all cases the script ```create_metafile.py``` will output a file called 
+```blah_metafile_msa.fits```.
+
+*****
 
 
 9. Do the first PTT run. As an output of the testing tool you will see an html 
