@@ -274,7 +274,10 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         print(msg)
 
         shutter_status = bsslit.shutter_state
-        fi = shutter_status.find('x')
+        if bsslit.shutter_state == 'x':
+            fi = shutter_status.find('x')
+        if bsslit.shutter_state == '1':
+            fi = shutter_status.find('1')
         if debug:
             print('fi = ', fi)
         nax2 = hdul[1].header['NAXIS2']
