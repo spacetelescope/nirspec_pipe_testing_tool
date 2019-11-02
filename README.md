@@ -301,6 +301,7 @@ for this first pipeline.
 *****
 
 NOTE FOR SIMULATIONS:
+
 If you are working with simulations you may need to convert the count rate map to an STScI
 pipeline ingestible file (with all the keyword header modifications). In order to do this, 
 use the script called ```crm2STpipeline.py``` that lives in the ```ulits``` directory. 
@@ -313,19 +314,6 @@ a .crm or .cts suffix. The output files of this script can be directly ingested 
 the cal_spec2 pipeline, no need to run cal_dedector1.
 
 *****
-
-
-
-8. Ready to run PTT. Go back to the directory where PTT lives and into the 
-```calwebb_spec2_pytests``` directory, copy final output file from calwebb detector1 into 
-the working directory you indicated in the ```PTT_config.cfg``` file, and make sure 
-that the input file for the PTT matches the file you just copied into the working 
-directory. Now, to ensure that everything is in order, and to see what pytests will be 
-executed and in which order type:
-```bash
-pytest --collect-only
-```
-
 *****
 
 NOTE FOR MOS DATA:
@@ -358,6 +346,19 @@ In all cases the script ```create_metafile.py``` will output a file called
 ```blah_metafile_msa.fits```.
 
 *****
+
+
+
+
+8. Ready to run PTT. Go back to the directory where PTT lives and into the 
+```calwebb_spec2_pytests``` directory, copy final output file from calwebb detector1 into 
+the working directory you indicated in the ```PTT_config.cfg``` file, and make sure 
+that the input file for the PTT matches the file you just copied into the working 
+directory. Now, to ensure that everything is in order, and to see what pytests will be 
+executed and in which order type:
+```bash
+pytest --collect-only
+```
 
 
 9. Do the first PTT run. As an output of the testing tool you will see an html 
