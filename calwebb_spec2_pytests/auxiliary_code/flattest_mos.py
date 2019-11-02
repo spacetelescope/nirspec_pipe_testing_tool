@@ -229,12 +229,12 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # now go through each pixel in the test data
 
     if writefile:
-        # create the fits list to hold the image of pipeline-calculated difference values
+        # create the fits list to hold the image of the correction values
         hdu0 = fits.PrimaryHDU()
         outfile = fits.HDUList()
         outfile.append(hdu0)
 
-        # create the fits list to hold the image of pipeline-calculated difference values
+        # create the fits list to hold the image of the comparison values
         hdu0 = fits.PrimaryHDU()
         complfile = fits.HDUList()
         complfile.append(hdu0)
@@ -603,16 +603,16 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     
         # create fits file to hold the calculated flat for each slit
         if writefile:
-            # this is the file to hold the image of pipeline-calculated difference values
+            # this is the file to hold the image of the correction values
             outfile_ext = fits.ImageHDU(flatcor.reshape(wave_shape), name=slitlet_id)
             outfile.append(outfile_ext)
 
-            # this is the file to hold the image of pipeline-calculated difference values
+            # this is the file to hold the image of the comparison values
             complfile_ext = fits.ImageHDU(delf.reshape(delf_shape), name=slitlet_id)
             complfile.append(complfile_ext)
 
             # the file is not yet written, indicate that this slit was appended to list to be written
-            msg = "Extension "+repr(i)+" appended to list to be written into calculated and comparison fits files."
+            msg = "Extension corresponding to slitlet "+slitlet_id+" appended to list to be written into calculated and comparison fits files."
             print(msg)
             log_msgs.append(msg)
 

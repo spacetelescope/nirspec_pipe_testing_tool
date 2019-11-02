@@ -314,6 +314,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
 
 
         # Compute pipeline RA, DEC, and lambda
+        slitlet_test_result_list = []
         pra, pdec, pwave = wcs_slice(esax-1, esay-1)   # => RETURNS: RA, DEC, LAMBDA (lam *= 10**-6 to convert to microns)
         pwave *= 10**-6
         # calculate and print statistics for slit-y and x relative differences
@@ -324,7 +325,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         for msg in print_stats_strings:
             log_msgs.append(msg)
         result = auxfunc.does_median_pass_tes(notnan_rel_diff_pwave_stats[1], threshold_diff)
-        total_test_result[slitlet_name] = {tested_quantity : result}
+        slitlet_test_result_list.append({tested_quantity: result})
 
         # get the transforms for pipeline slit-y
         det2slit = wcs_slice.get_transform('detector', 'slit_frame')
@@ -338,7 +339,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         for msg in print_stats_strings:
             log_msgs.append(msg)
         result = auxfunc.does_median_pass_tes(notnan_rel_diff_pslity_stats[1], threshold_diff)
-        total_test_result[slitlet_name] = {tested_quantity : result}
+        slitlet_test_result_list.append({tested_quantity: result})
 
         # do the same for MSA x, y and V2, V3
         detector2msa = wcs_slice.get_transform("detector", "msa_frame")
@@ -350,7 +351,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         for msg in print_stats_strings:
             log_msgs.append(msg)
         result = auxfunc.does_median_pass_tes(notnan_reldiffpmsax_stats[1], threshold_diff)
-        total_test_result[slitlet_name] = {tested_quantity : result}
+        slitlet_test_result_list.append({tested_quantity: result})
         # MSA-y
         tested_quantity = "MSA_Y Difference"
         reldiffpmsay_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_msay, pmsay, tested_quantity)
@@ -358,7 +359,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         for msg in print_stats_strings:
             log_msgs.append(msg)
         result = auxfunc.does_median_pass_tes(notnan_reldiffpmsay_stats[1], threshold_diff)
-        total_test_result[slitlet_name] = {tested_quantity : result}
+        slitlet_test_result_list.append({tested_quantity: result})
 
         # V2 and V3
         if not skipv2v3test:
@@ -375,7 +376,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             for msg in print_stats_strings:
                 log_msgs.append(msg)
             result = auxfunc.does_median_pass_tes(notnan_reldiffpv2_stats[1], threshold_diff)
-            total_test_result[slitlet_name] = {tested_quantity : result}
+            slitlet_test_result_list.append({tested_quantity: result})
             tested_quantity = "V3 difference"
             # converting to degrees to compare with ESA
             reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, esa_slity, esa_v2v3y, pv3, tested_quantity)
@@ -387,7 +388,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             for msg in print_stats_strings:
                 log_msgs.append(msg)
             result = auxfunc.does_median_pass_tes(notnan_reldiffpv3_stats[1], threshold_diff)
-            total_test_result[slitlet_name] = {tested_quantity : result}
+            slitlet_test_result_list.append({tested_quantity: result})
+
+        total_test_result[slitlet_name] = slitlet_test_result_list
 
         # PLOTS
         if show_figs or save_figs:
@@ -496,18 +499,19 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = "FAILED"
-    for sl, testdir in total_test_result.items():
-        for t, tr in testdir.items():
-            if tr == "FAILED":
-                FINAL_TEST_RESULT = "FAILED"
-                msg = "\n * The test of "+t+" for slitlet "+sl+"  FAILED."
-                print(msg)
-                log_msgs.append(msg)
-            else:
-                FINAL_TEST_RESULT = "PASSED"
-                msg = "\n * The test of "+t+" for slitlet "+sl+ "  PASSED."
-                print(msg)
-                log_msgs.append(msg)
+    for sl, testlist in total_test_result.items():
+        for tdict in testlist:
+            for t, tr in tdict.items():
+                if tr == "FAILED":
+                    FINAL_TEST_RESULT = "FAILED"
+                    msg = "\n * The test of "+t+" for slitlet "+sl+"  FAILED."
+                    print(msg)
+                    log_msgs.append(msg)
+                else:
+                    FINAL_TEST_RESULT = "PASSED"
+                    msg = "\n * The test of "+t+" for slitlet "+sl+ "  PASSED."
+                    print(msg)
+                    log_msgs.append(msg)
 
     if FINAL_TEST_RESULT == "PASSED":
         msg = "\n *** Final result for assign_wcs test will be reported as PASSED *** \n"

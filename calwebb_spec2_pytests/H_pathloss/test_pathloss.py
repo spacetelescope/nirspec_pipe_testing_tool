@@ -219,4 +219,7 @@ def test_pthlos_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = pathloss_utils.pthlos_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]

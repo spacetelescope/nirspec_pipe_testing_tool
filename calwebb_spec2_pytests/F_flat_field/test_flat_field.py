@@ -199,12 +199,10 @@ def output_hdul(set_inandout_filenames, config):
                 pytest.skip()
 
 
-### THESE FUNCTIONS ARE TO VALIDATE BOTH THE WCS AND THE 2D_EXTRACT STEPS
 
-# fixture to validate the WCS and extract 2d steps
+# fixture to validate the flat field step
 @pytest.fixture(scope="module")
 def validate_flat_field(output_hdul):
-    # get the input information for the wcs routine
     hdu = output_hdul[0]
     step_output_file, msa_shutter_conf, dflatref_path, sfile_path, fflat_path = output_hdul[2]
     flattest_threshold_diff, save_flattest_plot, write_flattest_files = output_hdul[3]
@@ -243,8 +241,8 @@ def validate_flat_field(output_hdul):
             logging.info(msg)
 
     if median_diff == "skip":
-        print(result_msg)
         logging.info(result_msg)
+        pytest.skip(result_msg)
     else:
         print(result_msg)
         logging.info(result_msg)
@@ -299,7 +297,10 @@ def test_fflat_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = flat_field_utils.fflat_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_sflat_sfile(output_hdul):
     # want to run this pytest?
@@ -315,7 +316,10 @@ def test_sflat_sfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = flat_field_utils.sflat_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_dflat_dfile(output_hdul):
     # want to run this pytest?
@@ -331,5 +335,8 @@ def test_dflat_dfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = flat_field_utils.dflat_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 

@@ -476,12 +476,13 @@ def compute_percentage(values, threshold):
     thresh = [threshold, 3*threshold, 5*threshold]
     res = []
     for i in thresh:
-        n = np.logical_or(values > i, values< -i).nonzero()[0].size
-        res.append((n / n_total) * 100)
+        n = np.logical_or(values > i, values < -i).nonzero()[0].size
+        result = (n / n_total) * 100
+        res.append(result)
     return res
 
 
-def print_stats(arrX, xname, threshold_diff, abs=False):
+def print_stats(arrX, xname, threshold_diff, abs=False, return_percentages=False):
     """
     This function prints the statistics for the given arrays.
     Args:
@@ -526,8 +527,20 @@ def print_stats(arrX, xname, threshold_diff, abs=False):
     stats_print_strings.append(threshold1)
     stats_print_strings.append(threshold3)
     stats_print_strings.append(threshold5)
+    if int(round(percentage_results[1], 0)) > 10:
+        msg = '\n *** WARNING: More than 10% of pixels have a median value greater than 3xthreshold!\n'
+        print(msg)
+        stats_print_strings.append(msg)
+    if int(round(percentage_results[2], 0)) > 10:
+        msg = '\n *** WARNING: More than 10% of pixels have a median value greater than 5xthreshold!\n'
+        print(msg)
+        stats_print_strings.append(msg)
     x_stats = [arrX_mean, arrX_median, arrX_stdev]
-    return x_stats, stats_print_strings
+    if return_percentages:
+        percentages = [int(round(percentage_results[0], 0)), int(round(percentage_results[1], 0)), int(round(percentage_results[2], 0))]
+        return x_stats, stats_print_strings, percentages
+    else:
+        return x_stats, stats_print_strings
 
 
 def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, abs=False):

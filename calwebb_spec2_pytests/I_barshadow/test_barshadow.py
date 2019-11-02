@@ -14,6 +14,7 @@ from jwst.barshadow.barshadow_step import BarShadowStep
 from . import barshadow_utils
 from .. import core_utils
 from .. auxiliary_code import change_filter_opaque2science
+from .. auxiliary_code import barshadow_testing
 
 
 
@@ -46,9 +47,13 @@ def output_hdul(set_inandout_filenames, config):
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     # determine which tests are to be run
     barshadow_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
-    #barshadow_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
-    #barshadow_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
-    run_pytests = [barshadow_completion_tests]#, barshadow_reffile_tests, barshadow_validation_tests]
+    barshadow_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    run_pytests = [barshadow_completion_tests, barshadow_validation_tests]
+    barshadow_threshold_diff = config.get("additional_arguments", "barshadow_threshold_diff")
+    save_barshadow_final_plot = config.getboolean("additional_arguments", "save_barshadow_final_plot")
+    save_barshadow_intermediary_plots = config.getboolean("additional_arguments", "save_barshadow_intermediary_plots")
+    write_barshadow_files = config.getboolean("additional_arguments", "write_barshadow_files")
+    barshadow_switches = [barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots, write_barshadow_files]
 
     end_time = '0.0'
 
@@ -79,7 +84,7 @@ def output_hdul(set_inandout_filenames, config):
 
         if run_calwebb_spec2:
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            return hdul, step_output_file, run_pytests
+            return hdul, step_output_file, barshadow_switches, run_pytests
 
         else:
             if run_pipe_step:
@@ -137,7 +142,7 @@ def output_hdul(set_inandout_filenames, config):
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests
+                    return hdul, step_output_file, barshadow_switches, run_pytests
 
                 else:
                     msg = " The input file does not exist. Skipping step."
@@ -156,7 +161,7 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = True
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests
+                    return hdul, step_output_file, barshadow_switches, run_pytests
                 else:
                     step_completed = False
                     # add the running time for this step
@@ -169,12 +174,58 @@ def output_hdul(set_inandout_filenames, config):
 
 
 
+# fixture to validate the barshadow correction
+@pytest.fixture(scope="module")
+def validate_barshadow(output_hdul):
+    hdu = output_hdul[0]
+    log_msgs = None
+
+    # show the figures
+    show_figs = False
+
+    # Determine if data is MOS
+    if core_utils.check_MOS_true(hdu):
+        # Determine if the source is point or extended. If extended, unknown, or not present, correction will be applied.
+        if 'SRCTYPE' in hdu:
+            if hdu['SRCTYPE'] == 'POINT':
+                pytest.skip("Skipping pytest: The SRCTYPE keyword is set to POINT so barshadow correction is not applied.")
+
+        plfile = output_hdul[1].replace('_barshadow', '_pathloss')
+        bsfile = output_hdul[1]
+        barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots, write_barshadow_files = output_hdul[2]
+        median_diff, result_msg, log_msgs = barshadow_testing.run_barshadow_tests(plfile, bsfile,
+                                                        barshadow_threshold_diff=float(barshadow_threshold_diff),
+                                                        save_final_figs=save_barshadow_final_plot,
+                                                        show_final_figs=show_figs,
+                                                        save_intermediary_figs=save_barshadow_intermediary_plots,
+                                                        show_intermediary_figs=show_figs,
+                                                        write_barshadow_files = write_barshadow_files,
+                                                        debug=False)
+
+    else:
+        pytest.skip("Skipping pytest: The input fits file is not MOS.")
+
+    if log_msgs is not None:
+        for msg in log_msgs:
+            logging.info(msg)
+
+    if median_diff == "skip":
+        logging.info(result_msg)
+        pytest.skip(result_msg)
+    else:
+        print(result_msg)
+        logging.info(result_msg)
+
+    return median_diff
+
+
+
 # Unit tests
 
 def test_s_barsha_exists(output_hdul):
     # want to run this pytest?
-    # output_hdul[2] = barshadow_completion_tests, barshadow_reffile_tests, barshadow_validation_tests
-    run_pytests = output_hdul[2][0]
+    # output_hdul[3] = barshadow_completion_tests, barshadow_validation_tests
+    run_pytests = output_hdul[3][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -185,4 +236,21 @@ def test_s_barsha_exists(output_hdul):
         print(msg)
         logging.info(msg)
         assert barshadow_utils.s_barsha_exists(output_hdul[0]), "The keyword S_BARSHA was not added to the header --> Barshadow step was not completed."
+
+
+def test_validate_barshadow(output_hdul, request):
+    # want to run this pytest?
+    # output_hdul[3] = barshadow_completion_tests, barshadow_validation_tests
+    run_pytests = output_hdul[3][1]
+    if not run_pytests:
+        msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        logging.info(msg)
+        pytest.skip(msg)
+    else:
+        msg = "\n * Running validation pytest...\n"
+        print(msg)
+        logging.info(msg)
+        assert request.getfixturevalue("validate_barshadow"), "Output value from barshadow_testing.py is greater than threshold."
+
 

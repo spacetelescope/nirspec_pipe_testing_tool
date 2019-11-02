@@ -29,7 +29,7 @@ step_string_dict["imprint_subtract"] = {"outfile" : True, "suffix" : "_imprint"}
 step_string_dict["msa_flagging"]     = {"outfile" : True, "suffix" : "_msa_flagging"}
 step_string_dict["extract_2d"]       = {"outfile" : True, "suffix" : "_extract_2d"}
 step_string_dict["flat_field"]       = {"outfile" : True, "suffix" : "_flat_field"}
-step_string_dict["srctype"]          = {"outfile" : False, "suffix" : "N/A"}
+step_string_dict["srctype"]          = {"outfile" : True, "suffix" : "_srctype"}
 #step_string_dict["straylight"]       = {"outfile" : True, "suffix" : "_stray"}   # MIRI only
 #step_string_dict["fringe"]           = {"outfile" : True, "suffix" : "_fringe"}   # MIRI only
 step_string_dict["pathloss"]         = {"outfile" : True, "suffix" : "_pathloss"}
@@ -243,6 +243,10 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
             step_output_filename = os.path.join(working_directory, step_output_basename)
             # now exit the for loop because step was reached
             break
+    if debug:
+        print("Step input file:  ", step_input_filename)
+        print("Step output file: ", step_output_filename)
+        input()
 
     return in_file_suffix, out_file_suffix, step_input_filename, step_output_filename
 

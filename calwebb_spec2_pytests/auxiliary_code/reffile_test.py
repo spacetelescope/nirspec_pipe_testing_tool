@@ -13,10 +13,6 @@ from astropy.time import Time
 from crds.matches import find_match_paths_as_dict as ref_matches
 from crds import getrecommendations
 
-# import the subarrays dictionary
-sys.path.insert(0, '../../utils')
-from utils import subarray_dict as subdict
-
 
 def check_meta(input_file, match_key, match_val):
     input_val = input_file[match_key.lower()]
@@ -53,6 +49,11 @@ def load_input_file(path_to_input_file, logstream=None):
     
     return input_file
     
+
+'''
+# import the subarrays dictionary
+sys.path.insert(0, '../../utils')
+from utils import subarray_dict as subdict
     
 def get_subarray(fits_file):
     print('Determining subarray')
@@ -94,6 +95,7 @@ def get_subarray(fits_file):
                     print("substrt1=", sst1, " substrt2=", sst2, " subsize1=", ssz1, " subsize2=", ssz2)
                     print("Setting subarray keyword to ", subarrd_key, "\n")
     return subarrd_key
+    '''
 
 
 def reffile_test(path_to_input_file, pipeline_step, logfile=None,
@@ -104,7 +106,8 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     was updated manually on CRDS (to avoid redelivering files for a minor
     keyword change), this will test the actual match criteria.
     """
-    
+    log_msgs = []
+
     logstream, errstream = get_streams(logfile=logfile)
     
     #Convert pipeline step to a header keyword if necessary
@@ -124,6 +127,7 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         reffile_name = fits.getval(path_to_input_file, step_key)
     except KeyError:
         print("Invalid pipeline step", file=errstream)
+        log_msgs.append("Invalid pipeline step")
         return None
     
     reffile_name = reffile_name.replace('crds://', '')
@@ -131,12 +135,14 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     #Is there a reference file for this step? If not, PASS
     if reffile_name == "N/A":
         print("No reference file for step {}.".format(pipeline_step), file=errstream)
+        log_msgs.append("No reference file for step {}.".format(pipeline_step))
         return ""
     
     #Grab metadata from the input and reference files
     if input_file is None:
         input_file = load_input_file(path_to_input_file, logstream=logstream)
     print("Grabbing CRDS match criteria...", file=logstream)
+    log_msgs.append("Grabbing CRDS match criteria...")
     try:
         match_criteria = ref_matches(context, reffile_name)[0]
     except ValueError:
@@ -148,7 +154,8 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     match_criteria['META.INSTRUMENT.NAME'] = 'NIRSPEC'
 
     # make sure that the subarray keyword is correct for the size of the data
-    subarray = get_subarray(path_to_input_file)
+    #subarray = get_subarray(path_to_input_file)
+    subarray = fits.getval(path_to_input_file, 'SUBARRAY', 0)
     match_criteria['META.SUBARRAY.NAME'] = subarray
 
     #Test whether the recommended reference file was actually selected
@@ -161,9 +168,15 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         recommended_reffile = os.path.basename(recommended_reffile) #remove path, only want to test filename
         tests['RECOMMENDATION'] = recommended_reffile == reffile_name
     else:
-        print('* WARNING: Unable to find recommendation for the reference file:')
-        print('        Match criteria determined by pipeline to find reference file: ', match_criteria)
-        print('        Recommendation dictionary = ', recommended_reffile)
+        msg1 = '* WARNING: Unable to find recommendation for the reference file:'
+        msg2 = '        Match criteria determined by pipeline to find reference file: ', repr(match_criteria)
+        msg3 = '        Recommendation dictionary = '+repr(recommended_reffile)
+        log_msgs.append(msg1)
+        log_msgs.append(msg2)
+        log_msgs.append(msg3)
+        print(msg1)
+        print(msg2)
+        print(msg3)
 
     #Remove irrelevant match criteria
     del match_criteria['observatory']
@@ -200,6 +213,12 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     print("  Header keyword: {}".format(step_key), file=logstream)
     print("  Reference file selected: {}".format(reffile_name), file=logstream)
     print("  **Metadata tests performed:**", file=logstream)
+    log_msgs.append("REFERENCE FILE SELECTION TEST")
+    log_msgs.append("  Input file: {}".format(path_to_input_file))
+    log_msgs.append("  Pipeline step: {}".format(pipeline_step))
+    log_msgs.append("  Header keyword: {}".format(step_key))
+    log_msgs.append("  Reference file selected: {}".format(reffile_name))
+    log_msgs.append("  **Metadata tests performed:**")
     rescode = {None: "N/A", True: "PASS", False: "FAIL"}
     for meta in sorted(tests):
         result = tests[meta]
@@ -214,13 +233,17 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
             failures.append(failmsg.format(meta, rval, ival))
             print("      Input file value: {}".format(ival), file=logstream)
             print("      Reference file value: {}".format(rval), file=logstream)
+            log_msgs.append("      Input file value: {}".format(ival))
+            log_msgs.append("      Reference file value: {}".format(rval))
+
     print("  Final result: {}".format(rescode[final]), file=logstream)
-    
+    log_msgs.append("  Final result: {}".format(rescode[final]))
+
     #Close the output stream if necessary
     if logfile is not None:
         logstream.close()
     
-    return "\n".join(failures)
+    return "\n".join(failures), log_msgs
 
 def create_rfile_test(step, doc_insert):
     """

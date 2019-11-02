@@ -516,14 +516,14 @@ if __name__ == '__main__':
     pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
 
     # input parameters that the script expects
-    #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G235H_opaque/491_results"
-    #data_dir = pipeline_path+"/build7.1/part2/FS_FULL_FRAME/G140H_opaque"
+    #data_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/testing_data/FS_FULL_FRAME/G235H_opaque/491_results"
+    #data_dir = pipeline_path+"/testing_data/FS_FULL_FRAME/G140H_opaque"
     ##infile_name = data_dir+"/jwdata0010010_11010_0001_NRS1_assign_wcs.fits"   # for G140H
-    #infile_name = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G140H_opaque/gain_scale_NRS1_assign_wcs.fits"
-    #infile_name = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G140M_F070LP/final_output_caldet1_NRS1_assign_wcs.fits"
-    #infile_name = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G235H_F170LP/ALLSLITS_g235H_gain_scale_NRS1_assignwcsstep.fits"
-    infile_name = pipeline_path+"/build7.1/part2/FS_ALLSLITS/G235H_F170LP/final_output_caldet1_NRS1_assign_wcs.fits"
-    #infile_name = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/build7.1/part2/FS_FULL_FRAME/G140H_opaque/jwdata0010010_11010_0001_NRS1_assign_wcs.fits"
+    #infile_name = pipeline_path+"/testing_data/FS_ALLSLITS/G140H_opaque/gain_scale_NRS1_assign_wcs.fits"
+    #infile_name = pipeline_path+"/testing_data/FS_ALLSLITS/G140M_F070LP/final_output_caldet1_NRS1_assign_wcs.fits"
+    #infile_name = pipeline_path+"/testing_data/FS_ALLSLITS/G235H_F170LP/ALLSLITS_g235H_gain_scale_NRS1_assignwcsstep.fits"
+    infile_name = pipeline_path+"/testing_data/FS_ALLSLITS/G235H_F170LP/final_output_caldet1_NRS1_assign_wcs.fits"
+    #infile_name = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/testing_data/FS_FULL_FRAME/G140H_opaque/jwdata0010010_11010_0001_NRS1_assign_wcs.fits"
     #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_FixedSlit/"
     #esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3_cutouts/ESA_Int_products"
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3/ESA_Int_products"

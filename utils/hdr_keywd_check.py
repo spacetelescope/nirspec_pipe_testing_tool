@@ -418,11 +418,11 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         yr = val.split("-")[0]
                         mo = val.split("-")[1]
                         if int(yr) < 2016:
-                            val = "2016-06-11"
+                            val = "2017-10-11"
                             specific_keys_dict[key] = val
                             missing_keywds.append(key)
                         elif int(mo) < 5:
-                            val = "2016-06-11"
+                            val = "2017-10-11"
                             specific_keys_dict[key] = val
                             missing_keywds.append(key)
                 elif key=='TIME-OBS':

@@ -399,7 +399,10 @@ def test_rmask_rfile(output_hdul):
     else:
         print("\n * Running reference file pytest...")
         result = assign_wcs_utils.rmask_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_saturation_rfile(output_hdul):
     # want to run this pytest?
@@ -415,7 +418,10 @@ def test_saturation_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.saturation_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_superbias_rfile(output_hdul):
     # want to run this pytest?
@@ -431,7 +437,10 @@ def test_superbias_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.superbias_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_linearity_rfile(output_hdul):
     # want to run this pytest?
@@ -447,7 +456,10 @@ def test_linearity_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.linearity_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_dark_rfile(output_hdul):
     # want to run this pytest?
@@ -463,7 +475,10 @@ def test_dark_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.dark_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_readnoise_rfile(output_hdul):
     # want to run this pytest?
@@ -477,7 +492,10 @@ def test_readnoise_rfile(output_hdul):
     else:
         print("\n * Running reference file pytest...")
         result = assign_wcs_utils.readnoise_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_gain_rfile(output_hdul):
     # want to run this pytest?
@@ -493,7 +511,10 @@ def test_gain_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.gain_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 
 # reference files specific to the WCS step
@@ -511,7 +532,10 @@ def test_camera_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.camera_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_colimator_rfile(output_hdul):
     # want to run this pytest?
@@ -527,7 +551,10 @@ def test_colimator_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.colimator_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_disperser_rfile(output_hdul):
     # want to run this pytest?
@@ -543,7 +570,10 @@ def test_disperser_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.disperser_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_fore_rfile(output_hdul):
     # want to run this pytest?
@@ -559,7 +589,10 @@ def test_fore_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.fore_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_fpa_rfile(output_hdul):
     # want to run this pytest?
@@ -575,7 +608,10 @@ def test_fpa_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.fpa_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_ifufore_rfile(output_hdul):
     # want to run this pytest?
@@ -591,7 +627,16 @@ def test_ifufore_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.ifufore_rfile_is_correct(output_hdul)
-        assert not result, result
+        if result:
+            for log_msg in result[1]:
+                print(log_msg)
+                logging.info(log_msg)
+            assert not result[0], result[0]
+        else:
+            msg = "Skipping ref_file pytest because data is NOT IFU.\n"
+            print(msg)
+            logging.info(msg)
+            pytest.skip(msg)
 
 def test_ifupost_rfile(output_hdul):
     # want to run this pytest?
@@ -607,7 +652,16 @@ def test_ifupost_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.ifupost_rfile_is_correct(output_hdul)
-        assert not result, result
+        if result:
+            for log_msg in result[1]:
+                print(log_msg)
+                logging.info(log_msg)
+            assert not result[0], result[0]
+        else:
+            msg = "Skipping ref_file pytest because data is NOT IFU.\n"
+            print(msg)
+            logging.info(msg)
+            pytest.skip(msg)
 
 def test_ifuslicer_rfile(output_hdul):
     # want to run this pytest?
@@ -623,7 +677,16 @@ def test_ifuslicer_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.ifuslicer_rfile_is_correct(output_hdul)
-        assert not result, result
+        if result:
+            for log_msg in result[1]:
+                print(log_msg)
+                logging.info(log_msg)
+            assert not result[0], result[0]
+        else:
+            msg = "Skipping ref_file pytest because data is NOT IFU.\n"
+            print(msg)
+            logging.info(msg)
+            pytest.skip(msg)
 
 def test_msa_rfile(output_hdul):
     # want to run this pytest?
@@ -639,7 +702,16 @@ def test_msa_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.msa_rfile_is_correct(output_hdul)
-        assert not result, result
+        if result:
+            for log_msg in result[1]:
+                print(log_msg)
+                logging.info(log_msg)
+            assert not result[0], result[0]
+        else:
+            msg = "Skipping ref_file pytest because data is NOT MOS.\n"
+            print(msg)
+            logging.info(msg)
+            pytest.skip(msg)
 
 def test_ote_rfile(output_hdul):
     # want to run this pytest?
@@ -655,7 +727,10 @@ def test_ote_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.ote_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 def test_wavran_rfile(output_hdul):
     # want to run this pytest?
@@ -671,7 +746,10 @@ def test_wavran_rfile(output_hdul):
         print(msg)
         logging.info(msg)
         result = assign_wcs_utils.wavran_rfile_is_correct(output_hdul)
-        assert not result, result
+        for log_msg in result[1]:
+            print(log_msg)
+            logging.info(log_msg)
+        assert not result[0], result[0]
 
 
 # other tests specific to the WCS step
