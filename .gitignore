@@ -10,6 +10,8 @@ __pycashe__
 *.html
 *.png
 *.jpg
+*.txt
+*.log
 notes_on_pytests.txt
 True_steps_suffix_map.txt
 assets

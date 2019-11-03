@@ -325,6 +325,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         for msg in print_stats_strings:
             log_msgs.append(msg)
         result = auxfunc.does_median_pass_tes(notnan_rel_diff_pwave_stats[1], threshold_diff)
+        msg = 'Result for test of ' + tested_quantity + ': ' + result
+        print(msg)
+        log_msgs.append(msg)
         slitlet_test_result_list.append({tested_quantity: result})
 
         # get the transforms for pipeline slit-y
@@ -339,6 +342,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         for msg in print_stats_strings:
             log_msgs.append(msg)
         result = auxfunc.does_median_pass_tes(notnan_rel_diff_pslity_stats[1], threshold_diff)
+        msg = 'Result for test of ' + tested_quantity + ': ' + result
+        print(msg)
+        log_msgs.append(msg)
         slitlet_test_result_list.append({tested_quantity: result})
 
         # do the same for MSA x, y and V2, V3
@@ -351,6 +357,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         for msg in print_stats_strings:
             log_msgs.append(msg)
         result = auxfunc.does_median_pass_tes(notnan_reldiffpmsax_stats[1], threshold_diff)
+        msg = 'Result for test of ' + tested_quantity + ': ' + result
+        print(msg)
+        log_msgs.append(msg)
         slitlet_test_result_list.append({tested_quantity: result})
         # MSA-y
         tested_quantity = "MSA_Y Difference"
@@ -359,6 +368,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
         for msg in print_stats_strings:
             log_msgs.append(msg)
         result = auxfunc.does_median_pass_tes(notnan_reldiffpmsay_stats[1], threshold_diff)
+        msg = 'Result for test of ' + tested_quantity + ': ' + result
+        print(msg)
+        log_msgs.append(msg)
         slitlet_test_result_list.append({tested_quantity: result})
 
         # V2 and V3
@@ -376,6 +388,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             for msg in print_stats_strings:
                 log_msgs.append(msg)
             result = auxfunc.does_median_pass_tes(notnan_reldiffpv2_stats[1], threshold_diff)
+            msg = 'Result for test of '+tested_quantity+': '+result
+            print(msg)
+            log_msgs.append(msg)
             slitlet_test_result_list.append({tested_quantity: result})
             tested_quantity = "V3 difference"
             # converting to degrees to compare with ESA
@@ -388,6 +403,9 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
             for msg in print_stats_strings:
                 log_msgs.append(msg)
             result = auxfunc.does_median_pass_tes(notnan_reldiffpv3_stats[1], threshold_diff)
+            msg = 'Result for test of '+tested_quantity+': '+result
+            print(msg)
+            log_msgs.append(msg)
             slitlet_test_result_list.append({tested_quantity: result})
 
         total_test_result[slitlet_name] = slitlet_test_result_list

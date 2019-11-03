@@ -48,54 +48,6 @@ def load_input_file(path_to_input_file, logstream=None):
         import pdb; pdb.set_trace()
     
     return input_file
-    
-
-'''
-# import the subarrays dictionary
-sys.path.insert(0, '../../utils')
-from utils import subarray_dict as subdict
-    
-def get_subarray(fits_file):
-    print('Determining subarray')
-    # set the subarray according to size
-    detector = fits.getval(fits_file, "DETECTOR", 0)
-    grating = fits.getval(fits_file, "GRATING", 0)
-    substrt1 = fits.getval(fits_file, "substrt1", 0)
-    substrt2 = fits.getval(fits_file, "substrt2", 0)
-    subsize1 = fits.getval(fits_file, "subsize1", 0)
-    subsize2 = fits.getval(fits_file, "subsize2", 0)
-    for subarrd_key, subarrd_vals_dir in subdict.subarray_dict.items():
-        sst1 = subarrd_vals_dir["substrt1"]
-        sst2_dict = subarrd_vals_dir["substrt2"]
-        ssz1 = subarrd_vals_dir["subsize1"]
-        ssz2 = subarrd_vals_dir["subsize2"]
-        # print ("sst1=", sst1, "  sst2_list=", sst2_list, "  ssz1=", ssz1, "  ssz2=", ssz2)
-        if substrt1 == sst1 and subsize1 == ssz1 and subsize2 == ssz2:
-            for grat, sst2_tuple in sst2_dict.items():
-                if grat.lower() == grating.lower():
-                    if 'FULL' in subarrd_key:
-                        subarrd_key = 'FULL'
-                    elif '200A1' in subarrd_key:
-                        subarrd_key = 'SUBS200A1'
-                    elif '200A2' in subarrd_key:
-                        subarrd_key = 'SUBS200A2'
-                    elif '200B1' in subarrd_key:
-                        subarrd_key = 'SUBS200B1'
-                    elif '400A1' in subarrd_key:
-                        subarrd_key = 'SUBS400A1'
-                    # this part is simply to check that the subarray values are correct
-                    # but no values will be changed in the input file
-                    if "1" in detector:
-                        sst2 = sst2_tuple[0]
-                    elif "2" in detector:
-                        sst2 = sst2_tuple[1]
-                    print("\nSubarray values in input file:", )
-                    print("substrt1=", substrt1, " substrt2=", substrt2, " subsize1=", subsize1, " subsize2=", subsize2)
-                    print("Subarray values in PTT dictionary:", )
-                    print("substrt1=", sst1, " substrt2=", sst2, " subsize1=", ssz1, " subsize2=", ssz2)
-                    print("Setting subarray keyword to ", subarrd_key, "\n")
-    return subarrd_key
-    '''
 
 
 def reffile_test(path_to_input_file, pipeline_step, logfile=None,

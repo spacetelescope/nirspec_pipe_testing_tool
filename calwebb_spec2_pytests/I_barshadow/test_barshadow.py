@@ -193,7 +193,7 @@ def validate_barshadow(output_hdul):
         plfile = output_hdul[1].replace('_barshadow', '_pathloss')
         bsfile = output_hdul[1]
         barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots, write_barshadow_files = output_hdul[2]
-        median_diff, result_msg, log_msgs = barshadow_testing.run_barshadow_tests(plfile, bsfile,
+        barshadow_testresult, result_msg, log_msgs = barshadow_testing.run_barshadow_tests(plfile, bsfile,
                                                         barshadow_threshold_diff=float(barshadow_threshold_diff),
                                                         save_final_figs=save_barshadow_final_plot,
                                                         show_final_figs=show_figs,
@@ -209,14 +209,14 @@ def validate_barshadow(output_hdul):
         for msg in log_msgs:
             logging.info(msg)
 
-    if median_diff == "skip":
+    if barshadow_testresult == "skip":
         logging.info(result_msg)
         pytest.skip(result_msg)
     else:
         print(result_msg)
         logging.info(result_msg)
 
-    return median_diff
+    return barshadow_testresult
 
 
 

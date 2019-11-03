@@ -471,27 +471,27 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         print('total_test_result = ', total_test_result)
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
-    FINAL_TEST_RESULT = "FAILED"
+    FINAL_TEST_RESULT = False
     for sl, testlist in total_test_result.items():
         for tdict in testlist:
             for t, tr in tdict.items():
                 if tr == "FAILED":
-                    FINAL_TEST_RESULT = "FAILED"
+                    FINAL_TEST_RESULT = False
                     msg = "\n * The test of "+t+" for slitlet "+sl+"  FAILED."
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    FINAL_TEST_RESULT = "PASSED"
+                    FINAL_TEST_RESULT = True
                     msg = "\n * The test of "+t+" for slitlet "+sl+ "  PASSED."
                     print(msg)
                     log_msgs.append(msg)
 
-    if FINAL_TEST_RESULT == "PASSED":
-        result_msg = "\n *** Final result for assign_wcs test will be reported as PASSED *** \n"
+    if FINAL_TEST_RESULT:
+        result_msg = "\n *** Final result for barshadow test will be reported as PASSED *** \n"
         print(result_msg)
         log_msgs.append(result_msg)
     else:
-        result_msg = "\n *** Final result for assign_wcs test will be reported as FAILED *** \n"
+        result_msg = "\n *** Final result for barshadow test will be reported as FAILED *** \n"
         print(result_msg)
         log_msgs.append(result_msg)
 
@@ -499,12 +499,12 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
     barshadow_test_end_time = time.time() - barshadow_test_start_time
     if barshadow_test_end_time > 60.0:
         barshadow_test_end_time = barshadow_test_end_time/60.0  # in minutes
-        barshadow_test_tot_time = "* Script flattest_mos.py took ", repr(barshadow_test_end_time)+" minutes to finish."
+        barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time)+" minutes to finish."
         if barshadow_test_end_time > 60.0:
             barshadow_test_end_time = barshadow_test_end_time/60.  # in hours
-            barshadow_test_tot_time = "* Script flattest_mos.py took ", repr(barshadow_test_end_time)+" hours to finish."
+            barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time)+" hours to finish."
     else:
-        barshadow_test_tot_time = "* Script flattest_mos.py took ", repr(barshadow_test_end_time)+" seconds to finish."
+        barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time)+" seconds to finish."
     print(barshadow_test_tot_time)
     log_msgs.append(barshadow_test_tot_time)
 
