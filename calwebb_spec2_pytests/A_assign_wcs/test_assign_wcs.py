@@ -12,6 +12,7 @@ from astropy.io import fits
 from glob import glob
 from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
 from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
+from jwst.pipeline.calwebb_image2 import Image2Pipeline
 
 from . import assign_wcs_utils
 from .. import core_utils
@@ -29,13 +30,14 @@ print(pipeline_version)
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.2"
+__version__ = "2.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
 # Feb 2019 - Version 2.1: Maria made changes to be able to process 491 and 492 files in the same directory
 # Apr 2019 - Version 2.2: implemented logging capability
+# Dec 2019 - Version 2.3: implemented image processing
 
 
 
@@ -126,6 +128,11 @@ def output_hdul(set_inandout_filenames, config):
             msametfl = os.path.basename(msa_shutter_conf)
             fits.setval(step_input_file, "MSAMETFL", 0, value=msametfl)
 
+    # check if processing an image, then set propper variables
+    if mode_used in ('image', 'confirm', 'taconfirm', 'wata', 'msata', 'focus', 'mimf'):
+        run_calwebb_spec2 = True
+        print('\n * Image processing will only be run in full with PTT. All intermediary products will be saved.\n')
+
     # run the pipeline
     if run_calwebb_spec2:
 
@@ -156,8 +163,11 @@ def output_hdul(set_inandout_filenames, config):
 
         # get the name of the configuration file and run the pipeline
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
+        calwebb_image2_cfg = False
         if mode_used == "BOTS":
             calwebb_spec2_cfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "calwebb_tso_spec2.cfg")
+        elif mode_used in ('image', 'confirm', 'taconfirm', 'wata', 'msata', 'focus', 'mimf'):
+            calwebb_image2_cfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "calwebb_image2.cfg")
         input_file = config.get("calwebb_spec2_input_file", "input_file")
         if "_uncal_rate" in input_file:
             input_file = input_file.replace("_uncal_rate", "")
@@ -170,7 +180,12 @@ def output_hdul(set_inandout_filenames, config):
 
         # start the timer to compute the step running time
         start_time = time.time()
-        Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)#, logcfg="stpipe-log.cfg")
+
+        # run the pipeline
+        if not calwebb_image2_cfg:
+            Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)#, logcfg="stpipe-log.cfg")
+        else:
+            Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
 
         # end the timer to compute calwebb_spec2 running time
         end_time = repr(time.time() - start_time)   # this is in seconds
