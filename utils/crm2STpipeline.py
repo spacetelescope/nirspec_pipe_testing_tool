@@ -16,14 +16,17 @@ Example usage:
     
     Terminal 
         To create a NEW fits file with the updated header type:
-        > python /path_to_this_script/crm2STpipeline.py blah.fits IFU
+        > python /path_to_this_script/crm2STpipeline.py blah.fits MODE
 
         To add the reference pixels add at the end of the command -rfpx, e.g.
-        > python /path_to_this_script/crm2STpipeline.py blah.fits IFU -rfpx
+        > python /path_to_this_script/crm2STpipeline.py blah.fits MODE -rfpx
     
     As a module 
         import crm2STpipeline 
         crm2STpipeline.crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update)
+    
+    * NOTE: In all cases the MODE can be any of the following: 
+            FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf
 
 """
 
@@ -32,7 +35,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
     This function is the wraper for the scripts needed to convert a crm file to a pipeline ready product.
     Args:
         input_fits_file: string, name and path of the input file
-        mode_used: string, observation mode used: FS, MOS, IFU, BOTS, dark
+        mode_used: string, possible values are FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf
         add_ref_pix: boolean, if True it will add the reference pixels for full frame
         only_update: boolean, if False the code will create a new file with updated header
 
@@ -87,8 +90,13 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
     if not sci_ext and not dq_ext and not err_ext:
         print("Renaming extensions for ST pipeline...")
         for det in detectors:
+            # rename extensions in the file to match expected names in the pipeline
             move_data2ext1.move_data(input_fits_file, det, add_ref_pix)
             st_pipe_file = input_fits_file.replace(".fits", "_" + det + "_modified.fits")
+
+            # perform rotations expected in the pipeline
+            print("Rotating data for ST pipeline ingestion.")
+            st_pipe_file = rm_extra_exts_and_rotate(st_pipe_file, det)
 
             # Perform the keyword check on the file with the right number of extensions
             print("Fixing the header keywords for detector ", det)
@@ -172,7 +180,7 @@ if __name__ == '__main__':
                         #dest="mode_used",
                         action='store',
                         default=None,
-                        help='Observation mode used: FS, MOS, IFU, BOTS, dark.')
+                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.')
     parser.add_argument("-rfpx",
                         dest="add_ref_pix",
                         action='store_true',

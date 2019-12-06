@@ -50,8 +50,9 @@ def move_data(input_fits_file, detector='NRS1', add_ref_pix=False):
     
     # move the the data to extension corresponding to de detector indicated in the function arguments
     det = 1   # default for NRS1=491
-    if '2' in detector:
-        det = 4
+    if len(fits.open(input_fits_file)) > 5:
+        if '2' in detector:
+            det = 4
     input_fits_file_data = fits.getdata(input_fits_file, det)
     if add_ref_pix:
         print(" * Reference pixels will be added.")

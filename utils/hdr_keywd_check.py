@@ -28,8 +28,8 @@ Example usage:
     To simply update the header of the existing fits file type:
         > python /path_to_this_script/hdr_keywd_check.py blah.fits -u -m=FS
 
-where the -m flag is the mode used, i.e. FS, MOS, IFU, BOTS, dark. If a mode is not provided, the code will look for a
-mode_used variable in the pytests configuration file.
+where the -m flag is the mode used, i.e. FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf. 
+If a mode is not provided, the code will look for a mode_used variable in the pytests configuration file.
 
 '''
 
@@ -497,6 +497,20 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = 'NRS_BRIGHTOBJ'
                     if mode_used.lower() == "dark":
                         val = 'NRS_DARK'
+                    if mode_used.lower() == "image":
+                        val = 'NRS_IMAGE'
+                    if mode_used.lower() == "confirm":
+                        val = 'NRS_CONFIRM'
+                    if mode_used.lower() == "taconfirm":
+                        val = 'NRS_TACONFIRM'
+                    if mode_used.lower() == "wata":
+                        val = 'NRS_WATA'
+                    if mode_used.lower() == "msata":
+                        val = 'NRS_MSATA'
+                    if mode_used.lower() == "focus":
+                        val = 'NRS_FOCUS'
+                    if mode_used.lower() == "mimf":
+                        val = 'NRS_MIMF'
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
                     print('     Setting value of ', key, ' to ', val)
@@ -523,6 +537,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
                 if key == 'GWA_PYAV':
+                    val = float(val)
+                    specific_keys_dict[key] = val
+                    missing_keywds.append(key)
+                if key == 'PHOTMJSR':
                     val = float(val)
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
@@ -670,7 +688,7 @@ if __name__ == '__main__':
                         dest="mode_used",
                         action='store',
                         default=None,
-                        help='Observation mode used: FS, MOS, or IFU.')
+                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.')
     args = parser.parse_args()
 
     # Set the variables

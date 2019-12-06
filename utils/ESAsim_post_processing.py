@@ -30,14 +30,14 @@ from nrspydet.misc import fpa106_toolbox as fpa106_toolbox
 from nrspysim.products import electronratemap as c_electronratemap
 from nips.archives import toolbox as archive_toolbox
 from nrspysim.misc import erm_to_sci as erm_to_sci
-import subarray_id_dict as subdict
 from nrspylib.geometry import tiltpoly
+import subarray_dict as subdict
 
 
 # ===============================================================
 # Module-wide variables
 # ===============================================================
-_name = "post_processing.py"
+_name = "ESAsim_post_processing.py"
 _version = "1.0.0"
 
 #These are parameters that are too big to be a default
@@ -92,10 +92,10 @@ def f_post_processing(input_inpath, input_fwa, input_gwa, input_nexp, input_ng, 
     print("# Type of input file: {:s}".format(filetype))
     print("# =====================================")
 
-# ===============================================================
-# Printout: Exposure parameters
-# ===============================================================
-print("# Detector configuration:")
+    # ===============================================================
+    # Printout: Exposure parameters
+    # ===============================================================
+    print("# Detector configuration:")
     nexp = input_nexp
     print("# Number of exposures per scene: {:d}".format(nexp))
     ng = input_ng
@@ -138,12 +138,12 @@ print("# Detector configuration:")
     object_suffix = input_object
     if object_suffix is not None:
         print("# Suffix for the object electron-rate map: {:s}".format(object_suffix))
-seed = input_seed
+    seed = input_seed
     if (seed is None):
         print("# No random generator seed provided.")
-else:
-    print("# Random generator seed: {:d}".format(seed))
-    np.random.seed(seed=seed)
+    else:
+        print("# Random generator seed: {:d}".format(seed))
+        np.random.seed(seed=seed)
     factor = input_factor
     print("# Normalisation factor: {:8.4e}".format(factor))
     print("# =====================================")
@@ -172,21 +172,21 @@ else:
     #If necessary, massage the erm filename dictionary to make it compatible
     input_list = f_modify_dict(input_list, mode, apertures, sampling_grid['dither_pts'], verbose=True)
 
-# =======================================================================
-# CRM:
-# - Loops in dither and nod positions
-# - Creates a background if it is provided as one of components, adds it
-# to the object, and writes it out if specifically requested
-# - Creates the object (plus background) crm exposures
-# - Dark flag and GWA keyword population
-# - Writes out the object crm
-# =======================================================================
-sel_apertures = apertures[mode]
-f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apertures, nexp, multiaccum, references,
-      output_path, base_nid, pipeline_id, jlab_id, base_obs_id, datetime_start, datetime_end, datetime_file, daily_folder,
-      save_background=False)
+    # =======================================================================
+    # CRM:
+    # - Loops in dither and nod positions
+    # - Creates a background if it is provided as one of components, adds it
+    # to the object, and writes it out if specifically requested
+    # - Creates the object (plus background) crm exposures
+    # - Dark flag and GWA keyword population
+    # - Writes out the object crm
+    # =======================================================================
+    sel_apertures = apertures[mode]
+    f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apertures, nexp, multiaccum, references,
+          output_path, base_nid, pipeline_id, jlab_id, base_obs_id, datetime_start, datetime_end, datetime_file, daily_folder,
+          save_background=False)
 
-return None
+    return None
 
 def f_detector(readout_mode, exposure_type, ng, nint=1, nf=5, GWA=None, subarray_id=None):
     '''
@@ -208,23 +208,23 @@ def f_detector(readout_mode, exposure_type, ng, nint=1, nf=5, GWA=None, subarray
     configfpa = c_configurationfpa.ConfigurationFPA()
     configfpa.m_set_mode(readout_mode, exposure_type)
 
-if subarray_id is None or subarray_id == 'FULL-FRAME':
-    configfpa.m_set_array_parameters()
+    if subarray_id is None or subarray_id == 'FULL-FRAME':
+        configfpa.m_set_array_parameters()
     else:
         start_i = (subdict.subarray_dict[subarray_id]["substrt1"],)*2
         start_j = subdict.subarray_dict[subarray_id]["substrt2"][GWA]
         size_i = subdict.subarray_dict[subarray_id]["subsize1"]
         size_j = subdict.subarray_dict[subarray_id]["subsize2"]
         configfpa.m_set_array_parameters(start_i=start_i, start_j=start_j, size_i=size_i, size_j=size_j)
-configfpa.m_set_header('none', 'none', 'none')
+        configfpa.m_set_header('none', 'none', 'none')
 
-multiaccum = c_multiaccum.Multiaccum()
-multiaccum.m_set_configuration(configfpa)
-multiaccum.m_set_header('none', 'none', 'none')
-multiaccum.m_set(nint, ng, nf)
-multiaccum.m_info()
+    multiaccum = c_multiaccum.Multiaccum()
+    multiaccum.m_set_configuration(configfpa)
+    multiaccum.m_set_header('none', 'none', 'none')
+    multiaccum.m_set(nint, ng, nf)
+    multiaccum.m_info()
 
-return multiaccum
+    return multiaccum
 
 def f_references(readout_mode, exposure_type, seed=-1):
     '''
@@ -288,14 +288,14 @@ def f_erm_filename(mode, FWA, GWA, sampling_grid, object_suffix, background_suff
     print("# Object ERMs: {}".format(list_object))
     erm_dict['target_erm'] = list_object
 
-#TODO: the loop on dither_idx seems to be only necessary in IFS, handle this in IFS mode
-if background_suffix is not None:
-    list_background = []
-    for dither_index in range(dither_pts):
-        list_names = []
-        if apertures is None:
-            name = '{:s}_{:s}_{:s}_{:s}.erm'.format(FWA, GWA, mode, background_suffix)
-            list_names.append(name)
+    #TODO: the loop on dither_idx seems to be only necessary in IFS, handle this in IFS mode
+    if background_suffix is not None:
+        list_background = []
+        for dither_index in range(dither_pts):
+            list_names = []
+            if apertures is None:
+                name = '{:s}_{:s}_{:s}_{:s}.erm'.format(FWA, GWA, mode, background_suffix)
+                list_names.append(name)
             else:
                 for aperture in apertures[mode]:
                     name = '{:s}_{:s}_{:s}_{:s}.erm'.format(FWA, GWA, aperture, background_suffix)
@@ -319,7 +319,7 @@ if background_suffix is not None:
         print("# Background ERMs: {}".format(list_unity))
         erm_dict['ff_erm'] = list_unity
 
-return erm_dict
+    return erm_dict
 
 def  f_output_archive_structure(output_path, dither_idx, nod_idx,
                                 base_nid, pipeline_id, jlab_id, base_obs_id, datetime_start, datetime_end, datetime_file, daily_folder,
@@ -362,9 +362,9 @@ def  f_output_archive_structure(output_path, dither_idx, nod_idx,
     folder_name = 'NRS{:s}_1_{:d}_{:s}_{:s}_{:s}_{:s}'.format(obs_id, nid, jlab_id, pipeline_id,
                                                               datetime_start, datetime_end)
                                                               # Generating folder
-work = os.path.join(output_path, daily_folder, folder_name)
-try:
-    os.makedirs(work)
+    work = os.path.join(output_path, daily_folder, folder_name)
+    try:
+        os.makedirs(work)
     except Exception as error:
         if (error.args[0] != 17):
             print('ERROR - Encountered an error when trying to create the exposure folder:')
@@ -372,17 +372,17 @@ try:
             print('ERROR - {}'.format(error.args))
             raise ValueError
 
-# Generating filename
-#TODO: make a namedtuple to output the filenames
-filenames = []
+    # Generating filename
+    #TODO: make a namedtuple to output the filenames
+    filenames = []
 
-# if I am not using old NIPS, there is no need to generate that format
-# filename = 'NRS_{:s}.oldcts.fits'.format(obs_id)
-# filenames.append(filename)
+    # if I am not using old NIPS, there is no need to generate that format
+    # filename = 'NRS_{:s}.oldcts.fits'.format(obs_id)
+    # filenames.append(filename)
 
-for sca_index in range(2):
-    filename = 'NRS{:s}_1_{:d}_SE_{:s}.cts.fits'.format(obs_id, 491 + sca_index, datetime_file)
-    filenames.append(filename)
+    for sca_index in range(2):
+        filename = 'NRS{:s}_1_{:d}_SE_{:s}.cts.fits'.format(obs_id, 491 + sca_index, datetime_file)
+        filenames.append(filename)
     
     return nid, obs_id, folder_name, filenames
 
@@ -440,24 +440,24 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
             print('ERROR - {}'.format(error.args))
             raise ValueError
 
-# =======================================================================
-# Generating the count-rate maps
-# =======================================================================
-print("# Generating the count-rate maps.")
+    # =======================================================================
+    # Generating the count-rate maps
+    # =======================================================================
+    print("# Generating the count-rate maps.")
 
-dither_pts = sampling_grid['dither_pts']
-nod_pts = sampling_grid['nod_pts']
+    dither_pts = sampling_grid['dither_pts']
+    nod_pts = sampling_grid['nod_pts']
 
 
-target_list = input_list['target_erm']
-if 'background' in components: bckg_list = input_list['bckg_erm']
+    target_list = input_list['target_erm']
+    if 'background' in components: bckg_list = input_list['bckg_erm']
 
-for dither_idx in range(dither_pts):
-    if 'background' in components:
-        # -------------------------------------------------------------------
-        # Background ERM: we need to have a background to add, even if it is the same
-        # -------------------------------------------------------------------
-        b_erm = f_add_aper_erm(input_path, bckg_list, sel_apertures, dither_idx=dither_idx, verbose=True)
+    for dither_idx in range(dither_pts):
+        if 'background' in components:
+            # -------------------------------------------------------------------
+            # Background ERM: we need to have a background to add, even if it is the same
+            # -------------------------------------------------------------------
+            b_erm = f_add_aper_erm(input_path, bckg_list, sel_apertures, dither_idx=dither_idx, verbose=True)
         
         for nod_idx in range(nod_pts):
             
@@ -480,23 +480,21 @@ for dither_idx in range(dither_pts):
                 if save_background and (dither_idx == 0) and (nod_idx == 0):
                     b_ctms = erm_to_sci.f_standard(b_erm, multiaccum, noise_category='extended', noise_model=references.noise_model,
                                                    scale=1.0, nexp=nexp, planes=None, bias=None, use_superbias=False,
-                                                   dark=references.dark, dark_sub=True, readout=references.readout, gain=references.gain, ctm=references.ctm,
+                                                   dark=references.dark, dark_sub=True, readout=references.readout,
+                                                   gain=references.gain, ctm=references.ctm,
                                                    verbose=True, seed=-1, force_trimming=False, old=True)
-                                                   # -------------------------------------------------------------------
-                                                   # Generating archive folders
-                                                   # -------------------------------------------------------------------
-                                                   nid, obs_id, folder_name, filenames = f_output_archive_structure(output_path, dither_idx, nod_idx,
-                                                                                                                    base_nid, pipeline_id, jlab_id,
-                                                                                                                    base_obs_id,
-                                                                                                                    datetime_start, datetime_end,
-                                                                                                                    datetime_file,
-                                                                                                                    daily_folder,
-                                                                                                                    is_background=True)
+                # -------------------------------------------------------------------
+                # Generating archive folders
+                # -------------------------------------------------------------------
+                nid, obs_id, folder_name, filenames = f_output_archive_structure(output_path, dither_idx, nod_idx,
+                                                                                 base_nid, pipeline_id, jlab_id,
+                                                                                 base_obs_id, datetime_start, datetime_end,
+                                                                                 datetime_file, daily_folder, is_background=True)
                                                    
-                                                   # -------------------------------------------------------------------
-                                                   # Write out to archive folders
-                                                   # -------------------------------------------------------------------
-                    f_write_to_fits(b_ctms, output_path, daily_folder, folder_name, filenames, obs_id)
+                # -------------------------------------------------------------------
+                # Write out to archive folders
+                # -------------------------------------------------------------------
+                f_write_to_fits(b_ctms, output_path, daily_folder, folder_name, filenames, obs_id)
         
             # -------------------------------------------------------------------
             # Note: Just for NIPS2.0 and commissioning; otherwise introduce the
@@ -508,72 +506,71 @@ for dither_idx in range(dither_pts):
             
             o_ctms = erm_to_sci.f_standard(o_erm, multiaccum, noise_category='extended', noise_model=references.noise_model,
                                            scale=1.0, nexp=nexp, planes=None, bias=None, use_superbias=False,
-                                           dark=references.dark, dark_sub=True, readout=references.readout, gain=references.gain, ctm=references.ctm,
-                                           verbose=True, seed=-1,force_trimming=False, old=True)
-                                           # -------------------------------------------------------------------
-                                           # Generating archive folders
-                                           # -------------------------------------------------------------------
-                                           nid, obs_id, folder_name, filenames = f_output_archive_structure(output_path, dither_idx, nod_idx,
-                                                                                                            base_nid, pipeline_id, jlab_id, base_obs_id,
-                                                                                                            datetime_start, datetime_end, datetime_file,
-                                                                                                            daily_folder,
-                                                                                                            is_background=False)
+                                           dark=references.dark, dark_sub=True, readout=references.readout, gain=references.gain,
+                                           ctm=references.ctm, verbose=True, seed=-1,force_trimming=False, old=True)
+            # -------------------------------------------------------------------
+            # Generating archive folders
+            # -------------------------------------------------------------------
+            nid, obs_id, folder_name, filenames = f_output_archive_structure(output_path, dither_idx, nod_idx, base_nid,
+                                                                             pipeline_id, jlab_id, base_obs_id, datetime_start,
+                                                                             datetime_end, datetime_file, daily_folder,
+                                                                             is_background=False)
                                            
-                                           #TODO: Extract all below code into a NIPS specific function and include switch parameter in config file to branch off
-                                           # -------------------------------------------------------------------
-                                           # Populate header keywords: (specific to NIPS2.0)
-                                           # - dark flags
-                                           # - GWA information
-                                           # -------------------------------------------------------------------
-                                           flag_arrays = []
+            #TODO: Extract all below code into a NIPS specific function and include switch parameter in config file to branch off
+            # -------------------------------------------------------------------
+            # Populate header keywords: (specific to NIPS2.0)
+            # - dark flags
+            # - GWA information
+            # -------------------------------------------------------------------
+            flag_arrays = []
                                            
-                                           # Reading in quality flags from one of our darks
-                                           hdu = fits.open(_dark491fname)
-                                           flag_arrays.append(hdu[3].data)
-                                           print('# Reading in FLAG array 1')
-                                           
-                                           hdu = fits.open(_dark492fname)
-                                           flag_arrays.append(hdu[3].data)
-                                           print('# Reading in FLAG array 2')
-                                           hdu.close()
-                                           
-                                           # Before writing out the cont-rate maps (new format for NIPS2.0) we need to update the GWA keywords because
-                                           # the version of the IPS with which they were created did not populated the GWA keyword with the correct value
-                                           # Therefore opening the model gtp file:
-                                           
-                                           #TODO: insert a try catch to skip this if IPS already populates it (not sure on which attribute)
-                                           filename = _model_path + _model_name + '/Description/disperser_' + GWA + '_TiltY.gtp'
-                                               poly = tiltpoly.TiltPoly()
-                                               poly.m_readFromFile(filename)
-                                               GWA_XTIL = poly.zeroreadings[0]  # dispersion direction
-                                               
-                                               filename = _model_path + _model_name + '/Description/disperser_' + GWA + '_TiltX.gtp'
-                                                   poly = tiltpoly.TiltPoly()
-                                                   poly.m_readFromFile(filename)
-                                                   GWA_YTIL = poly.zeroreadings[0]  # spatial direction
-                                                   
-                                                   
-                                                   mode_gg = 'unknown'
-                                                       slit_gg = 'unknown'
-                                                           aperture_gg = 'unknown'
-                                                               sca_ids = ['NRS1', 'NRS2']
-                                                               read_out = 'NRSRAPID'
-                                                                   #TODO: Hardcoding warning: create a function of (readout_mode, nf) that spits out the cooked readout
-                                                                   for o_idx in range(1, len(filenames)+1):
-                                                                       o_ctms[o_idx].fits_header['GWA_XTIL'] = GWA_XTIL
-                                                                       o_ctms[o_idx].fits_header['GWA_YTIL'] = GWA_YTIL
-                                                                       o_ctms[o_idx].m_set_keywords(nid, 'IPS', sca_ids[o_idx-1], mode_gg, slit_gg, aperture_gg,
-                                                                                                    FWA, GWA, read_out, False)
-                                                                           #o_ctms[o_idx].quality = flag_arrays[o_idx-1]
-                                                                           
-                                                                           
-                                                                           # -------------------------------------------------------------------
-                                                                           # Write out to archive folders
-                                                                           # We keep the old count-rate for NIPS 2.7 compatibility and plotting
-                                                                           # -------------------------------------------------------------------
-                                                                           f_write_to_fits(o_ctms, output_path, daily_folder, folder_name, filenames, obs_id)
+            # Reading in quality flags from one of our darks
+            hdu = fits.open(_dark491fname)
+            flag_arrays.append(hdu[3].data)
+            print('# Reading in FLAG array 1')
 
-return None
+            hdu = fits.open(_dark492fname)
+            flag_arrays.append(hdu[3].data)
+            print('# Reading in FLAG array 2')
+            hdu.close()
+
+            # Before writing out the cont-rate maps (new format for NIPS2.0) we need to update the GWA keywords because
+            # the version of the IPS with which they were created did not populated the GWA keyword with the correct value
+            # Therefore opening the model gtp file:
+
+            #TODO: insert a try catch to skip this if IPS already populates it (not sure on which attribute)
+            filename = _model_path + _model_name + '/Description/disperser_' + GWA + '_TiltY.gtp'
+            poly = tiltpoly.TiltPoly()
+            poly.m_readFromFile(filename)
+            GWA_XTIL = poly.zeroreadings[0]  # dispersion direction
+
+            filename = _model_path + _model_name + '/Description/disperser_' + GWA + '_TiltX.gtp'
+            poly = tiltpoly.TiltPoly()
+            poly.m_readFromFile(filename)
+            GWA_YTIL = poly.zeroreadings[0]  # spatial direction
+                                                   
+                                                   
+            mode_gg = 'unknown'
+            slit_gg = 'unknown'
+            aperture_gg = 'unknown'
+            sca_ids = ['NRS1', 'NRS2']
+            read_out = 'NRSRAPID'
+            #TODO: Hardcoding warning: create a function of (readout_mode, nf) that spits out the cooked readout
+            for o_idx in range(1, len(filenames)+1):
+                o_ctms[o_idx].fits_header['GWA_XTIL'] = GWA_XTIL
+                o_ctms[o_idx].fits_header['GWA_YTIL'] = GWA_YTIL
+                o_ctms[o_idx].m_set_keywords(nid, 'IPS', sca_ids[o_idx-1], mode_gg, slit_gg, aperture_gg,
+                                            FWA, GWA, read_out, False)
+                #o_ctms[o_idx].quality = flag_arrays[o_idx-1]
+                                                                           
+                                                                           
+            # -------------------------------------------------------------------
+            # Write out to archive folders
+            # We keep the old count-rate for NIPS 2.7 compatibility and plotting
+            # -------------------------------------------------------------------
+            f_write_to_fits(o_ctms, output_path, daily_folder, folder_name, filenames, obs_id)
+
+    return None
 
 def f_add_aper_erm(input_path, input_list, sel_apertures, dither_idx=0, verbose=False):
     '''
@@ -601,24 +598,24 @@ def f_add_aper_erm(input_path, input_list, sel_apertures, dither_idx=0, verbose=
             comp_erm.m_add(work_erm)
             if verbose: print('Adding :{:s}'.format(input_list[dither_idx][aperture_idx]))
 
-return comp_erm
+    return comp_erm
 
 def f_list_dim(testlist, dim=0):
     """
-        Utility function: tests if testlist is a list and how many dimensions it has
-        returns -1 if it is no list at all, 0 if list is empty
-        and otherwise the dimensions of it. All elements must be equal"""
-            if isinstance(testlist, list):
-                if testlist == []:
-                    return dim
-                        dim = dim + 1
-                            dim = f_list_dim(testlist[0], dim)
-                            return dim
-                                else:
-                                    if dim == 0:
-                                        return -1
-                                            else:
-                                                return dim
+    Utility function: tests if testlist is a list and how many dimensions it has
+    returns -1 if it is no list at all, 0 if list is empty
+    and otherwise the dimensions of it. All elements must be equal"""
+    if isinstance(testlist, list):
+        if testlist == []:
+            return dim
+        dim = dim + 1
+        dim = f_list_dim(testlist[0], dim)
+        return dim
+    else:
+        if dim == 0:
+            return -1
+        else:
+            return dim
 
 
 def f_print_dict(input_dict):
@@ -707,62 +704,62 @@ if __name__ == "__main__":
     parser.add_argument('ng', type=int, help='Number of groups (NRSIRS2 readout mode).')
     parser.add_argument('outpath', type=str,
                         help='Name of the folder where the output files and folders will be generated.')
-                        parser.add_argument('obsid', type=str, help='Base for the generation of the observation ID.')
-                        listOfValidPositionsMode = ['FS', 'MOS', 'IFS']
-                        parser.add_argument('mode', type=str, help='Observing mode.', choices=listOfValidPositionsMode)
-                        #optional parameters
-                        parser.add_argument('-reado', '--readout', type=str,
-                                            help='Readout mode', choices= ['traditional', 'IRS2'], default='traditional')
-                        parser.add_argument('-expt', '--exposure_type', type=str,
-                                            help='Exposure type', choices= ['full-frame', 'subarray'], default='full-frame')
-                        parser.add_argument('-subid', '--subarray_id', type=str,
-                                            help='Optional subarray id', choices= ['FULL-FRAME', 'ALLSLITS', 'S200A1', 'S200A2', 'S200B1', 'S400A1', 'SUB1024A', 'SUB1024B', 'SUB2048', 'SUB32', 'SUB512', 'SUB512S']
-                                            , default=None)
-                        parser.add_argument('-s', '--seed', type=int,
-                                            help='Optional seed (integer) for the random number generator.', default=None)
-                        parser.add_argument('-b', '--background', type=str,
-                                            help='Suffix of the background electron-rate map.', default='background')
-                        parser.add_argument('-u', '--unity', type=str, help='Suffix of the unity electron-rate map.', default='unity')
-                        parser.add_argument('-o', '--object', type=str, help='Suffix of the object electron-rate map.', default='galaxy')
-                        parser.add_argument('-f', '--factor', type=float,
-                                            help='Optional scaling factor to be applied to the object cube.', default=1.0)
-                        
-                        parser.add_argument('-dts', '--datetime_start', type=str,
-                                            help='Start date and time.', default='20180303T120000.000')
-                        parser.add_argument('-dte', '--datetime_end', type=str,
-                                            help='End date and time.', default='20180303T120000.000')
-                        parser.add_argument('-dtf', '--datetime_file', type=str,
-                                            help='End date and time.', default='2018-03-03T12h15m00')
-                        parser.add_argument('-day', '--daily_folder', type=str,
-                                            help='Daily folder.', default='Day2018062')
-                        
-                        # =======================================================================
-                        # Loading the input arguments
-                        # =======================================================================
-                        args = parser.parse_args()
-                        argv = sys.argv
-                        narg = len(argv) - 1
-                        print("# =====================================")
-                        print("# Running :{:s}".format(argv[0]))
-                        print("# _name   : {:s}".format(_name))
-                        print("# _version: {:s}".format(_version))
-                        print("# Date    : {:s}".format((datetime.datetime.now()).isoformat()))
-                        print("# =====================================")
-                        # =======================================================================
-                        # Paths and filenames
-                        # =======================================================================
-                        input_path = args.inpath
-                        print("# Input path: {:s}".format(input_path))
-                        output_path = args.outpath
-                        print("# Output path: {:s}".format(output_path))
-                        FWA = args.FWA
-                        GWA = args.GWA
-                        if (GWA == 'PRISM'):
-                            filetype = 'prism'
-                        elif (GWA == 'MIRROR'):
-                            filetype = 'image'
-else:
-    filetype = 'grating'
+    parser.add_argument('obsid', type=str, help='Base for the generation of the observation ID.')
+    listOfValidPositionsMode = ['FS', 'MOS', 'IFS']
+    parser.add_argument('mode', type=str, help='Observing mode.', choices=listOfValidPositionsMode)
+    #optional parameters
+    parser.add_argument('-reado', '--readout', type=str,
+                        help='Readout mode', choices= ['traditional', 'IRS2'], default='traditional')
+    parser.add_argument('-expt', '--exposure_type', type=str,
+                        help='Exposure type', choices= ['full-frame', 'subarray'], default='full-frame')
+    parser.add_argument('-subid', '--subarray_id', type=str,
+                        help='Optional subarray id', choices= ['FULL-FRAME', 'ALLSLITS', 'S200A1', 'S200A2', 'S200B1', 'S400A1', 'SUB1024A', 'SUB1024B', 'SUB2048', 'SUB32', 'SUB512', 'SUB512S']
+                        , default=None)
+    parser.add_argument('-s', '--seed', type=int,
+                        help='Optional seed (integer) for the random number generator.', default=None)
+    parser.add_argument('-b', '--background', type=str,
+                        help='Suffix of the background electron-rate map.', default='background')
+    parser.add_argument('-u', '--unity', type=str, help='Suffix of the unity electron-rate map.', default='unity')
+    parser.add_argument('-o', '--object', type=str, help='Suffix of the object electron-rate map.', default='galaxy')
+    parser.add_argument('-f', '--factor', type=float,
+                        help='Optional scaling factor to be applied to the object cube.', default=1.0)
+
+    parser.add_argument('-dts', '--datetime_start', type=str,
+                        help='Start date and time.', default='20180303T120000.000')
+    parser.add_argument('-dte', '--datetime_end', type=str,
+                        help='End date and time.', default='20180303T120000.000')
+    parser.add_argument('-dtf', '--datetime_file', type=str,
+                        help='End date and time.', default='2018-03-03T12h15m00')
+    parser.add_argument('-day', '--daily_folder', type=str,
+                        help='Daily folder.', default='Day2018062')
+
+    # =======================================================================
+    # Loading the input arguments
+    # =======================================================================
+    args = parser.parse_args()
+    argv = sys.argv
+    narg = len(argv) - 1
+    print("# =====================================")
+    print("# Running :{:s}".format(argv[0]))
+    print("# _name   : {:s}".format(_name))
+    print("# _version: {:s}".format(_version))
+    print("# Date    : {:s}".format((datetime.datetime.now()).isoformat()))
+    print("# =====================================")
+    # =======================================================================
+    # Paths and filenames
+    # =======================================================================
+    input_path = args.inpath
+    print("# Input path: {:s}".format(input_path))
+    output_path = args.outpath
+    print("# Output path: {:s}".format(output_path))
+    FWA = args.FWA
+    GWA = args.GWA
+    if (GWA == 'PRISM'):
+        filetype = 'prism'
+    elif (GWA == 'MIRROR'):
+        filetype = 'image'
+    else:
+        filetype = 'grating'
     mode = args.mode
     print("# Observing mode: {:s}".format(input_mode))
     print("# Type of input file: {:s}".format(filetype))
@@ -795,9 +792,9 @@ else:
     seed = args.seed
     if (seed is None):
         print("# No random generator seed provided.")
-else:
-    print("# Random generator seed: {:d}".format(seed))
-    numpy.random.seed(seed=seed)
+    else:
+        print("# Random generator seed: {:d}".format(seed))
+        np.random.seed(seed=seed)
     factor = args.factor
     print("# Normalisation factor: {:8.4e}".format(factor))
     print("# =====================================")
