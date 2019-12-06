@@ -161,7 +161,10 @@ def rm_extra_exts_and_rotate(input_fits_file, detector):
     outfile.append(fits.ImageHDU(transposed_array, name="DQ"))
 
     # write the new output file
-    outfile_name = input_fits_file.replace(".fits", "_" + detector + "_modified.fits")
+    if detector not in input_fits_file and 'modified' not in input_fits_file:
+        outfile_name = input_fits_file.replace(".fits", "_" + detector + "_modified.fits")
+    else:
+        outfile_name = input_fits_file
     outfile.writeto(outfile_name, overwrite=True)
 
     return outfile_name
