@@ -85,8 +85,9 @@ keywd_dict['TARGOOPP']= ['T', 'F'] # boolean represented with string, visit sche
 # Exposure information
 keywd_dict['PNTG_SEQ']= [int] # pointing sequence number, e.g. 1
 keywd_dict['EXPCOUNT']= [int] # count of the exposures in visit, e.g. 1
-keywd_dict['EXP_TYPE']= ['NRS_TASLIT', 'NRS_TACQ', 'NRS_TACONFIRM', 'NRS_CONFIRM', 'NRS_FIXEDSLIT', 'NRS_AUTOWAVE',
-                         'NRS_IFU', 'NRS_MSASPEC', ' NRS_AUTOFLAT', ' NRS_IMAGE', ' NRS_FOCUS', ' NRS_DARK',
+keywd_dict['EXP_TYPE']= ['NRS_WATA', 'NRS_MSATA', 'NRS_TACONFIRM', 'NRS_CONFIRM', ' NRS_IMAGE', ' NRS_FOCUS',
+                         'NRS_MIMF', 'NRS_FIXEDSLIT', 'NRS_AUTOWAVE',
+                         'NRS_IFU', 'NRS_MSASPEC', ' NRS_AUTOFLAT', ' NRS_DARK',
                          'NRS_LAMP', 'NRS_BOTA', 'NRS_BRIGHTOBJ'] # type of data in exposure
 
 # Target information

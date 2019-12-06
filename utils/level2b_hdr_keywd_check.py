@@ -27,19 +27,21 @@ Example usage:
     To simply update the header of the existing fits file type:
         > python /path_to_this_script/level2b_hdr_keywd_check.py blah.fits IFU -u
 
-where the mode is either FS, MOS, IFU, BOTS, dark. If a mode is not provided, the code will look for a mode_used
-variable in the pytests configuration file, and it will crash if this config file does not exist.
+where the mode is either FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf. 
+If a mode is not provided, the code will look for a mode_used variable in the pytests configuration file, and it 
+will crash if this config file does not exist.
 
 '''
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.2"
+__version__ = "1.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Apr 2019 - Version 1.1: added dictionary to choose right GWA_XTIL keyword value according to GRATING
 # May 2019 - Version 1.2: added logic for dark processing
+# Dec 2019 - Version 1.2: added logic for image processing
 
 
 ### Paths
@@ -509,6 +511,20 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = 'NRS_BRIGHTOBJ'
                     if mode_used.lower() == "dark":
                         val = 'NRS_DARK'
+                    if mode_used.lower() == "image":
+                        val = 'NRS_IMAGE'
+                    if mode_used.lower() == "confirm":
+                        val = 'NRS_CONFIRM'
+                    if mode_used.lower() == "taconfirm":
+                        val = 'NRS_TACONFIRM'
+                    if mode_used.lower() == "wata":
+                        val = 'NRS_WATA'
+                    if mode_used.lower() == "msata":
+                        val = 'NRS_MSATA'
+                    if mode_used.lower() == "focus":
+                        val = 'NRS_FOCUS'
+                    if mode_used.lower() == "mimf":
+                        val = 'NRS_MIMF'
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
                     print('     Setting value of ', key, ' to ', val)
@@ -535,6 +551,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
                 if key == 'GWA_PYAV':
+                    val = float(val)
+                    specific_keys_dict[key] = val
+                    missing_keywds.append(key)
+                if key == 'PHOTMJSR':
                     val = float(val)
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
@@ -700,7 +720,7 @@ if __name__ == '__main__':
                         #dest="mode_used",
                         action='store',
                         default=None,
-                        help='Observation mode used: FS, MOS, IFU, BOTS, dark.')
+                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf')
     parser.add_argument("-u",
                         dest="only_update",
                         action='store_true',
