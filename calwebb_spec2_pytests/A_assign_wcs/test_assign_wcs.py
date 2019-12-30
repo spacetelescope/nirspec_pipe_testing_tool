@@ -129,9 +129,13 @@ def output_hdul(set_inandout_filenames, config):
             fits.setval(step_input_file, "MSAMETFL", 0, value=msametfl)
 
     # check if processing an image, then set propper variables
-    if mode_used in ('image', 'confirm', 'taconfirm', 'wata', 'msata', 'focus', 'mimf'):
+    imaging_mode = False
+    if mode_used in ('image', 'confirm', 'taconfirm', 'wata', 'msata', 'bota', 'focus', 'mimf'):
         run_calwebb_spec2 = True
-        print('\n * Image processing will only be run in full with PTT. All intermediary products will be saved.\n')
+        imaging_mode = True
+        print('\n * Image processing will only be run in full with PTT. All intermediary products will be saved.')
+        print('     ->  For now, all pytests will be skipped since there are now image-specific routines yet. \n')
+        #TODO: add imaging tests
 
     # run the pipeline
     if run_calwebb_spec2:
@@ -166,8 +170,16 @@ def output_hdul(set_inandout_filenames, config):
         calwebb_image2_cfg = False
         if mode_used == "BOTS":
             calwebb_spec2_cfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "calwebb_tso_spec2.cfg")
-        elif mode_used in ('image', 'confirm', 'taconfirm', 'wata', 'msata', 'focus', 'mimf'):
+            print('\nUsing the following configuration file to run TSO pipeline:')
+            print(calwebb_spec2_cfg, '\n')
+        elif imaging_mode:
             calwebb_image2_cfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "calwebb_image2.cfg")
+            print('\nUsing the following configuration file to run imaging pipeline:')
+            print(calwebb_image2_cfg, '\n')
+        else:
+            print('\nUsing the following configuration file to run spectroscopic pipeline:')
+            print(calwebb_spec2_cfg, '\n')
+
         input_file = config.get("calwebb_spec2_input_file", "input_file")
         if "_uncal_rate" in input_file:
             input_file = input_file.replace("_uncal_rate", "")
@@ -244,6 +256,11 @@ def output_hdul(set_inandout_filenames, config):
 
         # move the final reporting text files to the working directory
         core_utils.move_txt_files_2workdir(detector)
+
+        # end script for imaging case
+        if imaging_mode:
+            print('\nPTT finished processing imaging mode. \n')
+            pytest.exit("Skipping pytests for now because they need to be written for imaging mode.")
 
         return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
 

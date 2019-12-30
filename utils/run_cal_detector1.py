@@ -106,7 +106,7 @@ def calculate_step_run_time(pipelog_file, pipe_steps):
                     time_tuple.append(int(sf))
         # convert the time tuple into a time stamp, which HAS to have nine integer numbers
         if len(time_tuple) < 9:
-            while len(time_tuple) is not 9:
+            while len(time_tuple) != 9:
                 time_tuple.append(0)
         time_tuple = tuple(time_tuple)
         timestamp = time.mktime(time_tuple)

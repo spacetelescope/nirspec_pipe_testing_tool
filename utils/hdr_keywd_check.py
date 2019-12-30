@@ -29,7 +29,11 @@ Example usage:
         > python /path_to_this_script/hdr_keywd_check.py blah.fits -u -m=FS
 
 where the -m flag is the mode used, i.e. FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf. 
-If a mode is not provided, the code will look for a mode_used variable in the pytests configuration file.
+
+The code is NOT case-sensitive.
+
+If a mode is not provided, the code will look for a mode_used variable in the pytests configuration file, and it 
+will crash if this config file does not exist.
 
 '''
 
@@ -487,13 +491,15 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
                     print('   * MODE_USED  = ', mode_used)
-                    if 'FS' in mode_used:
+                    if mode_used.lower() == "fs":
                         val = 'NRS_FIXEDSLIT'
-                    if 'IFU' in mode_used:
+                    if mode_used.lower() == "ifu":
                         val = 'NRS_IFU'
-                    if 'MOS' in mode_used:
+                        specific_keys_dict['DATAMODL'] = 'IFUImageModel'
+                        missing_keywds.append('DATAMODL')
+                    if mode_used.lower() == "mos":
                         val = 'NRS_MSASPEC'
-                    if mode_used == "BOTS":
+                    if mode_used.lower() == "bots":
                         val = 'NRS_BRIGHTOBJ'
                     if mode_used.lower() == "dark":
                         val = 'NRS_DARK'
@@ -688,7 +694,7 @@ if __name__ == '__main__':
                         dest="mode_used",
                         action='store',
                         default=None,
-                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.')
+                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf - The code is not case-sensitive.')
     args = parser.parse_args()
 
     # Set the variables
