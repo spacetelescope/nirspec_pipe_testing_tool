@@ -18,13 +18,14 @@ from .. import core_utils
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.2"
+__version__ = "2.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
 # Mar 2019 - Version 2.1: Maria added infrastructure to separate completion from other tests.
 # Apr 2019 - Version 2.2: implemented logging capability
+# Dec 2019 - Version 2.3: implemented imaging text file name handling capability
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
@@ -55,6 +56,13 @@ def output_hdul(set_inandout_filenames, config):
     msametfl = os.path.basename(msa_shutter_conf)
     if os.path.isfile(msametfl):
         os.remove(msametfl)
+
+    # check if processing an image, then set proper variables
+    imaging_mode = False
+    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
+    if mode_used in ('image', 'confirm', 'taconfirm', 'wata', 'msata', 'bota', 'focus', 'mimf'):
+        run_calwebb_spec2 = True
+        imaging_mode = True
 
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
@@ -101,6 +109,8 @@ def output_hdul(set_inandout_filenames, config):
 
             # Create the logfile for PTT, but erase the previous one if it exists
             PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+            if imaging_mode:
+                PTTcalspec2_log = PTTcalspec2_log.replace('calspec2', 'calimage2')
             if os.path.isfile(PTTcalspec2_log):
                 os.remove(PTTcalspec2_log)
             print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
@@ -142,6 +152,8 @@ def output_hdul(set_inandout_filenames, config):
 
                 # rename and move the pipeline log file
                 calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                if imaging_mode:
+                    calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
                 pytest_workdir = os.getcwd()
                 logfile = glob(pytest_workdir+"/pipeline.log")[0]
                 os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
@@ -205,6 +217,8 @@ def output_hdul(set_inandout_filenames, config):
         # rename and move the PTT log file
         try:
             PTT_calspec2_log = "PTT_calspec2_" + detector + ".log"
+            if imaging_mode:
+                PTT_calspec2_log = PTT_calspec2_log.replace('calspec2', 'calimage2')
             pytest_workdir = os.getcwd()
             logfile = glob(pytest_workdir + "/pipeline.log")[0]
             os.rename(logfile, os.path.join(working_directory, PTT_calspec2_log))
