@@ -37,7 +37,7 @@ __version__ = "2.3"
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
 # Feb 2019 - Version 2.1: Maria made changes to be able to process 491 and 492 files in the same directory
 # Apr 2019 - Version 2.2: implemented logging capability
-# Dec 2019 - Version 2.3: implemented image processing
+# Dec 2019 - Version 2.3: implemented image processing and text file name handling
 
 
 
@@ -128,7 +128,7 @@ def output_hdul(set_inandout_filenames, config):
             msametfl = os.path.basename(msa_shutter_conf)
             fits.setval(step_input_file, "MSAMETFL", 0, value=msametfl)
 
-    # check if processing an image, then set propper variables
+    # check if processing an image, then set proper variables
     imaging_mode = False
     if mode_used in ('image', 'confirm', 'taconfirm', 'wata', 'msata', 'bota', 'focus', 'mimf'):
         run_calwebb_spec2 = True
@@ -142,6 +142,8 @@ def output_hdul(set_inandout_filenames, config):
 
         # Create the logfile for PTT, but remove the previous log file
         PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'.log')
+        if imaging_mode:
+            PTTcalspec2_log = PTTcalspec2_log.replace('calspec2', 'calimage2')
         if os.path.isfile(PTTcalspec2_log):
             os.remove(PTTcalspec2_log)
         print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
@@ -194,6 +196,7 @@ def output_hdul(set_inandout_filenames, config):
         start_time = time.time()
 
         # run the pipeline
+        print('Running pipeline... \n')
         if not calwebb_image2_cfg:
             Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)#, logcfg="stpipe-log.cfg")
         else:
@@ -201,7 +204,7 @@ def output_hdul(set_inandout_filenames, config):
 
         # end the timer to compute calwebb_spec2 running time
         end_time = repr(time.time() - start_time)   # this is in seconds
-        calspec2_time = " * calwebb_spec2 took "+end_time+" seconds to finish."
+        calspec2_time = " * Pipeline took "+end_time+" seconds to finish.\n"
         print(calspec2_time)
         logging.info(calspec2_time)
 
@@ -211,7 +214,7 @@ def output_hdul(set_inandout_filenames, config):
 
         # add the detector string to the name of the files and move them to the working directory
         core_utils.add_detector2filename(working_directory, step_input_file)
-        final_output_name_msg = "\nThe final calwebb_spec2 product was saved in: "+final_output_name
+        final_output_name_msg = "\nThe final pipeline product was saved in: "+final_output_name
         print(final_output_name_msg)
         logging.info(final_output_name_msg)
 
@@ -222,6 +225,8 @@ def output_hdul(set_inandout_filenames, config):
         # rename and move the pipeline log file
         try:
             calspec2_pilelog = "calspec2_pipeline_"+detector+".log"
+            if imaging_mode:
+                calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
             pytest_workdir = os.getcwd()
             logfile = glob(pytest_workdir+"/pipeline.log")[0]
             os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
@@ -282,6 +287,8 @@ def output_hdul(set_inandout_filenames, config):
 
             # Create the logfile for PTT, but erase the previous one if it exists
             PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+            if imaging_mode:
+                PTTcalspec2_log = PTTcalspec2_log.replace('calspec2', 'calimage2')
             if os.path.isfile(PTTcalspec2_log):
                 os.remove(PTTcalspec2_log)
             print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
@@ -330,6 +337,8 @@ def output_hdul(set_inandout_filenames, config):
                 # rename and move the pipeline log file
                 try:
                     calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                    if imaging_mode:
+                        calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
                     pytest_workdir = os.getcwd()
                     logfile = glob(pytest_workdir+"/pipeline.log")[0]
                     os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
