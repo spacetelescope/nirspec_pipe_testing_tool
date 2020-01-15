@@ -154,7 +154,7 @@ def output_hdul(set_inandout_filenames, config):
         if change_filter_opaque:
             logging.info(change_filter_opaque_msg)
 
-        run_calwebb_spec2_msg = " *** Will run calwebb_spec2 in full ... "
+        run_calwebb_spec2_msg = " *** Will run pipeline in full ... "
         print(run_calwebb_spec2_msg)
         logging.info(run_calwebb_spec2_msg)
 
