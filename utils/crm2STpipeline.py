@@ -8,8 +8,8 @@ import level2b_hdr_keywd_check as lev2bcheck
 
 """
 
-This script is a wraper for the 2 scripts needed to convert the ESA simulations in CRM to ST pipeline 
-ingestible products. 
+This script is a wrapper for the 2 scripts needed to convert the ESA simulations in CRM to ST pipeline to
+ingest products. 
 
 Example usage:
     The code works from the terminal or called as a module.
@@ -100,7 +100,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
 
             # Perform the keyword check on the file with the right number of extensions
             print("Fixing the header keywords for detector ", det)
-            lev2bcheck.perform_check(st_pipe_file, only_update, mode_used, det)
+            lev2bcheck.check_lev2b_hdr_keywd(st_pipe_file, only_update, mode_used, det)
 
             print("Done with detector", det, "\n")
 
@@ -113,7 +113,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
 
                 # Perform the keyword check on the file with the right number of extensions
                 print("Fixing the header keywords")
-                lev2bcheck.perform_check(outfile_name, only_update, mode_used, det)
+                lev2bcheck.check_lev2b_hdr_keywd(outfile_name, only_update, mode_used, det)
 
         else:
             print("No need to rename or modify file for ST pipeline ingestion. Exiting script.")

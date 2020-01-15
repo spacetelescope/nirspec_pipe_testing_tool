@@ -645,7 +645,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
 
 
 
-def perform_check(fits_file, only_update, mode_used):
+def check_hdr_keywds(fits_file, only_update, mode_used):
     """
     This is the function that does all the work in this script (i.e. uses all other functions) to update the header
     Args:
@@ -703,7 +703,7 @@ if __name__ == '__main__':
     mode_used = args.mode_used
 
     # Perform the keyword check
-    perform_check(fits_file, only_update, mode_used)
+    check_hdr_keywds(fits_file, only_update, mode_used)
 
     print ('\n * Script  hdr_keywd_check.py  finished * \n')
 

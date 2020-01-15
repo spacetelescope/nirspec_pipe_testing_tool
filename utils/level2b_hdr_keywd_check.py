@@ -348,6 +348,42 @@ def get_gwa_Ytil_val(grating, path_to_tilt_files):
 
 ### keyword and format check
 
+def set_exp_type_value(mode_used):
+    '''
+    This function sets the appropriate value according to the mode.
+    Args:
+        mode_used: string
+    Returns:
+        val: string, expected pipeline value
+    '''
+    print('   * MODE_USED  = ', mode_used)
+    if mode_used.lower() == "fs":
+        val = 'NRS_FIXEDSLIT'
+    if mode_used.lower() == "ifu":
+        val = 'NRS_IFU'
+    if mode_used.lower() == "mos":
+        val = 'NRS_MSASPEC'
+    if mode_used.lower() == "bots":
+        val = 'NRS_BRIGHTOBJ'
+    if mode_used.lower() == "dark":
+        val = 'NRS_DARK'
+    if mode_used.lower() == "image":
+        val = 'NRS_IMAGE'
+    if mode_used.lower() == "confirm":
+        val = 'NRS_CONFIRM'
+    if mode_used.lower() == "taconfirm":
+        val = 'NRS_TACONFIRM'
+    if mode_used.lower() == "wata":
+        val = 'NRS_WATA'
+    if mode_used.lower() == "msata":
+        val = 'NRS_MSATA'
+    if mode_used.lower() == "focus":
+        val = 'NRS_FOCUS'
+    if mode_used.lower() == "mimf":
+        val = 'NRS_MIMF'
+    return val
+
+
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used, detector=None):
     """
     This function will check keywords against those in hdr_keywod_dict.py
@@ -501,33 +537,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
-                    print('   * MODE_USED  = ', mode_used)
-                    if mode_used.lower() == "fs":
-                        val = 'NRS_FIXEDSLIT'
+                    val = set_exp_type_value(mode_used)
                     if mode_used.lower() == "ifu":
-                        val = 'NRS_IFU'
                         specific_keys_dict['DATAMODL'] = 'IFUImageModel'
                         missing_keywds.append('DATAMODL')
-                    if mode_used.lower() == "mos":
-                        val = 'NRS_MSASPEC'
-                    if mode_used.lower() == "bots":
-                        val = 'NRS_BRIGHTOBJ'
-                    if mode_used.lower() == "dark":
-                        val = 'NRS_DARK'
-                    if mode_used.lower() == "image":
-                        val = 'NRS_IMAGE'
-                    if mode_used.lower() == "confirm":
-                        val = 'NRS_CONFIRM'
-                    if mode_used.lower() == "taconfirm":
-                        val = 'NRS_TACONFIRM'
-                    if mode_used.lower() == "wata":
-                        val = 'NRS_WATA'
-                    if mode_used.lower() == "msata":
-                        val = 'NRS_MSATA'
-                    if mode_used.lower() == "focus":
-                        val = 'NRS_FOCUS'
-                    if mode_used.lower() == "mimf":
-                        val = 'NRS_MIMF'
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
                     print('     Setting value of ', key, ' to ', val)
@@ -623,7 +636,6 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
         if after_key == 'wcsinfo':
             after_key = list(lev2bdict.keywd_dict.keys())[prev_key_idx-1]
         if key != 'wcsinfo':
-            print("adding keyword: ", key, " in extension: PRIMARY    after: ", after_key)
             # the DATAMODL keyword will only be modified if mode is IFU
             if key == 'DATAMODL':
                 if 'IFU' in mode_used:
@@ -643,7 +655,10 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
             if key == "GWA_YTIL":
                 new_value = get_gwa_Ytil_val(grating, path_to_tilt_files)
                 print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
+            if key == "EXP_TYPE":
+                new_value = set_exp_type_value(mode_used)
             fits.setval(updated_fitsfile, key, 0, value=new_value, after=after_key)
+            print("adding keyword: ", key, " in extension: PRIMARY    after: ", after_key, "   value: ", new_value)
         else:
             # go into the sub-dictionary for WCS keywords
             extname = 'sci'
@@ -675,7 +690,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
 
 
 
-def perform_check(fits_file, only_update, mode_used, detector=None):
+def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None):
     """
     This is the function that does all the work in this script (i.e. uses all other functions) to update the header
     Args:
@@ -743,7 +758,7 @@ if __name__ == '__main__':
     detector = args.detector
 
     # Perform the keyword check
-    perform_check(fits_file, only_update, mode_used, detector)
+    check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector)
 
     print ('\n * Script  level2b_hdr_keywd_check.py  finished * \n')
 
