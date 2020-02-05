@@ -41,28 +41,28 @@ def s_ext2d_exists(output_hdul):
 
 def find_FSwindowcorners(infile_name, esa_files_path, extract_2d_threshold_diff=4):
     """
-	Find the slits corners of pipeline and ESA file and determine if they match.
-	Args:
-		infile_name - string, name of the input pipeline fits file
-		esa_files_path - string, path to locate esa files
-		extract_2d_threshold_diff - integer, maximum allowed difference tolerance in pixels
+    Find the slits corners of pipeline and ESA file and determine if they match.
+    Args:
+        infile_name - string, name of the input pipeline fits file
+        esa_files_path - string, path to locate esa files
+        extract_2d_threshold_diff - integer, maximum allowed difference tolerance in pixels
 
-	Retrurs:
-		result - string or dictionary
-				if string, test is set to skip
-				if dictionary, contains a boolean per slit test
-	"""
+    Returns:
+        result - string or dictionary
+                if string, test is set to skip
+                if dictionary, contains a boolean per slit test
+    """
 
     result = OrderedDict()
     large_diff_corners_dict = OrderedDict()
     log_msgs = []
 
-    #iterate over slits
+    # iterate over slits
     sci_dict = auxfunc.get_sci_extensions(infile_name)
 
     primary_header = fits.getheader(infile_name, ext=0)
     detector = primary_header["DETECTOR"]
-    grating = primary_header["GRATING"]
+    #grating = primary_header["GRATING"]
 
     for i, s_ext in enumerate(sci_dict):
         s_ext_number = sci_dict[s_ext]
@@ -136,8 +136,14 @@ def find_FSwindowcorners(infile_name, esa_files_path, extract_2d_threshold_diff=
                         dat = "DATA1"
                     else:
                         dat = "DATA2"
-                    print("For detector=", detector, " reading data of extension name=", dat)
-                    esahdr = esahdulist[dat].header
+                    try:
+                        esahdr = esahdulist[dat].header
+                        print("For detector=", detector, " reading data of extension name=", dat)
+                    except:
+                        KeyError
+                        print("This file contains no information for extension name=", dat)
+                        continue
+
                     enext = []
                     for ext in esahdulist:
                         enext.append(ext)
@@ -270,18 +276,18 @@ def esa_corners_in_pipeline_corners(esa_corners, pipeline_corners, extract_2d_th
 
 def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path, extract_2d_threshold_diff=4):
     """
-	Find the slitlet corners of pipeline and ESA files and determine if they match.
-	Args:
-		infile_name - string, name of the input pipeline fits file
-		msa_conf_name - string, path and name of the MSA configuration file
-		esa_files_path - string, path to locate esa files
-		extract_2d_threshold_diff - integer, maximum allowed difference tolerance in pixels
-	Retrurs:
-		result - string or dictionary
-				if string, test is set to skip
-				if dictionary, contains a boolean per slit test
-		log_msgs - list of print statements to in the log file
-	"""
+    Find the slitlet corners of pipeline and ESA files and determine if they match.
+    Args:
+        infile_name - string, name of the input pipeline fits file
+        msa_conf_name - string, path and name of the MSA configuration file
+        esa_files_path - string, path to locate esa files
+        extract_2d_threshold_diff - integer, maximum allowed difference tolerance in pixels
+    Retrurs:
+        result - string or dictionary
+                if string, test is set to skip
+                if dictionary, contains a boolean per slit test
+        log_msgs - list of print statements to in the log file
+    """
 
     result = OrderedDict()
     large_diff_corners_dict = OrderedDict()
@@ -379,7 +385,13 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path, extract_2d
                 dat = "DATA1"
             else:
                 dat = "DATA2"
-            esahdr = esahdulist[dat].header
+            try:
+                esahdr = esahdulist[dat].header
+                print("For detector=", detector, " reading data of extension name=", dat)
+            except:
+                KeyError
+                print("This file contains no information for extension name=", dat)
+                continue
             esa_shutter_i = esahdulist[0].header['SHUTTERI']
             esa_shutter_j = esahdulist[0].header['SHUTTERJ']
             esa_quadrant = esahdulist[0].header['QUADRANT']

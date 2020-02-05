@@ -399,7 +399,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_wave_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_wave_diffs.pdf")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -413,7 +413,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_slitY_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_slitY_diffs.pdf")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -427,7 +427,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_MSAx_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_MSAx_diffs.pdf")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -441,7 +441,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_MSAy_diffs.jpg")
+                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_MSAy_diffs.pdf")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -456,7 +456,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_V2_diffs.jpg")
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_V2_diffs.pdf")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, notnan_reldiffpv2_stats, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
@@ -470,7 +470,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_V3_diffs.jpg")
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_V3_diffs.pdf")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, notnan_reldiffpv3, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 

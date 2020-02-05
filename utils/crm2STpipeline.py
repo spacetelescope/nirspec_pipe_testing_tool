@@ -5,6 +5,7 @@ from astropy.io import fits
 # import the modules needed within our tool
 import move_data2ext1
 import level2b_hdr_keywd_check as lev2bcheck
+import level2b_hdr_keywd_dict_map2sim as map2sim
 
 """
 
@@ -40,7 +41,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
         only_update: boolean, if False the code will create a new file with updated header
 
     Returns:
-        Nothing. The final product is the file that is pipeline ready.
+        out_fits: string, path and name of the final product is the file that is pipeline ready.
     """
 
     # Perform data move to the science extension if needed, i.e. if there is only 1 data extension
@@ -100,7 +101,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
 
             # Perform the keyword check on the file with the right number of extensions
             print("Fixing the header keywords for detector ", det)
-            lev2bcheck.check_lev2b_hdr_keywd(st_pipe_file, only_update, mode_used, det)
+            out_fits = lev2bcheck.check_lev2b_hdr_keywd(st_pipe_file, only_update, mode_used, det)
 
             print("Done with detector", det, "\n")
 
@@ -113,11 +114,13 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
 
                 # Perform the keyword check on the file with the right number of extensions
                 print("Fixing the header keywords")
-                lev2bcheck.check_lev2b_hdr_keywd(outfile_name, only_update, mode_used, det)
+                out_fits = lev2bcheck.check_lev2b_hdr_keywd(outfile_name, only_update, mode_used, det)
 
         else:
             print("No need to rename or modify file for ST pipeline ingestion. Exiting script.")
             exit()
+
+    return out_fits
 
 
 def transpose(arr, detector):
@@ -175,12 +178,11 @@ if __name__ == '__main__':
 
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument("fits_file",
+    parser.add_argument("ips_file",
                         action='store',
                         default=None,
-                        help='Name of fits file, i.e. blah.fits')
+                        help='Name of IPS fits file, i.e. blah.fits')
     parser.add_argument("mode_used",
-                        #dest="mode_used",
                         action='store',
                         default=None,
                         help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.')
@@ -189,16 +191,42 @@ if __name__ == '__main__':
                         action='store_true',
                         default=False,
                         help='Add the reference pixels.')
+    parser.add_argument("-pt",
+                        dest="proposal_title",
+                        action='store',
+                        default=None,
+                        help='Add the proposal title to the header keyword.')
+    parser.add_argument("-tn",
+                        dest="target_name",
+                        action='store',
+                        default=None,
+                        help='Add the target name to the header keyword.')
+    parser.add_argument("-nf",
+                        dest="new_file",
+                        action='store_true',
+                        default=True,
+                        help='Use -nu if wanting to create a new file with updated header. Default is to update header without creating a new file')
     args = parser.parse_args()
 
     # Set the variables
-    input_fits_file = args.fits_file
+    ips_file = args.ips_file
     mode_used = args.mode_used
     add_ref_pix = args.add_ref_pix
-    only_update = False
+    proposal_title = args.proposal_title
+    target_name = args.target_name
+    new_file = args.new_file
 
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
-    crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update)
+    stsci_pipe_ready_file = crm2pipe(ips_file, mode_used, add_ref_pix, new_file)
+
+    # create dictionary of command-line arguments
+    cmd_line_args_dict = {'TITLE' : proposal_title,
+                          'TARGNAME' : target_name,
+                          new_file : new_file
+                          }
+    # modify the keyword values to match IPS information
+    print('Matching IPS keyword values to corresponding STScI pipeline keywords...')
+    map2sim.match_IPS_keywords(stsci_pipe_ready_file, ips_file, cmd_line_args=cmd_line_args_dict)
 
     print ('\n * Script  crm2STpipeline.py  finished * \n')
 
