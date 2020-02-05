@@ -289,14 +289,15 @@ def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='
 
 def get_gwa_Xtil_val(grating, path_to_tilt_files):
     """
-    This function gets the right GWA_XTIL value according to the grating given
+    This function gets the right GWA_XTIL value according to the grating given. The reference file has a different
+    reference frame, where X and Y are inverted with respect to the pipeline.
     Args:
         grating: string, value from GRATING keyword
 
     Returns:
         gwaxtil: float, corresponding GWA_XTIL value to the grating
     """
-    dispersion_files_list = glob(os.path.join(path_to_tilt_files, "disperser_*_TiltX.gtp"))
+    dispersion_files_list = glob(os.path.join(path_to_tilt_files, "disperser_*_TiltY.gtp"))
     gwa_xtil_found = False
     for dispersion_file in dispersion_files_list:
         if grating in dispersion_file:
@@ -315,14 +316,15 @@ def get_gwa_Xtil_val(grating, path_to_tilt_files):
 
 def get_gwa_Ytil_val(grating, path_to_tilt_files):
     """
-    This function gets the right GWA_YTIL value according to the grating given
+    This function gets the right GWA_YTIL value according to the grating given. The reference file has a different
+    reference frame, where X and Y are inverted with respect to the pipeline.
     Args:
         grating: string, value from GRATING keyword
 
     Returns:
         gwaxtil: float, corresponding GWA_YTIL value to the grating
     """
-    dispersion_files_list = glob(os.path.join(path_to_tilt_files, "disperser_*_TiltY.gtp"))
+    dispersion_files_list = glob(os.path.join(path_to_tilt_files, "disperser_*_TiltX.gtp"))
     gwa_ytil_found = False
     for dispersion_file in dispersion_files_list:
         if grating in dispersion_file:

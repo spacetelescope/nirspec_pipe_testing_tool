@@ -109,13 +109,13 @@ keywd_dict['MSASTATE']= 'PRIMARYPARK_CONFIGURED' # state of MSA, options are:
 #                                       'PRIMARYPARK_ALLCLOSED', 'PRIMARYPARK_CONFIGURED'
 keywd_dict['MSAMETFL']= 'N/A' # MSA configuration file name, e.g. 'blah.fits'
 keywd_dict['MSAMETID']= 1 # int, MSA meta data ID for the exposure, e.g. 1
-keywd_dict['LAMP']    = 'LINE1' # internal lamp state, e.g. 'ARGON', the combinations are:
+keywd_dict['LAMP']    = 'NONE' # internal lamp state, e.g. 'ARGON', 'NONE', the combinations are:
                                 # F100LP LINE1  FLAT1
                                 # F170LP LINE2  FLAT2
                                 # F290LP LINE3  FLAT3
                                 # CLEAR  LINE4  FLAT5
                                 # F070LP FLAT4
-keywd_dict['LAMPMODE']= 'FIXEDSLIT' # NIRSpec internal lamp exposures, possible values: BRIGHTOBJ, FIXEDSLIT,
+keywd_dict['LAMPMODE']= 'NULL' # NIRSpec internal lamp exposures, possible values: BRIGHTOBJ, FIXEDSLIT,
                                     # GRATING-ONLY, IFU, MSASPEC, NULL
 keywd_dict['GWA_XTIL']= 0.3622055649757385 # grating y tilt, e.g. 0.3622055649757385
 keywd_dict['GWA_YTIL']= 0.1346436440944672 # grating y tilt, e.g. 0.1346436440944672
@@ -144,7 +144,7 @@ keywd_dict['TFRAME']  = 10.73676 # [seconds] time between frames, e.g. 5.49132
 keywd_dict['TGROUP']  = 10.73676 # [seconds] time between groups, e.g 5.49132
 keywd_dict['EFFINTTM']= 53.68380000000001 # [seconds] effective integration time, e.g. 104.33508
 keywd_dict['EFFEXPTM']= 53.68380000000001 # [seconds] effective exposure time, e.g. 104.33508
-keywd_dict['DURATION']= -1.0 # [seconds] total duration of exposuree.g. -1.0
+keywd_dict['DURATION']= -1.0 # [seconds] total duration of exposure.g. -1.0
 keywd_dict['NRSTSTRT']= 1 # number of extra resets at start of exposure, e.g. 1
 keywd_dict['NRESETS']  = 1 # number of resets between integrations, e.g. 1
 keywd_dict['ZEROFRAM']= False # boolean represented with string, T if a zero frame was read separately
