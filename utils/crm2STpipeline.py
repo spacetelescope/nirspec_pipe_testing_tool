@@ -31,6 +31,15 @@ Example usage:
 
 """
 
+# HEADER
+__author__ = "M. A. Pena-Guerrero"
+__version__ = "1.1"
+
+# HISTORY
+# May 2019 - Version 1.0: initial version completed
+# Feb 2020 - Version 1.1: added part to match and replace keyword values from IPS file
+
+
 def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
     """
     This function is the wraper for the scripts needed to convert a crm file to a pipeline ready product.
@@ -185,7 +194,7 @@ if __name__ == '__main__':
     parser.add_argument("mode_used",
                         action='store',
                         default=None,
-                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.')
+                        help='Observation mode options: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf')
     parser.add_argument("-rfpx",
                         dest="add_ref_pix",
                         action='store_true',
@@ -195,17 +204,17 @@ if __name__ == '__main__':
                         dest="proposal_title",
                         action='store',
                         default=None,
-                        help='Add the proposal title to the header keyword.')
+                        help='Add the proposal title to the header keyword, i.e. -pt=some_title')
     parser.add_argument("-tn",
                         dest="target_name",
                         action='store',
                         default=None,
-                        help='Add the target name to the header keyword.')
+                        help='Add the target name to the header keyword, i.e. -tn=some_target')
     parser.add_argument("-nf",
                         dest="new_file",
                         action='store_true',
                         default=True,
-                        help='Use -nu if wanting to create a new file with updated header. Default is to update header without creating a new file')
+                        help='Use -nf if wanting to create a new file with updated header. Default is to update header without creating a new file')
     args = parser.parse_args()
 
     # Set the variables

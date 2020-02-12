@@ -13,7 +13,7 @@ script modifies the uncommented keywords in the dictionary.
 This script is to be used AFTER the dummy header keyword values have been added, and it ONLY uses the keywords 
 that require a change in value, the others are commented out (but remain here for completion).
 
-Keyword value options:
+Keyword value options used in the dictionary:
     - 'specific_string' = this is a string that will not change from simulation to simulation
     - 'set_to_given_string' = will look for the given value when script is run
     - 'N/A' = this is a non applicable (not too important) keyword for the simulations 
@@ -549,17 +549,17 @@ if __name__ == '__main__':
                         dest="proposal_title",
                         action='store',
                         default=None,
-                        help='Add the proposal title to the header keyword.')
+                        help='Add the proposal title to the header keyword, i.e. -pt=some_title')
     parser.add_argument("-tn",
                         dest="target_name",
                         action='store',
                         default=None,
-                        help='Add the target name to the header keyword.')
+                        help='Add the target name to the header keyword, i.e. -tn=some_target')
     parser.add_argument("-nf",
                         dest="new_file",
                         action='store_true',
                         default=True,
-                        help='Use -nu if wanting to create a new file with updated header. Default is to update header without creating a new file')
+                        help='Use -nf if wanting to create a new file with updated header. Default is to update header without creating a new file')
     args = parser.parse_args()
 
     # Set the variables

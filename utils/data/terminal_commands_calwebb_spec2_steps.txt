@@ -3,6 +3,9 @@
 
 # PLEASE MAKE SURE YOUR CONDA TESTING ENVIRONMENT IS ON
 
+# Full calwebb_image2
+strun jwst.pipeline.Image2Pipeline final_output_from_cal_detector1.fits
+
 # Full calwebb_sepc2
 strun jwst.pipeline.Spec2Pipeline final_output_from_cal_detector1.fits
 
