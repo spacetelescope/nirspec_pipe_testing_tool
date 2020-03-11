@@ -271,7 +271,7 @@ else:
                         j += 1
                     elif "COMPLETE" in completion_key_val:
                         continue_while = False
-        running_stp_msg = "\n-> Running step: "+stp+"   with input file: "+step_input_file
+        running_stp_msg = "\n-> Running step: "+str(stp)+"   with input file: "+step_input_file
         output_msg = "   output will be saved as: "+output_names[i]
         logging.info(running_stp_msg)
         logging.info(output_msg)

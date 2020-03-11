@@ -52,7 +52,7 @@ def output_hdul(set_inandout_filenames, config):
 
     end_time = '0.0'
     # Only run step if data is not IFU or BOTS
-    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
+    mode_used = config.get("calwebb_spec2_input_file", "mode_used").lower()
     working_directory = config.get("calwebb_spec2_input_file", "working_directory")
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(working_directory, initial_input_file)
@@ -60,7 +60,7 @@ def output_hdul(set_inandout_filenames, config):
     if not os.path.isfile(initial_input_file):
         pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
 
-    if mode_used != "BOTS"  and  mode_used != "IFU":
+    if mode_used != "bots"  and  mode_used != "ifu":
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
 

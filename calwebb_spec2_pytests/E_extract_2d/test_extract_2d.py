@@ -55,7 +55,7 @@ def output_hdul(set_inandout_filenames, config):
     extract_2d_threshold_diff = int(config.get("additional_arguments", "extract_2d_threshold_diff"))
     
     # Check if the mode used is MOS_sim and get the threshold for the assign_wcs test
-    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
+    mode_used = config.get("calwebb_spec2_input_file", "mode_used").lower()
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
     
@@ -191,7 +191,7 @@ def validate_MOSsim_wcs_extract2d(output_hdul):
     msg = "\n Performing WCS validation test... "
     print(msg)
     logging.info(msg)
-    if mode_used == "MOS_sim":
+    if mode_used == "mos_sim":
         result, log_msgs = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
                                              show_figs=show_figs, save_figs=save_wcs_plots,
                                              threshold_diff=threshold_diff, mode_used=mode_used, debug=False)
