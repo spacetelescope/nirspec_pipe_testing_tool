@@ -59,7 +59,7 @@ def output_hdul(set_inandout_filenames, config):
 
     # check if processing an image, then set proper variables
     imaging_mode = False
-    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
+    mode_used = config.get("calwebb_spec2_input_file", "mode_used").lower()
     if mode_used in ('image', 'confirm', 'taconfirm', 'wata', 'msata', 'bota', 'focus', 'mimf'):
         run_calwebb_spec2 = True
         imaging_mode = True

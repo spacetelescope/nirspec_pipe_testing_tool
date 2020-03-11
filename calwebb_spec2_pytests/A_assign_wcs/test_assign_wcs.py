@@ -110,8 +110,8 @@ def output_hdul(set_inandout_filenames, config):
     end_time = '0.0'
 
     # Check if data is IFU that the Image Model keyword is correct
-    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
-    if mode_used == "IFU":
+    mode_used = config.get("calwebb_spec2_input_file", "mode_used").lower()
+    if mode_used == "ifu":
         DATAMODL = fits.getval(step_input_file, "DATAMODL", 0)
         if DATAMODL != "IFUImageModel":
             fits.setval(step_input_file, "DATAMODL", 0, value="IFUImageModel")
@@ -170,11 +170,13 @@ def output_hdul(set_inandout_filenames, config):
         # get the name of the configuration file and run the pipeline
         calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
         calwebb_image2_cfg = False
-        if mode_used == "BOTS":
-            calwebb_spec2_cfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "calwebb_tso_spec2.cfg")
+        # NOTE: this block is commented out as of build 7.4 testing because spec2 crashes with calwebb_tso-spec2.cfg
+        # file, but it runs fine with calwebb_spec2.cfg
+        if mode_used == "bots":
+            calwebb_spec2_cfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "calwebb_tso-spec2.cfg")
             print('\nUsing the following configuration file to run TSO pipeline:')
             print(calwebb_spec2_cfg, '\n')
-        elif imaging_mode:
+        if imaging_mode:
             calwebb_image2_cfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "calwebb_image2.cfg")
             print('\nUsing the following configuration file to run imaging pipeline:')
             print(calwebb_image2_cfg, '\n')
