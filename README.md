@@ -336,9 +336,9 @@ To fix an old  shutter configuration file:
 python /path_to_PTT/calwebb_spec2_pytests/auxuliary_code/create_metafile.py /path_to_file/blah_metafile_msa.fits -f
 ```
 
-To create new shutter configuration file for simulations:
+To create new shutter configuration file for simulations and/or dithers:
 ```bash
-python /path_to_PTT/calwebb_spec2_pytests/auxuliary_code/create_metafile.py /path_to_file/blah.msa.fits -s=obs1.csv,obs2.csv,obs3.csv
+python /path_to_PTT/calwebb_spec2_pytests/auxuliary_code/create_metafile.py /path_to_file/blah.msa.fits -d=obs1.csv,obs2.csv,obs3.csv
 ```
 Note that for the simulations, the nod files are in a list separated by commas without spaces.
 
@@ -347,10 +347,22 @@ In all cases the script ```create_metafile.py``` will output a file called
 
 *****
 
+7. a. Fix the pointing keywordsin the count rate file. This will only be possible if you have the 
+APT file that corresponds to your testing data. From the APT file, you will need the target's 
+RA, DEC, V2, and V3, as well as the aperture position angle. Sample values for these 
+quantities are: ra_targ = 53.16199112, dec_targ = -27.79127312,  v2_targ = 393.86285, 
+v3_targ = -424.00329, and aper_angle = 45.0. To fix the keywords use the following command 
+from the terminal, and in the  ```calwebb_spec2_pytests``` directory:
+```bash
+python ../utils/fix_pointing.py blah.fits 53.16199112, -27.79127312, 393.86285, -424.00329, 45.0
+```
+
+If the data is IFU add the flag -ifu at the end of the command. The output will be the updated file.
+
+To create a new updated file add flag -nf to the above command. 
 
 
-
-8. Ready to run PTT. Go back to the directory where PTT lives and into the 
+8. Ready to run PTT. In the directory where PTT lives and into the 
 ```calwebb_spec2_pytests``` directory, copy final output file from calwebb detector1 into 
 the working directory you indicated in the ```PTT_config.cfg``` file, and make sure 
 that the input file for the PTT matches the file you just copied into the working 
