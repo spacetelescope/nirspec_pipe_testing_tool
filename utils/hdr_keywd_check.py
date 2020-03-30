@@ -497,8 +497,6 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = 'NRS_FIXEDSLIT'
                     if mode_used.lower() == "ifu":
                         val = 'NRS_IFU'
-                        specific_keys_dict['DATAMODL'] = 'IFUImageModel'
-                        missing_keywds.append('DATAMODL')
                     if mode_used.lower() == "mos":
                         val = 'NRS_MSASPEC'
                     if mode_used.lower() == "bots":

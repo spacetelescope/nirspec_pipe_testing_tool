@@ -226,12 +226,12 @@ def validate_extract2d(output_hdul):
     else:
         pytest.skip("Skipping pytest: The fits file is not FS or MOS.")
     
-    if result == "skip":
-        pytest.skip("Extract_2d validation will be skipped.")
-        
     for msg in log_msgs:
         logging.info(msg)
 
+    if result == "skip":
+        pytest.skip("Extract_2d validation will be skipped.")
+        
     return result
 
 

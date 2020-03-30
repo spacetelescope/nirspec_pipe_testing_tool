@@ -192,7 +192,8 @@ caldetector1_pipeline_log = "pipeline.log"
 #final_output_caldet1 = "gain_scale.fits"
 final_output_caldet1 = "final_output_caldet1_"+detector+".fits"
 output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits",
-                "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits", final_output_caldet1]
+                "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits",
+                final_output_caldet1]
 
 if not step_by_step:
     print("Got arguments and will run the calwebb_detector1 pipeline in full. This may take a while...")

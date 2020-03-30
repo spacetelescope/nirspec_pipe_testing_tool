@@ -6,18 +6,17 @@ from astropy.io import fits
 from gwcs import wcstools
 from jwst import datamodels
 
-from .  import auxiliary_functions as auxfunc
-
+from . import auxiliary_functions as auxfunc
 
 """
 This script tests the pipeline flat field step output for MOS data. It is the python version of the IDL script
 (with the same name) written by James Muzerolle.
 """
 
-
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
 __version__ = "2.6"
+
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -29,7 +28,6 @@ __version__ = "2.6"
 # May 2019 - Version 2.4: Implemented images of the residuals.
 # Jun 2019 - Version 2.5: Updated name of interpolated flat to be the default pipeline name for this file.
 # Sept 2019 - Version 2.6: Updated line to call model for SlitModel to work correctly with pipeline changes.
-
 
 
 def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, writefile=True,
@@ -65,19 +63,19 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # get info from the rate file header
     det = fits.getval(step_input_filename, "DETECTOR", 0)
-    msg = 'step_input_filename='+step_input_filename
+    msg = 'step_input_filename=' + step_input_filename
     print(msg)
     log_msgs.append(msg)
     exptype = fits.getval(step_input_filename, "EXP_TYPE", 0)
     grat = fits.getval(step_input_filename, "GRATING", 0)
     filt = fits.getval(step_input_filename, "FILTER", 0)
-    msg = "flat_field_file  -->     Grating:"+grat+"   Filter:"+filt+"   EXP_TYPE:"+exptype
+    msg = "flat_field_file  -->     Grating:" + grat + "   Filter:" + filt + "   EXP_TYPE:" + exptype
     print(msg)
     log_msgs.append(msg)
 
     # read in the on-the-fly flat image
     flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
-    #flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")  # for testing code only!
+    # flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")  # for testing code only!
 
     # get the reference files
     # D-Flat
@@ -86,16 +84,18 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     dfile = "_".join(t)
     if det == "NRS2":
         dfile = dfile.replace("nrs1", "nrs2")
-    msg = "Using D-flat: "+dfile
+    msg = "Using D-flat: " + dfile
     print(msg)
     log_msgs.append(msg)
     dfim = fits.getdata(dfile, "SCI")
     dfimdq = fits.getdata(dfile, "DQ")
     # need to flip/rotate the image into science orientation
     ns = np.shape(dfim)
-    dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
+    dfim = np.transpose(dfim, (0, 2, 1))  # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
     dfimdq = np.transpose(dfimdq)
     if det == "NRS2":
+        # rotate science data by 180 degrees for NRS2
+        dfim = dfim[..., ::-1, ::-1]
         dfimdq = dfimdq[..., ::-1, ::-1]
     naxis3 = fits.getval(dfile, "NAXIS3", 1)
     if debug:
@@ -105,7 +105,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # get the wavelength values
     dfwave = np.array([])
     for i in range(naxis3):
-        t = ("PFLAT", str(i+1))
+        t = ("PFLAT", str(i + 1))
         keyword = "_".join(t)
         dfwave = np.append(dfwave, fits.getval(dfile, keyword, 1))
     dfrqe = fits.getdata(dfile, 2)
@@ -135,7 +135,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         t = (sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending)
         sfile = "_".join(t)
     else:
-        msg = "Wrong path in for mode S-flat. This script handles mode "+mode+"only."
+        msg = "Wrong path in for mode S-flat. This script handles mode " + mode + "only."
         print(msg)
         log_msgs.append(msg)
         # This is the key argument for the assert pytest function
@@ -150,25 +150,31 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     if det == "NRS2":
         sfile = sfile.replace("nrs1", "nrs2")
-    msg = "Using S-flat: "+sfile
+    msg = "Using S-flat: " + sfile
     print(msg)
     log_msgs.append(msg)
-    sfim = fits.getdata(sfile, "SCI")#1)
-    sfimdq = fits.getdata(sfile, "DQ")#3)
+    sfim = fits.getdata(sfile, "SCI")  # 1)
+    sfimdq = fits.getdata(sfile, "DQ")  # 3)
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim)
     sfimdq = np.transpose(sfimdq)
     if det == "NRS2":
+        # rotate science data by 180 degrees for NRS2
         sfim = sfim[..., ::-1, ::-1]
+        sfimdq = sfimdq[..., ::-1, ::-1]
     if debug:
         print("np.shape(sfim) = ", np.shape(sfim))
         print("np.shape(sfimdq) = ", np.shape(sfimdq))
-
-    sfv_a2001 = fits.getdata(sfile, "SLIT_A_200_1")
-    sfv_a2002 = fits.getdata(sfile, "SLIT_A_200_2")
-    sfv_a400 = fits.getdata(sfile, "SLIT_A_400")
-    sfv_a1600 = fits.getdata(sfile, "SLIT_A_1600")
+        sf = fits.open(sfile)
+        print(sf.info())
+    try:
+        sfv_a2001 = fits.getdata(sfile, "SLIT_A_200_1")
+        sfv_a2002 = fits.getdata(sfile, "SLIT_A_200_2")
+        sfv_a400 = fits.getdata(sfile, "SLIT_A_400")
+        sfv_a1600 = fits.getdata(sfile, "SLIT_A_1600")
+    except KeyError:
+        print(" * S-Flat-Field file does not have extensions for slits 200A1, 200A2, 400A, or 1600A, trying with 200B")
     if det == "NRS2":
         sfv_b200 = fits.getdata(sfile, "SLIT_B_200")
 
@@ -177,14 +183,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     if mode in fflat_path:
         ffile = "_".join((fflat_path, filt, fflat_ending))
     else:
-        msg = "Wrong path in for mode F-flat. This script handles mode "+mode+"only."
+        msg = "Wrong path in for mode F-flat. This script handles mode " + mode + "only."
         print(msg)
         log_msgs.append(msg)
         # This is the key argument for the assert pytest function
         median_diff = "skip"
         return median_diff, msg, log_msgs
 
-    msg = "Using F-flat: "+ffile
+    msg = "Using F-flat: " + ffile
     print(msg)
     log_msgs.append(msg)
     ffv = fits.getdata(ffile, 1)
@@ -252,14 +258,15 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             if slit_id == "S200B1":
                 sfv = sfv_b200
 
-            msg = "\nWorking with slit: "+slit_id
+            msg = "\nWorking with slit: " + slit_id
             print(msg)
             log_msgs.append(msg)
             try:
-                ext = sci_ext_list[slit_id]   # this is for getting the science extension in the pipeline calculated flat
-            except:
-                KeyError
-                ext = sltname_list.index(slit_id)
+                ext = sci_ext_list[slit_id]  # this is for getting the science extension in the pipeline calculated flat
+            except KeyError:
+                # the extension does not exist in the file, look for the next slit name
+                #ext = sltname_list.index(slit_id)
+                continue
 
             # get the wavelength
             # slit.x(y)start are 1-based, turn them to 0-based for extraction
@@ -267,26 +274,26 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             # ystart, yend = slit.ystart - 1, slit.ystart -1 + slit.ysize
             # y, x = np.mgrid[ystart: yend, xstart: xend]
             x, y = wcstools.grid_from_bounding_box(slit.meta.wcs.bounding_box, step=(1, 1), center=True)
-            ra, dec, wave = slit.meta.wcs(x, y)   # wave is in microns
-            #detector2slit = slit.meta.wcs.get_transform('detector', 'slit_frame')
-            #sx, sy, ls = detector2slit(x, y)
-            #world_coordinates = np.array([wave, ra, dec, sy])#, x, y])
+            ra, dec, wave = slit.meta.wcs(x, y)  # wave is in microns
+            # detector2slit = slit.meta.wcs.get_transform('detector', 'slit_frame')
+            # sx, sy, ls = detector2slit(x, y)
+            # world_coordinates = np.array([wave, ra, dec, sy])#, x, y])
 
-            msg = "wavelength array: "+repr(wave[19, 483])
-            print(msg)
-            log_msgs.append(msg)
+            # msg = "wavelength array: "+repr(wave[19, 483])
+            # print(msg)
+            # log_msgs.append(msg)
 
             # get the subwindow origin
             px0 = slit.xstart - 1 + model.meta.subarray.xstart
             py0 = slit.ystart - 1 + model.meta.subarray.ystart
-            msg = " Subwindow origin:   px0="+repr(px0)+"   py0="+repr(py0)
+            msg = " Subwindow origin:   px0=" + repr(px0) + "   py0=" + repr(py0)
             print(msg)
             log_msgs.append(msg)
             n_p = np.shape(wave)
-            nw = n_p[0]*n_p[1]
-            nw1, nw2 = n_p[1], n_p[0]   # remember that x=nw1 and y=nw2 are reversed  in Python
+            nw = n_p[0] * n_p[1]
+            nw1, nw2 = n_p[1], n_p[0]  # remember that x=nw1 and y=nw2 are reversed  in Python
             if debug:
-                print (" nw1, nw2, nw = ", nw1, nw2, nw)
+                print(" nw1, nw2, nw = ", nw1, nw2, nw)
 
             delf = np.zeros([nw2, nw1]) + 999.0
             flatcor = np.zeros([nw2, nw1]) + 999.0
@@ -298,7 +305,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             # make sure the two arrays are the same shape
             if np.shape(flatcor) != np.shape(pipeflat):
                 msg1 = 'WARNING -> Something went wrong, arrays are not the same shape:'
-                msg2 = 'np.shape(flatcor) = '+repr(np.shape(flatcor))+'   np.shape(pipeflat) = '+repr(np.shape(pipeflat))
+                msg2 = 'np.shape(flatcor) = ' + repr(np.shape(flatcor)) + '   np.shape(pipeflat) = ' + repr(
+                    np.shape(pipeflat))
                 msg3 = 'Mathematical operations will fail. Exiting the loop here and setting test as FAILED.'
                 print(msg1)
                 print(msg2)
@@ -323,37 +331,37 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             msg = " Looping through the wavelengths... "
             print(msg)
             log_msgs.append(msg)
-            for j in range(nw1):   # in x
-                for k in range(nw2):   # in y
-                    if np.isfinite(wave[k, j]):   # skip if wavelength is NaN
+            for j in range(nw1):  # in x
+                for k in range(nw2):  # in y
+                    if np.isfinite(wave[k, j]):  # skip if wavelength is NaN
                         # get thr full-frame pixel indeces for D- and S-flat image components
-                        pind = [k+py0-1, j+px0-1]
+                        pind = [k + py0 - 1, j + px0 - 1]
 
                         # get the pixel bandwidth
-                        if (j != 0) and (j < nw1-1):
-                            if np.isfinite(wave[k, j+1]) and np.isfinite(wave[k, j-1]):
-                                delw = 0.5 * (wave[k, j+1] - wave[k, j-1])
-                            if np.isfinite(wave[k, j+1]) and not np.isfinite(wave[k, j-1]):
-                                delw = wave[k, j+1] - wave[k, j]
-                            if not np.isfinite(wave[k, j+1]) and np.isfinite(wave[k, j-1]):
-                                delw = wave[k, j] - wave[k, j-1]
+                        if (j != 0) and (j < nw1 - 1):
+                            if np.isfinite(wave[k, j + 1]) and np.isfinite(wave[k, j - 1]):
+                                delw = 0.5 * (wave[k, j + 1] - wave[k, j - 1])
+                            if np.isfinite(wave[k, j + 1]) and not np.isfinite(wave[k, j - 1]):
+                                delw = wave[k, j + 1] - wave[k, j]
+                            if not np.isfinite(wave[k, j + 1]) and np.isfinite(wave[k, j - 1]):
+                                delw = wave[k, j] - wave[k, j - 1]
                         if j == 0:
-                            delw = wave[k, j+1] - wave[k, j]
-                        if j == nw-1:
-                            delw = wave[k, j] - wave[k, j-1]
+                            delw = wave[k, j + 1] - wave[k, j]
+                        if j == nw - 1:
+                            delw = wave[k, j] - wave[k, j - 1]
 
                         # integrate over D-flat fast vector
                         dfrqe_wav = dfrqe.field("WAVELENGTH")
                         dfrqe_rqe = dfrqe.field("RQE")
-                        iw = np.where((dfrqe_wav >= wave[k, j]-delw/2.) & (dfrqe_wav <= wave[k, j]+delw/2.))
+                        iw = np.where((dfrqe_wav >= wave[k, j] - delw / 2.) & (dfrqe_wav <= wave[k, j] + delw / 2.))
                         int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw], dfrqe_rqe[iw])
                         first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
-                        dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
+                        dff = int_tab / (last_dfrqe_wav - first_dfrqe_wav)
 
                         if debug:
                             print("np.shape(dfrqe_wav) : ", np.shape(dfrqe_wav))
                             print("np.shape(dfrqe_rqe) : ", np.shape(dfrqe_rqe))
-                            print("dfimdq[pind[0],[pind[1]] : ", dfimdq[pind[0],pind[1]])
+                            print("dfimdq[pind[0],[pind[1]] : ", dfimdq[pind[0], pind[1]])
                             print("np.shape(iw) =", np.shape(iw))
                             print("np.shape(dfrqe_wav) = ", np.shape(dfrqe_wav[iw]))
                             print("np.shape(dfrqe_rqe) = ", np.shape(dfrqe_rqe[iw]))
@@ -366,8 +374,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         if dfwave[iloc] > wave[k, j]:
                             iloc -= 1
                         ibr = [iloc]
-                        if iloc != len(dfwave)-1:
-                            ibr.append(iloc+1)
+                        if iloc != len(dfwave) - 1:
+                            ibr.append(iloc + 1)
                         # get the values in the z-array at indeces ibr, and x=pind[1] and y=pind[0]
                         zz = dfim[:, pind[0], pind[1]][ibr]
                         # now determine the length of the array with only the finite numbers
@@ -385,18 +393,19 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                             print("wave[k, j] = ", wave[k, j])
                             print("iloc = ", iloc)
                             print("ibr = ", ibr)
-                            print("np.interp(wave[k, j], dfwave[ibr], zz[zzwherenonan]) = ", np.interp(wave[k, j], dfwave[ibr], zz[zzwherenonan]))
+                            print("np.interp(wave[k, j], dfwave[ibr], zz[zzwherenonan]) = ",
+                                  np.interp(wave[k, j], dfwave[ibr], zz[zzwherenonan]))
                             print("dfs = ", dfs)
 
                         # integrate over S-flat fast vector
                         sfv_wav = sfv.field("WAVELENGTH")
                         sfv_dat = sfv.field("DATA")
-                        iw = np.where((sfv_wav >= wave[k, j]-delw/2.0) & (sfv_wav <= wave[k, j]+delw/2.0))
+                        iw = np.where((sfv_wav >= wave[k, j] - delw / 2.0) & (sfv_wav <= wave[k, j] + delw / 2.0))
                         sff = 1.0
                         if np.size(iw) > 2:
                             int_tab = auxfunc.idl_tabulate(sfv_wav[iw], sfv_dat[iw])
                             first_sfv_wav, last_sfv_wav = sfv_wav[iw[0]][0], sfv_wav[iw[0]][-1]
-                            sff = int_tab/(last_sfv_wav - first_sfv_wav)
+                            sff = int_tab / (last_sfv_wav - first_sfv_wav)
                         # get s-flat pixel-dependent correction
                         sfs = 1.0
                         if sfimdq[pind[0], pind[1]] == 0:
@@ -415,12 +424,12 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                         ffv_wav = ffv.field("WAVELENGTH")
                         ffv_dat = ffv.field("DATA")
                         fff = 1.0
-                        if wave[k, j]-delw/2.0 >= 1.0:
-                            iw = np.where((ffv_wav >= wave[k, j]-delw/2.0) & (ffv_wav <= wave[k, j]+delw/2.0))
+                        if wave[k, j] - delw / 2.0 >= 1.0:
+                            iw = np.where((ffv_wav >= wave[k, j] - delw / 2.0) & (ffv_wav <= wave[k, j] + delw / 2.0))
                             if np.size(iw) > 1:
                                 int_tab = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw])
                                 first_ffv_wav, last_ffv_wav = ffv_wav[iw[0]][0], ffv_wav[iw[0]][-1]
-                                fff = int_tab/(last_ffv_wav - first_ffv_wav)
+                                fff = int_tab / (last_ffv_wav - first_ffv_wav)
 
                         flatcor[k, j] = dff * dfs * sff * sfs * fff
 
@@ -443,7 +452,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                             if pipeflat[k, j] == 1:
                                 delf[k, j] = 999.0
                             if np.isnan(wave[k, j]):
-                                flatcor[k, j] = 1.0   # no correction if no wavelength
+                                flatcor[k, j] = 1.0  # no correction if no wavelength
 
                             if debug:
                                 print("flatcor[k, j] = ", flatcor[k, j])
@@ -462,10 +471,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 print("np.shape(delf) = ", np.shape(delf))
                 print("np.shape(delfg) = ", np.shape(delfg))
 
-
-            nanind = np.isnan(delf)   # get all the nan indexes
-            notnan = ~nanind   # get all the not-nan indexes
-            delf = delf[notnan]   # get rid of NaNs
+            nanind = np.isnan(delf)  # get all the nan indexes
+            notnan = ~nanind  # get all the not-nan indexes
+            delf = delf[notnan]  # get rid of NaNs
             if delf.size == 0:
                 msg1 = " * Unable to calculate statistics because difference array has all values as NaN. Test will be set to FAILED."
                 print(msg1)
@@ -477,7 +485,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 msg = "Calculating statistics... "
                 print(msg)
                 log_msgs.append(msg)
-                delfg = delf[np.where((delf != 999.0) & (delf < 0.1) & (delf > -0.1))]   # ignore outliers
+                delfg = delf[np.where((delf != 999.0) & (delf < 0.1) & (delf > -0.1))]  # ignore outliers
                 if delfg.size == 0:
                     msg1 = " * Unable to calculate statistics because difference array has all outlier values. Test will be set to FAILED."
                     print(msg1)
@@ -501,7 +509,7 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                     else:
                         test_result = "FAILED"
 
-            msg = " *** Result of the test: "+test_result+"\n"
+            msg = " *** Result of the test: " + test_result + "\n"
             print(msg)
             log_msgs.append(msg)
             total_test_result.append(test_result)
@@ -510,13 +518,13 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             if show_figs or save_figs:
 
                 # set plot variables
-                main_title = filt+"   "+grat+"   SLIT="+slit_id+"\n"
-                bins = None   # binning for the histograms, if None the function will select them automatically
+                main_title = filt + "   " + grat + "   SLIT=" + slit_id + "\n"
+                bins = None  # binning for the histograms, if None the function will select them automatically
                 #             lolim_x, uplim_x, lolim_y, uplim_y
                 plt_origin = None
 
                 # Residuals img and histogram
-                title = main_title+"Residuals"
+                title = main_title + "Residuals"
                 info_img = [title, "x (pixels)", "y (pixels)"]
                 xlabel, ylabel = "flat$_{pipe}$ - flat$_{calc}$", "N"
                 info_hist = [xlabel, ylabel, bins, stats]
@@ -527,16 +535,19 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 else:
                     file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
                     file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
-                    t = (file_basename, "FS_flattest_"+slit_id+"_histogram.pdf")
+                    t = (file_basename, "FS_flattest_" + slit_id + "_histogram.pdf")
                     plt_name = "_".join(t)
                     plt_name = os.path.join(file_path, plt_name)
-                    difference_img = (pipeflat - flatcor)#/flatcor
-                    in_slit = np.logical_and(difference_img<900.0, difference_img>-900.0) # ignore points out of the slit,
-                    difference_img[~in_slit] = np.nan   # Set values outside the slit to NaN
-                    #nanind = np.isnan(difference_img)   # get all the nan indexes
-                    #difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
-                    vminmax = [-5*delfg_std, 5*delfg_std]   # set the range of values to be shown in the image, will affect color scale
-                    auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name, vminmax=vminmax,
+                    difference_img = (pipeflat - flatcor)  # /flatcor
+                    in_slit = np.logical_and(difference_img < 900.0,
+                                             difference_img > -900.0)  # ignore points out of the slit,
+                    difference_img[~in_slit] = np.nan  # Set values outside the slit to NaN
+                    # nanind = np.isnan(difference_img)   # get all the nan indexes
+                    # difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
+                    vminmax = [-5 * delfg_std,
+                               5 * delfg_std]  # set the range of values to be shown in the image, will affect color scale
+                    auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
+                                                 vminmax=vminmax,
                                                  plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
 
             elif not save_figs and not show_figs:
@@ -547,7 +558,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 msg = "Not saving plots because save_figs was set to False."
                 print(msg)
                 log_msgs.append(msg)
-
 
             # create fits file to hold the calculated flat for each slit
             if writefile:
@@ -564,14 +574,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 complfile.append(complfile_ext)
 
                 # the file is not yet written, indicate that this slit was appended to list to be written
-                msg = "Extension "+repr(i)+" appended to list to be written into calculated and comparison fits files."
+                msg = "Extension " + repr(
+                    i) + " appended to list to be written into calculated and comparison fits files."
                 print(msg)
                 log_msgs.append(msg)
 
-
     if writefile:
-        outfile_name = step_input_filename.replace("flat_field.fits", det+"_flat_calc.fits")
-        complfile_name = step_input_filename.replace("flat_field.fits", det+"_flat_comp.fits")
+        outfile_name = step_input_filename.replace("flat_field.fits", det + "_flat_calc.fits")
+        complfile_name = step_input_filename.replace("flat_field.fits", det + "_flat_comp.fits")
 
         # create the fits list to hold the calculated flat values for each slit
         outfile.writeto(outfile_name, overwrite=True)
@@ -590,7 +600,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         log_msgs.append(msg)
         print(complfile_name)
         log_msgs.append(complfile_name)
-
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = False
@@ -615,51 +624,49 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     # end the timer
     flattest_end_time = time.time() - flattest_start_time
     if flattest_end_time > 60.0:
-        flattest_end_time = flattest_end_time/60.0  # in minutes
-        flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time)+" minutes to finish."
+        flattest_end_time = flattest_end_time / 60.0  # in minutes
+        flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time) + " minutes to finish."
         if flattest_end_time > 60.0:
-            flattest_end_time = flattest_end_time/60.  # in hours
-            flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time)+" hours to finish."
+            flattest_end_time = flattest_end_time / 60.  # in hours
+            flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time) + " hours to finish."
     else:
-        flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time)+" seconds to finish."
+        flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time) + " seconds to finish."
     print(flattest_tot_time)
     log_msgs.append(flattest_tot_time)
 
     return FINAL_TEST_RESULT, result_msg, log_msgs
 
 
-
 if __name__ == '__main__':
-
     # print pipeline version
     import jwst
+
     print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # This is a simple test of the code
     pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
 
     # input parameters that the script expects
-    #step_input_filename = pipeline_path+"/testing_data/FS_FULL_FRAME/G140M_opaque/gain_scale_NRS1_flat_field.fits"
-    #step_input_filename = pipeline_path+"/testing_data/FS_ALLSLITS/G235H_F170LP/final_output_caldet1_NRS1_flat_field.fits"
-    working_dir ='/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/testing_data/BOTS/NID_41203'
-    #working_dir = pipeline_path+"/testing_data/BOTS/NRSSRAD-G2H-PS-6007132838_1_491_SE_2016-01-07T17h03m08_491results"
-    step_input_filename = working_dir+"/final_output_caldet1_NRS1_flat_field.fits"
+    # step_input_filename = pipeline_path+"/testing_data/FS_FULL_FRAME/G140M_opaque/gain_scale_NRS1_flat_field.fits"
+    # step_input_filename = pipeline_path+"/testing_data/FS_ALLSLITS/G235H_F170LP/final_output_caldet1_NRS1_flat_field.fits"
+    working_dir = '/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/testing_data/BOTS/NID_41203'
+    # working_dir = pipeline_path+"/testing_data/BOTS/NRSSRAD-G2H-PS-6007132838_1_491_SE_2016-01-07T17h03m08_491results"
+    step_input_filename = working_dir + "/final_output_caldet1_NRS1_flat_field.fits"
 
     dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
     sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/FS/nirspec_FS_sflat"
     fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/FS/nirspec_FS_fflat"
-    #dflatref_path = "nirspec_dflat"
-    #sfile_path = "nirspec_FS_sflat"
-    #fflat_path = "nirspec_FS_fflat"
+    # dflatref_path = "nirspec_dflat"
+    # sfile_path = "nirspec_FS_sflat"
+    # fflat_path = "nirspec_FS_fflat"
 
     # name of the output images
     writefile = True
 
     # set the names of the resulting plots
-    plot_name = None#"FS_flattest_histogram.pdf"
+    plot_name = None  # "FS_flattest_histogram.pdf"
 
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
                            fflat_path=fflat_path, writefile=writefile, show_figs=False, save_figs=True,
                            plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
-

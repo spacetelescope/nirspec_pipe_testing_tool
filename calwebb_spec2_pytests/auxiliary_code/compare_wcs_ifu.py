@@ -78,15 +78,15 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
     slice_list = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
     #print ('sci_ext_list=', sci_ext_list, '\n')
 
-    # list to determine if pytest is passed or not
+    # dictionary to record if each test passed or not
     total_test_result = OrderedDict()
 
     # loop over the slices
-    for slice in slice_list:
-        if int(slice) < 10:
-            pslice = "0"+repr(slice)
+    for indiv_slice in slice_list:
+        if int(indiv_slice) < 10:
+            pslice = "0"+repr(indiv_slice)
         else:
-            pslice = repr(slice)
+            pslice = repr(indiv_slice)
         msg = "\n Working with slice: "+pslice
         print(msg)
         log_msgs.append(msg)
@@ -113,16 +113,16 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         print(msg)
         log_msgs.append(msg)
         with fits.open(esafile) as esahdulist:
-            print ("* ESA file contents ")
+            print("* ESA file contents ")
             esahdulist.info()
             esa_slice_id = esahdulist[0].header['SLICEID']
             # first check is esa_slice == to pipe_slice?
-            if slice == esa_slice_id:
-                msg = "\n -> Same slice found for pipeline and ESA data: "+repr(slice)+"\n"
+            if indiv_slice == esa_slice_id:
+                msg = "\n -> Same slice found for pipeline and ESA data: "+repr(indiv_slice)+"\n"
                 print(msg)
                 log_msgs.append(msg)
             else:
-                msg = "\n -> Missmatch of slices for pipeline and ESA data: "+repr(slice)+esa_slice_id+"\n"
+                msg = "\n -> Missmatch of slices for pipeline and ESA data: "+repr(indiv_slice)+esa_slice_id+"\n"
                 print(msg)
                 log_msgs.append(msg)
 
@@ -139,8 +139,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     esa_v2v3x = fits.getdata(esafile, "V2V3X1")
                     esa_v2v3y = fits.getdata(esafile, "V2V3Y1")
                     skipv2v3test = False
-                except:
-                    KeyError
+                except KeyError:
                     msg = "Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions."
                     print(msg)
                     log_msgs.append(msg)
@@ -159,13 +158,11 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                         esa_v2v3x = fits.getdata(esafile, "V2V3X2")
                         esa_v2v3y = fits.getdata(esafile, "V2V3Y2")
                         skipv2v3test = False
-                    except:
-                        KeyError
+                    except KeyError:
                         msg = "Skipping tests for V2 and V3 because ESA file does not contain corresponding extensions."
                         print(msg)
                         log_msgs.append(msg)
-                except:
-                    KeyError
+                except KeyError:
                     msg1 = "\n * compare_wcs_ifu.py is exiting because there are no extensions that match detector NRS2 in the ESA file."
                     msg2 = "   -> The WCS test is now set to skip and no plots will be generated. \n"
                     print(msg1)
@@ -175,9 +172,8 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     FINAL_TEST_RESULT = "skip"
                     return FINAL_TEST_RESULT, log_msgs
 
-
         # get the WCS object for this particular slit
-        wcs_slice = nirspec.nrs_wcs_set_input(img, slice)
+        wcs_slice = nirspec.nrs_wcs_set_input(img, indiv_slice)
 
         # if we want to print all available transforms, uncomment line below
         #print(wcs_slice)
@@ -195,11 +191,10 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             # To get specific pixel values use following syntax:
             det2slit = wcs_slice.get_transform('detector', 'slit_frame')
             slitx, slity, lam = det2slit(700, 1080)
-            print("slitx: " , slitx)
-            print("slity: " , slity)
-            print("lambda: " , lam)
+            print("slitx: ", slitx)
+            print("slity: ", slity)
+            print("lambda: ", lam)
 
-        if debug:
             # The number of inputs and outputs in each frame can vary. This can be checked with:
             print('Number on inputs: ', det2slit.n_inputs)
             print('Number on outputs: ', det2slit.n_outputs)
