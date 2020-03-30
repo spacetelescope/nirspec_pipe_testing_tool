@@ -149,7 +149,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         file_path = bsfile.replace(os.path.basename(bsfile), "")
         file_basename = os.path.basename(bsfile.replace("_barshadow.fits", ""))
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_NormSciData_slitlet" + slit_id + ".jpg")
+            t = (file_basename, "Barshadowtest_NormSciData_slitlet" + slit_id + ".pdf")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -203,7 +203,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
 
         # Show and/or save figures
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_SpatialProfilesBe4correction_slitlet" + slit_id + ".jpg")
+            t = (file_basename, "Barshadowtest_SpatialProfilesBe4correction_slitlet" + slit_id + ".pdf")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -312,7 +312,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
 
         # Show and/or save figures
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_CorrectionComparison_slitlet" + slit_id + ".jpg")
+            t = (file_basename, "Barshadowtest_CorrectionComparison_slitlet" + slit_id + ".pdf")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -362,7 +362,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
 
         # Show and/or save figures
         if save_final_figs:
-            t = (file_basename, "Barshadowtest_RelDifferences_slitlet" + slit_id + ".jpg")
+            t = (file_basename, "Barshadowtest_RelDifferences_slitlet" + slit_id + ".pdf")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -408,7 +408,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         plt.ylabel('Normalized data')
         # Show and/or save figures
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_CorrectedData_slitlet" + slit_id + ".jpg")
+            t = (file_basename, "Barshadowtest_CorrectedData_slitlet" + slit_id + ".pdf")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -439,7 +439,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         fig.suptitle('Corrected spatial profiles for slitlet '+slit_id, fontsize=20)
         # Show and/or save figures
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_CorrectedSpatialProfiles_slitlet" + slit_id + ".jpg")
+            t = (file_basename, "Barshadowtest_CorrectedSpatialProfiles_slitlet" + slit_id + ".pdf")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)

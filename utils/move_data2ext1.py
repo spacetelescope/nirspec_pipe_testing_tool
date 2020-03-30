@@ -41,13 +41,13 @@ def move_data(input_fits_file, detector='NRS1', add_ref_pix=False):
     Output:
         Nothing. The function creates a new fits file with the primary and science data extensions
     """
-    
+
     # create the fits list to hold the calculated flat values for each slit
     original_hdulist = fits.open(input_fits_file)
     #print(original_hdulist.info())
     outfile = fits.HDUList()
     outfile.append(original_hdulist[0])
-    
+
     # move the the data to extension corresponding to de detector indicated in the function arguments
     det = 1   # default for NRS1=491
     if len(fits.open(input_fits_file)) > 5:
@@ -89,12 +89,12 @@ def add_ref_pixels(data):
 
     """
     # define the correct size
-    data_out = np.zeros((2048,2048))
+    data_out = np.zeros((2048, 2048))
 
     # add the reference pixels
     for i in range(2040):
         for j in range(2040):
-            data_out[j+4,i+1] = data[j,i]
+            data_out[j+4, i+1] = data[j, i]
 
     return data_out
 
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     parser.add_argument("detector",
                         action='store',
                         default=None,
-                        help='The data for the given detector will be moved to a science estension.')
+                        help='The data for the given detector will be moved to a science extension.')
     parser.add_argument("-rfpx",
                         dest="add_ref_pix",
                         action='store_true',

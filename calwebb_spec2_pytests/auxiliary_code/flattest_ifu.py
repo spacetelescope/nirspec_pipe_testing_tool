@@ -155,10 +155,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
     dfimdq = np.transpose(dfimdq)
     if det == "NRS2":
+        # rotate science data by 180 degrees for NRS2
+        dfim = dfim[..., ::-1, ::-1]
         dfimdq = dfimdq[..., ::-1, ::-1]
-        # rotate science data by 180 degrees
-        dfim = np.rot90(dfim)
-        dfim = np.rot90(dfim)
     naxis3 = fits.getval(dfile, "NAXIS3", "SCI")#1)
 
     # get the wavelength values
@@ -205,16 +204,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     log_msgs.append(msg)
     sfim = fits.getdata(sfile, "SCI")#1)
     sfimdq = fits.getdata(sfile, "DQ")#3)
-    if det == "NRS2":
-        # rotate dq data by 180 degrees
-        sfimdq = np.rot90(sfimdq)
-        sfimdq = np.rot90(sfimdq)
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim)
     sfimdq = np.transpose(sfimdq)
     if det == "NRS2":
+        # rotate science data by 180 degrees for NRS2
         sfim = sfim[..., ::-1, ::-1]
+        sfimdq = sfimdq[..., ::-1, ::-1]
     sfv = fits.getdata(sfile, 5)
 
     # F-Flat

@@ -127,20 +127,25 @@ def find_FSwindowcorners(infile_name, esa_files_path, extract_2d_threshold_diff=
 
         # choose corresponding esa file
         for esafile in esafile_list:
+            if "not found" in esafile:
+                msg = " * No ESA file was found. Test will be skipped because there is no file to compare with."
+                print(msg)
+                log_msgs.append(msg)
+                return "skip", log_msgs
+
             if slit in esafile:
-                print ("Using this ESA file: \n", esafile)
+                print("Using this ESA file: \n", esafile)
                 with fits.open(esafile) as esahdulist:
                     # Find corners from ESA file
                     #print(esahdulist.info())
-                    if detector=="NRS1" or "NRS1" in infile_name  or  "491" in infile_name:
+                    if detector == "NRS1" or "NRS1" in infile_name  or  "491" in infile_name:
                         dat = "DATA1"
                     else:
                         dat = "DATA2"
                     try:
                         esahdr = esahdulist[dat].header
                         print("For detector=", detector, " reading data of extension name=", dat)
-                    except:
-                        KeyError
+                    except KeyError:
                         print("This file contains no information for extension name=", dat)
                         continue
 

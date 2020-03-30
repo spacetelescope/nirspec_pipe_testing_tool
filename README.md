@@ -347,7 +347,7 @@ In all cases the script ```create_metafile.py``` will output a file called
 
 *****
 
-7. a. Fix the pointing keywordsin the count rate file. This will only be possible if you have the 
+7. a. Fix the pointing keywords in the count rate file. This will only be possible if you have the 
 APT file that corresponds to your testing data. From the APT file, you will need the target's 
 RA, DEC, V2, and V3, as well as the aperture position angle. Sample values for these 
 quantities are: ra_targ = 53.16199112, dec_targ = -27.79127312,  v2_targ = 393.86285, 
