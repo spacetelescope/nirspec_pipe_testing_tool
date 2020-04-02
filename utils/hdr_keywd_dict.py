@@ -32,7 +32,7 @@ keywd_dict['NAXIS']   = [int] # Number of data array dimensions,  e.g. 0
 keywd_dict['EXTEND']  = ['T', 'F'] # File may contain standard extensions
 keywd_dict['NEXTEND'] = [int] # Number of standard extensions, e.g. 3
 
-keywd_dict['DATAMODL']= ['Level1bModel'] # Type of data model
+keywd_dict['DATAMODL']= ['Level1bModel', 'RampModel'] # Type of data model
 keywd_dict['TELESCOP']= ['JWST'] # Telescope used to acquire data
 keywd_dict['INSTRUME']= ['NIRSPEC'] # Identifier for instrument used to acquire data
 keywd_dict['RADESYS'] = [str] # Coordinate reference frame for RA and Dec, e.g. 'ICRS'
