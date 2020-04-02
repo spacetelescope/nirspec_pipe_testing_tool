@@ -24,6 +24,14 @@ import numpy as np
 from pprint import pprint
 from collections import namedtuple
 
+try:
+    import nrspydet
+except ImportError:
+    print("Missing optional package: 'nrspydet':\n"
+          "    This script requires the NIRSpec Instrument Performance Simulator"
+          " (IPS) environment to run.", file=sys.stderr)
+    exit(1)
+
 from nrspydet.model import configurationfpa as c_configurationfpa
 from nrspydet.model import multiaccum as c_multiaccum
 from nrspydet.misc import fpa106_toolbox as fpa106_toolbox
@@ -60,16 +68,16 @@ def f_post_processing(input_inpath, input_fwa, input_gwa, input_nexp, input_ng, 
                       input_seed=None, input_background=None, input_unity=None, input_object=None, input_factor=1.,
                       input_datetime_start='20180303T120000.000', input_datetime_end='20180303T120000.000',
                       input_datetime_file='2018-03-03T12h15m00', input_daily_folder='Day2018062'):
-    
+
     '''Main function to be called from
         - a wrapper script that uses a configuration file
         - command line specifying all parameters (inherited from original PF scripts).
         The original parameters coming from this approach have the prefix input_,
         I kept the mandatory parameters as few as possible and adopted them from PF
         scripts (except "mode"), the ones I added new are optional + default value.
-        
+
         Note: observing mode is handled only at this level, rest of parameters are handled in lower function levels'''
-    
+
     input_path = input_inpath
     print("# Input path: {:s}".format(input_path))
     output_path = input_outpath
@@ -103,7 +111,7 @@ def f_post_processing(input_inpath, input_fwa, input_gwa, input_nexp, input_ng, 
     nf = nf
     print(" Number of groups {:d} - number of integrations {:d} - number of frames {:d}".format(ng, nint, nf))
     print("# =====================================")
-    
+
     # ===============================================================
     # Printout: Output archive structure
     # ===============================================================
@@ -124,7 +132,7 @@ def f_post_processing(input_inpath, input_fwa, input_gwa, input_nexp, input_ng, 
     daily_folder = input_daily_folder
     print("# Daily folder: {:s}".format(daily_folder))
     print("# =====================================")
-    
+
     # ===============================================================
     # Printout: CRM building blocks
     # ===============================================================
@@ -147,7 +155,7 @@ def f_post_processing(input_inpath, input_fwa, input_gwa, input_nexp, input_ng, 
     factor = input_factor
     print("# Normalisation factor: {:8.4e}".format(factor))
     print("# =====================================")
-    
+
     # =======================================================================
     # Generating FPA configuration and multiaccum parameters
     # =======================================================================
@@ -155,15 +163,15 @@ def f_post_processing(input_inpath, input_fwa, input_gwa, input_nexp, input_ng, 
     exposure_type = detector_config['exposure_type']
     subarray_id = detector_config['subarray_id']
     multiaccum = f_detector(readout_mode, exposure_type, ng, nint=nint, nf=nf, GWA=GWA, subarray_id=subarray_id)
-    
+
     # =======================================================================
     # Generating the instances of the reference files (nrspydet.references)
     # Note: when using real darks, one needs less calls
     # =======================================================================
     references = f_references(readout_mode, exposure_type, seed=seed)
-    
+
     #TODO: create the logic for sampling grid
-    
+
     #If we have not provided an explicit erm filename dictionary
     if input_list is None:
         #We need to generate the erm filename list with the logic
@@ -230,9 +238,9 @@ def f_references(readout_mode, exposure_type, seed=-1):
     '''
         Basic function to generate the necessary reference files which
         include the noise model
-        
+
         Note: uses namedtuple package
-        
+
         :param readout_mode:
         :param exposure_type:
         :param seed:
@@ -240,14 +248,14 @@ def f_references(readout_mode, exposure_type, seed=-1):
         '''
     #
     if readout_mode == 'traditional': readout_mode='TRAD'
-    
+
     dark = fpa106_toolbox.f_generate_dark(uniform=False, seed=seed)
     gain = fpa106_toolbox.f_generate_gain(exposure_type.upper())
     ctm = fpa106_toolbox.f_generate_ctm()
     readout = fpa106_toolbox.f_generate_readout_noise(readout_mode)
     noise_model = fpa106_toolbox.f_generate_noise_model(readout_mode)
     references = namedtuple("references", ['dark', 'gain', 'ctm', 'readout', 'noise_model'])
-    
+
     return references(dark, gain, ctm, readout, noise_model)
 
 def f_erm_filename(mode, FWA, GWA, sampling_grid, object_suffix, background_suffix=None, unity_suffix=None, erm_rep=0, apertures=None):
@@ -303,7 +311,7 @@ def f_erm_filename(mode, FWA, GWA, sampling_grid, object_suffix, background_suff
             list_background.append(list_names)
         print("# Background ERMs: {}".format(list_background))
         erm_dict['bckg_erm'] = list_background
-    
+
     if unity_suffix is not None:
         list_unity = []
         for dither_index in range(dither_pts):
@@ -330,7 +338,7 @@ def  f_output_archive_structure(output_path, dither_idx, nod_idx,
         Note: The design may be adapted to accept FWA, GWA, like PF's example:
         #IFS example going through different configurations
         #obs_id = '{:s}-B-{:s}-{:s}'.format(base_obs_id, FWA, GWA)
-        
+
         :param output_path:
         :param dither_idx:
         :param nod_idx:
@@ -350,13 +358,13 @@ def  f_output_archive_structure(output_path, dither_idx, nod_idx,
     h_nid = 100 * dither_idx
     d_nid = nod_idx #* nexp + exp_idx  # this breaks if this number is larger than 100
     nid = base_nid + h_nid + d_nid + 1
-    
+
     if is_background:
         obs_id = '{:s}-B-{:02d}'.format(base_obs_id, d_nid + 1)
     else:
         obs_id = '{:s}-{:02d}'.format(base_obs_id, d_nid + 1)
-    
-    
+
+
     # Generating folder name (following GG example)
     # NRSDEEP-PRM-02_1_1202_JW1_IPS_20180518T120000.000_20180518T124800.000
     folder_name = 'NRS{:s}_1_{:d}_{:s}_{:s}_{:s}_{:s}'.format(obs_id, nid, jlab_id, pipeline_id,
@@ -383,7 +391,7 @@ def  f_output_archive_structure(output_path, dither_idx, nod_idx,
     for sca_index in range(2):
         filename = 'NRS{:s}_1_{:d}_SE_{:s}.cts.fits'.format(obs_id, 491 + sca_index, datetime_file)
         filenames.append(filename)
-    
+
     return nid, obs_id, folder_name, filenames
 
 
@@ -400,9 +408,9 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
         - Include realistic dark flags
         - Populate GWA information (current workaround IPS>4.0 should take care of this)
         - Write the .fits files
-        
+
         Note: Currently NIPS-centric functions are embedded in code #TODO: extract into functions
-        
+
         :param input_path:
         :param input_list:
         :param FWA:
@@ -425,7 +433,7 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
         :param save_background:
         :return:
         '''
-    
+
     #TODO: Idea, maybe promote this function upward to f_post_processing body, as it needs yet more parameters
     # =======================================================================
     # NIPS Archive structure: daily folder generation
@@ -458,16 +466,16 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
             # Background ERM: we need to have a background to add, even if it is the same
             # -------------------------------------------------------------------
             b_erm = f_add_aper_erm(input_path, bckg_list, sel_apertures, dither_idx=dither_idx, verbose=True)
-        
+
         for nod_idx in range(nod_pts):
-            
+
             o_name = target_list[dither_idx][nod_idx]
             # -------------------------------------------------------------------
             # Target/object ERM
             # -------------------------------------------------------------------
             o_erm = c_electronratemap.ElectronRateMap()
             o_erm.m_read_from_fits(os.path.join(input_path, o_name))
-            
+
             if 'background' in components:
                 # -------------------------------------------------------------------
                 # Obj ERM + Background ERM
@@ -490,12 +498,12 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
                                                                                  base_nid, pipeline_id, jlab_id,
                                                                                  base_obs_id, datetime_start, datetime_end,
                                                                                  datetime_file, daily_folder, is_background=True)
-                                                   
+
                 # -------------------------------------------------------------------
                 # Write out to archive folders
                 # -------------------------------------------------------------------
                 f_write_to_fits(b_ctms, output_path, daily_folder, folder_name, filenames, obs_id)
-        
+
             # -------------------------------------------------------------------
             # Note: Just for NIPS2.0 and commissioning; otherwise introduce the
             # following for loop and change the f_standard parameter to nexp=1
@@ -503,7 +511,7 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
             # -------------------------------------------------------------------
             #for iexp in range(nexp):
             # GG: Note nexp in this function is only used to scale noise -> nexp=1
-            
+
             o_ctms = erm_to_sci.f_standard(o_erm, multiaccum, noise_category='extended', noise_model=references.noise_model,
                                            scale=1.0, nexp=nexp, planes=None, bias=None, use_superbias=False,
                                            dark=references.dark, dark_sub=True, readout=references.readout, gain=references.gain,
@@ -515,7 +523,7 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
                                                                              pipeline_id, jlab_id, base_obs_id, datetime_start,
                                                                              datetime_end, datetime_file, daily_folder,
                                                                              is_background=False)
-                                           
+
             #TODO: Extract all below code into a NIPS specific function and include switch parameter in config file to branch off
             # -------------------------------------------------------------------
             # Populate header keywords: (specific to NIPS2.0)
@@ -523,7 +531,7 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
             # - GWA information
             # -------------------------------------------------------------------
             flag_arrays = []
-                                           
+
             # Reading in quality flags from one of our darks
             hdu = fits.open(_dark491fname)
             flag_arrays.append(hdu[3].data)
@@ -548,8 +556,8 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
             poly = tiltpoly.TiltPoly()
             poly.m_readFromFile(filename)
             GWA_YTIL = poly.zeroreadings[0]  # spatial direction
-                                                   
-                                                   
+
+
             mode_gg = 'unknown'
             slit_gg = 'unknown'
             aperture_gg = 'unknown'
@@ -562,8 +570,8 @@ def f_crm(input_path, input_list, FWA, GWA, sampling_grid, components, sel_apert
                 o_ctms[o_idx].m_set_keywords(nid, 'IPS', sca_ids[o_idx-1], mode_gg, slit_gg, aperture_gg,
                                             FWA, GWA, read_out, False)
                 #o_ctms[o_idx].quality = flag_arrays[o_idx-1]
-                                                                           
-                                                                           
+
+
             # -------------------------------------------------------------------
             # Write out to archive folders
             # We keep the old count-rate for NIPS 2.7 compatibility and plotting
@@ -622,7 +630,7 @@ def f_print_dict(input_dict):
     for keys,values in input_dict.items():
         print(keys)
         pprint(values)
-    
+
     return None
 
 
@@ -659,7 +667,7 @@ def f_modify_dict(input_list, mode, apertures, dither_pts, verbose=True):
     if verbose:
         print('Finish with this dictionary....')
         f_print_dict(new_list)
-    
+
     return new_list
 
 
@@ -686,10 +694,10 @@ def f_write_to_fits(ctms, output_path, daily_folder, folder_name, filenames, obs
         #     ctms[idx].m_write_to_fits(os.path.join(output_path, daily_folder, folder_name, filenames[idx]))
         print('Writing to {:s}'.format(os.path.join(output_path, daily_folder, folder_name, filenames[idx-1])))
         ctms[idx].m_write_to_fits(os.path.join(output_path, daily_folder, folder_name, filenames[idx-1]))
-    
+
     return None
 
-if __name__ == "__main__":
+def main():
     # =======================================================================
     # Parsing the input arguments
     # =======================================================================
@@ -798,9 +806,14 @@ if __name__ == "__main__":
     factor = args.factor
     print("# Normalisation factor: {:8.4e}".format(factor))
     print("# =====================================")
-    
+
     f_post_processing(input_path, FWA, GWA, nexp, ng, output_path, base_obs_id, mode,
                       #several parameters missing, using the default in the function definition
                       seed=seed, input_background=background_suffix, input_unity=unity_suffix,
                       input_object=object_suffix, input_factor=factor, input_datetime_start=datetime_start,
                       input_datetime_end=datetime_end, input_datetime_file=datetime_file, input_daily_folder=daily_folder)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+

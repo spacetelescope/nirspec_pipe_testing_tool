@@ -1,5 +1,6 @@
 import argparse
 import numpy as np
+import sys
 from astropy.io import fits
 
 
@@ -99,9 +100,7 @@ def add_ref_pixels(data):
     return data_out
 
 
-
-if __name__ == '__main__':
-
+def main():
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("fits_file",
@@ -130,3 +129,5 @@ if __name__ == '__main__':
     print ('\n * Script  move_data2ext1.py  finished * \n')
 
 
+if __name__ == '__main__':
+    sys.exit(main())

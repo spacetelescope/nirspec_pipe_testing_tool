@@ -3,6 +3,7 @@ import collections
 import os
 import re
 import subprocess
+import sys
 import numpy as np
 from datetime import datetime
 from astropy.io import fits
@@ -10,9 +11,9 @@ from collections import OrderedDict
 from glob import glob
 
 # import the sample header keyword dictionary of level 2b
-import level2b_hdr_keywd_dict_sample as lev2bdict
+from .dict_info import level2b_hdr_keywd_dict_sample as lev2bdict
 # import subarray dictionary
-import subarray_dict as subdict
+from .dict_info import subarray_dict as subdict
 
 
 '''
@@ -27,11 +28,11 @@ Example usage:
     To simply update the header of the existing fits file type:
         > python /path_to_this_script/level2b_hdr_keywd_check.py blah.fits IFU -u
 
-where the mode is either FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf. 
+where the mode is either FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.
 
 The code is NOT case-sensitive.
 
-If a mode is not provided, the code will look for a mode_used variable in the pytests configuration file, and it 
+If a mode is not provided, the code will look for a mode_used variable in the pytests configuration file, and it
 will crash if this config file does not exist.
 
 '''
@@ -730,9 +731,7 @@ def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None):
     return updated_fitsfile
 
 
-
-if __name__ == '__main__':
-
+def main():
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("fits_file",
@@ -768,4 +767,7 @@ if __name__ == '__main__':
 
     print('\n * Script  level2b_hdr_keywd_check.py  finished * \n')
 
+
+if __name__ == '__main__':
+    sys.exit(main())
 

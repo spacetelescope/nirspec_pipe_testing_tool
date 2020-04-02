@@ -3,6 +3,7 @@ import collections
 import os
 import re
 import subprocess
+import sys
 import numpy as np
 from datetime import datetime
 from astropy.io import fits
@@ -10,10 +11,10 @@ from collections import OrderedDict
 from glob import glob
 
 # import the header keyword dictionaries
-import hdr_keywd_dict as hkwd
-import hdr_keywd_dict_sample as shkvd
+from .dict_info import hdr_keywd_dict as hkwd
+from .dict_info import hdr_keywd_dict_sample as shkvd
 # import subarray dictionary
-import subarray_dict as subdict
+from .dict_info import subarray_dict as subdict
 
 
 '''
@@ -28,11 +29,11 @@ Example usage:
     To simply update the header of the existing fits file type:
         > python /path_to_this_script/hdr_keywd_check.py blah.fits -u -m=FS
 
-where the -m flag is the mode used, i.e. FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf. 
+where the -m flag is the mode used, i.e. FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.
 
 The code is NOT case-sensitive.
 
-If a mode is not provided, the code will look for a mode_used variable in the pytests configuration file, and it 
+If a mode is not provided, the code will look for a mode_used variable in the pytests configuration file, and it
 will crash if this config file does not exist.
 
 '''
@@ -174,13 +175,13 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
 
     # Store type that value should have, checking for option lists
     dict_type = type(hkwd_val[0]) if len(hkwd_val) > 1 else hkwd_val[0]
-    
+
     # If we don't want a string, check for numerics
     if dict_type != str:
         #regex patterns
         float_pattern = re.compile(r"\b\s*[+-]?(?=\d*[.eE])([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?(?=\s|$)")
         int_pattern = re.compile(r"\b\s*[-+]?\d+(?=\s|$)")
-        
+
         if val is None or valtype == '':
             warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
             print (warning)
@@ -192,10 +193,10 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
             elif not int_pattern.fullmatch(val) is None:
                 val = int(val)
                 valtype = int
-    
+
     if valtype == bool:
         return val, None, valtype
-    
+
     if (valtype in hkwd_val) or (val in hkwd_val) or (valtype == type(dict_type)):
         print('{:<15} {:<9} {:<28} {:<16}'.format(key, ext, 'Allowed value type', val))
         warning = None
@@ -677,8 +678,7 @@ def check_hdr_keywds(fits_file, only_update, mode_used):
     add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict)
 
 
-if __name__ == '__main__':
-
+def main():
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("fits_file",
@@ -708,3 +708,5 @@ if __name__ == '__main__':
     print('\n * Script  hdr_keywd_check.py  finished * \n')
 
 
+if __name__ == '__main__':
+    sys.exit(main())

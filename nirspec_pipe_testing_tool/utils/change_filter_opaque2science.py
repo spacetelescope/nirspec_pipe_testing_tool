@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 import argparse
 from astropy.io import fits
 
@@ -133,10 +134,7 @@ def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, s
     return is_filter_opaque, new_input_file
 
 
-
-
-if __name__ == '__main__':
-
+def main():
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("fits_file",
@@ -164,3 +162,5 @@ if __name__ == '__main__':
     print (" * Script  change_filter_opaque2science.py  finished. * \n")
 
 
+if __name__ == '__main__':
+    sys.exit(main())

@@ -1,29 +1,30 @@
 import argparse
 import numpy as np
+import sys
 from astropy.io import fits
 
 # import the modules needed within our tool
-import move_data2ext1
-import level2b_hdr_keywd_check as lev2bcheck
-import level2b_hdr_keywd_dict_map2sim as map2sim
+from . import move_data2ext1
+from . import level2b_hdr_keywd_check as lev2bcheck
+from . import level2b_hdr_keywd_dict_map2sim as map2sim
 
 """
 
 This script is a wrapper for the 2 scripts needed to convert the ESA simulations in CRM to ST pipeline to
-ingest products. 
+ingest products.
 
 Example usage:
     The code works from the terminal or called as a module.
-    
-    Terminal 
+
+    Terminal
         To create a NEW fits file with the updated header type:
         > python /path_to_this_script/crm2STpipeline.py blah.fits MODE
 
         To add the reference pixels add at the end of the command -rfpx, e.g.
         > python /path_to_this_script/crm2STpipeline.py blah.fits MODE -rfpx
-    
-    As a module 
-        import crm2STpipeline 
+
+    As a module
+        import crm2STpipeline
         import level2b_hdr_keywd_dict_map2sim as map2sim
         
         # create the pipeline-ready count rate file
@@ -34,8 +35,8 @@ Example usage:
         
         # modify the keyword values to match IPS information
         map2sim.match_IPS_keywords(stsci_pipe_ready_file, input_fits_file, additional_args_dict=additional_args_dict)
-    
-    * NOTE: In all cases the MODE can be any of the following: 
+
+    * NOTE: In all cases the MODE can be any of the following:
             FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf
 
 """
@@ -191,8 +192,7 @@ def rm_extra_exts_and_rotate(input_fits_file, detector):
     return outfile_name
 
 
-if __name__ == '__main__':
-
+def main():
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("ips_file",
@@ -250,3 +250,5 @@ if __name__ == '__main__':
     print('\n * Script  crm2STpipeline.py  finished * \n')
 
 
+if __name__ == '__main__':
+    sys.exit(main())

@@ -1,8 +1,9 @@
 import argparse
 import os
+import sys
 from astropy.io import fits
 
-import hdr_keywd_dict_sample as shkvd
+from .dict_info import hdr_keywd_dict_sample as shkvd
 
 """
 This script changes the value of a keyword to the specified value. If no extension is given, the keyword will be
@@ -57,53 +58,58 @@ def new_keywd(extension_number, value):
 
 
 
-# Get arguments to run script
-parser = argparse.ArgumentParser(description='')
-parser.add_argument("fits_file",
-                    action='store',
-                    default=None,
-                    help='Name of fits file, i.e. blah.fits')
-parser.add_argument("keyword",
-                    action='store',
-                    default=None,
-                    help='Name of the keyword to be changed, it does not need to be all capital letters.')
-parser.add_argument("value",
-                    action='store',
-                    default=None,
-                    help='New value for the given keyword.')
-parser.add_argument("-e",
-                    dest="ext_number",
-                    action='store',
-                    default=None,
-                    help='Save a text file with the header information of the given extension.')
-args = parser.parse_args()
+def main():
+    # Get arguments to run script
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument("fits_file",
+                        action='store',
+                        default=None,
+                        help='Name of fits file, i.e. blah.fits')
+    parser.add_argument("keyword",
+                        action='store',
+                        default=None,
+                        help='Name of the keyword to be changed, it does not need to be all capital letters.')
+    parser.add_argument("value",
+                        action='store',
+                        default=None,
+                        help='New value for the given keyword.')
+    parser.add_argument("-e",
+                        dest="ext_number",
+                        action='store',
+                        default=None,
+                        help='Save a text file with the header information of the given extension.')
+    args = parser.parse_args()
 
-# Set the variables
-fits_file = args.fits_file
-keyword = args.keyword
-value = args.value
-ext_number = args.ext_number
-if ext_number is None:
-    extension_number = 0
-else:
-    extension_number = int(ext_number)
-
-
-# convert the keyword value input to the right type
-keyword = keyword.upper()
-if extension_number == 0:
-    sample_kyewd_dict = shkvd.keywd_dict
-    new_value = keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, value)
-
-elif extension_number == 1:
-    sample_kyewd_dict = shkvd.keywd_dict["wcsinfo"]
-    new_value = keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, value)
-
-else:
-    new_value = new_keywd(extension_number, value)
+    # Set the variables
+    fits_file = args.fits_file
+    keyword = args.keyword
+    value = args.value
+    ext_number = args.ext_number
+    if ext_number is None:
+        extension_number = 0
+    else:
+        extension_number = int(ext_number)
 
 
-# now change the the value
-fits.setval(fits_file, keyword, extension_number, value=new_value)
+    # convert the keyword value input to the right type
+    keyword = keyword.upper()
+    if extension_number == 0:
+        sample_kyewd_dict = shkvd.keywd_dict
+        new_value = keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, value)
 
-print ('\n * Script  change_keywd.py  finished * \n')
+    elif extension_number == 1:
+        sample_kyewd_dict = shkvd.keywd_dict["wcsinfo"]
+        new_value = keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, value)
+
+    else:
+        new_value = new_keywd(extension_number, value)
+
+
+    # now change the the value
+    fits.setval(fits_file, keyword, extension_number, value=new_value)
+
+    print ('\n * Script  change_keywd.py  finished * \n')
+
+
+if __name__ == '__main__':
+    sys.exit(main())

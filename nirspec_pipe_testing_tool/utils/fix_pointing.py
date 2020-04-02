@@ -1,26 +1,27 @@
 from astropy.io import fits
 import argparse
 import subprocess
+import sys
 import pysiaf
 import pysiaf.utils.rotations as rotations
 
 """
-This script is meant to be called after the header has been fixed by either of the keywd_check scripts. 
+This script is meant to be called after the header has been fixed by either of the keywd_check scripts.
 
 Usage:
     You will need the values for the target's RA, DEC, V2, and V3, as well as the aperture
     position angle: ra_targ, dec_targ, v2_targ, v3_targ, aper_angle
-    
-    Sample values are: ra_targ = 53.16199112, dec_targ = -27.79127312, v2_targ = 393.86285, 
+
+    Sample values are: ra_targ = 53.16199112, dec_targ = -27.79127312, v2_targ = 393.86285,
     v3_targ = -424.00329, aper_angle = 45.0
 
     From a terminal type:
     > python ../path_to_script/fix_pointing.py blah.fits 53.16199112, -27.79127312, 393.86285, -424.00329, 45.0
-    
+
     If the data is IFU add the flag -ifu at the end of the command. The output will be the updated file.
-    
+
     To create a new updated file add flag -nf to the above command.
-    
+
 """
 
 # HEADER
@@ -124,7 +125,7 @@ def fix_header_pointing(infile, ra_targ, dec_targ, v2_targ, v3_targ, apa, ifu=Fa
             fits.setval(infile, key, 1, value=new_value, after=after_key)
 
 
-if __name__ == '__main__':
+def main():
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("input_fits_file",
@@ -183,3 +184,7 @@ if __name__ == '__main__':
     fix_header_pointing(input_file, ra_targ, dec_targ, v2_targ, v3_targ, apa, ifu=ifu_used)
 
     print('\n * Script  fix_pointing.py  finished * \n')
+
+
+if __name__ == '__main__':
+    sys.exit(main())

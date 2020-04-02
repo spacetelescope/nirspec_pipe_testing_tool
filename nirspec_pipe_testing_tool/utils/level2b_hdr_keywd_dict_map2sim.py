@@ -1,24 +1,25 @@
 import argparse
 import collections
+import sys
 from astropy.io import fits
 from datetime import datetime
 
 # import subarray dictionary
-import subarray_dict as subdict
+from .dict_info import subarray_dict as subdict
 
 '''
-This script contains mapping of pipeline keywords to the corresponding header keyword of the simulations file. The 
+This script contains mapping of pipeline keywords to the corresponding header keyword of the simulations file. The
 script modifies the uncommented keywords in the dictionary.
 
-This script is to be used AFTER the dummy header keyword values have been added, and it ONLY uses the keywords 
+This script is to be used AFTER the dummy header keyword values have been added, and it ONLY uses the keywords
 that require a change in value, the others are commented out (but remain here for completion).
 
 Keyword value options used in the dictionary:
     - 'specific_string' = this is a string that will not change from simulation to simulation
     - 'set_to_given_string' = will look for the given value when script is run
-    - 'N/A' = this is a non applicable (not too important) keyword for the simulations 
-    - 'header_ext:keyword' = get the value from the header extension of the file with the keyword after the : 
-    - 'primary_ext:keyword' = this keyword is spelled differently in the IPS primary header, code will look for the string after the : 
+    - 'N/A' = this is a non applicable (not too important) keyword for the simulations
+    - 'header_ext:keyword' = get the value from the header extension of the file with the keyword after the :
+    - 'primary_ext:keyword' = this keyword is spelled differently in the IPS primary header, code will look for the string after the :
     - 'calculation' = these are numbers that need to be calculated
 
 '''
@@ -550,7 +551,7 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
             fits.setval(stsci_pipe_ready_file, key2modify, value=val2modify)
 
 
-if __name__ == '__main__':
+def main():
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("stsci_pipe_ready_file",
@@ -596,4 +597,8 @@ if __name__ == '__main__':
     # modify the keyword values to match IPS information
     match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=additional_args_dict)
 
-    print('\n * Script  level2b_hdr_keywd_dict_map2sim.py  finished * \n')
+    print ('\n * Script  level2b_hdr_keywd_dict_map2sim.py  finished * \n')
+
+
+if __name__ == '__main__':
+    sys.exit(main())
