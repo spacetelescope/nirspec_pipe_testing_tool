@@ -3,35 +3,44 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-BINPREFIX = "nptt"
-
-
-def gen_entry_points(pkgdir):
+def gen_entry_points(pkgdir, e_prefix):
     """ Generate entry_points={'console_scripts': []} records
     relative to `pkgdir`.
     """
     results = []
-    for root, dirs, files in os.walk(pkgdir):
-        for f in files:
-            if not f.endswith('.py') or f.endswith('__init__.py'):
-                continue
-            modname = os.path.splitext(f)[0]
-            modpath = os.path.join(root, modname).replace(os.sep, ".")
-            result = "{}_{}={}:{}".format(BINPREFIX, modname, modpath, "main")
-            results += [result]
+    root = pkgdir
+    for f in os.listdir(pkgdir):
+        # Skip sub-directories
+        if os.path.isdir(f):
+            continue
+        # Skip non-script files and __init__
+        if not f.endswith('.py') or f.endswith('__init__.py'):
+            continue
+
+        # Python module name is derived from the filename without its extension
+        modname = os.path.splitext(f)[0]
+        # Python module path is the absolute path using "." instead of "/"
+        modpath = os.path.join(root, modname).replace(os.sep, ".")
+        # Create record
+        result = "{}_{}={}:{}".format(e_prefix, modname, modpath, "main")
+        # Save record
+        results += [result]
 
     return results
 
 
-ENTRY_POINTS = gen_entry_points(os.path.normpath("nirspec_pipe_testing_tool/utils"))
+PACKAGE_NAME = "nirspec_pipe_testing_tool"
+BINPREFIX = "nptt"
+ENTRY_POINTS_PATH=os.path.normpath("{}/utils".format(PACKAGE_NAME))
+ENTRY_POINTS = gen_entry_points(ENTRY_POINTS_PATH, BINPREFIX)
 
 
 setup(
-    name="nirspec_pipe_testing_tool",
+    name=PACKAGE_NAME,
     use_scm_version=True,
     author="Maria Pena Guerrero",
     description="FILL THIS IN",
-    url="https://github.com/spacetelescope/nirspec_pipe_testing_tool",
+    url="https://github.com/spacetelescope/{}".format(PACKAGE_NAME),
     license="BSD",
     classifiers=[
         "License :: OSI Approved :: BSD License",
@@ -50,6 +59,7 @@ setup(
         "jwst @ git+https://github.com/spacetelescope/jwst#branch=master",
         "matplotlib",
         "numpy",
+        "pysiaf",
         "pytest",
     ],
     packages=find_packages(),
