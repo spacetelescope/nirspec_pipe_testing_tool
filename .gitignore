@@ -1,5 +1,8 @@
 .DS_Store
-__pycashe__
+build
+__pycache__
+.eggs
+*.egg-info
 *.pyc
 */*.pyc
 */*/*.pyc
