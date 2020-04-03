@@ -58,9 +58,11 @@ setup(
         "astropy",
         "jwst @ git+https://github.com/spacetelescope/jwst#branch=master",
         "matplotlib",
+        "msgpack",
         "numpy",
         "pysiaf",
         "pytest",
+        "pytest-html",
     ],
     packages=find_packages(),
     entry_points = {
