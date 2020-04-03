@@ -61,7 +61,7 @@ setup(
         "msgpack",
         "numpy",
         "pysiaf",
-        "pytest",
+        "pytest>=5.0",
         "pytest-html",
     ],
     packages=find_packages(),
