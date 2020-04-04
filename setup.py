@@ -65,6 +65,13 @@ setup(
         "pytest-html",
     ],
     packages=find_packages(),
+    package_data={
+        "": [
+            '*.cfg',
+            '*.json',
+            '*.txt',
+        ],
+    },
     entry_points = {
         "console_scripts": ENTRY_POINTS,
     },
