@@ -261,7 +261,7 @@ def output_hdul(set_inandout_filenames, config):
         logging.info(PTT_runtimes_msg)
 
         # move the final reporting text files to the working directory
-        core_utils.move_txt_files_2workdir(detector)
+        core_utils.move_txt_files_2workdir(config, detector)
 
         # end script for imaging case
         if imaging_mode:

@@ -887,7 +887,7 @@ def convert_html2pdf(detector):
     print ("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
 
 
-def move_txt_files_2workdir(detector):
+def move_txt_files_2workdir(config, detector):
     """
     This function moves the PTT output reporting files into the working directory.
     Args:
@@ -897,8 +897,6 @@ def move_txt_files_2workdir(detector):
         Nothing
     """
     # get the working directory
-    config = configparser.ConfigParser()
-    config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
     output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     # get a list of all the txt files in the calwebb_spec2_pytests dir
     latest_screenoutputtxtfile = get_latest_file("*screen*"+detector+"*.txt", detector, disregard_known_files=True) # this should pick up the output_screen file

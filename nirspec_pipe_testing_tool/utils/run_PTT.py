@@ -16,9 +16,11 @@ Example usage:
 
 import os
 import subprocess
+import sys
 import configparser
 import argparse
 from astropy.io import fits
+from . import data
 
 
 # HEADER
@@ -29,15 +31,21 @@ __version__ = "1.0"
 # Sep 2019 - Version 1.0: initial version completed
 
 
-def read_PTTconfig_file():
+def read_PTTconfig_file(config_path):
     """
     This function reads the PTT configuration file to get needed info.
     
     Returns:
         cfg_info = list of read info
     """
+    if not config_path:
+        config_path = os.path.join(data.DATADIR, 'PTT_config.cfg')
+
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(config_path)
+
     config = configparser.ConfigParser()
-    config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
+    config.read([config_path])
     output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     input_file = config.get("calwebb_spec2_input_file", "input_file")
     input_file = os.path.join(output_dir, input_file)
@@ -45,7 +53,7 @@ def read_PTTconfig_file():
     return cfg_info
 
 
-def run_PTT(report_name):
+def run_PTT(report_name, config_path):
     """
     This function runs PTT and then moves the html report into the working directory specified
     in the PTT configuration file.
@@ -55,7 +63,7 @@ def run_PTT(report_name):
     print('Running PTT. This may take a while...')
     
     # get the html report and the info from the PTT config file
-    cfg_info = read_PTTconfig_file()
+    cfg_info = read_PTTconfig_file(config_path)
     
     # get the detector and make sure it is in the name of the output html report
     detector = fits.getval(cfg_info[1], "DETECTOR", 0)
@@ -67,7 +75,7 @@ def run_PTT(report_name):
         print('-> The detector used added to the html report name: ', report_name)
 
     # run PTT
-    cmd = ['pytest', '-s', '--config_file=PTT_config.cfg', '--html='+report_name,
+    cmd = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
            '--self-contained-html']
     subprocess.call(cmd)
 
@@ -80,10 +88,13 @@ def run_PTT(report_name):
         print('WARNING: The html report was not created, something went wrong!')
 
 
-if __name__ == '__main__':
-    
+def main():
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
+    parser.add_argument('-c', '--config',
+                        action='store',
+                        default="",
+                        help="Path to PTT configuration file")
     parser.add_argument("report_name",
                         action='store',
                         default=None,
@@ -92,10 +103,13 @@ if __name__ == '__main__':
                         
     # Set the variables
     report_name = args.report_name
+    config_path = args.config
         
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
-    run_PTT(report_name)
+    run_PTT(report_name, config_path)
 
     print('\n * Script  run_PTT.py  finished * \n')
 
 
+if __name__ == '__main__':
+    sys.exit(main())
