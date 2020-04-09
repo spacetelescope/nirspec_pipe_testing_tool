@@ -58,10 +58,10 @@ def get_caldet1cfg_and_workingdir():
     calwebb_detector1_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_detector1.cfg")
     calwebb_tso1_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_tso1.cfg")
     calwebb_dark_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_dark.cfg")
-    working_dir = config.get("calwebb_spec2_input_file", "working_directory")
+    output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     mode_used = config.get("calwebb_spec2_input_file", "mode_used")
     raw_data_root_file = config.get("calwebb_spec2_input_file", "raw_data_root_file")
-    return calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, working_dir, mode_used, raw_data_root_file
+    return calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, raw_data_root_file
 
 
 def calculate_step_run_time(pipelog_file, pipe_steps):
@@ -158,7 +158,7 @@ step_by_step = args.step_by_step
 detector = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
 
 # Get the cfg file
-calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, working_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
+calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
 if mode_used != "BOTS" and mode_used.lower() != "dark":
     cfg_file = calwebb_detector1_cfg
 elif mode_used == "BOTS":
@@ -168,7 +168,7 @@ elif mode_used.lower() == "dark":
 configfile_used = "Using this configuration file: "+cfg_file
 
 # Initiate the PTT log file
-PTTcaldetector1_log = os.path.join(working_dir, 'PTT_caldetector1_'+detector+'.log')
+PTTcaldetector1_log = os.path.join(output_dir, 'PTT_caldetector1_'+detector+'.log')
 print("Information outputed to screen from this script will be logged in file: ", PTTcaldetector1_log)
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -347,24 +347,24 @@ logging.info(msg)
 pytest_workdir = os.getcwd()
 logfile = glob(pytest_workdir+"/*pipeline*.log")[0]
 new_name = "caldetector1_pipeline_"+detector+".log"
-os.rename(logfile, os.path.join(working_dir, new_name))
+os.rename(logfile, os.path.join(output_dir, new_name))
 
 # move the PTT log file and the fits intermediary product files
 fits_list = glob("*.fits")
 if len(fits_list) >= 1:
-    msg = "Output fits files are located at: "+working_dir
+    msg = "Output fits files are located at: "+output_dir
     print(msg)
     logging.info(msg)
     for ff in fits_list:
         if "step_" in ff:
-            ff_newname = os.path.join(working_dir, ff.replace("step_", ""))
+            ff_newname = os.path.join(output_dir, ff.replace("step_", ""))
         else:
-            ff_newname = os.path.join(working_dir, ff)
+            ff_newname = os.path.join(output_dir, ff)
         if detector.lower() not in ff.lower():
             ff_newname = ff_newname.replace(".fits", "_"+detector+".fits")
         subprocess.run(["mv", ff, ff_newname])
     # move text files too
-    subprocess.run(["mv", txt_outputs_summary, working_dir])
+    subprocess.run(["mv", txt_outputs_summary, output_dir])
 
 else:
     msg = "No fits files detected after calwbb_detector1 finished. Exiting script."

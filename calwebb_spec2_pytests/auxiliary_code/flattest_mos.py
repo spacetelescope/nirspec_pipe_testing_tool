@@ -34,7 +34,7 @@ __version__ = "3.5"
 
 
 
-def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, msa_shutter_conf=None,
+def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, msa_shutter_conf,
              writefile=False, show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-14, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the
@@ -84,11 +84,15 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # get the reference files
     # D-Flat
-    dflat_ending = "f_01.03.fits"
-    dfile = "_".join((dflatref_path, "nrs1", dflat_ending))
-    if det == "NRS2":
-        dfile = dfile.replace("nrs1", "nrs2")
-    msg = "Using D-flat: "+dfile
+    if ".fits" not in dflatref_path:
+        dflat_ending = "f_01.03.fits"
+        t = (dflatref_path, "nrs1", dflat_ending)
+        dfile = "_".join(t)
+        if det == "NRS2":
+            dfile = dfile.replace("nrs1", "nrs2")
+    else:
+        dfile = dflatref_path
+    msg = "".join(["Using D-flat: ", dfile])
     print(msg)
     log_msgs.append(msg)
     dfim = fits.getdata(dfile, "SCI")#1)
@@ -128,18 +132,32 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print(msg)
         log_msgs.append(msg)
         # This is the key argument for the assert pytest function
-        result_msg = "Test skiped because there is no flat correspondance for the filter in the data: {}".format(filt)
+        result_msg = "Test skiped because there is no flat correspondence for the filter in the data: {}".format(filt)
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
 
-    sflat_ending = "f_01.01.fits"
-    sfile = "_".join((sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending))
+    if ".fits" not in sfile_path:
+        sflat_ending = "f_01.01.fits"
+        t = (sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending)
+        sfile = "_".join(t)
+        if det == "NRS2":
+            sfile = sfile.replace("nrs1", "nrs2")
+    else:
+        sfile = sfile_path
+
+    if mode not in sfile_path:
+        msg = "Wrong path in for mode S-flat. This script handles mode " + mode + "only."
+        print(msg)
+        log_msgs.append(msg)
+        # This is the key argument for the assert pytest function
+        result_msg = "Wrong path in for mode S-flat. Test skiped because mode is not FS."
+        median_diff = "skip"
+        return median_diff, result_msg, log_msgs
+
     msg = "Using S-flat: "+sfile
     print(msg)
     log_msgs.append(msg)
 
-    if det == "NRS2":
-        sfile = sfile.replace("nrs1", "nrs2")
     sfim = fits.getdata(sfile, "SCI")#1)
     sfimdq = fits.getdata(sfile, "DQ")#3)
 
@@ -159,7 +177,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             keyword = "".join(("FLAT_0", str(i+1)))
         else:
             keyword = "".join(("FLAT_", str(i+1)))
-        #print("S-flat -> using ", keyword)
+        if debug:
+            print("S-flat -> using ", keyword)
         try:
             sfimwave = np.append(sfimwave, fits.getval(sfile, keyword, "SCI"))
         except:
@@ -167,9 +186,20 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     sfv = fits.getdata(sfile, 5)
 
     # F-Flat
-    #print("F-flat -> using the following flats: ")
-    fflat_ending = "_01.01.fits"
-    ffile = fflat_path+"_"+filt+fflat_ending
+    if ".fits" not in fflat_path:
+        fflat_ending = "01.01.fits"
+        ffile = "_".join((fflat_path, filt, fflat_ending))
+    else:
+        ffile = fflat_path
+
+    if mode not in fflat_path:
+        msg = "Wrong path in for mode F-flat. This script handles mode " + mode + "only."
+        print(msg)
+        log_msgs.append(msg)
+        # This is the key argument for the assert pytest function
+        median_diff = "skip"
+        return median_diff, msg, log_msgs
+
     msg = "Using F-flat: "+ffile
     print(msg)
     log_msgs.append(msg)
@@ -183,7 +213,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             suff = str(i)
         t = ("FLAT", suff)
         keyword = "_".join(t)
-        #print("1. F-flat -> ", keyword)
+        if debug:
+            print("1. F-flat -> ", keyword)
         ffswaveq1 = np.append(ffswaveq1, fits.getval(ffile, keyword, "SCI_Q1"))
     ffserrq1 = fits.getdata(ffile, "ERR_Q1")#2)
     ffsdqq1 = fits.getdata(ffile, "DQ_Q1")#3)
@@ -197,7 +228,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             suff = str(i)
         t = ("FLAT", suff)
         keyword = "_".join(t)
-        #print("2. F-flat -> using ", keyword)
+        if debug:
+            print("2. F-flat -> using ", keyword)
         ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, "SCI_Q2"))
     ffserrq2 = fits.getdata(ffile, "ERR_Q2")
     ffsdqq2 = fits.getdata(ffile, "DQ_Q2")
@@ -211,7 +243,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
             suff = str(i)
         t = ("FLAT", suff)
         keyword = "_".join(t)
-        #print("3. F-flat -> using ", keyword)
+        if debug:
+            print("3. F-flat -> using ", keyword)
         ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, "SCI_Q3"))
     ffserrq3 = fits.getdata(ffile, "ERR_Q3")
     ffsdqq3 = fits.getdata(ffile, "DQ_Q3")
@@ -224,7 +257,8 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         else:
             suff = str(i)
         keyword = "FLAT_"+suff
-        #print("4. F-flat -> using ", keyword)
+        if debug:
+            print("4. F-flat -> using ", keyword)
         ffswaveq4 = np.append(ffswaveq4, fits.getval(ffile, keyword, "SCI_Q4"))
     ffserrq4 = fits.getdata(ffile, "ERR_Q4")
     ffsdqq4 = fits.getdata(ffile, "DQ_Q4")
@@ -260,10 +294,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print(msg)
         log_msgs.append(msg)
         ext = sci_ext_list[slit_id]   # this is for getting the science extension in the pipeline calculated flat
-        # make sure that the slitlet is open and projected on the detector, otherwise indicate so
-        #if not slit_id in open_and_on_detector_slits_list:
-        #    print("* This open slitlet was removed because it is not projected on the detector. Test skipped for this slitlet. \n")
-        #    continue
 
         # get the wavelength
         y, x = np.mgrid[:slit.data.shape[0], :slit.data.shape[1]]
@@ -295,9 +325,9 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
                 if slitlet_info.field("BACKGROUND")[im] == "N":
                     isrc = j
         # changes suggested by Phil Hodge
-        quad = slit.quadrant #slitlet_info.field("SHUTTER_QUADRANT")[isrc]
-        row = slit.xcen #slitlet_info.field("SHUTTER_ROW")[isrc]
-        col = slit.ycen #slitlet_info.field("SHUTTER_COLUMN")[isrc]
+        quad = slit.quadrant  #slitlet_info.field("SHUTTER_QUADRANT")[isrc]
+        row = slit.xcen  #slitlet_info.field("SHUTTER_ROW")[isrc]
+        col = slit.ycen  #slitlet_info.field("SHUTTER_COLUMN")[isrc]
         slitlet_id = repr(row)+"_"+repr(col)
         msg = 'silt_id='+repr(slit_id)+"   quad="+repr(quad)+"   row="+repr(row)+"   col="+repr(col)+"   slitlet_id="+repr(slitlet_id)
         print(msg)

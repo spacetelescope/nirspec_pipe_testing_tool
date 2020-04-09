@@ -419,10 +419,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         print(msg)
         log_msgs.append(msg)
 
-
     return FINAL_TEST_RESULT, log_msgs
-
-
 
 
 if __name__ == '__main__':

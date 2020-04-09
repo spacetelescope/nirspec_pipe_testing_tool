@@ -30,7 +30,7 @@ __version__ = "2.6"
 # Sept 2019 - Version 2.6: Updated line to call model for SlitModel to work correctly with pipeline changes.
 
 
-def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, writefile=True,
+def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefile=True,
              show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-7, debug=False):
     """
     This function calculates the difference between the pipeline and the calculated flat field values.
@@ -79,11 +79,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
 
     # get the reference files
     # D-Flat
-    dflat_ending = "f_01.03.fits"
-    t = (dflatref_path, "nrs1", dflat_ending)
-    dfile = "_".join(t)
-    if det == "NRS2":
-        dfile = dfile.replace("nrs1", "nrs2")
+    if ".fits" not in dflatref_path:
+        dflat_ending = "f_01.03.fits"
+        t = (dflatref_path, "nrs1", dflat_ending)
+        dfile = "_".join(t)
+        if det == "NRS2":
+            dfile = dfile.replace("nrs1", "nrs2")
+    else:
+        dfile = dflatref_path
     msg = "Using D-flat: " + dfile
     print(msg)
     log_msgs.append(msg)
@@ -126,15 +129,20 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         msg = "No filter correspondence. Exiting the program."
         print(msg)
         log_msgs.append(msg)
-        result_msg = "Test skiped because there is no flat correspondance for the filter in the data: {}".format(filt)
+        result_msg = "Test skiped because there is no flat correspondence for the filter in the data: {}".format(filt)
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
 
-    sflat_ending = "f_01.01.fits"
-    if mode in sfile_path:
+    if ".fits" not in sfile_path:
+        sflat_ending = "f_01.01.fits"
         t = (sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending)
         sfile = "_".join(t)
+        if det == "NRS2":
+            sfile = sfile.replace("nrs1", "nrs2")
     else:
+        sfile = sfile_path
+
+    if mode not in sfile_path:
         msg = "Wrong path in for mode S-flat. This script handles mode " + mode + "only."
         print(msg)
         log_msgs.append(msg)
@@ -148,8 +156,6 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         print("flat = ", flat)
         print("sfile used = ", sfile)
 
-    if det == "NRS2":
-        sfile = sfile.replace("nrs1", "nrs2")
     msg = "Using S-flat: " + sfile
     print(msg)
     log_msgs.append(msg)
@@ -179,10 +185,13 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         sfv_b200 = fits.getdata(sfile, "SLIT_B_200")
 
     # F-Flat
-    fflat_ending = "01.01.fits"
-    if mode in fflat_path:
+    if ".fits" not in fflat_path:
+        fflat_ending = "01.01.fits"
         ffile = "_".join((fflat_path, filt, fflat_ending))
     else:
+        ffile = fflat_path
+
+    if mode not in fflat_path:
         msg = "Wrong path in for mode F-flat. This script handles mode " + mode + "only."
         print(msg)
         log_msgs.append(msg)

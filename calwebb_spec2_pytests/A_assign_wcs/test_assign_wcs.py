@@ -1,4 +1,3 @@
-
 """
 py.test module for unit testing the assign_wcs step.
 """
@@ -16,21 +15,21 @@ from jwst.pipeline.calwebb_image2 import Image2Pipeline
 
 from . import assign_wcs_utils
 from .. import core_utils
-from .. auxiliary_code import change_filter_opaque2science
-from .. auxiliary_code import compare_wcs_ifu
-from .. auxiliary_code import compare_wcs_fs
-from .. auxiliary_code import compare_wcs_mos
-
+from ..auxiliary_code import change_filter_opaque2science
+from ..auxiliary_code import compare_wcs_ifu
+from ..auxiliary_code import compare_wcs_fs
+from ..auxiliary_code import compare_wcs_mos
 
 # print pipeline version
 import jwst
-pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
-print(pipeline_version)
 
+pipeline_version = "\n *** Using jwst pipeline version: " + jwst.__version__ + " *** \n"
+print(pipeline_version)
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
 __version__ = "2.3"
+
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -40,7 +39,6 @@ __version__ = "2.3"
 # Dec 2019 - Version 2.3: implemented image processing and text file name handling
 
 
-
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
 # Default names of pipeline input and output files
@@ -48,21 +46,21 @@ __version__ = "2.3"
 def set_inandout_filenames(config):
     step = "assign_wcs"
     data_directory = config.get("calwebb_spec2_input_file", "data_directory")
-    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    output_directory = config.get("calwebb_spec2_input_file", "output_directory")
     initial_input_file_basename = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(data_directory, initial_input_file_basename)
     if os.path.isfile(initial_input_file):
         print("\n Taking initial input file from data_directory:")
     else:
-        initial_input_file = os.path.join(working_directory, initial_input_file_basename)
-        print("\n Taking initial file from working_directory: ")
-    print(" Initial input file = ", initial_input_file , "\n")
+        initial_input_file = os.path.join(output_directory, initial_input_file_basename)
+        print("\n Taking initial file from output_directory: ")
+    print(" Initial input file = ", initial_input_file, "\n")
     # Get the detector used
     detector = fits.getval(initial_input_file, "DETECTOR", 0)
-    True_steps_suffix_map = "True_steps_suffix_map_"+detector+".txt"
+    True_steps_suffix_map = "True_steps_suffix_map_" + detector + ".txt"
     pytests_directory = os.getcwd()
     True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
-    suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, working_directory)
+    suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, output_directory)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames
     return step, step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map
 
@@ -97,7 +95,7 @@ def output_hdul(set_inandout_filenames, config):
     esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
-    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    output_directory = config.get("calwebb_spec2_input_file", "output_directory")
 
     # Get the detector used
     detector = fits.getval(step_input_file, "DETECTOR", 0)
@@ -135,13 +133,13 @@ def output_hdul(set_inandout_filenames, config):
         imaging_mode = True
         print('\n * Image processing will only be run in full with PTT. All intermediary products will be saved.')
         print('     ->  For now, all pytests will be skipped since there are now image-specific routines yet. \n')
-        #TODO: add imaging tests
+        # TODO: add imaging tests
 
     # run the pipeline
     if run_calwebb_spec2:
 
         # Create the logfile for PTT, but remove the previous log file
-        PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'.log')
+        PTTcalspec2_log = os.path.join(output_directory, 'PTT_calspec2_' + detector + '.log')
         if imaging_mode:
             PTTcalspec2_log = PTTcalspec2_log.replace('calspec2', 'calimage2')
         if os.path.isfile(PTTcalspec2_log):
@@ -159,7 +157,7 @@ def output_hdul(set_inandout_filenames, config):
         logging.info(run_calwebb_spec2_msg)
 
         # create the map
-        txt_name = "full_run_map_"+detector+".txt"
+        txt_name = "full_run_map_" + detector + ".txt"
         if os.path.isfile(txt_name):
             os.remove(txt_name)
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
@@ -200,13 +198,13 @@ def output_hdul(set_inandout_filenames, config):
         # run the pipeline
         print('Running pipeline... \n')
         if not calwebb_image2_cfg:
-            Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)#, logcfg="stpipe-log.cfg")
+            Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)  # , logcfg="stpipe-log.cfg")
         else:
             Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
 
         # end the timer to compute calwebb_spec2 running time
-        end_time = repr(time.time() - start_time)   # this is in seconds
-        calspec2_time = " * Pipeline took "+end_time+" seconds to finish.\n"
+        end_time = repr(time.time() - start_time)  # this is in seconds
+        calspec2_time = " * Pipeline took " + end_time + " seconds to finish.\n"
         print(calspec2_time)
         logging.info(calspec2_time)
 
@@ -215,29 +213,29 @@ def output_hdul(set_inandout_filenames, config):
             subprocess.run(["rm", msametfl])
 
         # add the detector string to the name of the files and move them to the working directory
-        core_utils.add_detector2filename(working_directory, step_input_file)
-        final_output_name_msg = "\nThe final pipeline product was saved in: "+final_output_name
+        core_utils.add_detector2filename(output_directory, step_input_file)
+        final_output_name_msg = "\nThe final pipeline product was saved in: " + final_output_name
         print(final_output_name_msg)
         logging.info(final_output_name_msg)
 
         # read the assign wcs fits file
         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-        #scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+        # scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
 
         # rename and move the pipeline log file
         try:
-            calspec2_pilelog = "calspec2_pipeline_"+detector+".log"
+            calspec2_pilelog = "calspec2_pipeline_" + detector + ".log"
             if imaging_mode:
                 calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
             pytest_workdir = os.getcwd()
-            logfile = glob(pytest_workdir+"/pipeline.log")[0]
-            os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+            logfile = glob(pytest_workdir + "/pipeline.log")[0]
+            os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
         except:
             IndexError
 
         # make sure we are able to find calspec2_pilelog either in the calwebb_spec2 directory or in the working dir
         if not os.path.isfile(calspec2_pilelog):
-            calspec2_pilelog = os.path.join(working_directory, calspec2_pilelog)
+            calspec2_pilelog = os.path.join(output_directory, calspec2_pilelog)
 
         # add the running time for all steps
         step_running_times = core_utils.calculate_step_run_time(calspec2_pilelog)
@@ -257,7 +255,8 @@ def output_hdul(set_inandout_filenames, config):
         else:
             tot_time = end_time
         assign_wcs_utils.print_time2file(txt_name, tot_time, string2print)
-        PTT_runtimes_msg = "Pipeline and PTT run times written in file: "+os.path.basename(txt_name)+" in working directory. \n"
+        PTT_runtimes_msg = "Pipeline and PTT run times written in file: " + os.path.basename(
+            txt_name) + " in working directory. \n"
         print(PTT_runtimes_msg)
         logging.info(PTT_runtimes_msg)
 
@@ -288,7 +287,7 @@ def output_hdul(set_inandout_filenames, config):
         if run_pipe_step:
 
             # Create the logfile for PTT, but erase the previous one if it exists
-            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+            PTTcalspec2_log = os.path.join(output_directory, 'PTT_calspec2_' + detector + '_' + step + '.log')
             if imaging_mode:
                 PTTcalspec2_log = PTTcalspec2_log.replace('calspec2', 'calimage2')
             if os.path.isfile(PTTcalspec2_log):
@@ -305,7 +304,7 @@ def output_hdul(set_inandout_filenames, config):
             core_utils.check_completed_steps(step, step_input_file)
 
             if os.path.isfile(step_input_file):
-                msg = " *** Step "+step+" set to True"
+                msg = " *** Step " + step + " set to True"
                 print(msg)
                 logging.info(msg)
                 stp = AssignWcsStep()
@@ -323,12 +322,12 @@ def output_hdul(set_inandout_filenames, config):
                 if local_pipe_cfg_path == "pipe_source_tree_code":
                     result = stp.call(step_input_file)
                 else:
-                    result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/assign_wcs.cfg')
+                    result = stp.call(step_input_file, config_file=local_pipe_cfg_path + '/assign_wcs.cfg')
                 result.save(step_output_file)
 
                 # end the timer to compute the step running time
-                end_time = repr(time.time() - start_time)   # this is in seconds
-                msg = "Step "+step+" took "+end_time+" seconds to finish"
+                end_time = repr(time.time() - start_time)  # this is in seconds
+                msg = "Step " + step + " took " + end_time + " seconds to finish"
                 print(msg)
                 logging.info(msg)
 
@@ -338,27 +337,27 @@ def output_hdul(set_inandout_filenames, config):
 
                 # rename and move the pipeline log file
                 try:
-                    calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                    calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
                     if imaging_mode:
                         calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
                     pytest_workdir = os.getcwd()
-                    logfile = glob(pytest_workdir+"/pipeline.log")[0]
-                    os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+                    logfile = glob(pytest_workdir + "/pipeline.log")[0]
+                    os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
                 except:
                     IndexError
 
             else:
-                msg = "Skipping step. Input file "+step_input_file+" does not exit."
+                msg = "Skipping step. Input file " + step_input_file + " does not exit."
                 print(msg)
                 logging.info(msg)
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                pytest.skip("Skipping "+step+" because the input file does not exist.")
+                pytest.skip("Skipping " + step + " because the input file does not exist.")
 
 
         else:
             print("Skipping running pipeline step ", step)
             # add the running time for this step
-            end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+            end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
 
         if os.path.isfile(step_output_file):
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
@@ -371,8 +370,6 @@ def output_hdul(set_inandout_filenames, config):
             # add the running time for this step
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip()
-
-
 
 
 ### THESE FUNCTIONS ARE TO VALIDATE THE WCS STEP
@@ -402,19 +399,22 @@ def validate_wcs(output_hdul):
     log_msgs = None
     if core_utils.check_FS_true(hdu):
         result, log_msgs = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
-                                            save_figs=save_wcs_plots, threshold_diff=threshold_diff, debug=False)
+                                                      save_figs=save_wcs_plots, threshold_diff=threshold_diff,
+                                                      debug=False)
 
-    elif core_utils.check_MOS_true(hdu)  and  mode_used != "MOS_sim":
-        result, log_msgs = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
-                                             show_figs=show_figs, save_figs=save_wcs_plots,
-                                             threshold_diff=threshold_diff, debug=False)
+    elif core_utils.check_MOS_true(hdu) and mode_used != "MOS_sim":
+        result, log_msgs = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path,
+                                                       msa_conf_name=msa_conf_name,
+                                                       show_figs=show_figs, save_figs=save_wcs_plots,
+                                                       threshold_diff=threshold_diff, debug=False)
 
     elif core_utils.check_IFU_true(hdu):
         result, log_msgs = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
-                                            save_figs=save_wcs_plots, threshold_diff=threshold_diff, debug=False)
+                                                       save_figs=save_wcs_plots, threshold_diff=threshold_diff,
+                                                       debug=False)
 
-    else:#if core_utils.check_BOTS_true(hdu):
-        #pytest.skip("Skipping pytest: BOTS files at the moment are not being compared against an ESA intermediary product.")
+    else:
+        # We do not have ESA data to compare with for BOTS
         pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU.")
 
     if log_msgs is not None:
@@ -423,6 +423,10 @@ def validate_wcs(output_hdul):
 
     if "skip" in result:
         pytest.skip("Skipping assign_wcs pytest.")
+    elif "PASS" in result:
+        result = True
+    else:
+        result = False
 
     return result
 
@@ -447,6 +451,7 @@ def test_rmask_rfile(output_hdul):
             logging.info(log_msg)
         assert not result[0], result[0]
 
+
 def test_saturation_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -465,6 +470,7 @@ def test_saturation_rfile(output_hdul):
             print(log_msg)
             logging.info(log_msg)
         assert not result[0], result[0]
+
 
 def test_superbias_rfile(output_hdul):
     # want to run this pytest?
@@ -485,6 +491,7 @@ def test_superbias_rfile(output_hdul):
             logging.info(log_msg)
         assert not result[0], result[0]
 
+
 def test_linearity_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -503,6 +510,7 @@ def test_linearity_rfile(output_hdul):
             print(log_msg)
             logging.info(log_msg)
         assert not result[0], result[0]
+
 
 def test_dark_rfile(output_hdul):
     # want to run this pytest?
@@ -523,6 +531,7 @@ def test_dark_rfile(output_hdul):
             logging.info(log_msg)
         assert not result[0], result[0]
 
+
 def test_readnoise_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -539,6 +548,7 @@ def test_readnoise_rfile(output_hdul):
             print(log_msg)
             logging.info(log_msg)
         assert not result[0], result[0]
+
 
 def test_gain_rfile(output_hdul):
     # want to run this pytest?
@@ -580,6 +590,7 @@ def test_camera_rfile(output_hdul):
             logging.info(log_msg)
         assert not result[0], result[0]
 
+
 def test_colimator_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -598,6 +609,7 @@ def test_colimator_rfile(output_hdul):
             print(log_msg)
             logging.info(log_msg)
         assert not result[0], result[0]
+
 
 def test_disperser_rfile(output_hdul):
     # want to run this pytest?
@@ -618,6 +630,7 @@ def test_disperser_rfile(output_hdul):
             logging.info(log_msg)
         assert not result[0], result[0]
 
+
 def test_fore_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -637,6 +650,7 @@ def test_fore_rfile(output_hdul):
             logging.info(log_msg)
         assert not result[0], result[0]
 
+
 def test_fpa_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -655,6 +669,7 @@ def test_fpa_rfile(output_hdul):
             print(log_msg)
             logging.info(log_msg)
         assert not result[0], result[0]
+
 
 def test_ifufore_rfile(output_hdul):
     # want to run this pytest?
@@ -681,6 +696,7 @@ def test_ifufore_rfile(output_hdul):
             logging.info(msg)
             pytest.skip(msg)
 
+
 def test_ifupost_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -705,6 +721,7 @@ def test_ifupost_rfile(output_hdul):
             print(msg)
             logging.info(msg)
             pytest.skip(msg)
+
 
 def test_ifuslicer_rfile(output_hdul):
     # want to run this pytest?
@@ -731,6 +748,7 @@ def test_ifuslicer_rfile(output_hdul):
             logging.info(msg)
             pytest.skip(msg)
 
+
 def test_msa_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -756,6 +774,7 @@ def test_msa_rfile(output_hdul):
             logging.info(msg)
             pytest.skip(msg)
 
+
 def test_ote_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -774,6 +793,7 @@ def test_ote_rfile(output_hdul):
             print(log_msg)
             logging.info(log_msg)
         assert not result[0], result[0]
+
 
 def test_wavran_rfile(output_hdul):
     # want to run this pytest?
@@ -828,6 +848,7 @@ def test_sporder_exists(output_hdul):
         assert assign_wcs_utils.sporder_exists(output_hdul[1]), "The keyword SPORDER was not added to the header."
 """
 
+
 def test_s_wcs_exists(output_hdul):
     # want to run this pytest?
     # output_hdul[6] = assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests
@@ -841,7 +862,9 @@ def test_s_wcs_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert assign_wcs_utils.s_wcs_exists(output_hdul[0]), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
+        assert assign_wcs_utils.s_wcs_exists(
+            output_hdul[0]), "The keyword S_WCS was not added to the header --> extract_2d step was not completed."
+
 
 def test_validate_wcs(output_hdul, request):
     # want to run this pytest?
@@ -856,7 +879,5 @@ def test_validate_wcs(output_hdul, request):
         msg = "\n * Running validation pytest...\n"
         print(msg)
         logging.info(msg)
-        #print("\n", validate_wcs, "\n")
+        # print("\n", validate_wcs, "\n")
         assert request.getfixturevalue('validate_wcs'), "Output value from compare_wcs.py is greater than threshold."
-
-

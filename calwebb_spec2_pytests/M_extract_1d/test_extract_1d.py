@@ -43,7 +43,7 @@ def set_inandout_filenames(request, config):
 def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
-    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    output_directory = config.get("calwebb_spec2_input_file", "output_directory")
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     # determine which tests are to be run
     extract_1d_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
@@ -69,9 +69,9 @@ def output_hdul(set_inandout_filenames, config):
     end_time = '0.0'
 
     # Get the detector used
-    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    output_directory = config.get("calwebb_spec2_input_file", "output_directory")
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
-    initial_input_file = os.path.join(working_directory, initial_input_file)
+    initial_input_file = os.path.join(output_directory, initial_input_file)
     if os.path.isfile(initial_input_file):
         detector = fits.getval(initial_input_file, "DETECTOR", 0)
     else:
@@ -108,7 +108,7 @@ def output_hdul(set_inandout_filenames, config):
         if run_pipe_step:
 
             # Create the logfile for PTT, but erase the previous one if it exists
-            PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+            PTTcalspec2_log = os.path.join(output_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
             if imaging_mode:
                 PTTcalspec2_log = PTTcalspec2_log.replace('calspec2', 'calimage2')
             if os.path.isfile(PTTcalspec2_log):
@@ -156,7 +156,7 @@ def output_hdul(set_inandout_filenames, config):
                     calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
                 pytest_workdir = os.getcwd()
                 logfile = glob(pytest_workdir+"/pipeline.log")[0]
-                os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+                os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
 
             else:
                 msg = " The input file does not exist. Skipping step."
@@ -177,7 +177,7 @@ def output_hdul(set_inandout_filenames, config):
             print(msg)
             logging.info(msg)
             # get the running time for this step
-            end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+            end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
 
         # add the running time for this step
         if os.path.isfile(step_output_file):
@@ -221,7 +221,7 @@ def output_hdul(set_inandout_filenames, config):
                 PTT_calspec2_log = PTT_calspec2_log.replace('calspec2', 'calimage2')
             pytest_workdir = os.getcwd()
             logfile = glob(pytest_workdir + "/pipeline.log")[0]
-            os.rename(logfile, os.path.join(working_directory, PTT_calspec2_log))
+            os.rename(logfile, os.path.join(output_directory, PTT_calspec2_log))
         except:
             IndexError
 
@@ -237,7 +237,7 @@ def move_output_files(request):
         #core_utils.convert_html2pdf()
         # move the final reporting files to the working directory
         core_utils.move_txt_files_2workdir(detector)
-        msg = "Output report files have been moved to the working_directory path indicated in the PTT_config file."
+        msg = "Output report files have been moved to the output_directory path indicated in the PTT_config file."
         print(msg)
         logging.info(msg)
     request.addfinalizer(fin)

@@ -415,6 +415,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
             detector = fits.getval(ff, "DETECTOR", 0)
         grating = fits.getval(ff, "GRATING", 0)
     except KeyError:
+        if detector is None:
+            detector = fits.getval(ff, "DET", 0)
         grating = fits.getval(ff, "GWA_POS", 0)
 
     # loop through the keywords and values of the PTT dictionary and add keywords that are not in input file
@@ -444,14 +446,14 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # Check simple standard keyword values
                 if type(val) == type(lev2bdict_val):
-                    print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Has correct format'))
+                    print('{:<15} {:<9} {:<25}'.format(key, ext, 'Has correct format'))
                     warning = None
                 else:
                     if not isinstance(lev2bdict_val, list):
                         lev2bdict_val = [lev2bdict_val]
                     warning, val_and_valtype = check_value_type(key, val, lev2bdict_val)
                     val, dict_type = val_and_valtype
-                    if warning is not None  and  "Incorrect value type" in warning:
+                    if warning is not None and "Incorrect value type" in warning:
                         if dict_type == int:
                             val = int(float(val))
                         elif dict_type == float:
@@ -464,21 +466,21 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         warning = None
 
                 # Check for specific keywords
-                if key=='DPSW_VER':
+                if key == 'DPSW_VER':
                     warning = check3numbers(key, val)
-                elif (key=='VISITGRP') or (key=='ACT_ID'):
+                elif (key == 'VISITGRP') or (key == 'ACT_ID'):
                     warning = check_len(key, val, val_len=2)
-                elif (key=='OBSERVTN') or (key=='VISIT'):
+                elif (key == 'OBSERVTN') or (key == 'VISIT'):
                     warning = check_len(key, val, val_len=3)
-                elif (key=='EXPOSURE'):
+                elif key == 'EXPOSURE':
                     warning = check_len(key, val, val_len=5)
-                elif (key=='DATE') or (key=='VSTSTART'):
+                elif (key == 'DATE') or (key == 'VSTSTART'):
                     warning = check_datetimeformat(key, val, check_date=False, check_datetime=True,
                                                    check_time=False)
-                elif key=='DATE-OBS':
+                elif key == 'DATE-OBS':
                     warning = check_datetimeformat(key, val, check_date=True, check_datetime=False,
                                                    check_time=False)
-                elif key=='TIME-OBS':
+                elif key == 'TIME-OBS':
                     warning = check_datetimeformat(key, val, check_date=False, check_datetime=False,
                                                    check_time=True)
 
@@ -486,20 +488,18 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 if key == 'VISITYPE':
                     if val != lev2bdict_val:
                         # for now always set this keyword to generic
-                        print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
-                        #fits.setval(ff, key, 0, value='GENERIC')
+                        print("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
                         specific_keys_dict[key] = 'GENERIC'
                         missing_keywds.append(key)
 
                 # specific check for SUBARRAY
                 if key == 'SUBARRAY':
-                    if 'IFU' in mode_used  or  "MOS" in mode_used:
+                    if 'IFU' in mode_used or "MOS" in mode_used:
                         if val != lev2bdict_val:
-                            print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
-                            #fits.setval(ff, key, 0, value='GENERIC')
+                            print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
                             specific_keys_dict[key] = 'GENERIC'
                             missing_keywds.append(key)
-                    elif mode_used == "FS"  or  mode_used == "BOTS":
+                    elif mode_used == "FS" or mode_used == "BOTS":
                         # set the subarray according to size
                         substrt1 = fits.getval(ff, "SUBSTRT1", 0)
                         substrt2 = fits.getval(ff, "SUBSTRT2", 0)
@@ -510,7 +510,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             sst2_dict = subarrd_vals_dir["substrt2"]
                             ssz1 = subarrd_vals_dir["subsize1"]
                             ssz2 = subarrd_vals_dir["subsize2"]
-                            if substrt1 == sst1  and  subsize1 == ssz1  and  subsize2 == ssz2:
+                            if substrt1 == sst1 and subsize1 == ssz1 and subsize2 == ssz2:
                                 for grat, sst2_tuple in sst2_dict.items():
                                     if grat.lower() == grating.lower():
                                         if 'FULL' in subarrd_key:
@@ -524,7 +524,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                         elif '400A1' in subarrd_key:
                                             subarrd_key = 'SUBS400A1'
                                         specific_keys_dict[key] = subarrd_key
-                                        print ("changing subarray keyword to ", subarrd_key)
+                                        print("changing subarray keyword to ", subarrd_key)
                                         missing_keywds.append(key)
                                         # this part is simply to check that the subarray values are correct
                                         # but no values will be changed in the input file
@@ -532,9 +532,9 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                             sst2 = sst2_tuple[0]
                                         elif "2" in detector:
                                             sst2 = sst2_tuple[1]
-                                        print ("Subarray values in input file: \n", )
+                                        print("Subarray values in input file: \n", )
                                         print("substrt1=", substrt1, " substrt2=", substrt2,  " subsize1=", subsize1, " subsize2=", subsize2)
-                                        print ("Subarray values in PTT dictionary: \n", )
+                                        print("Subarray values in PTT dictionary: \n", )
                                         print("substrt1=", sst1, " substrt2=", sst2,  " subsize1=", ssz1, " subsize2=", ssz2)
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
@@ -549,7 +549,6 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # make sure the MSASTATE keyword is set correctly
                 if key == 'MSASTATE':
-                    #mode_used = fits.getval(ff, 'MODEUSED', 0)
                     if (mode_used == 'FS') or (mode_used == 'IFU'):
                         val = 'PRIMARYPARK_ALLCLOSED'
                         specific_keys_dict[key] = val
@@ -615,11 +614,10 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
         updated_fitsfile = fits_file.replace('.fits', '_updatedHDR.fits')
         subprocess.run(["cp", fits_file, updated_fitsfile])
     # add missimg keywords
-    print ('Saving keyword values in file: ', updated_fitsfile)
+    print('Saving keyword values in file: ', updated_fitsfile)
     ext = 0
     for i, key in enumerate(missing_keywds):
         if key in specific_keys_dict:
-            #print ("found it in the dict: ", key, specific_keys_dict[key])
             if specific_keys_dict[key] == 'remove':
                 # keyword to be deleted
                 try:
@@ -644,6 +642,9 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
                     new_value = 'IFUImageModel'
                 else:
                     new_value = 'ImageModel'
+            if key == 'DETECTOR':
+                new_value = fits.getval(updated_fitsfile, 'DET', 0)
+                grating = new_value
             if key == 'GRATING':
                 new_value = fits.getval(updated_fitsfile, 'GWA_POS', 0)
                 grating = new_value
@@ -688,9 +689,8 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
                 fits.delval(updated_fitsfile, key, 1)
             except:
                 KeyError
-    print ("Main and science headers have been updated.")
+    print("Main and science headers have been updated.")
     return updated_fitsfile
-
 
 
 def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None):
@@ -712,7 +712,7 @@ def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None):
     file_keywd_dict = read_hdrfits(fits_file)
 
     # create text file to log warnings
-    print('')
+    print()
     addedkeywds_file_name = create_addedkeywds_file(fits_file)
 
     # check the keywords
@@ -743,7 +743,8 @@ if __name__ == '__main__':
                         #dest="mode_used",
                         action='store',
                         default=None,
-                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf - The code is not case-sensitive.')
+                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata,'
+                             ' focus, mimf - The code is not case-sensitive.')
     parser.add_argument("-u",
                         dest="only_update",
                         action='store_true',
@@ -765,6 +766,6 @@ if __name__ == '__main__':
     # Perform the keyword check
     check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector)
 
-    print ('\n * Script  level2b_hdr_keywd_check.py  finished * \n')
+    print('\n * Script  level2b_hdr_keywd_check.py  finished * \n')
 
 

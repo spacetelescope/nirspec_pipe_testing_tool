@@ -53,9 +53,9 @@ def output_hdul(set_inandout_filenames, config):
     end_time = '0.0'
     # Only run step if data is not IFU or BOTS
     mode_used = config.get("calwebb_spec2_input_file", "mode_used").lower()
-    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    output_directory = config.get("calwebb_spec2_input_file", "output_directory")
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
-    initial_input_file = os.path.join(working_directory, initial_input_file)
+    initial_input_file = os.path.join(output_directory, initial_input_file)
     detector = fits.getval(initial_input_file, "DETECTOR", 0)
     if not os.path.isfile(initial_input_file):
         pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
@@ -81,7 +81,7 @@ def output_hdul(set_inandout_filenames, config):
 
             if run_pipe_step:
                 # Create the logfile for PTT, but erase the previous one if it exists
-                PTTcalspec2_log = os.path.join(working_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+                PTTcalspec2_log = os.path.join(output_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
                 if os.path.isfile(PTTcalspec2_log):
                     os.remove(PTTcalspec2_log)
                 print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
@@ -128,7 +128,7 @@ def output_hdul(set_inandout_filenames, config):
                         calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
                         pytest_workdir = os.getcwd()
                         logfile = glob(pytest_workdir+"/pipeline.log")[0]
-                        os.rename(logfile, os.path.join(working_directory, calspec2_pilelog))
+                        os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
                     except:
                         IndexError
 
@@ -147,7 +147,7 @@ def output_hdul(set_inandout_filenames, config):
                 msg = "Skipping running pipeline step "+step
                 print(msg)
                 logging.info(msg)
-                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, working_directory)
+                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
                 if os.path.isfile(step_output_file):
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                     step_completed = True

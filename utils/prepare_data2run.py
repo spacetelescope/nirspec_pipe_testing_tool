@@ -88,7 +88,7 @@ parser.add_argument("-d",
                     help='Use -d if NOT wanting to change the filter from OPAQUE to science value.')
 args = parser.parse_args()
 
-# Set the variables inputed from the command line
+# Set the variables input from the command line
 fits_file = args.fits_file
 mode = args.mode
 rm_prep_data = args.rm_prep_data
@@ -184,7 +184,6 @@ if os.path.isfile(uncal_file):
     fits.setval(uncal_file, 'FILTER', 0, value=filt, after='DETECTOR')
 
     # add the missing header keywords and fix the format to the one the pipeline expects
-    #uncal_file = glob("*_uncal.fits")[0]
     hkch.check_hdr_keywds(uncal_file, only_update, mode)
 
 else:
@@ -195,4 +194,4 @@ else:
 if rm_prep_data:
     subprocess.run(["rm", "-R", "prep_data"])
 
-print ('\n * Script  prepare_data.py  finished * \n')
+print('\n * Script  prepare_data.py  finished * \n')
