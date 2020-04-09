@@ -84,7 +84,7 @@ def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_f
 
 
 
-def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_path=None, writefile=False,
+def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefile=False,
              mk_all_slices_plt=False, show_figs=True, save_figs=False, plot_name=None,
              threshold_diff=1.0e-7, debug=False):
     """
@@ -141,11 +141,14 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     log_msgs.append(msg)
 
     # D-Flat
-    dflat_ending = "f_01.03.fits"
-    dfile = dflatref_path+"_nrs1_"+dflat_ending
-    if det == "NRS2":
-        dfile = dfile.replace("nrs1", "nrs2")
-    msg = "Using D-flat: "+dfile
+    if ".fits" not in dflatref_path:
+        dflat_ending = "f_01.03.fits"
+        dfile = dflatref_path+"_nrs1_"+dflat_ending
+        if det == "NRS2":
+            dfile = dfile.replace("nrs1", "nrs2")
+    else:
+        dfile = dflatref_path
+    msg = "Using D-flat: " + dfile
     print(msg)
     log_msgs.append(msg)
     dfim = fits.getdata(dfile,  "SCI")#1)
@@ -189,16 +192,28 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
         median_diff = "skip"
         return median_diff, msg
 
-    sflat_ending = "f_01.01.fits"
-    sfile = sfile_path+"_"+grat+"_OPAQUE_"+flat+"_nrs1_"+sflat_ending
+    if ".fits" not in sfile_path:
+        sflat_ending = "f_01.01.fits"
+        sfile = sfile_path+"_"+grat+"_OPAQUE_"+flat+"_nrs1_"+sflat_ending
+        if det == "NRS2":
+            sfile = sfile.replace("nrs1", "nrs2")
+    else:
+        sfile = sfile_path
+
+    if mode not in sfile_path:
+        msg = "Wrong path in for mode S-flat. This script handles mode " + mode + "only."
+        print(msg)
+        log_msgs.append(msg)
+        # This is the key argument for the assert pytest function
+        result_msg = "Wrong path in for mode S-flat. Test skiped because mode is not IFU."
+        median_diff = "skip"
+        return median_diff, result_msg, log_msgs
 
     if debug:
         print("grat = ", grat)
         print("flat = ", flat)
         print("sfile used = ", sfile)
 
-    if det == "NRS2":
-        sfile = sfile.replace("nrs1", "nrs2")
     msg = "Using S-flat: "+sfile
     print(msg)
     log_msgs.append(msg)
@@ -215,17 +230,19 @@ def flattest(step_input_filename, dflatref_path=None, sfile_path=None, fflat_pat
     sfv = fits.getdata(sfile, 5)
 
     # F-Flat
-    fflat_ending = "_01.01.fits"
-    if mode in fflat_path:
-        ffile = fflat_path+"_"+filt+fflat_ending
+    if ".fits" not in fflat_path:
+        fflat_ending = "01.01.fits"
+        ffile = "_".join((fflat_path, filt, fflat_ending))
     else:
-        msg = "Wrong path in for mode F-flat. This script handles mode "+mode+"only."
+        ffile = fflat_path
+
+    if mode not in fflat_path:
+        msg = "Wrong path in for mode F-flat. This script handles mode " + mode + "only."
         print(msg)
         log_msgs.append(msg)
         # This is the key argument for the assert pytest function
-        result_msg = "Wrong path in for mode F-flat. Test skiped because mode is not IFU."
         median_diff = "skip"
-        return median_diff, result_msg, log_msgs
+        return median_diff, msg, log_msgs
 
     msg = "Using F-flat: "+ffile
     print(msg)

@@ -33,9 +33,9 @@ def config(request):
     config.read(request.config.getoption("--config_file"))
     # place the report in the working directory unless otherwise specified
     config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
-    working_dir = config.get("calwebb_spec2_input_file", "working_directory")
-    request.htmlpath = request.config.getoption('htmlpath', working_dir+"/report.html")
-    #request.htmlpath = working_dir+"/report.html"
+    output_dir = config.get("calwebb_spec2_input_file", "output_directory")
+    request.htmlpath = request.config.getoption('htmlpath', output_dir+"/report.html")
+    #request.htmlpath = output_dir+"/report.html"
     config.read(request.config.getoption("--config_file"))
     return config
 

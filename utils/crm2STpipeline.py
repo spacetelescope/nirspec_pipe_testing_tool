@@ -24,7 +24,16 @@ Example usage:
     
     As a module 
         import crm2STpipeline 
-        crm2STpipeline.crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update)
+        import level2b_hdr_keywd_dict_map2sim as map2sim
+        
+        # create the pipeline-ready count rate file
+        stsci_pipe_ready_file = crm2STpipeline.crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update)
+        
+        # create dictionary of special arguments
+        additional_args_dict = {'TITLE': proposal_title, 'TARGNAME': target_name, new_file: new_file}
+        
+        # modify the keyword values to match IPS information
+        map2sim.match_IPS_keywords(stsci_pipe_ready_file, input_fits_file, additional_args_dict=additional_args_dict)
     
     * NOTE: In all cases the MODE can be any of the following: 
             FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf
@@ -135,7 +144,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
 def transpose(arr, detector):
     transposed_array = np.transpose(arr)
     if "2" in detector:
-        # rotate dq data by 180 degrees
+        # rotate data by 180 degrees
         transposed_array = np.rot90(transposed_array)
         transposed_array = np.rot90(transposed_array)
     return transposed_array
@@ -182,7 +191,6 @@ def rm_extra_exts_and_rotate(input_fits_file, detector):
     return outfile_name
 
 
-
 if __name__ == '__main__':
 
     # Get arguments to run script
@@ -194,7 +202,8 @@ if __name__ == '__main__':
     parser.add_argument("mode_used",
                         action='store',
                         default=None,
-                        help='Observation mode options: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf')
+                        help='Observation mode options: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, '
+                             'msata, focus, mimf')
     parser.add_argument("-rfpx",
                         dest="add_ref_pix",
                         action='store_true',
@@ -214,7 +223,8 @@ if __name__ == '__main__':
                         dest="new_file",
                         action='store_true',
                         default=True,
-                        help='Use -nf if wanting to create a new file with updated header. Default is to update header without creating a new file')
+                        help='Use -nf if wanting to create a new file with updated header. Default is to update '
+                             'header without creating a new file')
     args = parser.parse_args()
 
     # Set the variables
@@ -229,14 +239,14 @@ if __name__ == '__main__':
     stsci_pipe_ready_file = crm2pipe(ips_file, mode_used, add_ref_pix, new_file)
 
     # create dictionary of command-line arguments
-    cmd_line_args_dict = {'TITLE' : proposal_title,
-                          'TARGNAME' : target_name,
-                          new_file : new_file
-                          }
+    additional_args_dict = {'TITLE': proposal_title,
+                            'TARGNAME': target_name,
+                            new_file: new_file
+                            }
     # modify the keyword values to match IPS information
     print('Matching IPS keyword values to corresponding STScI pipeline keywords...')
-    map2sim.match_IPS_keywords(stsci_pipe_ready_file, ips_file, cmd_line_args=cmd_line_args_dict)
+    map2sim.match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=additional_args_dict)
 
-    print ('\n * Script  crm2STpipeline.py  finished * \n')
+    print('\n * Script  crm2STpipeline.py  finished * \n')
 
 

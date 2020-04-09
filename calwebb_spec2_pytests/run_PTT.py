@@ -15,7 +15,6 @@ Example usage:
 """
 
 import os
-import re
 import subprocess
 import configparser
 import argparse
@@ -39,11 +38,10 @@ def read_PTTconfig_file():
     """
     config = configparser.ConfigParser()
     config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
-    pipe_testing_tool_path = config.get("calwebb_spec2_input_file", "pipe_testing_tool_path")
-    working_dir = config.get("calwebb_spec2_input_file", "working_directory")
+    output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     input_file = config.get("calwebb_spec2_input_file", "input_file")
-    input_file = os.path.join(working_dir, input_file)
-    cfg_info = [working_dir, input_file]
+    input_file = os.path.join(output_dir, input_file)
+    cfg_info = [output_dir, input_file]
     return cfg_info
 
 
@@ -82,7 +80,6 @@ def run_PTT(report_name):
         print('WARNING: The html report was not created, something went wrong!')
 
 
-
 if __name__ == '__main__':
     
     # Get arguments to run script
@@ -99,7 +96,6 @@ if __name__ == '__main__':
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
     run_PTT(report_name)
 
-
-    print ('\n * Script  run_PTT.py  finished * \n')
+    print('\n * Script  run_PTT.py  finished * \n')
 
 

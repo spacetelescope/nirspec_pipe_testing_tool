@@ -79,11 +79,9 @@ def read_hdrfits(fits_file_name):
     #print ('\n FILE INFORMATION: \n')
     hdulist.info()
     # get and print header
-    #print ('\n FILE HEADER: \n')
     hdr = hdulist[0].header
-    return hdr #this is really what we should be using...
+    return hdr  # this is really what we should be using...
     sci_hdr = hdulist[1].header
-    #print (repr(hdr))
     # close the fits file
     hdulist.close()
     # set the name of the text file and save the header
@@ -131,7 +129,7 @@ def create_addedkeywds_file(fits_file):
         addedkeywds_file_name: string, the file name where all added keywords were saved
     """
     addedkeywds_file_name = fits_file.replace(".fits", "_addedkeywds.txt")
-    print ('Name of text file containing all keywords added:  ', addedkeywds_file_name)
+    print('Name of text file containing all keywords added:  ', addedkeywds_file_name)
     tf = open(addedkeywds_file_name, 'w')
     tf.write('### The following keywords were added or have the wrong format: \n')
     tf.write('# {:<12} {:<10} {:<25} \n'.format('Keyword', 'Extension', 'Comments'))
@@ -199,10 +197,11 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
         return val, None, valtype
     
     if (valtype in hkwd_val) or (val in hkwd_val) or (valtype == type(dict_type)):
-        print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Allowed value type'))
+        print('{:<15} {:<9} {:<28} {:<16}'.format(key, ext, 'Allowed value type', val))
         warning = None
     else:
-        warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value type. Expected e.g. '+repr(hkwd_val[0])+', got: '+repr(val))
+        warning = '{:<15} {:<9} {:<28}'.format(key, ext, 'Incorrect value type. Expected e.g. '+repr(hkwd_val[0]) +
+                                               ', got: '+repr(val))
         print(warning)
 
     return val, warning, dict_type
@@ -221,12 +220,12 @@ def check3numbers(key, val, ext='primary'):
 
     """
     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value format. Expected: 0.0.0, got: '+str(val))
-    r = re.compile('\d.\d.\d') # check that the string has a structure like 0.1.1
+    r = re.compile('\d.\d.\d')  # check that the string has a structure like 0.1.1
     if r.match(val) is None:
-        print (warning)
+        print(warning)
         return warning
     else:
-        print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Matches expected format'))
+        print('{:<15} {:<9} {:<25}'.format(key, ext, 'Matches expected format'))
 
 
 def check_len(key, val, val_len=2, ext='primary'):
@@ -247,11 +246,11 @@ def check_len(key, val, val_len=2, ext='primary'):
     else:
         string_length = len(val)
     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect length of value. Expected: '+repr(val_len)+', got '+repr(string_length))
-    if string_length == val_len:
-        print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct format'))
-    else:
-        print (warning)
+    if not string_length == val_len:
+        print(warning)
         return warning
+    #else:
+    #    print('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct format'))
 
 
 def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='primary'):
@@ -280,11 +279,11 @@ def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='
         val = datetime.strptime(val, '%Y-%m-%d')
     if check_datetime:
         val = datetime.strptime(val, '%Y-%m-%dT%H:%M:%S')
-    if isinstance(val, datetime):
-        print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct value format'))
-    else:
-        print (warning)
+    if not isinstance(val, datetime):
+        print(warning)
         return warning
+    #else:
+    #    print('{:<15} {:<9} {:<28} {:<16}'.format(key, ext, 'Correct value format', val))
 
 
 def get_gwa_Xtil_val(grating, path_to_tilt_files):
@@ -388,7 +387,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # Check simple standard keyword values
                 if val in hkwd_val:
-                    print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Has correct format'))
+                    print('{:<15} {:<9} {:<28} {:<16}'.format(key, ext, 'Has correct format', val))
                     warning = None
                 else:
                     new_val, warning, dict_type = check_value_type(key, val, hkwd_val)
@@ -523,7 +522,6 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # make sure the MSASTATE keyword is set correctly
                 if key == 'MSASTATE':
-                    #mode_used = fits.getval(ff, 'MODEUSED', 0)
                     if (mode_used == 'FS') or (mode_used == 'IFU'):
                         val = 'PRIMARYPARK_ALLCLOSED'
                         specific_keys_dict[key] = val
@@ -612,17 +610,20 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
         if after_key == 'wcsinfo':
             after_key = list(shkvd.keywd_dict.keys())[prev_key_idx-1]
         if key != 'wcsinfo':
-            print("adding keyword: ", key, " in extension: primary    after: ", after_key)
+            print("adding keyword: ", key, " in extension: primary    after: ", after_key,
+                  "    with value: ", new_value)
             # choose right value for GWA_XTIL according to the grating
             if key == "GWA_XTIL":
                 grating = fits.getval(fits_file, "GRATING", 0)
                 new_value = get_gwa_Xtil_val(grating, path_to_tilt_files)
-                print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
+                print("Replacing value of keyword ", key, " corresponding to GRATING=", grating,
+                      " and value ", new_value)
             # choose right value for GWA_YTIL according to the grating
             if key == "GWA_YTIL":
                 grating = fits.getval(fits_file, "GRATING", 0)
                 new_value = get_gwa_Ytil_val(grating, path_to_tilt_files)
-                print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
+                print("Replacing value of keyword ", key, " corresponding to GRATING=", grating,
+                      " and value ", new_value)
             fits.setval(updated_fitsfile, key, 0, value=new_value, after=after_key)
         else:
             # go into the subdictionary for WCS keywords
@@ -676,7 +677,6 @@ def check_hdr_keywds(fits_file, only_update, mode_used):
     add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict)
 
 
-
 if __name__ == '__main__':
 
     # Get arguments to run script
@@ -705,6 +705,6 @@ if __name__ == '__main__':
     # Perform the keyword check
     check_hdr_keywds(fits_file, only_update, mode_used)
 
-    print ('\n * Script  hdr_keywd_check.py  finished * \n')
+    print('\n * Script  hdr_keywd_check.py  finished * \n')
 
 

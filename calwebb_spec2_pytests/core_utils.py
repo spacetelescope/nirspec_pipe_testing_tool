@@ -126,14 +126,14 @@ def get_sci_extensions(fits_file_name):
     return sci_dicts
 
 
-def get_step_inandout_filename(step, initial_input_file, working_directory, debug=False):
+def get_step_inandout_filename(step, initial_input_file, output_directory, debug=False):
     """
     This function determines the corresponding input file name for the step (i.e. the pipeline expects a specific
     format and name for each step). This is according to which steps where set to True  in the configuration file.
     Args:
         step: string, pipeline step to be ran
         initial_input_file: the base name of the input file for calwebb_spec2
-        working_directory: string, path where the output files will be saved at
+        output_directory: string, path where the output files will be saved at
 
     Returns:
         step_input_filename: string, the base name of the input file for the specified step
@@ -189,7 +189,7 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
                                 step_input_basename = initial_input_file_basename.replace(".fits", in_file_suffix+".fits")
                                 if "gain_scale" in step_input_basename:
                                     step_input_basename = step_input_basename.replace("_gain_scale", "")
-                                step_input_filename = os.path.join(working_directory, step_input_basename)
+                                step_input_filename = os.path.join(output_directory, step_input_basename)
                                 # make sure the input file exists
                                 if debug:
                                     print("Step creates output file, checking if it exists: ", step_input_filename)
@@ -240,7 +240,7 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
             # remove the step name _gain_scale if it is still in the base name
             if "_gain_scale".lower() in step_output_basename.lower():
                 step_output_basename = step_output_basename.replace("_gain_scale", "")
-            step_output_filename = os.path.join(working_directory, step_output_basename)
+            step_output_filename = os.path.join(output_directory, step_output_basename)
             # now exit the for loop because step was reached
             break
     if debug:
@@ -251,12 +251,12 @@ def get_step_inandout_filename(step, initial_input_file, working_directory, debu
     return in_file_suffix, out_file_suffix, step_input_filename, step_output_filename
 
 
-def add_detector2filename(working_directory, step_input_file):
+def add_detector2filename(output_directory, step_input_file):
     """
     This function is only used in the case when the pipeline is run in full. At the end of the run, before the files
     have been moved to the working directory, the names will be changed to include the detector name.
     Args:
-        working_directory: string, path of working directory
+        output_directory: string, path of working directory
         step_input_file: string, full name of initial input file
 
     Returns:
@@ -288,7 +288,7 @@ def add_detector2filename(working_directory, step_input_file):
                           ", PTT will not add it again.")
                     new_name = os.path.basename(sf)
                 # move to the working directory
-                new_name = os.path.join(working_directory, new_name)
+                new_name = os.path.join(output_directory, new_name)
                 subprocess.run(["mv", sf, new_name])
 
 
@@ -409,14 +409,14 @@ def calculate_step_run_time(screen_output_txt):
     return step_running_times
 
 
-def get_stp_run_time_from_screenfile(step, det, working_directory):
+def get_stp_run_time_from_screenfile(step, det, output_directory):
     """
     This function calculates the running time for the given step from the screen output file. It is used when PTT
     is told to skip running the pipeline step.
     Args:
         step: string, name of step
         det: string, detector used - DETECTOR keyword value
-        working_directory: string, path to the working directory
+        output_directory: string, path to the working directory
 
     Returns:
         end_time: string, running time for this step
@@ -426,7 +426,7 @@ def get_stp_run_time_from_screenfile(step, det, working_directory):
     calspec2_pilelog = "calspec2_pipeline_"+det+".log"
     # make sure we are able to find calspec2_pilelog either in the calwebb_spec2 directory or in the working dir
     if not os.path.isfile(calspec2_pilelog):
-        calspec2_pilelog = os.path.join(working_directory, calspec2_pilelog)
+        calspec2_pilelog = os.path.join(output_directory, calspec2_pilelog)
 
     # if the pipelog is not found look for the step pipelog
     if not os.path.isfile(calspec2_pilelog):
@@ -580,7 +580,7 @@ def set_inandout_filenames(step, config):
         True_steps_suffix_map = string, path to the suffix map
     """
     data_directory = config.get("calwebb_spec2_input_file", "data_directory")
-    working_directory = config.get("calwebb_spec2_input_file", "working_directory")
+    output_directory = config.get("calwebb_spec2_input_file", "output_directory")
     initial_input_file_basename = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(data_directory, initial_input_file_basename)
     # Get the detector used
@@ -589,8 +589,8 @@ def set_inandout_filenames(step, config):
     if os.path.isfile(initial_input_file):
         print("\n Taking initial input file from data_directory:")
     else:
-        initial_input_file = os.path.join(working_directory, initial_input_file_basename)
-        print("\n Taking initial file from working_directory: ")
+        initial_input_file = os.path.join(output_directory, initial_input_file_basename)
+        print("\n Taking initial file from output_directory: ")
     print(" Initial input file = ", initial_input_file , "\n")
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
 
@@ -600,7 +600,7 @@ def set_inandout_filenames(step, config):
         print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map, ", located in working directory.")
     else:
         print("Pipeline was set to run in full. Suffix map named: full_run_map_DETECTOR.txt, located in working directory.")
-    suffix_and_filenames = get_step_inandout_filename(step, initial_input_file, working_directory)
+    suffix_and_filenames = get_step_inandout_filename(step, initial_input_file, output_directory)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames
     print ("step_input_filename = ", step_input_filename)
     print ("step_output_filename = ", step_output_filename)
@@ -619,11 +619,11 @@ def read_info4outputhdul(config, step_info):
         set_inandout_filenames_info = list, variables from set_inandout_filenames function and configuration file
     """
     initiate_calwebb_spc2 = "calwebb_spec2_input_file"
-    working_directory = config.get(initiate_calwebb_spc2, "working_directory")
+    output_directory = config.get(initiate_calwebb_spc2, "output_directory")
     step, step_input_filename, output_file, in_file_suffix, outstep_file_suffix, True_steps_suffix_map = step_info
-    txt_name = os.path.join(working_directory, True_steps_suffix_map)
-    step_input_file = os.path.join(working_directory, step_input_filename)
-    step_output_file = os.path.join(working_directory, output_file)
+    txt_name = os.path.join(output_directory, True_steps_suffix_map)
+    step_input_file = os.path.join(output_directory, step_input_filename)
+    step_output_file = os.path.join(output_directory, output_file)
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     set_inandout_filenames_info = [step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix]
     return set_inandout_filenames_info
@@ -899,7 +899,7 @@ def move_txt_files_2workdir(detector):
     # get the working directory
     config = configparser.ConfigParser()
     config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
-    working_dir = config.get("calwebb_spec2_input_file", "working_directory")
+    output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     # get a list of all the txt files in the calwebb_spec2_pytests dir
     latest_screenoutputtxtfile = get_latest_file("*screen*"+detector+"*.txt", detector, disregard_known_files=True) # this should pick up the output_screen file
     latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map_"+detector+".txt")
@@ -909,7 +909,7 @@ def move_txt_files_2workdir(detector):
                   latest_suffixmaptxtfile, latest_fullrunmaptxtfile]
     for f in files2move:
         if f != "File not found."  and  os.path.isfile(f):
-            subprocess.run(["mv", f, working_dir])
-            print(f, " moved to ", working_dir)
+            subprocess.run(["mv", f, output_dir])
+            print(f, " moved to ", output_dir)
 
 

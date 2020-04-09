@@ -416,13 +416,13 @@ def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_rea
                     fits.setval(st_pipe_ready_file, 'SUBSIZE2', value=subarray_sizes_dict['SUBSIZE2'])
 
 
-def match_IPS_keywords(stsci_pipe_ready_file, ips_file, cmd_line_args=None):
+def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=None):
     """
     This function performs the change of keyword values for the STScI pipeline-ready file to match the values in the
     IPS file.
     :param stsci_pipe_ready_file: string, path and name of the STScI pipeline-ready file
     :param ips_file: string, path and name of the IPS file
-    :param cmd_line_args: dictionary, keywords and corresponding values indicated in the command line
+    :param additional_args_dict: dictionary, keywords and corresponding values indicated in the command line
     :return: nothing; the input fits file with the modified keyword values
     """
     # get the headers from the IPS file
@@ -455,13 +455,13 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, cmd_line_args=None):
 
         if 'set_to_given_string' in val2modify:
             # change the keyword value to that given in the command line - this is optional
-            if cmd_line_args is None:
+            if additional_args_dict is None:
                 continue
             else:
-                if key2modify in cmd_line_args:
+                if key2modify in additional_args_dict:
                     print('Modified keyword: ', key2modify, '   old_value=', st_pipe_ready_dict[key2modify],
-                          '   new_value=', cmd_line_args[key2modify])
-                    fits.setval(stsci_pipe_ready_file, key2modify, value=cmd_line_args[key2modify])
+                          '   new_value=', additional_args_dict[key2modify])
+                    fits.setval(stsci_pipe_ready_file, key2modify, value=additional_args_dict[key2modify])
                 else:
                     print('Value for keyword=', key2modify, ' not provided with line command.')
                     continue
@@ -588,12 +588,12 @@ if __name__ == '__main__':
     new_file = args.new_file
 
     # create dictionary of command-line arguments
-    cmd_line_args_dict = {'TITLE': proposal_title,
-                          'TARGNAME': target_name,
-                          new_file: new_file
-                          }
+    additional_args_dict = {'TITLE': proposal_title,
+                            'TARGNAME': target_name,
+                            new_file: new_file
+                            }
 
     # modify the keyword values to match IPS information
-    match_IPS_keywords(stsci_pipe_ready_file, ips_file, cmd_line_args=cmd_line_args_dict)
+    match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=additional_args_dict)
 
     print('\n * Script  level2b_hdr_keywd_dict_map2sim.py  finished * \n')
