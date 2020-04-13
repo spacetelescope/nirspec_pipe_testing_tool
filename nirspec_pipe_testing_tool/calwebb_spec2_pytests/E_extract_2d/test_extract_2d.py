@@ -12,6 +12,7 @@ from astropy.io import fits
 
 from jwst.extract_2d.extract_2d_step import Extract2dStep
 from .. import core_utils
+from .. import TESTSDIR
 from . import extract_2d_utils
 from .. auxiliary_code import compare_wcs_mos
 
@@ -126,7 +127,7 @@ def output_hdul(set_inandout_filenames, config):
                     # rename and move the pipeline log file
                     try:
                         calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
-                        pytest_workdir = os.getcwd()
+                        pytest_workdir = TESTSDIR
                         logfile = glob(pytest_workdir + "/pipeline.log")[0]
                         os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
                     except:

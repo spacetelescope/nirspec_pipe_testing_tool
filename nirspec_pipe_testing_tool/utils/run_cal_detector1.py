@@ -9,6 +9,7 @@ import sys
 from glob import glob
 from astropy.io import fits
 
+from nirspec_pipe_testing_tool.calwebb_spec2_pytests import TESTDIR
 from jwst.pipeline.calwebb_detector1 import Detector1Pipeline
 from jwst.group_scale.group_scale_step import GroupScaleStep
 from jwst.dq_init.dq_init_step import DQInitStep
@@ -345,7 +346,7 @@ def main():
     # Move products to working dir
 
     # rename and move the pipeline log file
-    pytest_workdir = os.getcwd()
+    pytest_workdir = TESTSDIR
     logfile = glob(pytest_workdir+"/*pipeline*.log")[0]
     new_name = "caldetector1_pipeline_"+detector+".log"
     os.rename(logfile, os.path.join(output_dir, new_name))

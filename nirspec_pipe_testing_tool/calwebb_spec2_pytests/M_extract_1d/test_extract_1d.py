@@ -14,6 +14,7 @@ from jwst.extract_1d.extract_1d_step import Extract1dStep
 from .. auxiliary_code import change_filter_opaque2science
 from . import extract_1d_utils
 from .. import core_utils
+from .. import TESTSDIR
 
 
 # HEADER
@@ -154,7 +155,7 @@ def output_hdul(set_inandout_filenames, config):
                 calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
                 if imaging_mode:
                     calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
-                pytest_workdir = os.getcwd()
+                pytest_workdir = TESTSDIR
                 logfile = glob(pytest_workdir+"/pipeline.log")[0]
                 os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
 
@@ -219,7 +220,7 @@ def output_hdul(set_inandout_filenames, config):
             PTT_calspec2_log = "PTT_calspec2_" + detector + ".log"
             if imaging_mode:
                 PTT_calspec2_log = PTT_calspec2_log.replace('calspec2', 'calimage2')
-            pytest_workdir = os.getcwd()
+            pytest_workdir = TESTSDIR
             logfile = glob(pytest_workdir + "/pipeline.log")[0]
             os.rename(logfile, os.path.join(output_directory, PTT_calspec2_log))
         except:

@@ -15,6 +15,7 @@ from jwst.flatfield.flat_field_step import FlatFieldStep
 
 from . import flat_field_utils
 from .. import core_utils
+from .. import TESTSDIR
 from .. auxiliary_code import flattest_fs
 from .. auxiliary_code import flattest_ifu
 from .. auxiliary_code import flattest_mos
@@ -164,7 +165,7 @@ def output_hdul(set_inandout_filenames, config):
                 # rename and move the pipeline log file
                 try:
                     calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
-                    pytest_workdir = os.getcwd()
+                    pytest_workdir = TESTSDIR
                     logfile = glob(pytest_workdir+"/pipeline.log")[0]
                     os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
                 except:

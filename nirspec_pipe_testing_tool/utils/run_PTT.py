@@ -21,6 +21,7 @@ import configparser
 import argparse
 from astropy.io import fits
 from . import data
+from .. import calwebb_spec2_pytests
 
 
 # HEADER
@@ -76,7 +77,7 @@ def run_PTT(report_name, config_path):
 
     # run PTT
     cmd = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
-           '--self-contained-html']
+           '--self-contained-html', calwebb_spec2_pytests.TESTSDIR]
     subprocess.call(cmd)
 
     # move the html report

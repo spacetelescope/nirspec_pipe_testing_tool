@@ -13,6 +13,7 @@ from jwst.photom.photom_step import PhotomStep
 
 from . import photom_utils
 from .. import core_utils
+from .. import TESTSDIR
 from .. auxiliary_code import change_filter_opaque2science
 
 
@@ -125,7 +126,7 @@ def output_hdul(set_inandout_filenames, config):
                 # rename and move the pipeline log file
                 try:
                     calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
-                    pytest_workdir = os.getcwd()
+                    pytest_workdir = TESTSDIR
                     logfile = glob(pytest_workdir+"/pipeline.log")[0]
                     os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
                 except:

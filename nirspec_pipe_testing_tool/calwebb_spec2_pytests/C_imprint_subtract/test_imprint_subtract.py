@@ -14,6 +14,7 @@ from astropy.io import fits
 from jwst.imprint.imprint_step import ImprintStep
 
 from .. import core_utils
+from .. import TESTSDIR
 from . import imprint_subtract_utils
 
 
@@ -61,7 +62,7 @@ def output_hdul(set_inandout_filenames, config):
     initial_input_file = os.path.join(output_directory, initial_input_file)
     detector = fits.getval(initial_input_file, "DETECTOR", 0)
     calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
-    pytest_workdir = os.getcwd()
+    pytest_workdir = TESTSDIR
 
     if os.path.isfile(initial_input_file):
         inhdu = core_utils.read_hdrfits(initial_input_file, info=False, show_hdr=False)

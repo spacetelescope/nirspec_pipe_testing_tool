@@ -15,6 +15,7 @@ from jwst.pipeline.calwebb_image2 import Image2Pipeline
 
 from . import assign_wcs_utils
 from .. import core_utils
+from .. import TESTSDIR
 from ..auxiliary_code import change_filter_opaque2science
 from ..auxiliary_code import compare_wcs_ifu
 from ..auxiliary_code import compare_wcs_fs
@@ -58,7 +59,7 @@ def set_inandout_filenames(config):
     # Get the detector used
     detector = fits.getval(initial_input_file, "DETECTOR", 0)
     True_steps_suffix_map = "True_steps_suffix_map_" + detector + ".txt"
-    pytests_directory = os.getcwd()
+    pytests_directory = TESTSDIR
     True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
     suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, output_directory)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames
@@ -227,7 +228,7 @@ def output_hdul(set_inandout_filenames, config):
             calspec2_pilelog = "calspec2_pipeline_" + detector + ".log"
             if imaging_mode:
                 calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
-            pytest_workdir = os.getcwd()
+            pytest_workdir = TESTSDIR
             logfile = glob(pytest_workdir + "/pipeline.log")[0]
             os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
         except:
@@ -340,7 +341,7 @@ def output_hdul(set_inandout_filenames, config):
                     calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
                     if imaging_mode:
                         calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
-                    pytest_workdir = os.getcwd()
+                    pytest_workdir = TESTSDIR
                     logfile = glob(pytest_workdir + "/pipeline.log")[0]
                     os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
                 except:

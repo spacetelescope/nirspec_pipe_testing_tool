@@ -6,6 +6,7 @@ import glob
 import time
 import subprocess
 from astropy.io import fits
+from . import TESTSDIR
 
 '''
 This script contains functions frequently used in the test suite.
@@ -270,7 +271,7 @@ def add_detector2filename(output_directory, step_input_file):
     # get the detector name and add it
     det = fits.getval(step_input_file, "DETECTOR", 0)
     #step_input_file_basename = os.path.basename(step_input_file).replace(".fits", "")
-    ptt_directory = os.getcwd()  # directory where PTT lives
+    ptt_directory = TESTSDIR  # directory where PTT lives
     #step_files = glob.glob(os.path.join(ptt_directory, step_input_file_basename+"*.fits"))  # get all fits files just created
     #if len(step_files) == 0:
     #    step_files = glob.glob(os.path.join(ptt_directory, "*.fits"))
@@ -595,7 +596,7 @@ def set_inandout_filenames(step, config):
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
 
     if not run_calwebb_spec2:
-        pytests_directory = os.getcwd()
+        pytests_directory = TESTSDIR
         True_steps_suffix_map = os.path.join(pytests_directory, "True_steps_suffix_map_"+detector+".txt")
         print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map, ", located in working directory.")
     else:
@@ -626,6 +627,7 @@ def read_info4outputhdul(config, step_info):
     step_output_file = os.path.join(output_directory, output_file)
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     set_inandout_filenames_info = [step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix]
+
     return set_inandout_filenames_info
 
 
