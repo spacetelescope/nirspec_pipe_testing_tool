@@ -56,7 +56,6 @@ setup(
     ],
     install_requires=[
         "astropy",
-        "jwst @ git+https://github.com/spacetelescope/jwst#branch=master",
         "matplotlib",
         "msgpack",
         "numpy",
@@ -64,6 +63,11 @@ setup(
         "pytest>=5.0",
         "pytest-html",
     ],
+    extras_require={
+        'pipeline': [
+            "jwst @ git+https://github.com/spacetelescope/jwst#branch=master",
+        ]
+    },
     packages=find_packages(),
     package_data={
         "": [
