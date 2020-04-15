@@ -451,6 +451,8 @@ def test_rmask_rfile(output_hdul):
     else:
         print("\n * Running reference file pytest...")
         result = assign_wcs_utils.rmask_rfile_is_correct(output_hdul)
+        if result is None:
+            pytest.skip()
         for log_msg in result[1]:
             print(log_msg)
             logging.info(log_msg)

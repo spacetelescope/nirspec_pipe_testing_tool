@@ -9,7 +9,6 @@ import sys
 from glob import glob
 from astropy.io import fits
 
-from nirspec_pipe_testing_tool.calwebb_spec2_pytests import TESTSDIR
 from jwst.pipeline.calwebb_detector1 import Detector1Pipeline
 from jwst.group_scale.group_scale_step import GroupScaleStep
 from jwst.dq_init.dq_init_step import DQInitStep

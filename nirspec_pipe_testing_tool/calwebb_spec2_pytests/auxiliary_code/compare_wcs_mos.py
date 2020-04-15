@@ -144,7 +144,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
 
         # Get the ESA trace
         #raw_data_root_file = "NRSV96215001001P0000000002103_1_491_SE_2016-01-24T01h25m07.cts.fits" # testing only
-        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
         msg = "Using this raw data file to find the corresponding ESA file: "+raw_data_root_file
         print(msg)
         log_msgs.append(msg)

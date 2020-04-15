@@ -16,12 +16,13 @@ from crds import getrecommendations
 
 def check_meta(input_file, match_key, match_val):
     input_val = input_file[match_key.lower()]
-    #direct comparison for numeric types; "in" comparison for string types
+    # direct comparison for numeric types; "in" comparison for string types
     if match_val in ["GENERIC", "ALL", "N/A", "ANY"]:
         return True
     if isinstance(input_val, str):
         return input_val in match_val
-    return input_val == type(input_val)(match_val) #have to make sure because match_val is always a string
+    return input_val == type(input_val)(match_val)  # have to make sure because match_val is always a string
+
 
 def get_streams(logfile=None):
     """
@@ -33,6 +34,7 @@ def get_streams(logfile=None):
     else:
         errstream = logstream = open(logfile, 'a')
     return logstream, errstream
+
 
 def load_input_file(path_to_input_file, logstream=None):
     """
@@ -62,7 +64,7 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
 
     logstream, errstream = get_streams(logfile=logfile)
     
-    #Convert pipeline step to a header keyword if necessary
+    # Convert pipeline step to a header keyword if necessary
     if pipeline_step.upper().startswith("R_"):
         step_key = pipeline_step.upper()
     else:
@@ -71,10 +73,10 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         else:
             step_key = "R_" + pipeline_step.upper()
     
-    #Identify the context
+    # Identify the context
     context = fits.getval(path_to_input_file, "CRDS_CTX")
     
-    #Identify the reference file
+    # Identify the reference file
     try:
         reffile_name = fits.getval(path_to_input_file, step_key)
     except KeyError:
@@ -84,40 +86,47 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     
     reffile_name = reffile_name.replace('crds://', '')
     
-    #Is there a reference file for this step? If not, PASS
+    # Is there a reference file for this step? If not, PASS
     if reffile_name == "N/A":
         print("No reference file for step {}.".format(pipeline_step), file=errstream)
         log_msgs.append("No reference file for step {}.".format(pipeline_step))
         return ""
     
-    #Grab metadata from the input and reference files
+    # Grab metadata from the input and reference files
     if input_file is None:
         input_file = load_input_file(path_to_input_file, logstream=logstream)
     print("Grabbing CRDS match criteria...", file=logstream)
     log_msgs.append("Grabbing CRDS match criteria...")
     try:
-        match_criteria = ref_matches(context, reffile_name)[0]
+        match_criteria = ref_matches(context, reffile_name)
+        if match_criteria:
+            match_criteria = match_criteria[0]
+        else:
+            msg = 'Unable to find match criteria... skipping test'
+            log_msgs.append(msg)
+            return None
     except ValueError:
-        import pdb; pdb.set_trace()
+        import pdb
+        pdb.set_trace()
     
-    tests = {} #store all the tests in a single dictionary
+    tests = {}  # store all the tests in a single dictionary
 
     # add instrument name in the expected keyword
     match_criteria['META.INSTRUMENT.NAME'] = 'NIRSPEC'
 
     # make sure that the subarray keyword is correct for the size of the data
-    #subarray = get_subarray(path_to_input_file)
+    # subarray = get_subarray(path_to_input_file)
     subarray = fits.getval(path_to_input_file, 'SUBARRAY', 0)
     match_criteria['META.SUBARRAY.NAME'] = subarray
 
-    #Test whether the recommended reference file was actually selected
+    # Test whether the recommended reference file was actually selected
     recommended_reffile = getrecommendations(match_criteria,
                                              reftypes=[pipeline_step],
                                              context=context,
                                              fast=True)
 
     if isinstance(recommended_reffile, str):
-        recommended_reffile = os.path.basename(recommended_reffile) #remove path, only want to test filename
+        recommended_reffile = os.path.basename(recommended_reffile)  # remove path, only want to test filename
         tests['RECOMMENDATION'] = recommended_reffile == reffile_name
     else:
         msg1 = '* WARNING: Unable to find recommendation for the reference file:'
@@ -130,12 +139,12 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         print(msg2)
         print(msg3)
 
-    #Remove irrelevant match criteria
+    # Remove irrelevant match criteria
     del match_criteria['observatory']
     del match_criteria['instrument']
     del match_criteria['filekind']
     
-    #Useafter dates require special handling
+    # Useafter dates require special handling
     if "META.OBSERVATION.DATE" not in match_criteria:
         tests['USEAFTER'] = True
     else:
@@ -146,10 +155,10 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         ref_time = match_criteria.pop("META.OBSERVATION.TIME")
         ref_useafter = Time(ref_date + "T" + ref_time)
         tests["USEAFTER"] = input_obstime >= ref_useafter
-        #Note that this does NOT check whether there is a more recent
-        #(but still valid) reference file that could have been selected
+        # Note that this does NOT check whether there is a more recent
+        # (but still valid) reference file that could have been selected
     
-    #Loop over the rest of the matching criteria
+    # Loop over the rest of the matching criteria
     for criterion, value in match_criteria.items():
         tests[criterion] = check_meta(input_file, criterion, value)
     
@@ -158,7 +167,7 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     failures = []
     failmsg = "{}: reffile value {}, input value {}"
     
-    #Finally, print out the results of the tests
+    # Finally, print out the results of the tests
     print("REFERENCE FILE SELECTION TEST", file=logstream)
     print("  Input file: {}".format(path_to_input_file), file=logstream)
     print("  Pipeline step: {}".format(pipeline_step), file=logstream)
@@ -191,11 +200,12 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     print("  Final result: {}".format(rescode[final]), file=logstream)
     log_msgs.append("  Final result: {}".format(rescode[final]))
 
-    #Close the output stream if necessary
+    # Close the output stream if necessary
     if logfile is not None:
         logstream.close()
     
     return "\n".join(failures), log_msgs
+
 
 def create_rfile_test(step, doc_insert):
     """
@@ -217,6 +227,7 @@ def create_rfile_test(step, doc_insert):
     
     return rfile_test_step
 
+
 def check_all_reffiles(path_to_input_file, logfile=None):
     """
     A wrapper around reffile_test to test every reference file in the input
@@ -225,11 +236,11 @@ def check_all_reffiles(path_to_input_file, logfile=None):
     
     all_steps = list(fits.getval(path_to_input_file, "R_*"))
     
-    if logfile is not None: #erase existing log, since we'll be appending later
+    if logfile is not None:   # erase existing log, since we'll be appending later
         with open(logfile, 'w'):
             pass
     
-    #Only want to load the input file once
+    # Only want to load the input file once
     input_file = load_input_file(path_to_input_file)
     
     failures = {}
@@ -241,6 +252,7 @@ def check_all_reffiles(path_to_input_file, logfile=None):
             failures[step] = res
         
     return failures
+
 
 if __name__ == "__main__":
     import argparse
@@ -255,4 +267,4 @@ if __name__ == "__main__":
     
     for input_file in args.input_file:
         check_all_reffiles(input_file, logfile=args.log)
-    
+

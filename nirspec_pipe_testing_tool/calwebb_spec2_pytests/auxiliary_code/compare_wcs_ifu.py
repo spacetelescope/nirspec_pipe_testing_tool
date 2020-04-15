@@ -93,7 +93,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
 
         # Get the ESA trace
         #raw_data_root_file = "NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06.fits" # testing with G140M
-        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
         specifics = [pslice]
         esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "IFU", specifics)[0]
 

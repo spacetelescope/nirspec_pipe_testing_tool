@@ -21,7 +21,6 @@ import sys
 import configparser
 import argparse
 from astropy.io import fits
-from . import data
 from .. import calwebb_spec2_pytests
 
 
@@ -99,6 +98,8 @@ def run_PTT(report_name, config_path=None):
     else:
         print('WARNING: The html report was not created, something went wrong!')
 
+    print('\n * Script  run_PTT.py  finished * \n')
+
 
 def main():
     # Get arguments to run script
@@ -130,8 +131,6 @@ def main():
 
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
     run_PTT(report_name, config_path)
-
-    print('\n * Script  run_PTT.py  finished * \n')
 
 
 if __name__ == '__main__':

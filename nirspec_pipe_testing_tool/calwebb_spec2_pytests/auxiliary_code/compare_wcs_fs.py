@@ -91,7 +91,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         #raw_data_root_file = "NRSSDRK-ALLSLITS-5345150216_1_491_SE_2015-12-11T15h40m25.fits"  # for testing with G140H ALLSLITS
         #raw_data_root_file = "NRSV84600002001P0000000002101_1_491_SE_2016-01-17T15h09m16.fits"  # for testing with G140M ALLSLITS
         #raw_data_root_file = "NRSV84600004001P0000000002101_1_491_SE_2016-01-17T15h41m16.fits"  # for testing with G235H ALLSLITS
-        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
         specifics = [pipeslit]
 
         # check if ESA data is not in the regular directory tree, these files are exceptions

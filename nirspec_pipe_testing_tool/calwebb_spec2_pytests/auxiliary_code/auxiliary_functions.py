@@ -9,6 +9,7 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from decimal import Decimal
+from nirspec_pipe_testing_tool.calwebb_spec2_pytests import TESTSDIR
 
 
 """
@@ -119,10 +120,10 @@ def do_idl_rebin(a, *args):
     return eval(''.join(evList))
 
 
-def get_modeused_and_rawdatrt_PTT_cfg_file():
+def get_modeused_and_rawdatrt_PTT_cfg_file(infile_name):
     # get script directory and config name
-    utils_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-    PPT_cfg_file = utils_dir.replace("auxiliary_code", "/PTT_config.cfg")
+    out_dir = os.path.dirname(infile_name)
+    PPT_cfg_file = os.path.join(out_dir, "PTT_config.cfg")
     with open(PPT_cfg_file, "r") as cfg:
         for i, line in enumerate(cfg.readlines()):
             if "#" not in line:

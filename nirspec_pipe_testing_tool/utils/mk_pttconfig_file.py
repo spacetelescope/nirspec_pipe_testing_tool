@@ -149,7 +149,8 @@ def write_ptt_cfg(calwebb_spec2_input_file, esa_intermediary_products, run_calwe
     config.set("additional_arguments", "save_barshadow_intermediary_plots", additional_arguments[13])
     config.set("additional_arguments", "write_barshadow_files", additional_arguments[14])
 
-    config.write(open("PTT_config.cfg", "w"))
+    ptt_config = os.path.join(calwebb_spec2_input_file[0], "PTT_config.cfg")
+    config.write(open(ptt_config, "w"))
 
 
 def set_ptt_immutable_paths():
@@ -165,7 +166,7 @@ def list2_allstrings_list(a_list):
     return a_list
 
 
-def pepare_variables(output_directory, input_file, mode_used, raw_data_root_file, data_directory=None,
+def pepare_variables(output_directory, rate_input_file, mode_used, raw_data_root_file, data_directory=None,
                      local_pipe_cfg_path=None, comparison_file_path=None, msa_conf_name=None, dflat_path=None,
                      sflat_path=None, fflat_path=None, run_calwebb_spec2=None, wcs_threshold_diff=None,
                      save_plots=True, change_filter_opaque=False, extract_2d_threshold_diff=None,
@@ -173,7 +174,7 @@ def pepare_variables(output_directory, input_file, mode_used, raw_data_root_file
     """
     This function prepares all the input variables for the ConfigParser to write the PTT configuration file.
     :param output_directory: string
-    :param input_file: string
+    :param rate_input_file: string
     :param mode_used: string
     :param raw_data_root_file: string, basename of the raw data
     :param data_directory: string
@@ -257,6 +258,7 @@ def pepare_variables(output_directory, input_file, mode_used, raw_data_root_file
     # set the full ESA path to compare the data
     if comparison_file_path is None:
         esa_files_full_path = "".join([esa_files_path, mode_used, "_CV3/ESA_Int_products"])
+        input_file = os.path.join(output_directory, rate_input_file)
         if "FULL" in fits.getval(input_file, "SUBARRAY"):
             esa_files_full_path = "".join([esa_files_path, mode_used, "_CV3_cutouts/ESA_Int_products"])
     else:
@@ -292,7 +294,7 @@ def pepare_variables(output_directory, input_file, mode_used, raw_data_root_file
     write_barshadow_files = True
 
     # set the config file list sections
-    calwebb_spec2_input_file = [output_directory, data_directory, input_file, mode_used,
+    calwebb_spec2_input_file = [output_directory, data_directory, rate_input_file, mode_used,
                                 change_filter_opaque, raw_data_root_file, local_pipe_cfg_path]
     esa_intermediary_products = [esa_files_full_path, msa_conf_name, dflat_path, sflat_path, fflat_path]
     run_calwebb_spec2_in_full = [run_calwebb_spec2, calwebb_spec2_cfg]
