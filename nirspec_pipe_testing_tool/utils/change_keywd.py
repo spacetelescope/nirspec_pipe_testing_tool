@@ -11,16 +11,16 @@ added/modified in the main header.
 
 Usage:
     In a terminal, the general format for the script is as follows:
-    $ nptt_change_keywd.py file.fits keyword_to_be_changed value
+    $ nptt_change_keywd file.fits keyword_to_be_changed value
 
     Specific examples:
-    $ nptt_change_keywd.py fits_file.fits subarray full
+    $ nptt_change_keywd fits_file.fits subarray full
 
     Remember that if you are changing the value from True to False, the pipeline only takes these as either T or F:
-    $ nptt_change_keywd.py fits_file.fits TARGOOPP F
+    $ nptt_change_keywd fits_file.fits TARGOOPP F
 
     To modify a keyword in extension 1 add -e=1:
-    $ nptt_change_keywd.py fits_file.fits V3_REF -202.2 -e=1
+    $ nptt_change_keywd fits_file.fits V3_REF -202.2 -e=1
 
 """
 
@@ -33,7 +33,7 @@ __version__ = "1.0"
 # Nov 2017 - Version 1.0: initial version completed
 
 
-def keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, value):
+def keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, keyword, value):
     if keyword in sample_kyewd_dict:
         # obtain the type of the sample value and convert the input value
         dict_value_type = type(sample_kyewd_dict[keyword])
@@ -44,17 +44,44 @@ def keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, value):
 
 
 def new_keywd(extension_number, value):
-    add_keywd = input("This keyword is not in the sample keyword dictionary in extension "+repr(extension_number)+". Would you like to add it?  [y]  n   ")
+    add_keywd = input("This keyword is not in the sample keyword dictionary in extension " + repr(extension_number) +
+                      ". Would you like to add it?  [y]  n   ")
     if "n" in add_keywd:
-        print ("Exiting the code.")
+        print("Exiting the code.")
         exit()
     else:
-        val_type = input("Please type the value type of the keyword value (use one of the following: [str], float, int)   ")
+        val_type = input("Please type the value type of the keyword value (use one of the following: "
+                         "[str], float, int)   ")
         if (val_type == "float") or (val_type == "int"):
             new_value = val_type(value)
         else:
             new_value = value
     return new_value
+
+
+def chkeywd(fits_file, keyword, value, ext_number):
+    if ext_number is None:
+        extension_number = 0
+    else:
+        extension_number = int(ext_number)
+
+    # convert the keyword value input to the right type
+    keyword = keyword.upper()
+    if extension_number == 0:
+        sample_kyewd_dict = shkvd.keywd_dict
+        new_value = keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, keyword, value)
+
+    elif extension_number == 1:
+        sample_kyewd_dict = shkvd.keywd_dict["wcsinfo"]
+        new_value = keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, keyword, value)
+
+    else:
+        new_value = new_keywd(extension_number, value)
+
+    # now change the the value
+    fits.setval(fits_file, keyword, extension_number, value=new_value)
+
+    print('\n * Script  change_keywd.py  finished * \n')
 
 
 
@@ -85,30 +112,8 @@ def main():
     keyword = args.keyword
     value = args.value
     ext_number = args.ext_number
-    if ext_number is None:
-        extension_number = 0
-    else:
-        extension_number = int(ext_number)
 
-
-    # convert the keyword value input to the right type
-    keyword = keyword.upper()
-    if extension_number == 0:
-        sample_kyewd_dict = shkvd.keywd_dict
-        new_value = keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, value)
-
-    elif extension_number == 1:
-        sample_kyewd_dict = shkvd.keywd_dict["wcsinfo"]
-        new_value = keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, value)
-
-    else:
-        new_value = new_keywd(extension_number, value)
-
-
-    # now change the the value
-    fits.setval(fits_file, keyword, extension_number, value=new_value)
-
-    print('\n * Script  change_keywd.py  finished * \n')
+    chkeywd(fits_file, keyword, value, ext_number)
 
 
 if __name__ == '__main__':

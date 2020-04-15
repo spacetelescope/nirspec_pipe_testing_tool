@@ -603,10 +603,25 @@ respectively.
 - Finally, remember that:
 
 a. Whenever you need to read either the main or science headers of a file,
-you can always use the ```nptt_read_hdr``` module.
+you can always use the ```nptt_read_hdr``` module. See step 4.c for instructions on how
+to use this module.
 
 b. If you need to change/add a keyword value to a specific extension of a file, you can
-use the ```nptt_change_keywd``` module.
+use the ```nptt_change_keywd``` module from the terminal as:
+```bash
+nptt_change_keywd blah.fits TARGOOPP F 0
+```
+This module can also be called from a script in the following way:
+```bash
+# set the variables
+fits_file = 'blah.fits'
+keyword = 'TARGOOPP'
+value = 'F'
+ext_number = 0
+
+# run the module
+nptt.utils.change_keywd.chkeywd(fits_file, keyword, value, ext_number)
+```
 
 
 
