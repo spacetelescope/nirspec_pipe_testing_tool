@@ -1,4 +1,4 @@
-# PYTEST TESTING TOOL (PTT)
+# NIRSpec Pipe Testing Tool (we affectionately call it PTT)
 
 
 ## What is a Pytest
@@ -12,9 +12,22 @@ error should occur with the pipeline, the test will be flagged as an error.
 
 
 
+## Possible Outcomes of the Pytest
+
+- Passed = the assertion was true, so the test condition was met.
+- Failed = the assertion was false, the test condition was NOT met (there will be an
+AssertionError on-screen and in the html file, with a clear PTT customized message of
+what happened).
+- Skipped = the test was skipped (there will be a message on the html report and on-screen
+explaining why the test was skipped).
+- Error = this is a coding error, a bug in either the pipeline or the PTT code. Please
+contact the testing campaign lead to determine how to proceed.
+
+
+
 ## Useful links
 
-- PTT Documentation: 
+- PTT Documentation:
 https://innerspace.stsci.edu/pages/viewpage.action?pageId=123011558
 
 - Testing data sets:
@@ -24,7 +37,10 @@ https://innerspace.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+par
 https://github.com/spacetelescope/jwst
 
 - Pipeline Documentation:
-http://jwst-pipeline.readthedocs.io 
+http://jwst-pipeline.readthedocs.io
+
+- Validation Notebooks
+https://github.com/spacetelescope/jwst_validation_notebooks
 
 
 
@@ -59,7 +75,7 @@ These changes will not affect your work while working with the internal network 
 
 III.- A brief description of what each pipeline step does, as well as a brief description
 of all the pytests implemented in the tool, the tests that are still in concept phase, and 
-the tests that are still needed, can be found in the Confluence space for PTT. You can 
+the tests that are still needed, can be found in the Confluence space for PTT. You can
 get to it from the main page of NIRSpec/NIRSpec JWST Pipeline/NIRSpec Calibration
 Pipeline Testing Tool (PTT), or by clicking in the following link:
 https://confluence.stsci.edu/pages/viewpage.action?pageId=123011558
@@ -70,36 +86,33 @@ QUICK START GUIDE
 1. Create the conda environment for testing and get the configuration files.  
 
 a. Conda environment for this testing campaign:
-- Current testing version is 7.3 Please install this version by typing the following 
-command in a terminal:
+- Current testing version and ulr file can be found at https://github.com/spacetelescope/jwst
+under the "Installing a DMS Operational Build". The commands are similar to the following:
 ```bash
-conda create -n jwst_b73 --file url_depending_on_your_system 
+conda create -n jwst_b751 --file url_depending_on_your_system
 ```
 for the current release candidate, the ulr options are:
-- Linux: http://ssb.stsci.edu/releases/jwstdp/0.13.7/latest-linux
-- OS X: http://ssb.stsci.edu/releases/jwstdp/0.13.7/latest-osx
+- Linux: http://ssb.stsci.edu/releases/jwstdp/0.15.1/latest-linux
+- OS X: http://ssb.stsci.edu/releases/jwstdp/0.15.1/latest-osx
 
 
-Please note that this is the most stable release candidate as of 07/05/2019, and until
-further notice from SCSB. To be completely sure that this is the latest stable version 
-you can go to the GitHub repo of SCSB: https://github.com/spacetelescope/jwst. In the 
-README file you will find a table called "Software vs DMS build version map", there you 
-will see at the top which one is the latest stable release candidate.
+The most stable release candidate will be listed in the top line under the section
+"Software vs DMS build version map" at https://github.com/spacetelescope/jwst
 
-PLEASE NOTE:
+NOTE FOR PIPELINE DEVELOPERS:
 
-a. The development version of the pipeline is being phased out, and a new way to install ```jwst``` 
-package will be used. We will still use a conda environment but the installation will be through ```pip```. SCSB recommends creating a new environment:
+a. The development version of the pipeline was phased out. Currently, the installation is run
+through ```pip```. SCSB recommends creating a new environment:
 ```bash
 conda create -n jwst_env python
 conda activate jwst_env
 ```
-To install build 7.3 in this new way you would type (with the activated environment):
+To install the corresponding build in this way you would type (with the activated environment):
 ```bash
 pip install numpy
-pip install git+https://github.com/spacetelescope/jwst#0.13.7
+pip install git+https://github.com/spacetelescope/jwst#0.0.0
 ```
-or for the latest development version:
+where #0.0.0 is the jwst version number, e.g. 0.15.1. For for installing the latest development version use:
 ```bash
 pip install numpy
 pip install git+https://github.com/spacetelescope/jwst
@@ -137,33 +150,58 @@ conda env remove -n name_of_your_old_environment
 ```
 
 
-3. Install the following plugins for PTT to work properly. Within the conda 
-testing environment, type:
+3. Install PTT. There are three ways to install the tool:
+
+- Option A. For non-developers and without PTT source code. In the terminal type:
 ```bash
-pip install msgpack
-pip install pytest-html
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@master
 ```
-NOTE: Every time you create a new conda environment you need to install these plugins.
+This will install the latest version of PTT and all necessary dependencies to run the tool.
+However, this will not install the pipeline, PTT will assume you already have installed the
+pipeline version you need.
+
+- Option B. For non-developers and with the PTT source code. After you clone PTT, go into
+the directory, then type:
+```bash
+pip install .
+```
+
+- Option C. For developers and with the PTT source code. After you clone PTT, go into
+the directory, then type the same command as with Option B with an additional ```-e``` flag
+at the end of the command.
+
+NOTE:  You can install the latest pipeline version, but this will replace any existing
+version of the pipeline. Hence, you most likely want to create a new conda environment,
+install PTT, and then type the command:
+```bash
+pip install -e ".[pipeline]"
+```
+
+NOTE: If you are considering to become a PTT code contributor please choose to fork the
+repository rather than cloning it.
 
 
-4. Clone the repository so you have the PTT. To do this click at the top right 
-of this page, in the dropdown button that says clone or download, then copy the ulr that
-appears there. Now, within the conda testing environment, go to or create the directory 
-where you want the PTT to "live" in. However, make sure that the configuration files 
-directory is at least at the top level of the directory tree where the PTT will live, e.g. 
-the ```b713cfg_files``` directory and the ```nirspec_testing_tool``` directory can be at 
-the same level, but the ```b713cfg_files``` directory cannot be inside the 
-```nirspec_testing_tool``` directory because otherwise the .cfg files
-will be picked up by Git and it will try to put them in your space.
-Remember you are in the GitHub repository page so go all the way to the top of the page,
-click on the green button and copy the ulr that appears there.
+IF YOU WANT THE SOURCE CODE
+
+Clone or fork the PTT repository. If you are planing to contribute with code to PTT, fork
+the repo, otherwise choose to clone it. To do this click at the top right of this page,
+in the dropdown button that says clone or download, then copy the ulr that appears there.
+Now, within the conda testing environment, go to or create the directory where you want
+the PTT to "live" in. However, make sure that the configuration files directory is, at
+least, at the top level of the directory tree where the PTT will live, e.g. the
+```b713cfg_files``` directory and the ```nirspec_pipe_testing_tool``` directory can be at
+the same level, but the ```b713cfg_files``` directory cannot be inside the
+```nirspec_pipe_testing_tool``` directory because the .cfg files will be picked up by Git,
+and will be recognized as changes to the repo. Remember you are in the GitHub repository
+page so go all the way to the top of the page, click on the green button and copy the ulr
+that appears there.
 ```bash
 git clone the_ulr_you_copied
 ```
 After this is done, you should see a full copy of the PTT in your directory.
 
 NOTE: 
-- If you have already cloned the repository, in the terminal go to where you placed 
+- If you have already cloned or forked the repository, in the terminal go to where you placed
 the ```nirspec_pipe_testing_tool``` directory. Then, use the following command to update 
 the code:
 ```git pull```
@@ -171,7 +209,7 @@ the code:
 you continue until you move the script(s) to another directory. 
 
 
-5. Prepare the data to run through the pipeline. To do this:
+4. Prepare the data to run through the pipeline. To do this:
 
 a. Copy the test data you will use from the NIRSpec vault directory. Go to the directory 
 where you want to have the testing data, and from there type:
@@ -190,11 +228,10 @@ There you will find a FS raw file, a ```PTT_config.cfg``` file, and a directory 
 ```calwebb_detector1```, the output text files from running the corresponding script 
 (which include the ```cal_detector1_outputs_and_times_DETECTOR.txt``` and the added 
 keywords to the ```_uncal``` file), the all the intermediary fits products obtained from 
-running ```calwebb_spec2```, all the plots created with the PTT, the ```report.html```, 
-and the PTT text file outputs (```screen_output_DETECTOR.txt``` and 
-```True_steps_suffix_map_DETECTOR.txt```). You can use the ```PTT_config.cfg```
-(changing the paths appropriately) provided to make sure you obtain the same results 
-from the PTT run.
+running ```calwebb_spec2```, and all the plots created with the PTT. You can use the
+```PTT_config.cfg``` (changing the paths appropriately) in there to make sure you
+obtain the same results from the PTT run. Alternatively, you can create your
+```PTT_config.cfg``` by running the described in step 5 of this guide.
 
 
 b. In the directory where you copied the test data, you will need to run a script PER
@@ -204,38 +241,69 @@ that converts raw data into uncal type files. You can choose to either keep this
 subdirectory, or tell the script to remove it after the operation is done. In the 
 terminal type:
 ```bash
-python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/prepare_data2run.py fits_file.fits MODE -u
+nptt_prepare_data2run fits_file.fits MODE -u
 ```
-where the MODE is expected to be one of: FS, MOS, IFU, BOTS, dark, or MOS_sim (use this 
-last one only for MOS simulations, simulations for other modes should use the 
-corresponding mode). This command will update the uncal keyword header without creating 
-a new file, and will also keep the subdirectory. To remove it, simply add ```-rm``` at 
-the end. To save the keyword changes in a new fits file (instead of updating), remove the
-```-u```. The new uncal fits file is now ready for pipeline ingest.
+where the MODE is expected to be one of: FS, MOS, IFU, BOTS, dark, image, confirm,
+taconfirm, wata, msata, focus, mimf, or MOS_sim (use this last one only for MOS
+simulations, simulations for other modes should use the corresponding mode). This command
+will update the uncal keyword header without creating a new file, and will also keep the
+subdirectory. To remove it, simply add ```-rm``` at the end. To save the keyword changes
+in a new fits file (instead of updating), remove the ```-u```. The new uncal fits file
+is now ready for pipeline ingest.
 
-For now, this script sets the FILTER keyword to default to the corresponding science 
-configuration. This is because the pipeline does not know yet what steps to do with
-FILTER=OPAQUE.
-
-c. Optional. If you want to see the header of any file, you can use the another script
-in the ```utils``` directory of the PTT. If you just want to see on-screen the 
-header, go where your fits file "lives" and type:
+This module can also be called from a script in the following way:
 ```bash
-python /path_to_the_testing_tool/nirspec_pipe_testing_tool/utils/read_hdr.py fits_file.fits
+# import the tool
+import nirspec_pipe_testing_tool as nptt
+
+# set the variables
+fits_file = 'blah.fits'
+mode = 'FS'
+rm_prep_data = True
+only_update = True
+
+# run the module
+nptt.utils.prepare_data2run.prep_data2run(fits_file, mode, rm_prep_data, only_update)
+```
+
+c. Optional. Check the file header. If you want to see the header of any file, you can
+use the another script in the ```utils``` directory of the PTT. If you just want to see
+on-screen the header, go where your fits file "lives" and type:
+```bash
+nptt_read_hdr fits_file.fits -s
 ```
 This command will show the main header. To save the header to a text file add a ```-s``` 
 at the end. If you want to see/save a different extension add at the end ```-e=1``` for 
 extension 1, and so on.
 
-d. Now, the data is ready to be ran through cal_detector1. Please go ahead with step 6
-of this guide to do that.
+This module can also be called from a script in the following way:
+```bash
+# set the variables
+fits_file = 'blah.fits'
+save_txt = True
+ext_number = 1
+
+# run the module
+nptt.utils.read_hdr.read_hdr(fits_file_name, save_txt, ext_number)
+```
 
 
-6. Set the PTT configuration file. In a text file editor, you are going to modify the 
-configuration file named ```PTT_config.cfg```, which lives at 
-```/nirspec_pipetesting_tool/calwebb_spec2_pytests/```. 
-This is the file that controls all the input that the tool needs. Please open it and 
-make sure that:
+d. Now, the data is ready to be ran through cal_detector1. Please go ahead with the next
+step of this guide to do that.
+
+
+5. Set the PTT configuration file. This is the file that controls all the input that
+the tool needs. To create ```PTT_config.cfg```, run the following command:
+```bash
+nptt_mk_pttconfig_file output_directory input_file mode_used raw_data_root_file
+```
+where ```output_directory``` is the path where you want to save all the PTT outputs and
+pipeline products, ```input_file``` is the basename of the count rate file (e.g. the
+final product of ```calwebb_detector1```), ```mode_used``` is the instrument mode used
+(e.g. FS), and ```raw_data_root_file``` is the basename of the raw data file used to
+create the uncal input file for ```calwebb_detector1```.
+
+As an additional check, you can open the file and see if:
 - All the paths point to the right places. The files can be located anywhere, but both,
 the pipeline and the tool, will run faster if the files are local on your computer.
 - The input file for the PTT is the final output file from ```calwebb_detector1```.
@@ -255,47 +323,64 @@ then set ```raw_data_root_file = F170LP-G235M_MOS_observation-6-c0e0_001.fits```
 correct, e.g. threshold values, figure switches, and additional fits files.
 
 
-7. Run the ```calwebb_detector1``` pipeline. The final output of this is the level 2 data
-required to run the PTT. In a terminal, go into the directory where the testing tool lives 
-(i.e. at the level of the ```calwebb_spec2_pytests``` directory), and make sure that the 
-testing conda environment is on. Please check the name used in the ```DETECTOR``` 
-keyword in the fits file (you can use the ```read_hdr.py``` script in the ```utils``` 
-directory to dump the header into the screen and/or a text file). Now type the following 
-command making sure that the appropriate detector name is used in the name of the output 
-text file:
+6. Run the ```calwebb_detector1``` pipeline. The final output of this is the level 2 data
+required to run the PTT. In a terminal, please make sure that the testing conda environment
+is active, and that you are in the directory where your ```PTT_config.cfg``` lives. Type
+the following command:
 ```bash
-python ../utils/run_cal_detector1.py /path_where_the_uncal_file_lives/uncal_file.fits
+nptt_run_cal_detector1 /path_where_the_uncal_file_lives/uncal_file.fits
 ```
-This command runs the ```run_cal_detector1.py``` script, which executes the calwebb 
-detector 1 pipeline in a single run, using the configuration file that you have for it in 
-the ```utils``` directory. This script will will create the log file 
-```caldetector1_pipeline_DETECTOR.log```which will contain a log of the pipeline run. 
-This file will be used to determine the time that each step took to run.
+This command runs the the calwebb detector 1 pipeline in a single run, and will create the
+log file ```caldetector1_pipeline_DETECTOR.log```. This file will be used to determine
+the times that each step took to run.
 
-To run calwebb detector 1 step-by-step, simply add ```-sbs``` at the end of  
+To run calwebb detector 1 step-by-step, simply add ```-sbs``` flag at the end of
 the previous command. Note that running the pipeline in full for calwebb detector 1 takes 
 about half the time as it does running it step-by-step, due to IO processing time.
 
-If everything went well, you will see a text file called 
+This module can also be called from a script in the following way:
+```bash
+# set the variables
+fits_input_uncal_file = 'blah.fits'
+step_by_step = False
+
+# run the module
+nptt.utils.run_cal_detector1.run_caldet1(fits_input_uncal_file, step_by_step)
+```
+
+If everything went well, you will see a text file called
 ```cal_detector1_outputs_and_times_DETECTOR.txt```, which contains the steps ran, the 
 name of the output fits file, and the time each step took to run. This text file, along 
 with the intermediary products will be located in the path you set for the 
-```working_directory``` variable in the configuration file of the PTT.
+```output_directory``` variable in the configuration file of the PTT.
 
 NOTE ON ```calwebb_detector1``` ERRORS:
 - If you were not able to get the file to run though cal detector1 due to an error saying 
 that the pipeline was not able to find a best reference for dark or superbias, it is 
-possible this is due to the filter keyword  in the main header set to OPAQUE. 
-- In this case, you can use an auxiliary script named ```change_filter_opaque2science```, 
-which lives at ```/nirspec_pipetesting_tool/calwebb_spec2_pytests/auxiliary_code```. 
-- You can run the script from a terminal in any directory by typing:
+possible this is due to the filter keyword in the main header set to OPAQUE.
+- In this case, you can run the module ```change_filter_opaque2science``` by typing:
 ```bash
-python ../calwebb_spec2_pytests/auxiliary_code/change_filter_opaque2science.py file.fits 
+nptt_change_filter_opaque2science file.fits
 ```
 
-If all went well and you have a ```gain_scale_DETECTOR.fits``` file. The MESA testing 
-tool for calwebb detector 1 is currently being modified so we are SKIPPING the tests
-for this first pipeline.
+This module can also be called from a script in the following way:
+```bash
+# set the variables
+fits_file = 'blah.fits'
+force_filter_change = True
+
+# run the module
+is_filter_opaque, new_input_file = nptt.calwebb_spec2_pytests.auxiliary_code.change_filter_opaque2science.change_filter_opaque(fits_file, force_filter_change)
+
+# change_filter2opaque -> boolean, True if the filter was changed
+# new_input_file -> string, file with updated filter
+```
+
+If all went well and you have a ```final_output_caldet1_DETECTOR.fits``` file, where
+```DETECTOR``` can be either ```NRS1``` or ```NRS2```. The calwebb detector 1 pipeline
+is currently being tested through unit tests and regression tests that run automatically
+when the developers test the entire pipeline. Hence, PTT does not contain any tests for
+the calwebb detector 1 pipeline.
 
 
 *****
@@ -303,15 +388,41 @@ for this first pipeline.
 NOTE FOR SIMULATIONS:
 
 If you are working with simulations you may need to convert the count rate map to an STScI
-pipeline ingestible file (with all the keyword header modifications). In order to do this, 
-use the script called ```crm2STpipeline.py``` that lives in the ```ulits``` directory. 
+pipeline-ingestible file (with all the keyword header modifications). In order to do this
+run the module ```crm2STpipeline```:
 To run this type:
 ```bash
-python ../calwebb_spec2_pytests/utils/crm2STpipeline.py /path_to_file/file.fits mode 
+nptt_crm2STpipeline file.fits MODE -r -p -t -n
 ```
-where mode is FS, MOS, IFU, BOTS, or dark. The input file for this scritp generally has
-a .crm or .cts suffix. The output files of this script can be directly ingested into 
-the cal_spec2 pipeline, no need to run cal_dedector1.
+where ```MODE``` is FS, MOS, IFU, BOTS, or dark. The input file for this module generally
+has a ```.crm``` or ```.cts``` suffix. The output files of this script can be directly
+ingested into the cal_spec2 pipeline, no need to run cal_dedector1. The flag ```-r```
+is used only for IFU data, when needing to add the reference pixels. The other three
+flags are to modify the keyword values to match IPS information: the flag ```-p``` is
+to modify the proposal title header keyword, the ```-t``` flag is to modify the target
+name header keyword, and the ```-n``` flag is to create a new file with updated header.
+
+This module can also be called from a script in the following way:
+```bash
+# set the variables
+input_fits_file = 'blah.fits'
+mode = 'FS'
+add_ref_pix = True
+only_update = True
+proposal_title = 'my_title'
+target_name = 'my_target'
+new_file = 'a_new_name'  # this is only used if only_update=False
+
+# create the pipeline-ready count rate file
+stsci_pipe_ready_file = nptt.utils.crm2STpipeline.crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update)
+
+# create the dictionary of special arguments
+additional_args_dict = {'TITLE': proposal_title, 'TARGNAME': target_name, 'new_file': new_file}
+
+# modify the keyword values to match IPS information
+nptt.utils.level2b_hdr_keywd_dict_map2sim.match_IPS_keywords(stsci_pipe_ready_file, input_fits_file,
+                                                             additional_args_dict=additional_args_dict)
+```
 
 *****
 *****
@@ -321,69 +432,109 @@ NOTE FOR MOS DATA:
 If you are working with MOS data, you may need to create the shutter configuration file to be able
 to process the data through  the ```cal_spec2``` stage. To create the shutter configuration file
 you need the ```.msa.fits``` files from APT, or for simulations, you need the nod ```.csv```
-files. Once you have those files you can use the script called ```create_metafile.py```  that 
-lives in the ```calwebb_spec2_pytests/auxuliary_code``` directory. You can use this script
-for MOS data, simulations, or to fix an old sutter configuration file (to update the format for 
-build 7.3). 
+files. Once you have those files you can use the module ```create_metafile``` for MOS data,
+simulations, or to fix an old shutter configuration file (to update from format of build 7.3).
 
-To create a new shutter configuration file:
+Use this command to create a new shutter configuration file:
 ```bash
-python /path_to_PTT/calwebb_spec2_pytests/auxuliary_code/create_metafile.py /path_to_file/blah.msa.fits  
+nptt_create_metafile /path_to_file/blah.msa.fits
 ```
 
-To fix an old  shutter configuration file:
+To fix an old shutter configuration file use:
 ```bash
-python /path_to_PTT/calwebb_spec2_pytests/auxuliary_code/create_metafile.py /path_to_file/blah_metafile_msa.fits -f
+nptt_create_metafile /path_to_file/blah_metafile_msa.fits -f
 ```
 
 To create new shutter configuration file for simulations and/or dithers:
 ```bash
-python /path_to_PTT/calwebb_spec2_pytests/auxuliary_code/create_metafile.py /path_to_file/blah.msa.fits -d=obs1.csv,obs2.csv,obs3.csv
+nptt_create_metafile /path_to_file/blah.msa.fits -d=obs1.csv,obs2.csv,obs3.csv
 ```
 Note that for the simulations, the nod files are in a list separated by commas without spaces.
 
-In all cases the script ```create_metafile.py``` will output a file called 
+In all cases the module ```create_metafile``` will output a file called
 ```blah_metafile_msa.fits```.
+
+This module can also be called from a script in the following way:
+```bash
+# to create a shutter configuration file for the pipeline
+config_binary_file = 'CB10-GD-B.msa.fits'
+fix_old_config_file = False
+targ_file_list = 'obs1.csv, obs1.csv'   # list of dither files
+
+# to fix an old shutter configuration file for the pipeline
+config_binary_file = 'V9621500100101_metafile_msa.fits'
+fix_old_config_file = True
+targ_file_list = False
+
+# run the module
+nptt.calwebb_spec2_pytests.auxiliary_code.create_metafile.run_create_metafile(config_binary_file,
+                                                                              fix_old_config_file,
+                                                                              targ_file_list)
+```
+
 
 *****
 
-7. a. Fix the pointing keywords in the count rate file. This will only be possible if you have the 
-APT file that corresponds to your testing data. From the APT file, you will need the target's 
-RA, DEC, V2, and V3, as well as the aperture position angle. Sample values for these 
-quantities are: ra_targ = 53.16199112, dec_targ = -27.79127312,  v2_targ = 393.86285, 
-v3_targ = -424.00329, and aper_angle = 45.0. To fix the keywords use the following command 
-from the terminal, and in the  ```calwebb_spec2_pytests``` directory:
+7. Fix the pointing keywords in the count rate file. This will only be possible if you have the
+APT file that corresponds to your testing data. Skip this step if you do not have the
+corresponding APT file for your data set. PTT used default dummy values so the pipeline will
+not break, but the spec3 pipeline may get wrong results unless these dummy values are replaced.
+
+If you do have the corresponding APT files for your data set, you will manually need to get
+the following information from the APT file: the target's RA, DEC, V2, and V3, as well as
+the aperture position angle. Sample values for these quantities are: ra_targ = 53.16199112,
+dec_targ = -27.79127312,  v2_targ = 393.86285, v3_targ = -424.00329, and aper_angle = 45.0.
+To fix the keywords use the following command from the terminal:
 ```bash
-python ../utils/fix_pointing.py blah.fits 53.16199112, -27.79127312, 393.86285, -424.00329, 45.0
+nptt_fix_pointing blah.fits 53.16199112, -27.79127312, 393.86285, -424.00329, 45.0
 ```
 
-If the data is IFU add the flag -ifu at the end of the command. The output will be the updated file.
+If the data is IFU add the flag -ifu at the end of the command. The output will be the
+updated file.
 
 To create a new updated file add flag -nf to the above command. 
 
-
-8. Ready to run PTT. In the directory where PTT lives and into the 
-```calwebb_spec2_pytests``` directory, copy final output file from calwebb detector1 into 
-the working directory you indicated in the ```PTT_config.cfg``` file, and make sure 
-that the input file for the PTT matches the file you just copied into the working 
-directory. Now, to ensure that everything is in order, and to see what pytests will be 
-executed and in which order type:
+This module can also be called from a script in the following way:
 ```bash
+# set the variables
+input_fits_file = 'blah.fits'
+ra_targ = 53.16199112
+dec_targ = -27.79127312
+v2_targ = 393.86285
+v3_targ = -424.00329
+aper_angle = 45.0
+ifu_used = True
+
+# run the module
+nptt.utils.fix_pointing.fix_header_pointing(input_file, ra_targ, dec_targ, v2_targ, v3_targ, apa, ifu=ifu_used)
+```
+
+8. Optional. Test to run PTT. To ensure that everything is in order, and to see what pytests
+will be executed and in which order, in the terminal type go to the top level directory where
+PTT lives, then type:
+```bash
+cd nirspec_pipe_testing_tool/calwebb_spec2_pytests
 pytest --collect-only
 ```
 
 
-9. Do the first PTT run. As an output of the testing tool you will see an html 
-file, ```report.html```, and an intermediary product text file name map will appear in the 
-```calwebb_spec2_pytests``` directory, and at the end it will be moved to the path you 
-indicated at the ```PTT_config.cfg``` file with the variable ```working_directory```. The 
-output fits files of intermediary products will also be saved in the working directory. 
-Please check the name used in the ```DETECTOR``` keyword in the fits file (you can use 
-the ```read_hdr.py``` script in the ```utils``` directory to dump the header into the 
-screen and/or a text file). In the terminal type:
+9. Do the first PTT run. Go back to the output directory. As an output of the testing tool
+you will see an html file, called ```report.html```, and an intermediary product text file
+name map will appear. The output fits files of intermediary products will also be saved in
+the output directory. In the terminal type:
 ```bash
-python run_PTT.py name_of_the_html_report
+nptt_run_PTT name_of_the_html_report PTT_config.cfg
 ```
+
+This module can also be called from a script in the following way:
+```bash
+# set the variables
+report_name = 'my_report'
+
+# run the module
+nptt.utils.run_PTT.run_PTT(report_name, PTT_config.cfg)
+```
+
 
 TO RUN A SINGLE PIPELINE STEP: 
 
@@ -414,92 +565,18 @@ located in the section ```run_pipe_steps``` of the file.
 c) Set to True all pytest you want to run in the ```PTT_config.cfg``` file. These are 
 located in the section ```run_pytest``` of the file.
 
-NOTE: 
-The pytest set can also be run directly with the following command:
-```bash
-pytest -s --config_file=PTT_config.cfg --html=report.html --self-contained-html
-```
-This command runs the pytest scripts; the ```-s``` will capture all 
-the print statements in the code on screen. For now, the report will always be saved in 
-the ```calweb_spec2_pytests``` directory, and you will have to manually move it to where
-you want it to live, unless you give the full path of the destination in the ```--html=``` 
-flag. When PTT is done you will see two log files in the ```working_directory```, one is
-the calwebb spec2 pipeline log (named ```calspec2_pipeline_DETECTOR.log```), and it will 
-be used to determine the time that each step took to run. The second log file
-is the PTT log file (named ```PTT_calspec2_DETECTOR.log```). This log file contains
-all the information regarding the pytest ran, files used, and results of the tests.
 
-
-10. Report your findings. If all went well, you should have the html report in the 
-```calwebb_spec2_pytest``` directory. Please move it manually to the working directory, as
-this cannot be done via pytest code. The file name map of intermediary products, 
-the pipeline and PTT log files, and all the intermediary products should already be in 
-the working directory. 
-
-Each section of the html report specifies what tests passed or failed, and, if there were 
-any errors, the report will tell you (with the name of the script where the error 
-occurred) if it is a pipeline error or a PTT error. Keep updating your testing progress 
-in the Confluence page where you obtained the name of your testing data sets, in the 
-column named Test reports (if there is none, please go ahead and add it). In this column 
-place a copy of your html report and the text file of the screen output. 
-
-Please follow these actions for reporting your progress, depending on the outcome:
-* The html file is portable, i.e. it will not get corrupted if you move it to another
-directory. 
-- Place the html file in the Confluence page. You can also create a PDF export from the 
-report and use that file for the Confluence page and for any sharing purposes.
-- If there are no testing tool errors and some of the pytests failed, you can check  
-off the steps and please put that report in Table 2 of the Confluence page.
-- If there are testing tool errors please place your report in the Confluence page, 
-add a small comment in the "Testing Tool" column of Table 2 in the Confluence page, and 
-send an email to Maria Pena-Guerrero (pena@stsci.edu), so that the 
-PTT error can be addressed as soon as possible.
-- If there are errors with the pipeline, please do the following:
-i) Look up if there are any JIRA issues already filed related to the error.
-ii) If there are JIRA issues open you can add a comment that you also encountered the
-problem for your data.
-iii) If there are closed JIRA issues you can re-open them and report in the comments 
-section.
-iv) If there is no JIRA issue for the problem please go ahead and create one. You can find
-the NIRSpec guidelines for doing so at:
-https://confluence.stsci.edu/display/JWST/NIRSpec+Guidelines+for+Pipeline+Issue+Reporting
-and copy the link (or JIRA issue number) next to your report.
-- Keep updating the html report as you continue with the testing, and including the final
-report.
-
-
-11. Put final results in the NIRSpec vault. There are two stages of putting results in the
-vault: (i) After running ```calwebb_detector1``` and (ii) after running ```calwebb_spec2```
-and at the end of the testing campaign. For either stage please do the following within 
-your working directory:
-
-a. Create a new directory called ```yourname_MODE_Name_of_the_raw_data_file_caldetector1```
-for stage (i), and ```yourname_MODE_Name_of_the_raw_data_file_calwebbspec2``` for stage 
-(ii), e.g. ```maria_IFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_calwebbspec2```.
-(If you already copied a previous version of your results and you want to keep it then add
-a ```_v2``` -or the version number that corresponds- after the word results, e.g. 
-```maria_IFU_NRSSMOS-MOD-G1M-17-5344175105_1_491_SE_2015-12-10T18h00m06_calwebbspec2_v2```) 
-
-b. Inside that new direcoty place all the intermediary fits products as well as the html
-report, and other report text files.
-
-c. Also inside that directory, create a text file named ```path2results.txt```. 
-In this text file you will only type the full path where you obtained the testing data, 
-e.g. 
-```
-/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/IFU_CV3
-```
-
-d. Place the results directory you created in the staging directory of the 
-NIRSpec vault, and send Gray an email (gkanarek@stsci.edu). The path of the staging 
-directory is:
-```/grp/jwst/wit4/nirspec_vault/staging```
-
-e. Finally, change the permissions recursively on all files in your newly created 
-directory, so that the NIRSpec curators team can move the data. To do this type the 
-following command in a terminal:
-```chmod -R 777 /grp/jwst/wit4/nirspec_vault/staging/your_newly_created_directory```
-	
+10. Report your findings. Contact the testing lead to determine if you should create a
+report Jira ticket per step. If this is the case, you will need to link the ticket to any
+corresponding bug or problem found (each bug or issue should have its own Jira bug
+issue). In the ticket you can link to either the validation notebook or the corresponding
+web page of this repo, and remember to add the following information to the Jira report
+ticket:
+- Version of the pipeline tested
+- Description of the test performed
+- Link to code used
+- What data set was used
+- Result
 
 
 ## TO KEEP IN MIND
@@ -517,8 +594,8 @@ report is much clearer to understand what happened.
 - As part of the testing campaign, it is important that you run the pipeline from the 
 command line as well, and that you make sure that the outcome intermediary files are 
 consistent with the ones ran with scripts, i.e. the PTT. This sanity check is minor 
-but important to verify. 
-In the ```utils/data``` directory there are two text files named 
+but important to verify. If you have the PTT source code, you will find two very
+ useful text files in the ```utils/data``` directory. The two text files are named
 ```terminal_commands_calwebb_detector1_steps.txt``` and
 ```terminal_commands_calwebb_spec2_steps.txt```. These files contain all the commands 
 you can use from the terminal to run the calwebb_detector1 and calwebb spec2 steps,
@@ -526,76 +603,42 @@ respectively.
 - Finally, remember that:
 
 a. Whenever you need to read either the main or science headers of a file,
-you can always use the ```read_hdr.py``` script located in the ```utils``` directory of
-the testing tool.
+you can always use the ```nptt_read_hdr``` module. See step 4.c for instructions on how
+to use this module.
 
 b. If you need to change/add a keyword value to a specific extension of a file, you can
-use the ```change_keywd.py``` script, also located at the ```utils``` directory.
+use the ```nptt_change_keywd``` module from the terminal as:
+```bash
+nptt_change_keywd blah.fits TARGOOPP F 0
+```
+This module can also be called from a script in the following way:
+```bash
+# set the variables
+fits_file = 'blah.fits'
+keyword = 'TARGOOPP'
+value = 'F'
+ext_number = 0
 
-
-
-## POSSIBLE OUTCOMES OF THE PYTESTS
-
-- Passed = the assertion was true, so the test condition was met.
-- Failed = the assertion was false, the test condition was NOT met (there will be an 
-AssertionError on-screen and in the html file, with a clear PTT customized message of 
-what happened).
-- Skipped = the test was skipped (there will be a message on the html report and on-screen
-explaining why the test was skipped).
-- Error = this is a coding error, or a bug in either the pipeline or the PTT. Please 
-follow the appropriate steps described in the "For Testers" section of our testing 
-campaign Confluence page:
-https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
+# run the module
+nptt.utils.change_keywd.chkeywd(fits_file, keyword, value, ext_number)
+```
 
 
 
 ## ADDING TESTING ROUTINES
 
-You can add additional testing routines. We prefer if these are written in python 3.5, 
-however, due to time constraints, we devised a method for including scripts in other 
-programing languages. For this testing campaign, the guidelines for auxiliary code are 
-the following: 
-1. Programing language = preferably Python 3.5, however, other languages (e.g. IDL, C) 
-are OK.
+Talk to the testing lead to determine if the test you have in mind should be a script or
+a Jupyter Notebook (link to validation Notebooks at the top of this page).
 
-2. Please comment as much as you can so that it is easy for other testers to follow 
-your code.
-
-3. At the end of your script you must create a pass or fail test, e.g. after you calculate 
-a root-mean-square check if that value is within some range. If instead you have a 
-threshold value, please make the threshold an input variable with a default value.
-
-4. Your script must produce a text file named ```scriptname_result.txt``` at
-the end, which will only contain one word: True or False.
-
-5. Create a directory named ```scriptname``` with the following contents:
-a. A text file named ```scriptname_init.txt```, and in there type in line 1 
-the pipeline step after which your code should be run, in line 2 the language you used, 
-and in line 3 the exact command you would use to run the script. If this is an IDL script, 
-line 2 should be the exact call from within the IDL session.
-
-b. The script you wrote.
-
-c. One level up from where you created the script directory, create a new directory named 
-```YourName_PTT_auxiliary_code```. In this directory, please place the directory 
-```scriptname```, and a create a text file named 
-```YourName_PTT_auxiliary_code.txt```. 
-This text file will only contain the following path:
-```/grp/jwst/wit4/nirspec_vault/pipe_testing_tool/auxiliary_code```
-
-6. Now, copy the ```YourName_PTT_auxiliary_code``` directory in the NIRSpec vault, and 
-please send an email to Gray Kanarek (gkanarek@stsci.edu). The vault's path is:
-```/grp/jwst/wit4/nirspec_vault/staging```.
-
-7. Your code will be implemented for the next testing campaign and if there is a threshold 
-associated with it, it will appear as a variable in the PTT configuration file. For the 
-current testing campaign, please place it in the "PTT Comments and/or errors" column of  
-Table 2 of our progress keeping Confluence page:
-https://confluence.stsci.edu/display/JWST/NIRSpec+Pipeline+Testing+Build+7.1+part+1
-You will be asked to write a description of your code for the final testing report 
-of the current testing campaign.
+To add additional testing routines you will need to have forked the PTT repository. The
+tests have to be written in python 3.6 or greater.
 
 
 
 ## Enjoy your pipeline testing!
 
+
+
+## ACKNOWLEDGEMENT
+The conversion of this tool into a package could not have been possible without the help
+of J. Hunkeler.
