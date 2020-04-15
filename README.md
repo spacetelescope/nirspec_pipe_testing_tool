@@ -637,3 +637,8 @@ tests have to be written in python 3.6 or greater.
 
 ## Enjoy your pipeline testing!
 
+
+
+## ACKNOWLEDGEMENT
+The conversion of this tool into a package could not have been possible without the help
+of J. Hunkeler.
