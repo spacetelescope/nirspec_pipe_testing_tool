@@ -18,23 +18,24 @@ Example usage:
 
     Terminal
         To create a NEW fits file with the updated header type:
-        > python /path_to_this_script/crm2STpipeline.py blah.fits MODE
+        $ nptt_crm2STpipeline blah.fits MODE
 
         To add the reference pixels add at the end of the command -rfpx, e.g.
-        > python /path_to_this_script/crm2STpipeline.py blah.fits MODE -rfpx
+        $ nptt_path_to_this_script/crm2STpipeline blah.fits MODE -rfpx
 
     As a module
-        import crm2STpipeline
-        import level2b_hdr_keywd_dict_map2sim as map2sim
+        # imports
+        import nirspec_pipe_testing_tool as nptt
         
         # create the pipeline-ready count rate file
-        stsci_pipe_ready_file = crm2STpipeline.crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update)
+        stsci_pipe_ready_file = nptt.utils.crm2STpipeline.crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update)
         
         # create dictionary of special arguments
-        additional_args_dict = {'TITLE': proposal_title, 'TARGNAME': target_name, new_file: new_file}
+        additional_args_dict = {'TITLE': proposal_title, 'TARGNAME': target_name, 'new_file': new_file}
         
         # modify the keyword values to match IPS information
-        map2sim.match_IPS_keywords(stsci_pipe_ready_file, input_fits_file, additional_args_dict=additional_args_dict)
+        nptt.utils.level2b_hdr_keywd_dict_map2sim.match_IPS_keywords(stsci_pipe_ready_file, input_fits_file, 
+                                                                     additional_args_dict=additional_args_dict)
 
     * NOTE: In all cases the MODE can be any of the following:
             FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf
@@ -204,26 +205,26 @@ def main():
                         default=None,
                         help='Observation mode options: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, '
                              'msata, focus, mimf')
-    parser.add_argument("-rfpx",
+    parser.add_argument("-r",
                         dest="add_ref_pix",
                         action='store_true',
                         default=False,
                         help='Add the reference pixels.')
-    parser.add_argument("-pt",
+    parser.add_argument("-p",
                         dest="proposal_title",
                         action='store',
                         default=None,
-                        help='Add the proposal title to the header keyword, i.e. -pt=some_title')
-    parser.add_argument("-tn",
+                        help='Add the proposal title to the header keyword, i.e. -p=some_title')
+    parser.add_argument("-t",
                         dest="target_name",
                         action='store',
                         default=None,
-                        help='Add the target name to the header keyword, i.e. -tn=some_target')
-    parser.add_argument("-nf",
+                        help='Add the target name to the header keyword, i.e. -t=some_target')
+    parser.add_argument("-n",
                         dest="new_file",
                         action='store_true',
                         default=True,
-                        help='Use -nf if wanting to create a new file with updated header. Default is to update '
+                        help='Use -n if wanting to create a new file with updated header. Default is to update '
                              'header without creating a new file')
     args = parser.parse_args()
 
@@ -241,7 +242,7 @@ def main():
     # create dictionary of command-line arguments
     additional_args_dict = {'TITLE': proposal_title,
                             'TARGNAME': target_name,
-                            new_file: new_file
+                            'new_file': new_file
                             }
     # modify the keyword values to match IPS information
     print('Matching IPS keyword values to corresponding STScI pipeline keywords...')

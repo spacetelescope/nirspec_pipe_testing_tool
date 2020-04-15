@@ -11,16 +11,16 @@ added/modified in the main header.
 
 Usage:
     In a terminal, the general format for the script is as follows:
-    > python change_keywd.py file.fits keyword_to_be_changed value
+    $ nptt_change_keywd.py file.fits keyword_to_be_changed value
 
     Specific examples:
-    > python change_keywd.py fits_file.fits subarray full
+    $ nptt_change_keywd.py fits_file.fits subarray full
 
     Remember that if you are changing the value from True to False, the pipeline only takes these as either T or F:
-    > python change_keywd.py fits_file.fits TARGOOPP F
+    $ nptt_change_keywd.py fits_file.fits TARGOOPP F
 
     To modify a keyword in extension 1 add -e=1:
-    > python change_keywd.py fits_file.fits V3_REF -202.2 -e=1
+    $ nptt_change_keywd.py fits_file.fits V3_REF -202.2 -e=1
 
 """
 
@@ -108,7 +108,7 @@ def main():
     # now change the the value
     fits.setval(fits_file, keyword, extension_number, value=new_value)
 
-    print ('\n * Script  change_keywd.py  finished * \n')
+    print('\n * Script  change_keywd.py  finished * \n')
 
 
 if __name__ == '__main__':

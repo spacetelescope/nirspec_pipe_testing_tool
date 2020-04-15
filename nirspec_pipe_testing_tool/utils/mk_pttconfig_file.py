@@ -6,7 +6,7 @@ Example usage:
 
     Terminal
         To create a the PTT configuration file go to the output directory, then type:
-        > python /path_to_this_script/mk_pttconfig_file.py output_directory, input_file, mode_used, raw_data_root_file
+        $ nptt_mk_pttconfig_file output_directory input_file mode_used raw_data_root_file
 
         This will create a PTT config file in the output directory with many of the default values. Please open the
         config file and make sure that all variables are properly set. The variables are:
@@ -18,8 +18,8 @@ Example usage:
         There are several optional parameters, please see the help.
 
     As a module
-        # import the script
-        import mk_pttconfig_file
+        # import the tool
+        import nirspec_pipe_testing_tool as nptt
 
         # set the required variables
         output_directory = string,
@@ -28,7 +28,7 @@ Example usage:
         raw_data_root_file = string, basename of the data where the count rate file was generated from
 
         # create the PTT config file with the minimum information and all default values
-        mk_pttconfig_file.mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file)
+        nptt.utils.mk_pttconfig_file.mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file)
 
         # OR create the PTT config file with specified variables
 
@@ -72,14 +72,13 @@ def write_ptt_cfg(calwebb_spec2_input_file, esa_intermediary_products, run_calwe
 
     config = configparser.ConfigParser()
     config.add_section("calwebb_spec2_input_file")
-    config.set("calwebb_spec2_input_file", "pipe_testing_tool_path", calwebb_spec2_input_file[0])
-    config.set("calwebb_spec2_input_file", "output_directory", calwebb_spec2_input_file[1])
-    config.set("calwebb_spec2_input_file", "data_directory", calwebb_spec2_input_file[2])
-    config.set("calwebb_spec2_input_file", "input_file", calwebb_spec2_input_file[3])
-    config.set("calwebb_spec2_input_file", "mode_used", calwebb_spec2_input_file[4])
-    config.set("calwebb_spec2_input_file", "change_filter_opaque", calwebb_spec2_input_file[5])
-    config.set("calwebb_spec2_input_file", "raw_data_root_file", calwebb_spec2_input_file[6])
-    config.set("calwebb_spec2_input_file", "local_pipe_cfg_path", calwebb_spec2_input_file[7])
+    config.set("calwebb_spec2_input_file", "output_directory", calwebb_spec2_input_file[0])
+    config.set("calwebb_spec2_input_file", "data_directory", calwebb_spec2_input_file[1])
+    config.set("calwebb_spec2_input_file", "input_file", calwebb_spec2_input_file[2])
+    config.set("calwebb_spec2_input_file", "mode_used", calwebb_spec2_input_file[3])
+    config.set("calwebb_spec2_input_file", "change_filter_opaque", calwebb_spec2_input_file[4])
+    config.set("calwebb_spec2_input_file", "raw_data_root_file", calwebb_spec2_input_file[5])
+    config.set("calwebb_spec2_input_file", "local_pipe_cfg_path", calwebb_spec2_input_file[6])
 
     config.add_section("esa_intermediary_products")
     esa_files_path, msa_conf_name, dflat_path, sflat_path, fflat_path = esa_intermediary_products
@@ -154,10 +153,9 @@ def write_ptt_cfg(calwebb_spec2_input_file, esa_intermediary_products, run_calwe
 
 
 def set_ptt_immutable_paths():
-    pipe_testing_tool_path = "/Users/pena/Documents/NIRSpec_Projects/nirspec_pipe_testing_tool"
-    calwebb_spec2_cfg = "/Users/pena/Documents/NIRSpec_projects/nirspec_pipe_testing_tool/calwebb_spec2_pytests/calwebb_spec2.cfg"
+    calwebb_spec2_cfg = os.path.realpath(__file__).replace("mk_pttconfig_file.py", "data/calwebb_spec2.cfg")
     esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/"
-    return pipe_testing_tool_path, calwebb_spec2_cfg, esa_files_path
+    return calwebb_spec2_cfg, esa_files_path
 
 
 def list2_allstrings_list(a_list):
@@ -254,7 +252,7 @@ def pepare_variables(output_directory, input_file, mode_used, raw_data_root_file
                 run_pytests.append(False)
 
     # get the immutable paths
-    pipe_testing_tool_path, calwebb_spec2_cfg, esa_files_path = set_ptt_immutable_paths()
+    calwebb_spec2_cfg, esa_files_path = set_ptt_immutable_paths()
 
     # set the full ESA path to compare the data
     if comparison_file_path is None:
@@ -294,7 +292,7 @@ def pepare_variables(output_directory, input_file, mode_used, raw_data_root_file
     write_barshadow_files = True
 
     # set the config file list sections
-    calwebb_spec2_input_file = [pipe_testing_tool_path, output_directory, data_directory, input_file, mode_used,
+    calwebb_spec2_input_file = [output_directory, data_directory, input_file, mode_used,
                                 change_filter_opaque, raw_data_root_file, local_pipe_cfg_path]
     esa_intermediary_products = [esa_files_full_path, msa_conf_name, dflat_path, sflat_path, fflat_path]
     run_calwebb_spec2_in_full = [run_calwebb_spec2, calwebb_spec2_cfg]

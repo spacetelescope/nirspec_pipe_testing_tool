@@ -12,12 +12,12 @@ Example usage:
     The code works from the terminal.
     To create a NEW fits file with the updated header type:
 
-        > python /path_to_this_script/move_data2ext1.py blah.fits NRS1
+        $ nptt_move_data2ext1.py blah.fits NRS1
 
         NRS1 (491) is the detector for which the data is being extracted, NRS2 (492) can also be used. To add
         the reference pixels add at the end of the command -rfpx, e.g.
 
-        > python /path_to_this_script/move_data2ext1.py blah.fits NRS1 -rfpx
+        $ nptt_move_data2ext1.py blah.fits NRS1 -rfpx
 
 '''
 
@@ -126,7 +126,7 @@ def main():
     # Perform data move to the science extension
     move_data(input_fits_file, detector, add_ref_pix)
 
-    print ('\n * Script  move_data2ext1.py  finished * \n')
+    print('\n * Script  move_data2ext1.py  finished * \n')
 
 
 if __name__ == '__main__':

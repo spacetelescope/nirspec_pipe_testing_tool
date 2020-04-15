@@ -563,21 +563,21 @@ def main():
                         action='store',
                         default=None,
                         help='Path and name of the simulations crm file, i.e. blah.cts.fits')
-    parser.add_argument("-pt",
+    parser.add_argument("-p",
                         dest="proposal_title",
                         action='store',
                         default=None,
-                        help='Add the proposal title to the header keyword, i.e. -pt=some_title')
-    parser.add_argument("-tn",
+                        help='Add the proposal title to the header keyword, i.e. -p=some_title')
+    parser.add_argument("-t",
                         dest="target_name",
                         action='store',
                         default=None,
-                        help='Add the target name to the header keyword, i.e. -tn=some_target')
-    parser.add_argument("-nf",
+                        help='Add the target name to the header keyword, i.e. -t=some_target')
+    parser.add_argument("-n",
                         dest="new_file",
                         action='store_true',
                         default=True,
-                        help='Use -nf if wanting to create a new file with updated header. Default is to '
+                        help='Use -n if wanting to create a new file with updated header. Default is to '
                              'update header without creating a new file')
     args = parser.parse_args()
 
@@ -591,13 +591,13 @@ def main():
     # create dictionary of command-line arguments
     additional_args_dict = {'TITLE': proposal_title,
                             'TARGNAME': target_name,
-                            new_file: new_file
+                            'new_file': new_file
                             }
 
     # modify the keyword values to match IPS information
     match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=additional_args_dict)
 
-    print ('\n * Script  level2b_hdr_keywd_dict_map2sim.py  finished * \n')
+    print('\n * Script  level2b_hdr_keywd_dict_map2sim.py  finished * \n')
 
 
 if __name__ == '__main__':

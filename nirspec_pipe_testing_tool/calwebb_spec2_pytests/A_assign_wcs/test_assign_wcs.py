@@ -198,10 +198,14 @@ def output_hdul(set_inandout_filenames, config):
 
         # run the pipeline
         print('Running pipeline... \n')
+        # copy the configuration file to create the pipeline log
+        stpipelogcfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "stpipe-log.cfg")
+        subprocess.run(["cp", stpipelogcfg, "."])
         if not calwebb_image2_cfg:
-            Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)  # , logcfg="stpipe-log.cfg")
+            Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)#, logcfg=stpipelogcfg)
         else:
             Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
+        subprocess.run(["rm", "stpipe-log.cfg"])
 
         # end the timer to compute calwebb_spec2 running time
         end_time = repr(time.time() - start_time)  # this is in seconds
@@ -228,8 +232,9 @@ def output_hdul(set_inandout_filenames, config):
             calspec2_pilelog = "calspec2_pipeline_" + detector + ".log"
             if imaging_mode:
                 calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
-            pytest_workdir = TESTSDIR
-            logfile = glob(pytest_workdir + "/pipeline.log")[0]
+            path_where_pipeline_was_run = os.getcwd()
+            logfile = glob(path_where_pipeline_was_run + "/pipeline.log")[0]
+            print(logfile)
             os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
         except:
             IndexError
@@ -353,7 +358,6 @@ def output_hdul(set_inandout_filenames, config):
                 logging.info(msg)
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping " + step + " because the input file does not exist.")
-
 
         else:
             print("Skipping running pipeline step ", step)

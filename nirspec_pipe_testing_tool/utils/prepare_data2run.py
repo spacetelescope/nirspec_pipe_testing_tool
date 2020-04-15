@@ -18,7 +18,7 @@ order to run the create_data script, and then erase it (if asked to) once the jo
 Example usage:
     The code works from the terminal within the pipeline conda environment.
     In the directory where you want to store the uncalibrated data, type:
-        > python /path_to_this_script/prepare_data2run.py blah.fits MODE
+        $ nptt_prepare_data2run blah.fits MODE
     where MODE is either FS, IFU, MOS, BOTS
 
     * use -d at the end of the command if NOT wanting to modify the filter value from OPAQUE to science
@@ -62,41 +62,7 @@ def modify_PTT_cfg_file(fits_file, mode):
             cfg.write(line)
 
 
-def main():
-    # Get arguments to run script
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument("fits_file",
-                        action='store',
-                        default=None,
-                        help='Name of fits file, i.e. blah.fits')
-    parser.add_argument("mode",
-                        action='store',
-                        default=None,
-                        help='Mode in which the data was taken, i.e. FS, MOS, IFU, BOTS')
-    parser.add_argument("-rm",
-                        dest="rm_prep_data",
-                        action='store_true',
-                        default=False,
-                        help='If -rm is used, the directory prep_data will be removed once the job is done.')
-    parser.add_argument("-u",
-                        dest="only_update",
-                        action='store_true',
-                        default=False,
-                        help='Use -u if NOT wanting to create a new file with updated header.')
-    parser.add_argument("-d",
-                        dest="dont_change_opaque2sci",
-                        action='store_true',
-                        default=False,
-                        help='Use -d if NOT wanting to change the filter from OPAQUE to science value.')
-    args = parser.parse_args()
-
-# Set the variables input from the command line
-    fits_file = args.fits_file
-    mode = args.mode
-    rm_prep_data = args.rm_prep_data
-    only_update = args.only_update
-    dont_change_opaque2sci = args.dont_change_opaque2sci
-
+def prep_data2run(fits_file, mode, rm_prep_data, only_update=True, dont_change_opaque2sci=False):
     # Get the detector used
     det = fits.getval(fits_file, "DETECTOR", 0)
 
@@ -160,10 +126,10 @@ def main():
             if "NO_LAMP" in lamp:
                 try:
                     filt = fits.getval(fits_file, "FWA_POS")
-                except:
-                    print (" *** Unable to determine what was the FILTER used...  :(  ")
-                    print (" The FILTER keyword has to be set up manually in order for the pipeline to be able to process data.")
-                    KeyError
+                except KeyError:
+                    print(" *** Unable to determine what was the FILTER used...  :(  ")
+                    print(" The FILTER keyword has to be set up manually in order for the pipeline to be able "
+                          "to process data.")
 
             elif 'LINE1' in lamp:
                 filt = 'F100LP'
@@ -196,7 +162,45 @@ def main():
     if rm_prep_data:
         subprocess.run(["rm", "-R", "prep_data"])
 
-    print ('\n * Script  prepare_data.py  finished * \n')
+    print('\n * Script  prepare_data.py  finished * \n')
+
+
+def main():
+    # Get arguments to run script
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument("fits_file",
+                        action='store',
+                        default=None,
+                        help='Name of fits file, i.e. blah.fits')
+    parser.add_argument("mode",
+                        action='store',
+                        default=None,
+                        help='Mode in which the data was taken, i.e. FS, MOS, IFU, BOTS')
+    parser.add_argument("-rm",
+                        dest="rm_prep_data",
+                        action='store_true',
+                        default=False,
+                        help='If -rm is used, the directory prep_data will be removed once the job is done.')
+    parser.add_argument("-u",
+                        dest="only_update",
+                        action='store_true',
+                        default=False,
+                        help='Use -u if NOT wanting to create a new file with updated header.')
+    parser.add_argument("-d",
+                        dest="dont_change_opaque2sci",
+                        action='store_true',
+                        default=False,
+                        help='Use -d if NOT wanting to change the filter from OPAQUE to science value.')
+    args = parser.parse_args()
+
+    # Set the variables input from the command line
+    fits_file = args.fits_file
+    mode = args.mode
+    rm_prep_data = args.rm_prep_data
+    only_update = args.only_update
+    dont_change_opaque2sci = args.dont_change_opaque2sci
+
+    prep_data2run(fits_file, mode, rm_prep_data, only_update, dont_change_opaque2sci)
 
 
 if __name__ == '__main__':

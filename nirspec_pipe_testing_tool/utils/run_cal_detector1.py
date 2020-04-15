@@ -9,7 +9,7 @@ import sys
 from glob import glob
 from astropy.io import fits
 
-from nirspec_pipe_testing_tool.calwebb_spec2_pytests import TESTDIR
+from nirspec_pipe_testing_tool.calwebb_spec2_pytests import TESTSDIR
 from jwst.pipeline.calwebb_detector1 import Detector1Pipeline
 from jwst.group_scale.group_scale_step import GroupScaleStep
 from jwst.dq_init.dq_init_step import DQInitStep
@@ -32,7 +32,7 @@ This script will perform calwebb_detector1 in one single run, outputing intermed
 
  Usage:
     In a terminal, in the directory where the testing tool lives, and within the pipeline environment, type
-    > python run_cal_detector1.py uncal_file.fits
+    > nptt_run_cal_detector1 uncal_file.fits
 """
 
 
@@ -54,15 +54,21 @@ def get_caldet1cfg_and_workingdir():
     Returns:
         calwebb_detector1_cfg = string, path to where the config file lives
     """
-    config = configparser.ConfigParser()
-    config.read(['../calwebb_spec2_pytests/PTT_config.cfg'])
-    pipe_testing_tool_path = config.get("calwebb_spec2_input_file", "pipe_testing_tool_path")
-    calwebb_detector1_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_detector1.cfg")
-    calwebb_tso1_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_tso1.cfg")
-    calwebb_dark_cfg = os.path.join(pipe_testing_tool_path, "utils/data/calwebb_dark.cfg")
-    output_dir = config.get("calwebb_spec2_input_file", "output_directory")
-    mode_used = config.get("calwebb_spec2_input_file", "mode_used")
-    raw_data_root_file = config.get("calwebb_spec2_input_file", "raw_data_root_file")
+    ptt_config = 'PTT_config.cfg'
+    if os.path.isfile(ptt_config):
+        config = configparser.ConfigParser()
+        config.read([ptt_config])
+        calwebb_detector1_cfg = os.path.realpath(__file__).replace("run_cal_detector1.py", "data/calwebb_detector1.cfg")
+        calwebb_tso1_cfg = os.path.realpath(__file__).replace("run_cal_detector1.py", "data/calwebb_tso1.cfg")
+        calwebb_dark_cfg = os.path.realpath(__file__).replace("run_cal_detector1.py", "data/calwebb_dark.cfg")
+        output_dir = config.get("calwebb_spec2_input_file", "output_directory")
+        mode_used = config.get("calwebb_spec2_input_file", "mode_used")
+        raw_data_root_file = config.get("calwebb_spec2_input_file", "raw_data_root_file")
+        print('Read the following PTT configuration file:')
+        print(os.path.join(output_dir, ptt_config))
+    else:
+        print("No PTT found in the current directory. Unable to proceed, exiting script.")
+        exit()
     return calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, raw_data_root_file
 
 
@@ -134,34 +140,21 @@ def calculate_step_run_time(pipelog_file, pipe_steps):
                     if end_time is None:
                         continue
                     run_time = end_time - start_time
-                    step_running_times[pstp] = {"start_time" : start_time, "end_time" : end_time, "run_time" : run_time}
+                    step_running_times[pstp] = {"start_time": start_time, "end_time": end_time, "run_time": run_time}
     return step_running_times
 
 
-def main():
-    # Get arguments to run script
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument("fits_input_uncal_file",
-                        action='store',
-                        default=None,
-                        help='Name of fits file, i.e. blah.fits')
-    parser.add_argument("-sbs",
-                        dest="step_by_step",
-                        action='store_true',
-                        default=False,
-                        help='By default, calwebb detecetor 1 will be executed in one single run, if -sxs is used, execution will go step by step.')
-    args = parser.parse_args()
-
-    # Set the variables inputed from the command line
-    fits_input_uncal_file = args.fits_input_uncal_file
-    step_by_step = args.step_by_step
+def run_caldet1(fits_input_uncal_file, step_by_step=False):
+    if not os.path.isfile(fits_input_uncal_file):
+        print("Input file not found in the current directory. Unable to proceed, exiting script.")
+        exit()
 
     # Get the detector used
     detector = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
 
     # Get the cfg file
     calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
-    if mode_used != "BOTS" and mode_used.lower() != "dark":    if mode_used != "BOTS" and mode_used.lower() != "dark":
+    if mode_used != "BOTS" and mode_used.lower() != "dark":
         cfg_file = calwebb_detector1_cfg
     elif mode_used == "BOTS":
         cfg_file = calwebb_tso1_cfg
@@ -190,6 +183,10 @@ def main():
 
     # Name of the file containing all the pipeline output
     caldetector1_pipeline_log = "pipeline.log"
+
+    # copy the configuration file to create the pipeline log
+    stpipelogcfg = calwebb_detector1_cfg.replace("calwebb_detector1.cfg", "stpipe-log.cfg")
+    subprocess.run(["cp", stpipelogcfg, "."])
 
     #final_output_caldet1 = "gain_scale.fits"
     final_output_caldet1 = "final_output_caldet1_"+detector+".fits"
@@ -221,20 +218,23 @@ def main():
         total_time = "{:<18} {:<20} {:<20}".format("", "total_time = ", repr(end_time)+"  ="+tot_time)
 
         # get the running time for the individual steps
-        step_running_times = calculate_step_run_time(caldetector1_pipeline_log, output_names)
+        if os.path.isfile(caldetector1_pipeline_log):
+            step_running_times = calculate_step_run_time(caldetector1_pipeline_log, output_names)
 
-        # write step running times in the text file
-        end_time_list = []
-        for outnm in output_names:
-            stp = outnm.replace(".fits", "")
-            if stp in step_running_times:
-                step_time = step_running_times[stp]["run_time"]
-            else:
-                step_time = "N/A"
-            end_time_list.append(step_time)
-            line2write = "{:<18} {:<20} {:<20}".format(stp, outnm, step_time)
-            with open(txt_outputs_summary, "a") as tf:
-                tf.write(line2write+"\n")
+            # write step running times in the text file
+            end_time_list = []
+            for outnm in output_names:
+                stp = outnm.replace(".fits", "")
+                if stp in step_running_times:
+                    step_time = step_running_times[stp]["run_time"]
+                else:
+                    step_time = "N/A"
+                end_time_list.append(step_time)
+                line2write = "{:<18} {:<20} {:<20}".format(stp, outnm, step_time)
+                with open(txt_outputs_summary, "a") as tf:
+                    tf.write(line2write+"\n")
+        else:
+            print("No pipeline.log found. Unable to record times per step.")
 
     else:
         print("Got arguments and will run the calwebb_detector1 pipeline step by step.")
@@ -293,8 +293,7 @@ def main():
                 out_slope.save(output_names[i])
                 try:
                     int_slope.save("ramp_fit_int.fits")
-                except:
-                    AttributeError
+                except AttributeError:
                     msg = "File has only 1 integration."
                     print(msg)
                     logging.info(msg)
@@ -321,7 +320,6 @@ def main():
             with open(txt_outputs_summary, "a") as tf:
                 tf.write(line2write+"\n")
 
-
         # record total time in text file
         tot_time_sec = sum(end_time_total)
         if tot_time_sec > 60.0:
@@ -334,7 +332,6 @@ def main():
             tot_time = round((tot_time_sec/60.0), 1)
         total_time = "{:<18} {:>20} {:>20}".format("", "total_time  ", repr(tot_time_sec)+"  ="+tot_time)
 
-
     # record total time in text file
     with open(txt_outputs_summary, "a") as tf:
         tf.write(total_time+"\n")
@@ -342,40 +339,62 @@ def main():
     print(msg)
     logging.info(msg)
 
-
     # Move products to working dir
 
     # rename and move the pipeline log file
-    pytest_workdir = TESTSDIR
-    logfile = glob(pytest_workdir+"/*pipeline*.log")[0]
     new_name = "caldetector1_pipeline_"+detector+".log"
-    os.rename(logfile, os.path.join(output_dir, new_name))
+    if os.path.isfile(caldetector1_pipeline_log):
+        os.rename(caldetector1_pipeline_log, os.path.join(output_dir, new_name))
 
     # move the PTT log file and the fits intermediary product files
-    fits_list = glob("*.fits")
-    if len(fits_list) >= 1:
-        msg = "Output fits files are located at: "+output_dir
-        print(msg)
-        logging.info(msg)
-        for ff in fits_list:
-            if "step_" in ff:
-                ff_newname = os.path.join(output_dir, ff.replace("step_", ""))
-            else:
-                ff_newname = os.path.join(output_dir, ff)
-            if detector.lower() not in ff.lower():
-                ff_newname = ff_newname.replace(".fits", "_"+detector+".fits")
-            subprocess.run(["mv", ff, ff_newname])
-        # move text files too
-        subprocess.run(["mv", txt_outputs_summary, output_dir])
+    if os.getcwd() != output_dir:
+        fits_list = glob("*.fits")
+        if len(fits_list) >= 1:
+            msg = "Output fits files are located at: "+output_dir
+            print(msg)
+            logging.info(msg)
+            for ff in fits_list:
+                if "step_" in ff:
+                    ff_newname = os.path.join(output_dir, ff.replace("step_", ""))
+                else:
+                    ff_newname = os.path.join(output_dir, ff)
+                if detector.lower() not in ff.lower():
+                    ff_newname = ff_newname.replace(".fits", "_"+detector+".fits")
+                subprocess.run(["mv", ff, ff_newname])
+            # move text files too
+            subprocess.run(["mv", txt_outputs_summary, output_dir])
 
-    else:
-        msg = "No fits files detected after calwbb_detector1 finished. Exiting script."
-        print(msg)
-        logging.info(msg)
+        else:
+            msg = "No fits files detected after calwbb_detector1 finished. Exiting script."
+            print(msg)
+            logging.info(msg)
 
     msg = "Script  run_cal_detector1.py  finished."
     print(msg)
     logging.info(msg)
+
+
+def main():
+    # Get arguments to run script
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument("fits_input_uncal_file",
+                        action='store',
+                        default=None,
+                        help='Name of fits file, i.e. blah.fits')
+    parser.add_argument("-sbs",
+                        dest="step_by_step",
+                        action='store_true',
+                        default=False,
+                        help='By default, calwebb detecetor 1 will be executed in one single run, if -sxs is used, '
+                             'execution will go step by step.')
+    args = parser.parse_args()
+
+    # Set the variables inputed from the command line
+    fits_input_uncal_file = args.fits_input_uncal_file
+    step_by_step = args.step_by_step
+
+    run_caldet1(fits_input_uncal_file, step_by_step)
+
 
 if __name__ == '__main__':
     sys.exit(main())

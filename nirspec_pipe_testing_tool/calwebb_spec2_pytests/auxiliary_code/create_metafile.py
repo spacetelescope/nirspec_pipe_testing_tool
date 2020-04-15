@@ -13,21 +13,21 @@ This script will create the shutter configuration file for MOS data, while the p
  Usage:
     CREATE NEW MSA SUTTER CONFIGURATION FILES
     In a terminal, in the directory where the testing tool lives, and within the pipeline environment, type:
-    > python create_metafile.py CB10-GD-B.msa.fits  
+    $ nptt_create_metafile CB10-GD-B.msa.fits  
     Output will be:
         CB10-GD-B_metafile_msa.fits
     
     FIX AN OLD SHUTTER CONFIGURATION FILE
     In a terminal, in the directory where the testing tool lives, and within the pipeline environment, type the command
     with the fix flag, -f:
-    > python create_metafile.py V9621500100101_metafile_msa.fits -f
+    $ nptt_create_metafile V9621500100101_metafile_msa.fits -f
     Output will be:
         V9621500100101_metafile_msa_fixed.fits
     
     CREATE A SHUTTER CONFIGURATION FILE FROM SIMULATIONS OR DITHERS  
     In a terminal, in the directory where the testing tool lives, and within the pipeline environment, type the command
     with the dithers flag, -d, equal to the list of pointings (use a comma and no spaces bewteen file names):
-    > python create_metafile.py V9621500100101.msa.fits -d=obs1.csv,obs2.csv,obs3.csv
+    $ nptt_create_metafile V9621500100101.msa.fits -d=obs1.csv,obs2.csv,obs3.csv
     Output will be:
         V9621500100101_metafile_msa.fits
 """
@@ -493,15 +493,15 @@ def create_metafile_dither(config_binary_file, targ_file_list):
             source_id = targinfo['ID'].data
             source_ra = targinfo['Source RA (Degrees)'].data
             source_dec = targinfo['Source Dec (Degrees)'].data
-            #		source_ra = targinfo['SourceRA(Degrees)'].data
-            #		source_dec = targinfo['SourceDec(Degrees)'].data
+            #source_ra = targinfo['SourceRA(Degrees)'].data
+            #source_dec = targinfo['SourceDec(Degrees)'].data
             source_quad = targinfo['Quadrant'].data
             source_row = targinfo['Row'].data
             source_col = targinfo['Column'].data
             source_xpos = targinfo['Offset (x)'].data
             source_ypos = targinfo['Offset (y)'].data
-            #		source_xpos = targinfo['Offset(x)'].data
-            #		source_ypos = targinfo['Offset(y)'].data
+            #source_xpos = targinfo['Offset(x)'].data
+            #source_ypos = targinfo['Offset(y)'].data
             iter = False
         else:
             source_id = np.concatenate(([source_id, targinfo['ID'].data]))
@@ -705,7 +705,6 @@ def run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list)
         create_metafile_dither(config_binary_file, targ_file_list)
 
 
-
 if __name__ == '__main__':
 
     # Get arguments to run script
@@ -718,12 +717,14 @@ if __name__ == '__main__':
                         dest="targ_file_list",
                         action='store',
                         default=None,
-                        help='For dithers only, use this flag to provide csv output from APT; list each one in a nod set, e.g. -s=obs1.csv,obs1.csv')
+                        help='For dithers only, use this flag to provide csv output from APT; list each one '
+                             'in a nod set, e.g. -s=obs1.csv,obs1.csv')
     parser.add_argument("-f",
                         dest="fix_old_config_file",
                         action='store_true',
                         default=False,
-                        help='If an old version of the shutter configuration file exists, use the -f flag to fix it. In this case, the input to the script is the old config file.fits.')
+                        help='If an old version of the shutter configuration file exists, use the -f flag '
+                             'to fix it. In this case, the input to the script is the old config file.fits.')
     args = parser.parse_args()
 
     # Set the variables

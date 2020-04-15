@@ -23,10 +23,10 @@ the primary and science headers.
 Example usage:
     The code works from the terminal.
     To create a NEW FS fits file with the updated header type:
-        > python /path_to_this_script/level2b_hdr_keywd_check.py blah.fits IFU
+        $ nptt_level2b_hdr_keywd_check.py blah.fits IFU
 
     To simply update the header of the existing fits file type:
-        > python /path_to_this_script/level2b_hdr_keywd_check.py blah.fits IFU -u
+        $ nptt_level2b_hdr_keywd_check.py blah.fits IFU -u
 
 where the mode is either FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.
 

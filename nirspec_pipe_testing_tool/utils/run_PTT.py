@@ -7,11 +7,12 @@ Example usage:
 
     Terminal
         Simply type the command
-        > python run_PTT report_name
+        $ nptt_run_PTT report_name PTT_config.cfg
         
     As a module
-        import run_PTT
-        run_PTT.run_PTT(report_name)
+        # import the script
+        import nirspec_pipe_testing_tool as nptt
+        nptt.utils.run_PTT.run_PTT(report_name, PTT_config.cfg)
 """
 
 import os
@@ -39,8 +40,6 @@ def read_PTTconfig_file(config_path):
     Returns:
         cfg_info = list of read info
     """
-    if not config_path:
-        config_path = os.path.join(data.DATADIR, 'PTT_config.cfg')
 
     if not os.path.exists(config_path):
         raise FileNotFoundError(config_path)
@@ -54,7 +53,7 @@ def read_PTTconfig_file(config_path):
     return cfg_info
 
 
-def run_PTT(report_name, config_path):
+def run_PTT(report_name, config_path=None):
     """
     This function runs PTT and then moves the html report into the working directory specified
     in the PTT configuration file.
@@ -62,7 +61,19 @@ def run_PTT(report_name, config_path):
     report_name: string, name of the html report
     """
     print('Running PTT. This may take a while...')
-    
+
+    if config_path is None:
+        # if there is no PTT config file, request to make one
+        print("No PTT config file was provided. To create a PTT config file, the following variables are required: \n"
+              "     output_directory = full path where PTT will place all output from the pipeline and tests \n "
+              "     input_file = basename of the count rate file \n"
+              "     mode_used = FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf \n"
+              "     raw_data_root_file = basename of the file that generated the count rate file \n"
+              "Keep in mind that this PTT config file (in the output directory) has multiple default values. Include \n"
+              "the following line in your script: \n "
+              "nptt.utils.run_PTT.run_PTT(report_name PTT_config.cfg)")
+        exit()
+
     # get the html report and the info from the PTT config file
     cfg_info = read_PTTconfig_file(config_path)
     
@@ -92,20 +103,31 @@ def run_PTT(report_name, config_path):
 def main():
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('-c', '--config',
-                        action='store',
-                        default="",
-                        help="Path to PTT configuration file")
     parser.add_argument("report_name",
                         action='store',
                         default=None,
                         help='Name of the html report, e.g. report_NRS2_v2')
+    parser.add_argument('config',
+                        action='store',
+                        default=None,
+                        help="Name of PTT configuration file. To create a PTT config file has been created, the"
+                             "following variables will be needed: "
+                             "  output_directory = full path where PTT will place all output from the pipeline "
+                             "and tests; "
+                             "  input_file = basename of the count rate file; "
+                             "  mode_used = FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, "
+                             "focus, mimf; "
+                             "  raw_data_root_file = basename of the file that generated the count rate file. "
+                             "Keep in mind that this PTT config file (in the output directory) has multiple "
+                             "default values. Create the PTT config from the terminal with the command: "
+                             "$ nptt_mk_pttconfig_file output_directory input_file mode_used raw_data_root_file")
+
     args = parser.parse_args()
                         
     # Set the variables
     report_name = args.report_name
     config_path = args.config
-        
+
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
     run_PTT(report_name, config_path)
 

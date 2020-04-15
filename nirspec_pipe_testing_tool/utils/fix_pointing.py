@@ -16,7 +16,7 @@ Usage:
     v3_targ = -424.00329, aper_angle = 45.0
 
     From a terminal type:
-    > python ../path_to_script/fix_pointing.py blah.fits 53.16199112, -27.79127312, 393.86285, -424.00329, 45.0
+     $ nptt_fix_pointing blah.fits 53.16199112, -27.79127312, 393.86285, -424.00329, 45.0
 
     If the data is IFU add the flag -ifu at the end of the command. The output will be the updated file.
 

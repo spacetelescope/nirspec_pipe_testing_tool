@@ -32,7 +32,6 @@ __version__ = "1.0"
 # Nov 2019 - Version 1.0: initial version completed
 
 
-
 def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_final_figs=False, show_final_figs=False,
                         save_intermediary_figs=False, show_intermediary_figs=False, write_barshadow_files=False,
                         debug=False):
@@ -212,8 +211,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
             plt.show()
         plt.close()
 
-
-        ### compare pipeline correction values with independent calculation
+        # compare pipeline correction values with independent calculation
 
         # get the bar shadow corrections from the step product
         bscor_pipe = bsslit.barshadow
@@ -299,12 +297,12 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         fig = plt.figure(figsize=(12, 10))
         # Top figure
         plt.subplot(211)
-        plt.imshow(bscor,vmin=0.,vmax=1.,aspect=10.0,origin='lower',cmap='viridis')
+        plt.imshow(bscor, vmin=0., vmax=1., aspect=10.0, origin='lower', cmap='viridis')
         plt.title('Calculated Correction')
         plt.colorbar()
         # Bottom figure
         plt.subplot(212)
-        plt.imshow(bscor_pipe,vmin=0.,vmax=1.,aspect=10.0,origin='lower',cmap='viridis')
+        plt.imshow(bscor_pipe, vmin=0., vmax=1., aspect=10.0, origin='lower', cmap='viridis')
         plt.title('Pipeline Correction')
         plt.colorbar()
 
@@ -335,14 +333,14 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         fig = plt.figure(figsize=(12, 10))
         # Top figure - 2D plot
         plt.subplot(211)
-        plt.imshow(reldiff,vmin=-0.01,vmax=0.01,aspect=10.0,origin='lower',cmap='viridis')
+        plt.imshow(reldiff, vmin=-0.01, vmax=0.01, aspect=10.0, origin='lower', cmap='viridis')
         plt.colorbar()
         plt.title('Relative differences')
         plt.xlabel('x (pixels)')
         plt.ylabel('y (pixels)')
         # Bottom figure - histogram
         ax = plt.subplot(212)
-        plt.hist(reldiff[~np.isnan(reldiff)],bins=100,range=(-0.1,0.1))
+        plt.hist(reldiff[~np.isnan(reldiff)], bins=100, range=(-0.1,0.1))
         plt.xlabel('(Pipeline_correction - Calculated_correction) / Calculated_correction')
         plt.ylabel('N')
         # add vertical line at mean and median
@@ -351,8 +349,8 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         arr_mean = np.mean(reldiff[notnan])
         arr_median = np.median(reldiff[notnan])
         arr_stddev = np.std(reldiff[notnan])
-        plt.axvline(arr_mean, label="mean = %0.3e" % (arr_mean), color="g")
-        plt.axvline(arr_median, label="median = %0.3e" % (arr_median), linestyle="-.", color="b")
+        plt.axvline(arr_mean, label="mean = %0.3e" % arr_mean, color="g")
+        plt.axvline(arr_median, label="median = %0.3e" % arr_median, linestyle="-.", color="b")
         str_arr_stddev = "stddev = {:0.3e}".format(arr_stddev)
         ax.text(0.73, 0.67, str_arr_stddev, transform=ax.transAxes, fontsize=16)
         plt.legend()
@@ -374,7 +372,8 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         # Determine if median test is passed
         slitlet_test_result_list = []
         tested_quantity = 'barshadow_correction'
-        stats = auxfunc.print_stats(reldiff[notnan], tested_quantity, barshadow_threshold_diff, abs=False, return_percentages=True)
+        stats = auxfunc.print_stats(reldiff[notnan], tested_quantity, barshadow_threshold_diff, abs=False,
+                                    return_percentages=True)
         _, stats_print_strings, percentages = stats
         result = auxfunc.does_median_pass_tes(arr_median, barshadow_threshold_diff)
         slitlet_test_result_list.append({tested_quantity: result})
@@ -401,7 +400,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         # Make plots of normalized corrected data
         corrected = plsci/bscor
         plt.figure(figsize=(12, 10))
-        norm=ImageNormalize(corrected,vmin=0.,vmax=500.,stretch=AsinhStretch())
+        norm = ImageNormalize(corrected,vmin=0.,vmax=500.,stretch=AsinhStretch())
         plt.imshow(corrected, norm=norm, aspect=10.0, origin='lower', cmap='viridis')
         plt.title('Normalized data before barshadow step with correction applied')
         plt.xlabel('Sci_data_before_barshadow / barshadow_calculated_correction')
@@ -416,7 +415,6 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         if show_intermediary_figs:
             plt.show()
         plt.close()
-
 
         # calculate spatial profiles for both products
         fig, ((ax1, ax2)) = plt.subplots(1, 2, figsize=(19,9))
@@ -462,10 +460,10 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
             complfile.append(complfile_ext)
 
             # the file is not yet written, indicate that this slit was appended to list to be written
-            msg = "Extension corresponing to slitlet "+slit_id+" appended to list to be written into calculated and comparison fits files."
+            msg = "Extension corresponing to slitlet "+slit_id+" appended to list to be written into calculated " \
+                                                               "and comparison fits files."
             print(msg)
             log_msgs.append(msg)
-
 
     if debug:
         print('total_test_result = ', total_test_result)
@@ -509,8 +507,6 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
     log_msgs.append(barshadow_test_tot_time)
 
     return FINAL_TEST_RESULT, result_msg, log_msgs
-
-
 
 
 if __name__ == '__main__':

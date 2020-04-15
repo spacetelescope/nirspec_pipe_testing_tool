@@ -24,10 +24,10 @@ the primary and science headers.
 Example usage:
     The code works from the terminal.
     To create a NEW FS fits file with the updated header type:
-        > python /path_to_this_script/hdr_keywd_check.py blah.fits
+        $ nptt_hdr_keywd_check.py blah.fits
 
     To simply update the header of the existing fits file type:
-        > python /path_to_this_script/hdr_keywd_check.py blah.fits -u -m=FS
+        $ nptt_hdr_keywd_check.py blah.fits -u -m=FS
 
 where the -m flag is the mode used, i.e. FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.
 

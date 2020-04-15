@@ -598,13 +598,15 @@ def set_inandout_filenames(step, config):
     if not run_calwebb_spec2:
         pytests_directory = TESTSDIR
         True_steps_suffix_map = os.path.join(pytests_directory, "True_steps_suffix_map_"+detector+".txt")
-        print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map, ", located in working directory.")
+        print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map,
+              ", located in working directory.")
     else:
-        print("Pipeline was set to run in full. Suffix map named: full_run_map_DETECTOR.txt, located in working directory.")
+        print("Pipeline was set to run in full. Suffix map named: full_run_map_DETECTOR.txt, "
+              "located in working directory.")
     suffix_and_filenames = get_step_inandout_filename(step, initial_input_file, output_directory)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames
-    print ("step_input_filename = ", step_input_filename)
-    print ("step_output_filename = ", step_output_filename)
+    print("step_input_filename = ", step_input_filename)
+    print("step_output_filename = ", step_output_filename)
     return step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map
 
 
