@@ -53,9 +53,9 @@ https://astroconda.readthedocs.io/en/latest/
 Please use the latest python version (3.6 is the minimum supported)
 
 
-THREE THINGS BEFORE STARTING
+**THREE THINGS BEFORE STARTING**
 
-I.- You may want to clean your PYTHONPATH so that you do not get mysterious failures. To 
+**I.-** You may want to clean your PYTHONPATH so that you do not get mysterious failures. To
 do this simply type the following command in the terminal:
 ```bash
 unset PYTHONPATH
@@ -64,7 +64,7 @@ You can do this every time you run the pytests, or when you start getting strang
 failures. Another option is not to define PYTHONPATH at all in the .profile (or 
 equivalent: .bashrc, .bash_profile, .cshrc, .login, etc.) file.
 
-II.- If you work outside the internal network, i.e. in the visitors network or at home, 
+**II.-** If you work outside the internal network, i.e. in the visitors network or at home,
 you also want to set the following environment variables in the terminal or add them to 
 your .profile (or equivalent) file:
 ```bash
@@ -73,7 +73,7 @@ export CRDS_PATH=${HOME}/crds_cache
 ```
 These changes will not affect your work while working with the internal network at ST.
 
-III.- A brief description of what each pipeline step does, as well as a brief description
+**III.-** A brief description of what each pipeline step does, as well as a brief description
 of all the pytests implemented in the tool, the tests that are still in concept phase, and 
 the tests that are still needed, can be found in the Confluence space for PTT. You can
 get to it from the main page of NIRSpec/NIRSpec JWST Pipeline/NIRSpec Calibration
@@ -81,44 +81,20 @@ Pipeline Testing Tool (PTT), or by clicking in the following link:
 https://confluence.stsci.edu/pages/viewpage.action?pageId=123011558
 
 
-QUICK START GUIDE
+**QUICK START GUIDE**
 
-1. Create the conda environment for testing and get the configuration files.  
+**STEP 1.** Create the conda environment for testing and get the configuration files.
 
-a. Conda environment for this testing campaign:
-- Current testing version and ulr file can be found at https://github.com/spacetelescope/jwst
-under the "Installing a DMS Operational Build". The commands are similar to the following:
-```bash
-conda create -n jwst_b751 --file url_depending_on_your_system
-```
-for the current release candidate, the ulr options are:
-- Linux: http://ssb.stsci.edu/releases/jwstdp/0.15.1/latest-linux
-- OS X: http://ssb.stsci.edu/releases/jwstdp/0.15.1/latest-osx
+**1.a.** Conda environment for this testing campaign:
+- Please go to the developer's repository and follow the instructions for "Installing a
+DMS Operational Build" at https://github.com/spacetelescope/jwst. The most stable release
+candidate will be listed in the top line under the section "Software vs DMS build version
+map".
 
+- If you are a developer, please follow the instructions in the section "Installing for
+Developers" at https://github.com/spacetelescope/jwst.
 
-The most stable release candidate will be listed in the top line under the section
-"Software vs DMS build version map" at https://github.com/spacetelescope/jwst
-
-NOTE FOR PIPELINE DEVELOPERS:
-
-a. The development version of the pipeline was phased out. Currently, the installation is run
-through ```pip```. SCSB recommends creating a new environment:
-```bash
-conda create -n jwst_env python
-conda activate jwst_env
-```
-To install the corresponding build in this way you would type (with the activated environment):
-```bash
-pip install numpy
-pip install git+https://github.com/spacetelescope/jwst#0.0.0
-```
-where #0.0.0 is the jwst version number, e.g. 0.15.1. For for installing the latest development version use:
-```bash
-pip install numpy
-pip install git+https://github.com/spacetelescope/jwst
-```
-
-b. Configuration files corresponding to this build. Create a directory (e.g. 
+**1.b.** Configuration files corresponding to this build. Create a directory (e.g.
 ```build_XX_cfg_files```) somewhere in your testing working space, and ```cd``` into it. Now 
 type the following command within the conda environment you just created (see step 2).
 ```bash
@@ -126,7 +102,7 @@ collect_pipeline_cfgs .
 ```
 
 
-2. Activate the conda environment for testing the pipeline, if you have not already done so, e.g. type:
+**STEP 2.** Activate the conda environment for testing the pipeline, if you have not already done so, e.g. type:
 ```bash
 source activate your_newly_created_environment
 ```
@@ -134,9 +110,9 @@ If the above command does not work try:
 ```bash
 conda activate your_newly_created_environment
 ```
-From here on, every step of this guide should happen within the conda testig environment.
+From here on, every step of this guide should happen within the conda testing environment.
 
-NOTE: 
+To list and/or remove old environments:
 
 - If you forget what did you name your new environment type:
 ```bash
@@ -150,7 +126,7 @@ conda env remove -n name_of_your_old_environment
 ```
 
 
-3. Install PTT. There are three ways to install the tool:
+**STEP 3.** Install PTT. There are three ways to install the tool:
 
 - Option A. For non-developers and without PTT source code. In the terminal type:
 ```bash
@@ -170,18 +146,18 @@ pip install .
 the directory, then type the same command as with Option B with an additional ```-e``` flag
 at the end of the command.
 
-NOTE:  You can install the latest pipeline version, but this will replace any existing
+**NOTE:**  You can install the latest pipeline version, but this will replace any existing
 version of the pipeline. Hence, you most likely want to create a new conda environment,
 install PTT, and then type the command:
 ```bash
 pip install -e ".[pipeline]"
 ```
 
-NOTE: If you are considering to become a PTT code contributor please choose to fork the
-repository rather than cloning it.
+**Should I clone or fork the repo?** If you are considering to become a PTT code contributor
+please choose fork the repository, otherwise choose clone.
 
 
-IF YOU WANT THE SOURCE CODE
+**IF YOU WANT THE SOURCE CODE**
 
 Clone or fork the PTT repository. If you are planing to contribute with code to PTT, fork
 the repo, otherwise choose to clone it. To do this click at the top right of this page,
@@ -200,7 +176,7 @@ git clone the_ulr_you_copied
 ```
 After this is done, you should see a full copy of the PTT in your directory.
 
-NOTE: 
+**Updating PTT**
 - If you have already cloned or forked the repository, in the terminal go to where you placed
 the ```nirspec_pipe_testing_tool``` directory. Then, use the following command to update 
 the code:
@@ -209,15 +185,16 @@ the code:
 you continue until you move the script(s) to another directory. 
 
 
-4. Prepare the data to run through the pipeline. To do this:
+**STEP 4.** Prepare the data to run through the pipeline. To do this:
 
-a. Copy the test data you will use from the NIRSpec vault directory. Go to the directory 
+**4.a.** Copy the test data you will use from the NIRSpec vault directory. Go to the directory
 where you want to have the testing data, and from there type:
 ```bash
 cp -r /grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/the_data_you_want_to_copy .
 ```
 
-NOTE:
+**Benchmark data to test PTT**
+
 You can start with the FS benchmark data to make sure you are doing the right thing. To 
 get the data go to 
 ```bash
@@ -234,7 +211,7 @@ obtain the same results from the PTT run. Alternatively, you can create your
 ```PTT_config.cfg``` by running the described in step 5 of this guide.
 
 
-b. In the directory where you copied the test data, you will need to run a script PER
+**4.b.** In the directory where you copied the test data, you will need to run a script PER
 fits file you want to test. Do not worry, this will only be done once. This script will
 create a new subdirectory with the necessary input file to run the SSB script 
 that converts raw data into uncal type files. You can choose to either keep this 
@@ -266,7 +243,7 @@ only_update = True
 nptt.utils.prepare_data2run.prep_data2run(fits_file, mode, rm_prep_data, only_update)
 ```
 
-c. Optional. Check the file header. If you want to see the header of any file, you can
+**4.c.** Optional. Check the file header. If you want to see the header of any file, you can
 use the another script in the ```utils``` directory of the PTT. If you just want to see
 on-screen the header, go where your fits file "lives" and type:
 ```bash
@@ -288,12 +265,12 @@ nptt.utils.read_hdr.read_hdr(fits_file_name, save_txt, ext_number)
 ```
 
 
-d. Now, the data is ready to be ran through cal_detector1. Please go ahead with the next
-step of this guide to do that.
+**4.d.** Now, the data is ready to be ran through cal_detector1. Please go ahead with the
+next step of this guide to do that.
 
 
-5. Set the PTT configuration file. This is the file that controls all the input that
-the tool needs. To create ```PTT_config.cfg```, run the following command:
+**STEP 5.** Set the PTT configuration file. This is the file that controls all the input
+that the tool needs. To create ```PTT_config.cfg```, run the following command:
 ```bash
 nptt_mk_pttconfig_file output_directory input_file mode_used raw_data_root_file
 ```
@@ -323,10 +300,10 @@ then set ```raw_data_root_file = F170LP-G235M_MOS_observation-6-c0e0_001.fits```
 correct, e.g. threshold values, figure switches, and additional fits files.
 
 
-6. Run the ```calwebb_detector1``` pipeline. The final output of this is the level 2 data
-required to run the PTT. In a terminal, please make sure that the testing conda environment
-is active, and that you are in the directory where your ```PTT_config.cfg``` lives. Type
-the following command:
+**STEP 6.** Run the ```calwebb_detector1``` pipeline. The final output of this is the level
+2 data required to run the PTT. In a terminal, please make sure that the testing conda
+environment is active, and that you are in the directory where your ```PTT_config.cfg```
+lives. Type the following command:
 ```bash
 nptt_run_cal_detector1 /path_where_the_uncal_file_lives/uncal_file.fits
 ```
@@ -385,11 +362,11 @@ the calwebb detector 1 pipeline.
 
 *****
 
-NOTE FOR SIMULATIONS:
+**NOTE FOR SIMULATIONS:**
 
-If you are working with simulations you may need to convert the count rate map to an STScI
-pipeline-ingestible file (with all the keyword header modifications). In order to do this
-run the module ```crm2STpipeline```:
+If you are working with simulations you may need to convert the count rate map (file.crm)
+to an STScI pipeline-ingestible file (with all the keyword header modifications). In order
+to do this run the module ```crm2STpipeline```:
 To run this type:
 ```bash
 nptt_crm2STpipeline file.fits MODE -r -p -t -n
@@ -424,10 +401,17 @@ nptt.utils.level2b_hdr_keywd_dict_map2sim.match_IPS_keywords(stsci_pipe_ready_fi
                                                              additional_args_dict=additional_args_dict)
 ```
 
+The conversion from simulations.erm to simulations.crm, can be done with the script
+called ```ESAsim_erm2crm.py``` in the ```utils``` directory of PTT. However, this script
+does **not** run within PTT because you need to have created/installed the NIRspec
+Instrument Performance Simulator (IPS) environment. If you need to convert a .erm file
+into a .crm, either contact the simulations lead and ask them to do this for you, or ask
+them to give you instructions on installing/creating the IPS environment so you can run
+the script yourself.
 *****
 *****
 
-NOTE FOR MOS DATA:
+**NOTE FOR MOS DATA:**
 
 If you are working with MOS data, you may need to create the shutter configuration file to be able
 to process the data through  the ```cal_spec2``` stage. To create the shutter configuration file
@@ -475,9 +459,9 @@ nptt.calwebb_spec2_pytests.auxiliary_code.create_metafile.run_create_metafile(co
 
 *****
 
-7. Fix the pointing keywords in the count rate file. This will only be possible if you have the
-APT file that corresponds to your testing data. Skip this step if you do not have the
-corresponding APT file for your data set. PTT used default dummy values so the pipeline will
+**STEP 7.** Fix the pointing keywords in the count rate file. This will only be possible if
+you have the APT file that corresponds to your testing data. Skip this step if you do not have
+he corresponding APT file for your data set. PTT used default dummy values so the pipeline will
 not break, but the spec3 pipeline may get wrong results unless these dummy values are replaced.
 
 If you do have the corresponding APT files for your data set, you will manually need to get
@@ -509,19 +493,19 @@ ifu_used = True
 nptt.utils.fix_pointing.fix_header_pointing(input_file, ra_targ, dec_targ, v2_targ, v3_targ, apa, ifu=ifu_used)
 ```
 
-8. Optional. Test to run PTT. To ensure that everything is in order, and to see what pytests
-will be executed and in which order, in the terminal type go to the top level directory where
-PTT lives, then type:
+**STEP 8.** Optional. Test to run PTT. To ensure that everything is in order, and to see what
+pytests will be executed and in which order, in the terminal type go to the top level directory
+where PTT lives, then type:
 ```bash
 cd nirspec_pipe_testing_tool/calwebb_spec2_pytests
 pytest --collect-only
 ```
 
 
-9. Do the first PTT run. Go back to the output directory. As an output of the testing tool
-you will see an html file, called ```report.html```, and an intermediary product text file
-name map will appear. The output fits files of intermediary products will also be saved in
-the output directory. In the terminal type:
+**STEP 9.** Do the first PTT run. Go back to the output directory. As an output of the
+testing tool you will see an html file, called ```report.html```, and an intermediary
+product text file name map will appear. The output fits files of intermediary products
+will also be saved in the output directory. In the terminal type:
 ```bash
 nptt_run_PTT name_of_the_html_report PTT_config.cfg
 ```
@@ -536,14 +520,14 @@ nptt.utils.run_PTT.run_PTT(report_name, PTT_config.cfg)
 ```
 
 
-TO RUN A SINGLE PIPELINE STEP: 
+**TO RUN A SINGLE PIPELINE STEP:**
 
 -> If you are running a single pipeline step (or only the corresponding pytest), PTT will
 create a log file specifically named with the step you are studying. At the end of the 
 run you will see 2 log files, one from the pipeline and one from PTT. This will not 
 overwrite the full pipeline run log files.
 
-TO RUN A FEW PIPELINE STEPS: 
+**TO RUN A FEW PIPELINE STEPS:**
 
 -> To only run a few pipeline steps you need to:
 a) Make sure that the variable ```run_calwebb_spec2``` in the ```PTT_config.cfg``` file
@@ -552,7 +536,7 @@ individual steps).
 b) Turn off (i.e. set to False) the steps you do not want to run in the ```PTT_config.cfg``` 
 file, which are located in the section ```run_pipe_steps``` of the file.
 
-TO RUN A FEW PYTEST: 
+**TO RUN A FEW PYTEST:**
 
 -> To run a few pytest you need to select which pytest to run (i.e. set to True) in the 
 ```PTT_config.cfg``` file, which are located in the section ```run_pytest``` of the file.
@@ -566,12 +550,12 @@ c) Set to True all pytest you want to run in the ```PTT_config.cfg``` file. Thes
 located in the section ```run_pytest``` of the file.
 
 
-10. Report your findings. Contact the testing lead to determine if you should create a
-report Jira ticket per step. If this is the case, you will need to link the ticket to any
-corresponding bug or problem found (each bug or issue should have its own Jira bug
-issue). In the ticket you can link to either the validation notebook or the corresponding
-web page of this repo, and remember to add the following information to the Jira report
-ticket:
+**STEP 10.** Report your findings. Contact the testing lead to determine if you should
+create a report Jira ticket per step. If this is the case, you will need to link the
+ticket to any corresponding bug or problem found (each bug or issue should have its own
+Jira bug issue). In the ticket you can link to either the validation notebook or the
+corresponding web page of this repo, and remember to add the following information to
+the Jira report ticket:
 - Version of the pipeline tested
 - Description of the test performed
 - Link to code used
@@ -628,7 +612,8 @@ nptt.utils.change_keywd.chkeywd(fits_file, keyword, value, ext_number)
 ## ADDING TESTING ROUTINES
 
 Talk to the testing lead to determine if the test you have in mind should be a script or
-a Jupyter Notebook (link to validation Notebooks at the top of this page).
+a validation Jupyter Notebook (link to the pipeline validation Notebooks at the top of
+this page).
 
 To add additional testing routines you will need to have forked the PTT repository. The
 tests have to be written in python 3.6 or greater.
