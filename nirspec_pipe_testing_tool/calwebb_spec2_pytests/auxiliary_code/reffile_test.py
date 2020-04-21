@@ -7,6 +7,7 @@ Created on Thu Mar 22 12:50:23 2018
 """
 
 import sys, os
+import argparse
 from jwst.datamodels import open as dmodel_open
 from astropy.io import fits
 from astropy.time import Time
@@ -254,9 +255,8 @@ def check_all_reffiles(path_to_input_file, logfile=None):
     return failures
 
 
-if __name__ == "__main__":
-    import argparse
-    
+def main():
+
     parser = argparse.ArgumentParser(description='Test to see if the correct '
                                      'reference file was selected for the given'
                                      ' input file(s).')
@@ -268,3 +268,6 @@ if __name__ == "__main__":
     for input_file in args.input_file:
         check_all_reffiles(input_file, logfile=args.log)
 
+
+if __name__ == '__main__':
+    sys.exit(main())

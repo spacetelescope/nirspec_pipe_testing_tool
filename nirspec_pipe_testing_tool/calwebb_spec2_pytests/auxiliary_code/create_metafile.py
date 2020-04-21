@@ -705,7 +705,7 @@ def run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list)
         create_metafile_dither(config_binary_file, targ_file_list)
 
 
-if __name__ == '__main__':
+def main():
 
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
@@ -736,5 +736,9 @@ if __name__ == '__main__':
     run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list)
 
     print("\nScript create_metafile.py done.\n")
+
+
+if __name__ == '__main__':
+    sys.exit(main())
 
 

@@ -1,5 +1,7 @@
 import time
 import os
+import argparse
+import sys
 import numpy as np
 from astropy.io import fits
 
@@ -646,36 +648,75 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
     return FINAL_TEST_RESULT, result_msg, log_msgs
 
 
-if __name__ == '__main__':
+def main():
+
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument("step_input_filename",
+                        action='store',
+                        default=None,
+                        help='Name of input fits file prior to assign_wcs step, i.e. blah_rate.fits')
+    parser.add_argument("dflatref_path",
+                        action='store',
+                        default=None,
+                        help='Path and name of D-flat file.')
+    parser.add_argument("sfile_path",
+                        action='store',
+                        default=None,
+                        help='Path and name of S-flat file.')
+    parser.add_argument("fflat_path",
+                        action='store',
+                        default=None,
+                        help='Path and name of F-flat file.')
+    parser.add_argument("-w",
+                        dest="writefile",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -w to NOT write files with calculated correction.')
+    parser.add_argument("-f",
+                        dest="save_figs",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -f to NOT save final figures.')
+    parser.add_argument("-s",
+                        dest="show_figs",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -s to show final figures.')
+    parser.add_argument("-t",
+                        dest="threshold_diff",
+                        action='store',
+                        default=9.999e-05,
+                        type=float,
+                        help='Use flag -t to change the default threshold (currently set to 9.999e-05).')
+    parser.add_argument("-d",
+                        dest="debug",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -d to turn on debug mode.')
+    args = parser.parse_args()
+
+    # Set variables
+    step_input_filename = args.step_input_filename
+    dflatref_path = args.dflatref_path
+    sfile_path = args.sfile_path
+    fflat_path = args.fflat_path
+    writefile = args.writefile
+    save_figs = args.save_figs
+    show_figs = args.show_figs
+    threshold_diff = args.threshold_diff
+    debug = args.debug
+
     # print pipeline version
     import jwst
 
     print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
-    # This is a simple test of the code
-    pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
-
-    # input parameters that the script expects
-    # step_input_filename = pipeline_path+"/testing_data/FS_FULL_FRAME/G140M_opaque/gain_scale_NRS1_flat_field.fits"
-    # step_input_filename = pipeline_path+"/testing_data/FS_ALLSLITS/G235H_F170LP/final_output_caldet1_NRS1_flat_field.fits"
-    working_dir = '/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/testing_data/BOTS/NID_41203'
-    # working_dir = pipeline_path+"/testing_data/BOTS/NRSSRAD-G2H-PS-6007132838_1_491_SE_2016-01-07T17h03m08_491results"
-    step_input_filename = working_dir + "/final_output_caldet1_NRS1_flat_field.fits"
-
-    dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
-    sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/FS/nirspec_FS_sflat"
-    fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/FS/nirspec_FS_fflat"
-    # dflatref_path = "nirspec_dflat"
-    # sfile_path = "nirspec_FS_sflat"
-    # fflat_path = "nirspec_FS_fflat"
-
-    # name of the output images
-    writefile = True
-
-    # set the names of the resulting plots
-    plot_name = None  # "FS_flattest_histogram.pdf"
-
     # Run the principal function of the script
-    median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                           fflat_path=fflat_path, writefile=writefile, show_figs=False, save_figs=True,
-                           plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
+    flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
+             fflat_path=fflat_path, writefile=writefile, show_figs=show_figs, save_figs=save_figs,
+             plot_name=None, threshold_diff=threshold_diff, debug=debug)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+

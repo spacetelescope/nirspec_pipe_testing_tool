@@ -387,7 +387,8 @@ def set_exp_type_value(mode_used):
     return val
 
 
-def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used, detector=None):
+def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used, detector=None,
+                 subarray=None):
     """
     This function will check keywords against those in hdr_keywod_dict.py
     Args:
@@ -398,6 +399,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         mode_used: str or None, observation mode used FS, MOS, or IFU (if None then a configuration file
                     is expected to exist and contain a variable named mode_used)
         detector: string, expects NRS1, NRS2, or None (in this case it will be read from the header)
+        subarray: None or string, name of the subarray to use
 
     Returns:
         specific_keys_dict: dictionary with specific keys and values that need to be changed
@@ -501,42 +503,105 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             specific_keys_dict[key] = 'GENERIC'
                             missing_keywds.append(key)
                     elif mode_used == "FS" or mode_used == "BOTS":
-                        # set the subarray according to size
-                        substrt1 = fits.getval(ff, "SUBSTRT1", 0)
-                        substrt2 = fits.getval(ff, "SUBSTRT2", 0)
-                        subsize1 = fits.getval(ff, "SUBSIZE1", 0)
-                        subsize2 = fits.getval(ff, "SUBSIZE2", 0)
-                        for subarrd_key, subarrd_vals_dir in subdict.subarray_dict.items():
-                            sst1 = subarrd_vals_dir["substrt1"]
-                            sst2_dict = subarrd_vals_dir["substrt2"]
-                            ssz1 = subarrd_vals_dir["subsize1"]
-                            ssz2 = subarrd_vals_dir["subsize2"]
-                            if substrt1 == sst1 and subsize1 == ssz1 and subsize2 == ssz2:
+                        if subarray is not None:
+                            # force the subarray keyword to be set to input
+                            if 'FULL' in subarray:
+                                pipe_subarr_val = 'FULL'
+                            elif '200A1' in subarray:
+                                pipe_subarr_val = 'SUBS200A1'
+                            elif '200A2' in subarray:
+                                pipe_subarr_val = 'SUBS200A2'
+                            elif '200B1' in subarray:
+                                pipe_subarr_val = 'SUBS200B1'
+                            elif '400A1' in subarray:
+                                pipe_subarr_val = 'SUBS400A1'
+                            specific_keys_dict[key] = pipe_subarr_val
+                            print("changing subarray keyword to ", pipe_subarr_val)
+                            missing_keywds.append(key)
+                            # set the subarray sizes and start keywords accordingly
+                            if subarray in subdict.subarray_dict:
+                                ssz1 = subdict.subarray_dict[subarray]["subsize1"]
+                                ssz2 = subdict.subarray_dict[subarray]["subsize2"]
+                                sst1 = subdict.subarray_dict[subarray]["substrt1"]
+                                sst2_dict = subdict.subarray_dict[subarray]["substrt2"]
                                 for grat, sst2_tuple in sst2_dict.items():
                                     if grat.lower() == grating.lower():
-                                        if 'FULL' in subarrd_key:
-                                            subarrd_key = 'FULL'
-                                        elif '200A1' in subarrd_key:
-                                            subarrd_key = 'SUBS200A1'
-                                        elif '200A2' in subarrd_key:
-                                            subarrd_key = 'SUBS200A2'
-                                        elif '200B1' in subarrd_key:
-                                            subarrd_key = 'SUBS200B1'
-                                        elif '400A1' in subarrd_key:
-                                            subarrd_key = 'SUBS400A1'
-                                        specific_keys_dict[key] = subarrd_key
-                                        print("changing subarray keyword to ", subarrd_key)
-                                        missing_keywds.append(key)
-                                        # this part is simply to check that the subarray values are correct
-                                        # but no values will be changed in the input file
                                         if "1" in detector:
                                             sst2 = sst2_tuple[0]
                                         elif "2" in detector:
                                             sst2 = sst2_tuple[1]
-                                        print("Subarray values in input file: \n", )
-                                        print("substrt1=", substrt1, " substrt2=", substrt2,  " subsize1=", subsize1, " subsize2=", subsize2)
-                                        print("Subarray values in PTT dictionary: \n", )
-                                        print("substrt1=", sst1, " substrt2=", sst2,  " subsize1=", ssz1, " subsize2=", ssz2)
+                                        break
+                                specific_keys_dict['SUBSTRT1'] = sst1
+                                specific_keys_dict['SUBSIZE1'] = ssz1
+                                specific_keys_dict['SUBSTRT2'] = sst2
+                                specific_keys_dict['SUBSIZE2'] = ssz2
+                                missing_keywds.append('SUBSTRT1')
+                                missing_keywds.append('SUBSIZE1')
+                                missing_keywds.append('SUBSTRT2')
+                                missing_keywds.append('SUBSIZE2')
+                                print("Subarray size and start keywords now set to: \n", )
+                                print("   substrt1=", sst1, " substrt2=", sst2, " subsize1=", ssz1, " subsize2=", ssz2)
+                        else:
+                            try:
+                                # set the subarray according to size
+                                substrt1 = fits.getval(ff, "SUBSTRT1", 0)
+                                substrt2 = fits.getval(ff, "SUBSTRT2", 0)
+                                subsize1 = fits.getval(ff, "SUBSIZE1", 0)
+                                subsize2 = fits.getval(ff, "SUBSIZE2", 0)
+                                for subarrd_key, subarrd_vals_dir in subdict.subarray_dict.items():
+                                    sst1 = subarrd_vals_dir["substrt1"]
+                                    sst2_dict = subarrd_vals_dir["substrt2"]
+                                    ssz1 = subarrd_vals_dir["subsize1"]
+                                    ssz2 = subarrd_vals_dir["subsize2"]
+                                    if substrt1 == sst1 and subsize1 == ssz1 and subsize2 == ssz2:
+                                        for grat, sst2_tuple in sst2_dict.items():
+                                            if grat.lower() == grating.lower():
+                                                if 'FULL' in subarrd_key:
+                                                    subarrd_key = 'FULL'
+                                                elif '200A1' in subarrd_key:
+                                                    subarrd_key = 'SUBS200A1'
+                                                elif '200A2' in subarrd_key:
+                                                    subarrd_key = 'SUBS200A2'
+                                                elif '200B1' in subarrd_key:
+                                                    subarrd_key = 'SUBS200B1'
+                                                elif '400A1' in subarrd_key:
+                                                    subarrd_key = 'SUBS400A1'
+                                                elif '1600A1' in subarrd_key:
+                                                    subarrd_key = 'SUBS1600A1'
+                                                specific_keys_dict[key] = subarrd_key
+                                                print("changing subarray keyword to ", subarrd_key)
+                                                missing_keywds.append(key)
+                                                # this part is simply to check that the subarray values are correct
+                                                # but no values will be changed in the input file
+                                                if "1" in detector:
+                                                    sst2 = sst2_tuple[0]
+                                                elif "2" in detector:
+                                                    sst2 = sst2_tuple[1]
+                                                print("Subarray values in input file: \n", )
+                                                print("substrt1=", substrt1, " substrt2=", substrt2,  " subsize1=",
+                                                      subsize1, " subsize2=", subsize2)
+                                                print("Subarray values in PTT dictionary: \n", )
+                                                print("   substrt1=", sst1, " substrt2=", sst2,  " subsize1=", ssz1,
+                                                      " subsize2=", ssz2)
+                            except KeyError:
+                                pipe_subarr_val = "GENERIC"
+                                specific_keys_dict[key] = pipe_subarr_val
+                                print("changing subarray keyword to ", pipe_subarr_val)
+                                missing_keywds.append(key)
+                                specific_keys_dict['SUBSTRT1'] = 1
+                                specific_keys_dict['SUBSIZE1'] = 2048
+                                specific_keys_dict['SUBSTRT2'] = 1
+                                specific_keys_dict['SUBSIZE2'] = 2048
+                                specific_keys_dict['FASTAXIS'] = 2
+                                specific_keys_dict['SLOWAXIS'] = 1
+                                missing_keywds.append('SUBSTRT1')
+                                missing_keywds.append('SUBSIZE1')
+                                missing_keywds.append('SUBSTRT2')
+                                missing_keywds.append('SUBSIZE2')
+                                missing_keywds.append('FASTAXIS')
+                                missing_keywds.append('SLOWAXIS')
+                                print("Subarray size and start keywords now set to: \n", )
+                                print("   SUBSTRT1=1", " SUBSTRT2=1", " SUBSIZE1=2048", " SUBSIZE2=2048")
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
@@ -694,7 +759,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
     return updated_fitsfile
 
 
-def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None):
+def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None, subarray=None):
     """
     This is the function that does all the work in this script (i.e. uses all other functions) to update the header
     Args:
@@ -703,6 +768,7 @@ def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None):
         mode_used: str or None, observation mode used FS, MOS, or IFU (if None then a configuration file
                     is expected to exist and contain a variable named mode_used)
         detector: string, expects NRS1, NRS2, or None (in this case it will be read from the header)
+        subarray: None or string, name of subarray to use
 
     Returns:
         updated_fitsfile: string, path and name of the outputs are a text file with all the added keywords and the
@@ -720,7 +786,7 @@ def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None):
     print('\n   Starting keyword check...')
     warnings_list, missing_keywds = [], []
     specific_keys_dict = check_keywds(file_keywd_dict, addedkeywds_file_name, warnings_list, missing_keywds, mode_used,
-                                      detector)
+                                      detector, subarray)
 
     # if warnings text file is empty erase it
     check_addedkeywds_file(addedkeywds_file_name)

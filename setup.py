@@ -31,8 +31,14 @@ def gen_entry_points(pkgdir, e_prefix):
 
 PACKAGE_NAME = "nirspec_pipe_testing_tool"
 BINPREFIX = "nptt"
-ENTRY_POINTS_PATH=os.path.normpath("{}/utils".format(PACKAGE_NAME))
-ENTRY_POINTS = gen_entry_points(ENTRY_POINTS_PATH, BINPREFIX)
+ENTRY_POINTS = []
+ENTRY_POINTS_PKGDIRS = [
+    os.path.normpath("{}/utils".format(PACKAGE_NAME)),
+    os.path.normpath("{}/calwebb_spec2_pytests/auxiliary_code".format(PACKAGE_NAME)),
+]
+
+for entry_point in ENTRY_POINTS_PKGDIRS:
+    ENTRY_POINTS += gen_entry_points(entry_point, BINPREFIX)
 
 
 setup(
