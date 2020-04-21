@@ -1,5 +1,7 @@
 import time
 import os
+import argparse
+import sys
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -708,29 +710,68 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, msa_shu
     return FINAL_TEST_RESULT, result_msg, log_msgs
 
 
+def main():
 
-if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument("step_input_filename",
+                        action='store',
+                        default=None,
+                        help='Name of input fits file prior to assign_wcs step, i.e. blah_rate.fits')
+    parser.add_argument("dflatref_path",
+                        action='store',
+                        default=None,
+                        help='Path and name of D-flat file.')
+    parser.add_argument("sfile_path",
+                        action='store',
+                        default=None,
+                        help='Path and name of S-flat file.')
+    parser.add_argument("fflat_path",
+                        action='store',
+                        default=None,
+                        help='Path and name of F-flat file.')
+    parser.add_argument("msa_shutter_conf",
+                        action='store',
+                        default=None,
+                        help='Name of the MSA shutter configuration file in pipeline format, e.g. blah_msa.fits')
+    parser.add_argument("-w",
+                        dest="writefile",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -w to NOT write files with calculated correction.')
+    parser.add_argument("-f",
+                        dest="save_figs",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -f to NOT save final figures.')
+    parser.add_argument("-s",
+                        dest="show_figs",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -s to show final figures.')
+    parser.add_argument("-t",
+                        dest="threshold_diff",
+                        action='store',
+                        default=9.999e-05,
+                        type=float,
+                        help='Use flag -t to change the default threshold (currently set to 9.999e-05).')
+    parser.add_argument("-d",
+                        dest="debug",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -d to turn on debug mode.')
+    args = parser.parse_args()
 
-    # This is a simple test of the code
-    pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
-
-    # input parameters that the script expects
-
-    # short MOS data
-    working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/src/sandbox/zzzz/first_run_MOSset/"
-    step_input_filename = working_dir+"jwtest1010001_01101_00001_NRS1_short_flat_field.fits"
-    msa_shutter_conf = working_dir+"/V9621500100101_short_msa.fits"
-    # simulated data
-    #working_dir = pipeline_path+"/src/sandbox/simulation_test/491_results/"
-    #step_input_filename = working_dir+"F170LP-G235M_MOS_observation-6-c0e0_001_DN_NRS1_mod_updatedHDR_flat_field.fits"
-    #msa_shutter_conf = working_dir+"jw95065006001_0_msa.fits"
-
-    dflatref_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat"
-    sfile_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.3_S_Flat/MOS/nirspec_MOS_sflat"
-    fflat_path = "/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/MOS/nirspec_MOS_fflat"
-
-    # name of the output images
-    writefile = True
+    # Set variables
+    step_input_filename = args.step_input_filename
+    dflatref_path = args.dflatref_path
+    sfile_path = args.sfile_path
+    fflat_path = args.fflat_path
+    msa_shutter_conf = args.msa_shutter_conf
+    writefile = args.writefile
+    save_figs = args.save_figs
+    show_figs = args.show_figs
+    threshold_diff = args.threshold_diff
+    debug = args.debug
 
     # set the names of the resulting plots
     plot_name = None
@@ -738,5 +779,9 @@ if __name__ == '__main__':
     # Run the principal function of the script
     median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
                            fflat_path=fflat_path, msa_shutter_conf=msa_shutter_conf, writefile=writefile,
-                           show_figs=True, save_figs=False, plot_name=plot_name, threshold_diff=1.0e-7, debug=False)
+                           show_figs=show_figs, save_figs=save_figs, plot_name=plot_name,
+                           threshold_diff=threshold_diff, debug=debug)
 
+
+if __name__ == '__main__':
+    sys.exit(main())

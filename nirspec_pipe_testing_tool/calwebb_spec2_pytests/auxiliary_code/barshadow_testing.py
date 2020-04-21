@@ -4,6 +4,8 @@ import numpy as np
 from astropy.io import fits
 from astropy import wcs
 from collections import OrderedDict
+import argparse
+import sys
 
 from jwst import datamodels
 
@@ -34,7 +36,7 @@ __version__ = "1.0"
 
 def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_final_figs=False, show_final_figs=False,
                         save_intermediary_figs=False, show_intermediary_figs=False, write_barshadow_files=False,
-                        debug=False):
+                        ref_file=None, debug=False):
     """
 
     Args:
@@ -47,6 +49,8 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         show_final_figs: boolean, if True the final figures with corresponding histograms will be shown
         save_intermediary_figs: boolean, if True the intermediary figures with corresponding histograms will be saved
         show_intermediary_figs: boolean, if True the intermediary figures with corresponding histograms will be shown
+        write_barshadow_files: boolean, if True the calculated correction files will be saved
+        ref_file: None or string, path to reference file
         debug: boolean
 
     Returns:
@@ -114,7 +118,8 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
             log_msgs.append(msg)
             print(msg)
         else:
-            msg = '* Missmatch of slitlet names in fits file previous to barshadow and in barshadow output file. Skipping test.'
+            msg = '* Missmatch of slitlet names in fits file previous to barshadow and in barshadow output file. ' \
+                  'Skipping test.'
             result = 'skip'
             log_msgs.append(msg)
             return result, msg, log_msgs
@@ -235,9 +240,10 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         # compute bar shadow corrections independently, given the wavelength and slit_y from the data model
         # get the reference file (need the mos1x1 for this internal lamp case, where each shutter was extracted separately)
         #if bsslit.shutter_state == 'x':
-        ref_file = '/grp/jwst/wit4/nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/referenceFilesBS-20160401/jwst-nirspec-mos1x1.bsrf.fits'
-        if bsslit.shutter_state == '1':
-            ref_file = '/grp/jwst/wit4/nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/referenceFilesBS-20160401/jwst-nirspec-mos1x3.bsrf.fits'
+        if ref_file is None:
+            ref_file = '/grp/jwst/wit4/nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/referenceFilesBS-20160401/jwst-nirspec-mos1x1.bsrf.fits'
+            if bsslit.shutter_state == '1':
+                ref_file = '/grp/jwst/wit4/nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/referenceFilesBS-20160401/jwst-nirspec-mos1x3.bsrf.fits'
         if debug:
             '''    shutter_state : str ----- ``Slit.shutter_state`` attribute - a combination of
                                     possible values: ``1`` - open shutter, ``0`` - closed shutter, ``x`` - main shutter
@@ -250,21 +256,21 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         bscor_ref = hdul[1].data
         w = wcs.WCS(hdul[1].header)
         y1, x1 = np.mgrid[:bscor_ref.shape[0], : bscor_ref.shape[1]]
-        lam_ref, slity_ref = w.all_pix2world(x1,y1,0)
+        lam_ref, slity_ref = w.all_pix2world(x1, y1, 0)
 
         # for slit wcs, interpolate over the reference file values
         lam_ref = lam_ref.reshape(bscor_ref.size)
         slity_ref = slity_ref.reshape(bscor_ref.size)
-        pixels_ref = np.column_stack((lam_ref,slity_ref))
+        pixels_ref = np.column_stack((lam_ref, slity_ref))
         bscor_ref = bscor_ref.reshape(bscor_ref.size)
         bswave_ex = bswave.reshape(bswave.size)
         indxs = ~np.isnan(bswave_ex)
         bsslity_ex = bsslity.reshape(bsslity.size)
-        xyints = np.column_stack((bswave_ex[indxs],bsslity_ex[indxs]))
+        xyints = np.column_stack((bswave_ex[indxs], bsslity_ex[indxs]))
         bscor = np.empty(bswave_ex.size)
         bscor[:] = np.nan
         bscor[indxs] = griddata(pixels_ref, bscor_ref, xyints, method='linear')
-        bscor = bscor.reshape(bswave.shape[0],bswave.shape[1])
+        bscor = bscor.reshape(bswave.shape[0], bswave.shape[1])
         if debug:
             print('bscor.shape = ', bscor.shape)
         msg = 'Calculation of barshadow correction done.'
@@ -322,8 +328,9 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         if debug:
             #print('bscor_pipe[9,1037],bswave[9,1037],bsslity[9,1037],bscor[9,1037]: ',
             #      bscor_pipe[9,1037],bswave[9,1037],bsslity[9,1037],bscor[9,1037])
-            print('bscor_pipe[point3[0], point3[1]],bswave[point3[0], point3[1]],bsslity[point3[0], point3[1]],bscor[point3[0], point3[1]]: ',
-                  bscor_pipe[point3[0], point3[1]],bswave[point3[0], point3[1]],bsslity[point3[0], point3[1]],bscor[point3[0], point3[1]])
+            print('bscor_pipe[point3[0], point3[1]],bswave[point3[0], point3[1]],bsslity[point3[0], point3[1]],'
+                  'bscor[point3[0], point3[1]]: ', bscor_pipe[point3[0], point3[1]], bswave[point3[0], point3[1]],
+                  bsslity[point3[0], point3[1]],bscor[point3[0], point3[1]])
 
 
         print('Creating final barshadow test plot...')
@@ -509,26 +516,83 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
     return FINAL_TEST_RESULT, result_msg, log_msgs
 
 
-if __name__ == '__main__':
+def main():
+    # Get arguments to run script
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument("plfile",
+                        action='store',
+                        default=None,
+                        help='Name of fits file prior to barshadow step, i.e. blah_extract_2d.fits')
+    parser.add_argument("bsfile",
+                        action='store',
+                        default=None,
+                        help='Name of barshadow output fits file, i.e. blah_barshadow.fits')
+    parser.add_argument("-t",
+                        dest="barshadow_threshold_diff",
+                        action='store',
+                        default=0.0025,
+                        type=float,
+                        help='Use flag -t to change the default threshold (currently set to 0.0025).')
+    parser.add_argument("-f",
+                        dest="save_final_figs",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -f to NOT save final figures.')
+    parser.add_argument("-s",
+                        dest="show_final_figs",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -s to show final figures.')
+    parser.add_argument("-i",
+                        dest="save_intermediary_figs",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -i to NOT save intermediary figures.')
+    parser.add_argument("-p",
+                        dest="show_intermediary_figs",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -p to show intermediary figures.')
+    parser.add_argument("-w",
+                        dest="write_barshadow_files",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -w to NOT write files with calculated correction.')
+    parser.add_argument("-r",
+                        dest="ref_file",
+                        action='store',
+                        default=None,
+                        help='Use flag -r to give a new reference file.')
+    parser.add_argument("-d",
+                        dest="debug",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -d to turn on debug mode.')
+    args = parser.parse_args()
 
-    # This is a simple test of the code
-    pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
-
-    # input parameters that the script expects
-    plfile = pipeline_path+'/testing_data/MOS/G140M_LINE1/NRSV84600010001_G140M_LINE1_NRS2_extract_2d.fits'
-    bsfile = pipeline_path+'/testing_data/MOS/G140M_LINE1/NRSV84600010001_G140M_LINE1_NRS2_barshadow.fits'
-
-    # name of the output images
-    writefile = True
-
-    # This value comes from the document ESA-JWST-SCI-NRS-TN-2016-016.pdf, it is an arbitrary error of the
-    # reference file of 0.0025 absolute error or 5% relative error (no justification)
-    barshadow_threshold_diff = 0.0025
+    # Set the variables input from the command line
+    plfile = args.plfile
+    bsfile = args.bsfile
+    barshadow_threshold_diff = args.barshadow_threshold_diff
+    save_final_figs = args.save_final_figs
+    show_final_figs = args.show_final_figs
+    save_intermediary_figs = args.save_intermediary_figs
+    show_intermediary_figs = args.show_intermediary_figs
+    write_barshadow_files = args.write_barshadow_files
+    ref_file = args.ref_file
+    debug = args.debug
 
     # Run the principal function of the script
-    run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=barshadow_threshold_diff, save_final_figs=True,
-                        show_final_figs=False, save_intermediary_figs=True, show_intermediary_figs=False,
-                        write_barshadow_files=False, debug=True)
+    run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=barshadow_threshold_diff,
+                        save_final_figs=save_final_figs, show_final_figs=show_final_figs,
+                        save_intermediary_figs=save_intermediary_figs, show_intermediary_figs=show_intermediary_figs,
+                        write_barshadow_files=write_barshadow_files, ref_file=ref_file, debug=debug)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
+
 
 
 

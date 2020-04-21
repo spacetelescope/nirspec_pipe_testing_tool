@@ -1,5 +1,7 @@
 import numpy as np
 import os
+import argparse
+import sys
 from collections import OrderedDict
 from astropy.io import fits
 from astropy import wcs
@@ -422,22 +424,57 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
     return FINAL_TEST_RESULT, log_msgs
 
 
-if __name__ == '__main__':
+def main():
 
-    # This is a simple test of the code
-    pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument("infile_name",
+                        action='store',
+                        default=None,
+                        help='Name of input fits file prior to assign_wcs step, i.e. blah_rate.fits')
+    parser.add_argument("esa_files_path",
+                        action='store',
+                        default=None,
+                        help='Name of path were to locate the benchmark files for comparison')
+    parser.add_argument("-f",
+                        dest="show_figs",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -s to show on figures.')
+    parser.add_argument("-s",
+                        dest="save_figs",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -s to save on figures.')
+    parser.add_argument("-t",
+                        dest="threshold_diff",
+                        action='store',
+                        default=1.0e-7,
+                        type=float,
+                        help='Use flag -t change the default threshold (currently set to 1.0e-7).')
+    parser.add_argument("-d",
+                        dest="debug",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -d to turn on debug mode.')
+    args = parser.parse_args()
 
-    # input parameters that the script expects
-    #working_dir = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline/testing_data/IFU_CV3/PRISM_CLEAR/pipe_testing_files_and_reports/6007022859_491_processing"
-    working_dir = pipeline_path+"/testing_data/IFU_CV3/G140M_F100LP/pipe_testing_files_and_reports/491_processing"
-    infile_name = working_dir+"/gain_scale_NRS1_assign_wcs.fits"
-    #esa_files_path=pipeline_path+"/build7/test_data/ESA_intermediary_products/RegressionTestData_CV3_March2017_IFU/"
-    esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/IFU_CV3/ESA_Int_products"
+    # Set the variables input from the command line
+    infile_name = args.infile_name
+    esa_files_path = args.esa_files_path
+    show_figs = args.show_figs
+    save_figs = args.save_figs
+    threshold_diff = args.threshold_diff
+    debug = args.debug
 
     # print pipeline version
     import jwst
     print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script
-    result = compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=False, save_figs=True,
-                         threshold_diff=1.0e-7, debug=False)
+    compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs, save_figs=save_figs,
+                threshold_diff=threshold_diff, debug=debug)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+

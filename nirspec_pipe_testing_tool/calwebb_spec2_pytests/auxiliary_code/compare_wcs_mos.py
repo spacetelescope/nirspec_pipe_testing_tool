@@ -1,6 +1,8 @@
 import numpy as np
 import os
 import subprocess
+import argparse
+import sys
 from collections import OrderedDict
 from astropy.io import fits
 from astropy import wcs
@@ -545,31 +547,71 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
 
 
 
-if __name__ == '__main__':
+def main():
 
-    # This is a simple test of the code
-    pipeline_path = "/Users/pena/Documents/PyCharmProjects/nirspec/pipeline"
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument("infile_name",
+                        action='store',
+                        default=None,
+                        help='Name of input fits file prior to assign_wcs step, i.e. blah_rate.fits')
+    parser.add_argument("esa_files_path",
+                        action='store',
+                        default=None,
+                        help='Path were to locate the benchmark files for comparison')
+    parser.add_argument("msa_conf_name",
+                        action='store',
+                        default=None,
+                        help='Name of the MSA shutter configuration file in pipeline format, e.g. blah_msa.fits')
+    parser.add_argument("-f",
+                        dest="show_figs",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -s to show on figures.')
+    parser.add_argument("-s",
+                        dest="save_figs",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -s to save on figures.')
+    parser.add_argument("-t",
+                        dest="threshold_diff",
+                        action='store',
+                        default=1.0e-7,
+                        type=float,
+                        help='Use flag -t change the default threshold (currently set to 1.0e-7).')
+    parser.add_argument("-m",
+                        dest="MOS_sim",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -m to turn on mode for MOS simulations.')
+    parser.add_argument("-d",
+                        dest="debug",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -d to turn on debug mode.')
+    args = parser.parse_args()
 
-    # input parameters that the script expects
-    working_dir = pipeline_path+"/src/sandbox/zzzz/first_run_MOSset/"
-    infile_name = working_dir+"jwtest1010001_01101_00001_NRS1_short_assign_wcs.fits"
-    msa_conf_name = working_dir+"V9621500100101_short_msa.fits"
-    #working_dir = pipeline_path+"/src/sandbox/MOS_G395M_test/"
-    #infile_name = working_dir+"g395m_nrs1_gain_scale_assign_wcs.fits"
-    #msa_conf_name = working_dir+"V9621500100101_msa.fits"
-    esa_files_path = "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/MOS_CV3/ESA_Int_products"
-
-    #working_dir = pipeline_path+"/src/sandbox/simulation_test/491_results/"
-    #infile_name = working_dir+"F170LP-G235M_MOS_observation-6-c0e0_001_DN_NRS1_mod_updatedHDR_assign_wcs.fits"
-    #msa_conf_name = working_dir+"jw95065006001_0_msa.fits"
-    #msa_conf_name = working_dir+"jw95065006001_0_singles_msa.fits"
-    #esa_files_path="/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/simulations/ESA_Int_products"
+    # Set the variables input from the command line
+    infile_name = args.infile_name
+    esa_files_path = args.esa_files_path
+    msa_conf_name = args.msa_conf_name
+    show_figs = args.show_figs
+    save_figs = args.save_figs
+    threshold_diff = args.threshold_diff
+    MOS_sim = args.MOS_sim
+    debug = args.debug
 
     # choose None or MOS_sim, only for MOS simulations
-    mode_used = "MOS"
-    #mode_used = "MOS_sim"
+    if MOS_sim:
+        mode_used = "MOS_sim"
+    else:
+        mode_used = "MOS"
 
     # Run the principal function of the script
-    result = compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
-                         show_figs=False, save_figs=True, threshold_diff=1.0e-7, mode_used=mode_used, debug=False)
+    compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
+                show_figs=show_figs, save_figs=save_figs, threshold_diff=threshold_diff,
+                mode_used=mode_used, debug=debug)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
 
