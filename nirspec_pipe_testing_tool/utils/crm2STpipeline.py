@@ -51,7 +51,7 @@ __version__ = "1.1"
 # Feb 2020 - Version 1.1: added part to match and replace keyword values from IPS file
 
 
-def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
+def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False, subarray=None):
     """
     This function is the wraper for the scripts needed to convert a crm file to a pipeline ready product.
     Args:
@@ -59,10 +59,43 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
         mode_used: string, possible values are FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf
         add_ref_pix: boolean, if True it will add the reference pixels for full frame
         only_update: boolean, if False the code will create a new file with updated header
+        subarray: None or string, name of subarray to use
 
     Returns:
         out_fits: string, path and name of the final product is the file that is pipeline ready.
     """
+
+    # set the subarray value to what the code expects
+    if subarray is not None:
+        if "full" in subarray.lower():
+            subarray = "FULL-FRAME"
+        elif "all" in subarray.lower():
+            subarray = "ALLSLITS"
+        elif "200a1" in subarray.lower():
+            subarray = "S200A1"
+        elif "200a2" in subarray.lower():
+            subarray = "S200A2"
+        elif "200b1" in subarray.lower():
+            subarray = "S200B1"
+        elif "400" in subarray.lower():
+            subarray = "S400A1"
+        elif "1024a" in subarray.lower():
+            subarray = "SUB1024A"
+        elif "1024b" in subarray.lower():
+            subarray = "SUB1024B"
+        elif "2048" in subarray.lower():
+            subarray = "SUB2048"
+        elif "32" in subarray.lower():
+            subarray = "SUB32"
+        elif "512" in subarray.lower():
+            subarray = "SUB512"
+        elif "512s" in subarray.lower():
+            subarray = "SUB512S"
+        else:
+            print(" * Oh oh, subarray {} is not a recognized value.".format(subarray))
+            print("   Recognized values: FULL, 200A1, 200A2, 400, 1600, 1024A, 1024B, 2048, 32, 512, 512S")
+            print("   Exiting script.\n")
+            exit()
 
     # Perform data move to the science extension if needed, i.e. if there is only 1 data extension
     hdulist = fits.open(input_fits_file)
@@ -121,7 +154,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
 
             # Perform the keyword check on the file with the right number of extensions
             print("Fixing the header keywords for detector ", det)
-            out_fits = lev2bcheck.check_lev2b_hdr_keywd(st_pipe_file, only_update, mode_used, det)
+            out_fits = lev2bcheck.check_lev2b_hdr_keywd(st_pipe_file, only_update, mode_used, det, subarray)
 
             print("Done with detector", det, "\n")
 
@@ -134,7 +167,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False):
 
                 # Perform the keyword check on the file with the right number of extensions
                 print("Fixing the header keywords")
-                out_fits = lev2bcheck.check_lev2b_hdr_keywd(outfile_name, only_update, mode_used, det)
+                out_fits = lev2bcheck.check_lev2b_hdr_keywd(outfile_name, only_update, mode_used, det, subarray)
 
         else:
             print("No need to rename or modify file for ST pipeline ingestion. Exiting script.")
@@ -226,6 +259,11 @@ def main():
                         default=True,
                         help='Use -n if wanting to create a new file with updated header. Default is to update '
                              'header without creating a new file')
+    parser.add_argument("-s",
+                        dest="subarray",
+                        action='store',
+                        default=None,
+                        help='Use -s to use a specific subarray.')
     args = parser.parse_args()
 
     # Set the variables
@@ -235,9 +273,10 @@ def main():
     proposal_title = args.proposal_title
     target_name = args.target_name
     new_file = args.new_file
+    subarray = args.subarray
 
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
-    stsci_pipe_ready_file = crm2pipe(ips_file, mode_used, add_ref_pix, new_file)
+    stsci_pipe_ready_file = crm2pipe(ips_file, mode_used, add_ref_pix, new_file, subarray)
 
     # create dictionary of command-line arguments
     additional_args_dict = {'TITLE': proposal_title,

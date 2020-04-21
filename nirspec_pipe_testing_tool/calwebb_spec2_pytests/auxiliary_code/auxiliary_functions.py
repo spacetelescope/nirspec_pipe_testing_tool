@@ -9,7 +9,6 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from decimal import Decimal
-from nirspec_pipe_testing_tool.calwebb_spec2_pytests import TESTSDIR
 
 
 """
@@ -707,3 +706,13 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
         plt.show()
 
     plt.close()
+
+
+def main():
+    print("Functions in this module cannot be executed from the command line. To access functions, call from script.")
+    pass
+
+
+if __name__ == '__main__':
+    import sys
+    sys.exit(main())
