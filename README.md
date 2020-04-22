@@ -369,7 +369,7 @@ to an STScI pipeline-ingestible file (with all the keyword header modifications)
 to do this run the module ```crm2STpipeline```:
 To run this type:
 ```bash
-nptt_crm2STpipeline file.fits MODE -r -p -t -n -s
+nptt_crm2STpipeline file.fits MODE -r -p=my_proposal -t=my_target -n=new_file -s=200a1
 ```
 where ```MODE``` is FS, MOS, IFU, BOTS, or dark. The input file for this module generally
 has a ```.crm``` or ```.cts``` suffix. The output files of this script can be directly
