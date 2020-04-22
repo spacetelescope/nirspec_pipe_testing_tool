@@ -102,7 +102,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False, subarra
     print("Contents of the input file")
     print(hdulist.info(), "\n")
     sci_ext, dq_ext, err_ext = False, False, False
-    data_ext, var_ext, quality_ext = True, True, True
+    data_ext, var_ext, quality_ext, header_ext = True, True, True, True
     ext_name_list = []
     for hdu in hdulist:
         if hdu.name == "PRIMARY":
@@ -119,6 +119,8 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False, subarra
             var_ext = False
         elif "QUALITY" not in hdu.name:
             quality_ext = False
+        elif "HEADER" not in hdu.name:
+            header_ext = False
         ext_name_list.append(hdu.name)
 
     # Determine which detector to use
@@ -135,6 +137,8 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update=False, subarra
     elif "NRS2" in input_fits_file or "492" in input_fits_file:
         #print("NRS2 in file name")
         detectors = ["NRS2"]
+    if len(hdulist) == 5:
+        detectors = [fits.getval(input_fits_file, "DET", 0)]
 
     if not data_ext and not var_ext and not quality_ext:
         print("The extension names do not match the expected: DATA, VAR, QUALITY or SCI, DQ, ERR.")

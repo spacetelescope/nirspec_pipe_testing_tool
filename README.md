@@ -369,7 +369,7 @@ to an STScI pipeline-ingestible file (with all the keyword header modifications)
 to do this run the module ```crm2STpipeline```:
 To run this type:
 ```bash
-nptt_crm2STpipeline file.fits MODE -r -p -t -n
+nptt_crm2STpipeline file.fits MODE -r -p -t -n -s
 ```
 where ```MODE``` is FS, MOS, IFU, BOTS, or dark. The input file for this module generally
 has a ```.crm``` or ```.cts``` suffix. The output files of this script can be directly
@@ -377,7 +377,9 @@ ingested into the cal_spec2 pipeline, no need to run cal_dedector1. The flag ```
 is used only for IFU data, when needing to add the reference pixels. The other three
 flags are to modify the keyword values to match IPS information: the flag ```-p``` is
 to modify the proposal title header keyword, the ```-t``` flag is to modify the target
-name header keyword, and the ```-n``` flag is to create a new file with updated header.
+name header keyword, the ```-n``` flag is to create a new file with updated header, and
+the ```-s``` flag is to force the script to use this specific subarray (and to set other
+associated parameters automatically).
 
 This module can also be called from a script in the following way:
 ```bash
@@ -389,9 +391,11 @@ only_update = True
 proposal_title = 'my_title'
 target_name = 'my_target'
 new_file = 'a_new_name'  # this is only used if only_update=False
+subarray = "200a1"   # this will force the script to use this subarray
 
 # create the pipeline-ready count rate file
-stsci_pipe_ready_file = nptt.utils.crm2STpipeline.crm2pipe(input_fits_file, mode_used, add_ref_pix, only_update)
+stsci_pipe_ready_file = nptt.utils.crm2STpipeline.crm2pipe(input_fits_file, mode_used,
+                                                           add_ref_pix, only_update, subarray)
 
 # create the dictionary of special arguments
 additional_args_dict = {'TITLE': proposal_title, 'TARGNAME': target_name, 'new_file': new_file}
