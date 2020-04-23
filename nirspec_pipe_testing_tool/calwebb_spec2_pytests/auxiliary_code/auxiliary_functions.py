@@ -634,11 +634,10 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
         Nothing.
     """
     # set up generals
-    font = {#'family' : 'normal',
-            'weight' : 'normal',
-            'size'   : 16}
+    font = {'weight': 'normal',
+            'size': 16}
     matplotlib.rc('font', **font)
-    fig = plt.figure(1, figsize=(12, 10))
+    plt.figure(1, figsize=(12, 10))
     plt.subplots_adjust(hspace=0.4)
     alpha = 0.2
     fontsize = 15

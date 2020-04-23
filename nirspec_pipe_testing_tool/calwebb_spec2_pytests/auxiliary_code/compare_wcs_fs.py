@@ -31,7 +31,8 @@ __version__ = "2.4"
 # May 2019 - Version 2.4: Fixed indexing missmatch with pipeline and ESA ALLSLITS subarray files
 
 
-def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=False, threshold_diff=1.0e-7, debug=False):
+def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=False, threshold_diff=1.0e-7,
+                raw_data_root_file=None, output_directory=None, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the pipeline
     data model with the ESA intermediary files.
@@ -42,6 +43,8 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         show_figs: boolean, whether to show plots or not
         save_figs: boolean, save the plots or not
         threshold_diff: float, threshold difference between pipeline output and ESA file
+        raw_data_root_file: None or string, name of the raw file that produced the _uncal.fits file for caldetector1
+        output_directory: None or string, path to the output_directory where to save the plots
         debug: boolean, if true a series of print statements will show on-screen
 
     Returns:
@@ -54,14 +57,23 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
     log_msgs = []
 
     # get grating and filter info from the rate file header
-    det = fits.getval(infile_name, "DETECTOR", 0)
-    msg = 'infile_name='+infile_name
-    print(msg)
-    log_msgs.append(msg)
-    lamp = fits.getval(infile_name, "LAMP", 0)
-    grat = fits.getval(infile_name, "GRATING", 0)
-    filt = fits.getval(infile_name, "FILTER", 0)
-    msg = "from assign_wcs file  -->     Detector: "+det+"   Grating: "+grat+"   Filter: "+filt+"   Lamp: "+lamp
+    if isinstance(infile_name, str):
+        # get the datamodel from the assign_wcs output file
+        img = datamodels.ImageModel(infile_name)
+        msg = 'infile_name='+infile_name
+        print(msg)
+        log_msgs.append(msg)
+        basenameinfile_name = os.path.basename(infile_name)
+    else:
+        img = infile_name
+        basenameinfile_name = ""
+
+    det = img.meta.instrument.detector   # fits.getval(infile_name, "DETECTOR", 0)
+    lamp = img.meta.instrument.lamp_state   # fits.getval(infile_name, "LAMP", 0)
+    grat = img.meta.instrument.grating   # fits.getval(infile_name, "GRATING", 0)
+    filt = img.meta.instrument.filter   # fits.getval(infile_name, "FILTER", 0)
+    msg = "from assign_wcs file  -->     Detector: " + det + "   Grating: " + grat + "   Filter: " + \
+          filt + "   Lamp: " + lamp
     print(msg)
     log_msgs.append(msg)
 
@@ -76,9 +88,6 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
     # list to determine if pytest is passed or not
     total_test_result = OrderedDict()
 
-    # get the datamodel from the assign_wcs output file
-    img = datamodels.ImageModel(infile_name)
-
     # To get the open and projected on the detector
     open_slits = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
     for opslit in open_slits:
@@ -88,12 +97,8 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         log_msgs.append(msg)
 
         # Get the ESA trace
-        #raw_data_root_file = "NRSV84600010001P0000000002101_4_491_SE_2016-01-17T17h34m08.fits"  # for testing with G140M FULLFRAME
-        #raw_data_root_file = "NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits"  # for testing with G140H FULLFRAME
-        #raw_data_root_file = "NRSSDRK-ALLSLITS-5345150216_1_491_SE_2015-12-11T15h40m25.fits"  # for testing with G140H ALLSLITS
-        #raw_data_root_file = "NRSV84600002001P0000000002101_1_491_SE_2016-01-17T15h09m16.fits"  # for testing with G140M ALLSLITS
-        #raw_data_root_file = "NRSV84600004001P0000000002101_1_491_SE_2016-01-17T15h41m16.fits"  # for testing with G235H ALLSLITS
-        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
+        if raw_data_root_file is None:
+            _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
         specifics = [pipeslit]
 
         # check if ESA data is not in the regular directory tree, these files are exceptions
@@ -111,7 +116,6 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         else:
             nid = None
 
-        #esafile= "/grp/jwst/wit4/nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/FS_CV3/ESA_Int_products/Trace_SLIT_A_1600_V84600004001P0000000002101_39530_JLAB88_000001.fits"
         esafile, esafile_log_msgs = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
         for msg in esafile_log_msgs:
             log_msgs.append(msg)
@@ -250,7 +254,7 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
             log_msgs.append(msg)
 
         # check if subarray is not FULL FRAME
-        subarray = fits.getval(infile_name, "SUBARRAY", 0)
+        subarray = img.meta.subarray   # fits.getval(infile_name, "SUBARRAY", 0)
 
         if "FULL" not in subarray:
             # In subarray coordinates
@@ -391,7 +395,6 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
         # PLOTS
         if show_figs or save_figs:
             # set the common variables
-            basenameinfile_name = os.path.basename(infile_name)
             main_title = filt+"   "+grat+"   SLIT="+pipeslit+"\n"
             bins = 15   # binning for the histograms, if None the function will automatically calculate number
             #             lolim_x, uplim_x, lolim_y, uplim_y
@@ -407,10 +410,19 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_wave_diffs.pdf")
-                auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
-                                             plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
-                                             save_figs=save_figs)
+                specific_plt_name = "_rel_wave_diffs.jpg"
+                if isinstance(infile_name, str):
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+specific_plt_name)
+                else:
+                    if output_directory is not None:
+                        plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
+                    else:
+                        plt_name = None
+                        save_figs = False
+                        print("No output_directory was provided. Figures will NOT be saved.")
+                auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img,
+                                                              info_hist, plt_name=plt_name, plt_origin=plt_origin,
+                                                              show_figs=show_figs, save_figs=save_figs)
 
             # Slit-y
             title = main_title+r"Relative slit position = $\Delta$slit_y"+"\n"
@@ -422,7 +434,16 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_slitY_diffs.pdf")
+                specific_plt_name = "_rel_slitY_diffs.jpg"
+                if isinstance(infile_name, str):
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+specific_plt_name)
+                else:
+                    if output_directory is not None:
+                        plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
+                    else:
+                        plt_name = None
+                        save_figs = False
+                        print("No output_directory was provided. Figures will NOT be saved.")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -437,7 +458,16 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_MSAx_diffs.pdf")
+                specific_plt_name = "_rel_MSAx_diffs.jpg"
+                if isinstance(infile_name, str):
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+specific_plt_name)
+                else:
+                    if output_directory is not None:
+                        plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
+                    else:
+                        plt_name = None
+                        save_figs = False
+                        print("No output_directory was provided. Figures will NOT be saved.")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -452,7 +482,16 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                 print(msg)
                 log_msgs.append(msg)
             else:
-                plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_MSAy_diffs.pdf")
+                specific_plt_name = "_rel_MSAy_diffs.jpg"
+                if isinstance(infile_name, str):
+                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+specific_plt_name)
+                else:
+                    if output_directory is not None:
+                        plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
+                    else:
+                        plt_name = None
+                        save_figs = False
+                        print("No output_directory was provided. Figures will NOT be saved.")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -468,7 +507,16 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_V2_diffs.pdf")
+                    specific_plt_name = "_rel_V2_diffs.jpg"
+                    if isinstance(infile_name, str):
+                        plt_name = infile_name.replace(basenameinfile_name, pipeslit + "_" + det + specific_plt_name)
+                    else:
+                        if output_directory is not None:
+                            plt_name = os.path.join(output_directory, pipeslit + "_" + det + specific_plt_name)
+                        else:
+                            plt_name = None
+                            save_figs = False
+                            print("No output_directory was provided. Figures will NOT be saved.")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, notnan_reldiffpv2_stats, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                                  save_figs=save_figs)
@@ -483,7 +531,16 @@ def compare_wcs(infile_name, esa_files_path=None, show_figs=True, save_figs=Fals
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    plt_name = infile_name.replace(basenameinfile_name, pipeslit+"_"+det+"_rel_V3_diffs.pdf")
+                    specific_plt_name = "_rel_V3_diffs.jpg"
+                    if isinstance(infile_name, str):
+                        plt_name = infile_name.replace(basenameinfile_name, pipeslit + "_" + det + specific_plt_name)
+                    else:
+                        if output_directory is not None:
+                            plt_name = os.path.join(output_directory, pipeslit + "_" + det + specific_plt_name)
+                        else:
+                            plt_name = None
+                            save_figs = False
+                            print("No output_directory was provided. Figures will NOT be saved.")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, notnan_reldiffpv3, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                                  save_figs=save_figs)
@@ -528,7 +585,7 @@ def main():
     parser.add_argument("esa_files_path",
                         action='store',
                         default=None,
-                        help='Name of path were to locate the benchmark files for comparison')
+                        help='Path were to locate the benchmark files for comparison')
     parser.add_argument("-f",
                         dest="show_figs",
                         action='store_true',
@@ -545,6 +602,16 @@ def main():
                         default=1.0e-7,
                         type=float,
                         help='Use flag -t change the default threshold (currently set to 1.0e-7).')
+    parser.add_argument("-r",
+                        dest="raw_data_root_file",
+                        action='store',
+                        default=None,
+                        help='Use flag -r to give a raw_data_root_file.')
+    parser.add_argument("-o",
+                        dest="output_directory",
+                        action='store',
+                        default=None,
+                        help='Use flag -o to provide the output_directory to save the figs.')
     parser.add_argument("-d",
                         dest="debug",
                         action='store_true',
@@ -558,6 +625,8 @@ def main():
     show_figs = args.show_figs
     save_figs = args.save_figs
     threshold_diff = args.threshold_diff
+    raw_data_root_file = args.raw_data_root_file
+    output_directory = args.output_directory
     debug = args.debug
 
     # print pipeline version
@@ -566,7 +635,8 @@ def main():
 
     # Run the principal function of the script, it will return:  result, log_msgs
     compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs, save_figs=save_figs,
-                threshold_diff=threshold_diff, debug=debug)
+                threshold_diff=threshold_diff, raw_data_root_file=raw_data_root_file,
+                output_directory=output_directory, debug=debug)
 
 
 if __name__ == '__main__':
