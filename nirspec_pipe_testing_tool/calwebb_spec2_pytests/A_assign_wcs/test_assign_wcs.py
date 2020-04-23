@@ -16,7 +16,7 @@ from jwst.pipeline.calwebb_image2 import Image2Pipeline
 from . import assign_wcs_utils
 from .. import core_utils
 from .. import TESTSDIR
-from ..auxiliary_code import change_filter_opaque2science
+from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from ..auxiliary_code import compare_wcs_ifu
 from ..auxiliary_code import compare_wcs_fs
 from ..auxiliary_code import compare_wcs_mos
@@ -405,17 +405,23 @@ def validate_wcs(output_hdul):
     if core_utils.check_FS_true(hdu):
         result, log_msgs = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
                                                       save_figs=save_wcs_plots, threshold_diff=threshold_diff,
+                                                      raw_data_root_file=None,
+                                                      output_directory=None,
                                                       debug=False)
 
     elif core_utils.check_MOS_true(hdu) and mode_used != "MOS_sim":
         result, log_msgs = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path,
                                                        msa_conf_name=msa_conf_name,
                                                        show_figs=show_figs, save_figs=save_wcs_plots,
-                                                       threshold_diff=threshold_diff, debug=False)
+                                                       threshold_diff=threshold_diff,
+                                                       raw_data_root_file=None,
+                                                       output_directory=None, debug=False)
 
     elif core_utils.check_IFU_true(hdu):
         result, log_msgs = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
                                                        save_figs=save_wcs_plots, threshold_diff=threshold_diff,
+                                                       raw_data_root_file=None,
+                                                       output_directory=None,
                                                        debug=False)
 
     else:
