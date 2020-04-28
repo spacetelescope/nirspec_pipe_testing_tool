@@ -12,7 +12,7 @@ import pytest
 from astropy.io import fits
 from jwst.cube_build.cube_build_step import CubeBuildStep
 
-from .. auxiliary_code import change_filter_opaque2science
+from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from . import cube_build_utils
 from .. import core_utils
 from .. import TESTSDIR
