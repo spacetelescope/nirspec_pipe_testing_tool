@@ -15,7 +15,7 @@ from jwst.srctype.srctype_step import SourceTypeStep
 from . import srctype_utils
 from .. import core_utils
 from .. import TESTSDIR
-from .. auxiliary_code import change_filter_opaque2science
+from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 
 
 

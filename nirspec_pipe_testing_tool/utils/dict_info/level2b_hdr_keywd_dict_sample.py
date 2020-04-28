@@ -87,6 +87,7 @@ keywd_dict[
     'MU_EPOCH'] = '2000-01-01T00:00:00.000'  # proposed specified proper motion epoch RA and Dec values, e.g. 2000.0
 keywd_dict['PROP_RA'] = 0.0  # proposer specified RA for the target, e.g. 0.0
 keywd_dict['PROP_DEC'] = 0.0  # proposer specified Dec for the target, e.g. 0.0
+keywd_dict['SRCTYAPT'] = 'UNKNOWN'  # source type as defined by user in APT, other values: 'POINT', 'EXTENDED'
 
 # Instrument configuration information
 keywd_dict['INSTRUME'] = 'NIRSPEC'  # Identifier for instrument used to acquire data
