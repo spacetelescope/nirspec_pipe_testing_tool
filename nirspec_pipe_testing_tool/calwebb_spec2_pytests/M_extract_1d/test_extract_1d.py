@@ -11,7 +11,7 @@ from astropy.io import fits
 from glob import glob
 from jwst.extract_1d.extract_1d_step import Extract1dStep
 
-from .. auxiliary_code import change_filter_opaque2science
+from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from . import extract_1d_utils
 from .. import core_utils
 from .. import TESTSDIR

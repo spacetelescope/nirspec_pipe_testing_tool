@@ -11,7 +11,7 @@ from glob import glob
 from astropy.io import fits
 from jwst.resample import ResampleSpecStep
 
-from .. auxiliary_code import change_filter_opaque2science
+from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from . import resample_utils
 from .. import core_utils
 from .. import TESTSDIR

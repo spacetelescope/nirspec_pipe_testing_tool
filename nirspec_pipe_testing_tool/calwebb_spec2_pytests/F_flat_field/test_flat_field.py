@@ -19,7 +19,7 @@ from .. import TESTSDIR
 from .. auxiliary_code import flattest_fs
 from .. auxiliary_code import flattest_ifu
 from .. auxiliary_code import flattest_mos
-from .. auxiliary_code import change_filter_opaque2science
+from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 
 
 

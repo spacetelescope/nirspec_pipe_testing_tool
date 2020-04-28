@@ -177,12 +177,27 @@ git clone the_ulr_you_copied
 After this is done, you should see a full copy of the PTT in your directory.
 
 **Updating PTT**
-- If you have already cloned or forked the repository, in the terminal go to where you placed
-the ```nirspec_pipe_testing_tool``` directory. Then, use the following command to update 
+- If you are not a developer and do not have the source code, simply run again the command:
+```bash
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@master
+```
+- If you are not a developer but have the source code, in the terminal go to where you placed
+the ```nirspec_pipe_testing_tool``` directory. Then, use the following commands to update
 the code:
-```git pull```
-- If, however, you had written script(s) in the tool's directory tree, git will not let 
-you continue until you move the script(s) to another directory. 
+```bash
+git pull
+pip install .
+```
+- If you are a developer and have already forked the repository, in the terminal go to
+ where you placed the ```nirspec_pipe_testing_tool``` directory. Then, use the following
+ commands to update the code:
+```bash
+git pull
+pip install -e .
+```
+- Note that if you had changed anything or written script(s) in the tool's directory tree,
+git will not let you continue until you commit the changes or move the script(s) to another
+directory.
 
 
 **STEP 4.** Prepare the data to run through the pipeline. To do this:
