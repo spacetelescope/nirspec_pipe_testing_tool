@@ -205,7 +205,7 @@ def output_hdul(set_inandout_filenames, config):
 @pytest.fixture(scope="module")
 def validate_flat_field(output_hdul):
     hdu = output_hdul[0]
-    step_output_file, msa_shutter_conf, dflatref_path, sfile_path, fflat_path = output_hdul[2]
+    step_output_file, msa_shutter_conf, dflat_path, sflat_path, fflat_path = output_hdul[2]
     flattest_threshold_diff, save_flattest_plot, write_flattest_files = output_hdul[3]
 
     # show the figures
@@ -214,24 +214,32 @@ def validate_flat_field(output_hdul):
     log_msgs = None
 
     if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
-        median_diff, result_msg, log_msgs = flattest_fs.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                                                fflat_path=fflat_path, writefile=write_flattest_files,
-                                                show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
-                                                threshold_diff=flattest_threshold_diff, debug=False)
+        median_diff, result_msg, log_msgs = flattest_fs.flattest(step_output_file, dflat_path=dflat_path,
+                                                                 sflat_path=sflat_path, fflat_path=fflat_path,
+                                                                 writefile=write_flattest_files,
+                                                                 show_figs=show_figs, save_figs=save_flattest_plot,
+                                                                 plot_name=None,
+                                                                 threshold_diff=flattest_threshold_diff,
+                                                                 output_directory=None, debug=False)
 
     elif core_utils.check_MOS_true(hdu):
-        median_diff, result_msg, log_msgs = flattest_mos.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                                               fflat_path=fflat_path, msa_shutter_conf=msa_shutter_conf,
-                                               writefile=write_flattest_files,
-                                               show_figs=show_figs, save_figs=save_flattest_plot, plot_name=None,
-                                               threshold_diff=flattest_threshold_diff, debug=False)
+        median_diff, result_msg, log_msgs = flattest_mos.flattest(step_output_file, dflat_path=dflat_path,
+                                                                  sflat_path=sflat_path, fflat_path=fflat_path,
+                                                                  msa_shutter_conf=msa_shutter_conf,
+                                                                  writefile=write_flattest_files,
+                                                                  show_figs=show_figs, save_figs=save_flattest_plot,
+                                                                  plot_name=None,
+                                                                  threshold_diff=flattest_threshold_diff,
+                                                                  debug=False)
 
     elif core_utils.check_IFU_true(hdu):
-        median_diff, result_msg, log_msgs = flattest_ifu.flattest(step_output_file, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                                                fflat_path=fflat_path, writefile=write_flattest_files,
-                                                mk_all_slices_plt=False, show_figs=show_figs,
-                                                save_figs=save_flattest_plot, plot_name=None,
-                                                threshold_diff=flattest_threshold_diff, debug=False)
+        median_diff, result_msg, log_msgs = flattest_ifu.flattest(step_output_file, dflat_path=dflat_path,
+                                                                  sflat_path=sflat_path, fflat_path=fflat_path,
+                                                                  writefile=write_flattest_files,
+                                                                  mk_all_slices_plt=False, show_figs=show_figs,
+                                                                  save_figs=save_flattest_plot, plot_name=None,
+                                                                  threshold_diff=flattest_threshold_diff,
+                                                                  debug=False)
 
     else:
         pytest.skip("Skipping pytest: The input fits file is not FS, MOS, or IFU. This tool does not yet include the "

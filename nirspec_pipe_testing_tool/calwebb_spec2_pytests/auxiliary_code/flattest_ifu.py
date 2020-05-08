@@ -79,14 +79,13 @@ def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_f
             t = (title, ".pdf")
             plot_name = "".join(t)
         plt.savefig(plot_name)
-        print ('\n Plot saved: ', plot_name)
+        print('\n Plot saved: ', plot_name)
     if show_figs:
         plt.show()
     plt.close()
 
 
-
-def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefile=False,
+def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=False,
              mk_all_slices_plt=False, show_figs=True, save_figs=False, plot_name=None,
              threshold_diff=1.0e-7, debug=False):
     """
@@ -95,8 +94,8 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
 
     Args:
         step_input_filename: str, name of the output fits file from the 2d_extract step (with full path)
-        dflatref_path: str, path of where the D-flat reference fits files
-        sfile_path: str, path of where the S-flat reference fits files
+        dflat_path: str, path of where the D-flat reference fits files
+        sflat_path: str, path of where the S-flat reference fits files
         fflat_path: str, path of where the F-flat reference fits files
         msa_conf_root: str, path to where the MSA configuration fits file lives
         writefile: boolean, if True writes the fits files of the calculated flat and difference images
@@ -133,6 +132,12 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
     log_msgs.append(msg1)
     log_msgs.append(msg2)
 
+    # define the mode
+    if "ifu" in exptype.lower():
+        mode = "IFU"
+    else:
+        mode = "not IFU data"
+
     # read in the on-the-fly flat image
     flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
     pipeflat = fits.getdata(flatfile, "SCI")
@@ -143,13 +148,13 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
     log_msgs.append(msg)
 
     # D-Flat
-    if ".fits" not in dflatref_path:
+    if ".fits" not in dflat_path:
         dflat_ending = "f_01.03.fits"
-        dfile = dflatref_path+"_nrs1_"+dflat_ending
+        dfile = dflat_path+"_nrs1_"+dflat_ending
         if det == "NRS2":
             dfile = dfile.replace("nrs1", "nrs2")
     else:
-        dfile = dflatref_path
+        dfile = dflat_path
     msg = "Using D-flat: " + dfile
     print(msg)
     log_msgs.append(msg)
@@ -173,8 +178,6 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
     dfrqe = fits.getdata(dfile, 2)
 
     # S-flat
-    tsp = exptype.split("_")
-    mode = tsp[1]
     if filt == "F070LP":
         flat = "FLAT4"
     elif filt == "F100LP":
@@ -194,15 +197,15 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
         median_diff = "skip"
         return median_diff, msg
 
-    if ".fits" not in sfile_path:
+    if ".fits" not in sflat_path:
         sflat_ending = "f_01.01.fits"
-        sfile = sfile_path+"_"+grat+"_OPAQUE_"+flat+"_nrs1_"+sflat_ending
+        sfile = sflat_path+"_"+grat+"_OPAQUE_"+flat+"_nrs1_"+sflat_ending
         if det == "NRS2":
             sfile = sfile.replace("nrs1", "nrs2")
     else:
-        sfile = sfile_path
+        sfile = sflat_path
 
-    if mode not in sfile_path:
+    if mode not in sflat_path:
         msg = "Wrong path in for mode S-flat. This script handles mode " + mode + "only."
         print(msg)
         log_msgs.append(msg)
@@ -443,7 +446,6 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
                     print("flatcor[j] = ", flatcor[j])
                     print("delf[j] = ", delf[j])
 
-
         # ignore outliers for calculating median
         delfg = delf[np.where(delf != 999.0)]
         #delfg_median, delfg_std = np.median(delfg), np.std(delfg)
@@ -539,7 +541,6 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
             print(msg)
             log_msgs.append(msg)
 
-
     if mk_all_slices_plt:
         if show_figs or save_figs:
             # create histogram
@@ -585,7 +586,6 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
         log_msgs.append(msg)
         log_msgs.append(complfile_name)
 
-
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = True
     for t in all_test_result:
@@ -626,11 +626,11 @@ def main():
                         action='store',
                         default=None,
                         help='Name of input fits file prior to assign_wcs step, i.e. blah_rate.fits')
-    parser.add_argument("dflatref_path",
+    parser.add_argument("dflat_path",
                         action='store',
                         default=None,
                         help='Path and name of D-flat file.')
-    parser.add_argument("sfile_path",
+    parser.add_argument("sflat_path",
                         action='store',
                         default=None,
                         help='Path and name of S-flat file.')
@@ -668,8 +668,8 @@ def main():
 
     # Set variables
     step_input_filename = args.step_input_filename
-    dflatref_path = args.dflatref_path
-    sfile_path = args.sfile_path
+    dflat_path = args.dflat_path
+    sflat_path = args.sflat_path
     fflat_path = args.fflat_path
     writefile = args.writefile
     save_figs = args.save_figs
@@ -678,9 +678,9 @@ def main():
     debug = args.debug
 
     # Run the principal function of the script
-    flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-             fflat_path=fflat_path, writefile=writefile, mk_all_slices_plt=False,
-             show_figs=show_figs, save_figs=save_figs, plot_name=None, threshold_diff=threshold_diff, debug=debug)
+    flattest(step_input_filename, dflat_path=dflat_path, sflat_path=sflat_path, fflat_path=fflat_path,
+             writefile=writefile, mk_all_slices_plt=False, show_figs=show_figs, save_figs=save_figs,
+             plot_name=None, threshold_diff=threshold_diff, debug=debug)
 
 
 if __name__ == '__main__':

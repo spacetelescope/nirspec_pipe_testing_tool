@@ -35,8 +35,7 @@ __version__ = "3.5"
 # Jun 2019 - Version 3.5: Updated name of interpolated flat to be the default pipeline name for this file.
 
 
-
-def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, msa_shutter_conf,
+def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutter_conf,
              writefile=False, show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-14, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the
@@ -45,7 +44,7 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, msa_shu
     Args:
         step_input_filename: str, name of the output fits file from the 2d_extract step (with full path)
         dflatref_path: str, path of where the D-flat reference fits files
-        sfile_path: str, path of where the S-flat reference fits files
+        sflat_path: str, path of where the S-flat reference fits files
         fflat_path: str, path of where the F-flat reference fits files
         msa_shutter_conf: str, full path and name of the MSA configuration fits file
         writefile: boolean, if True writes the fits files of the calculated flat and difference images
@@ -77,23 +76,29 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, msa_shu
     exptype = fits.getval(step_input_filename, "EXP_TYPE", 0)
     grat = fits.getval(step_input_filename, "GRATING", 0)
     filt = fits.getval(step_input_filename, "FILTER", 0)
-    msg = "rate_file  -->     Grating:"+grat+"   Filter:"+filt+"   Lamp:"+lamp
+    msg = "rate_file  -->     Grating:"+grat+"   Filter:"+filt+"   Lamp:"+lamp+"   EXP_TYPE:"+exptype
     print(msg)
     log_msgs.append(msg)
+
+    # define the mode
+    if "msa" in exptype.lower():
+        mode = "MOS"
+    else:
+        mode = "not MOS data"
 
     # read in the on-the-fly flat image
     flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
 
     # get the reference files
     # D-Flat
-    if ".fits" not in dflatref_path:
+    if ".fits" not in dflat_path:
         dflat_ending = "f_01.03.fits"
-        t = (dflatref_path, "nrs1", dflat_ending)
+        t = (dflat_path, "nrs1", dflat_ending)
         dfile = "_".join(t)
         if det == "NRS2":
             dfile = dfile.replace("nrs1", "nrs2")
     else:
-        dfile = dflatref_path
+        dfile = dflat_path
     msg = "".join(["Using D-flat: ", dfile])
     print(msg)
     log_msgs.append(msg)
@@ -117,8 +122,6 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, msa_shu
     dfrqe = fits.getdata(dfile, 2)
 
     # S-flat
-    tsp = exptype.split("_")
-    mode = tsp[1]
     if filt == "F070LP":
         flat = "FLAT4"
     elif filt == "F100LP":
@@ -138,16 +141,20 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, msa_shu
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
 
-    if ".fits" not in sfile_path:
+    if ".fits" not in sflat_path:
         sflat_ending = "f_01.01.fits"
-        t = (sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending)
+        t = (sflat_path, grat, "OPAQUE", flat, "nrs1", sflat_ending)
         sfile = "_".join(t)
         if det == "NRS2":
             sfile = sfile.replace("nrs1", "nrs2")
     else:
-        sfile = sfile_path
+        sfile = sflat_path
 
-    if mode not in sfile_path:
+    msg = "Using S-flat: "+sfile
+    print(msg)
+    log_msgs.append(msg)
+
+    if mode not in sflat_path:
         msg = "Wrong path in for mode S-flat. This script handles mode " + mode + "only."
         print(msg)
         log_msgs.append(msg)
@@ -155,10 +162,6 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, msa_shu
         result_msg = "Wrong path in for mode S-flat. Test skiped because mode is not FS."
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
-
-    msg = "Using S-flat: "+sfile
-    print(msg)
-    log_msgs.append(msg)
 
     sfim = fits.getdata(sfile, "SCI")#1)
     sfimdq = fits.getdata(sfile, "DQ")#3)
@@ -717,11 +720,11 @@ def main():
                         action='store',
                         default=None,
                         help='Name of input fits file prior to assign_wcs step, i.e. blah_rate.fits')
-    parser.add_argument("dflatref_path",
+    parser.add_argument("dflat_path",
                         action='store',
                         default=None,
                         help='Path and name of D-flat file.')
-    parser.add_argument("sfile_path",
+    parser.add_argument("sflat_path",
                         action='store',
                         default=None,
                         help='Path and name of S-flat file.')
@@ -763,8 +766,8 @@ def main():
 
     # Set variables
     step_input_filename = args.step_input_filename
-    dflatref_path = args.dflatref_path
-    sfile_path = args.sfile_path
+    dflat_path = args.dflat_path
+    sflat_path = args.sflat_path
     fflat_path = args.fflat_path
     msa_shutter_conf = args.msa_shutter_conf
     writefile = args.writefile
@@ -777,10 +780,9 @@ def main():
     plot_name = None
 
     # Run the principal function of the script
-    median_diff = flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
-                           fflat_path=fflat_path, msa_shutter_conf=msa_shutter_conf, writefile=writefile,
-                           show_figs=show_figs, save_figs=save_figs, plot_name=plot_name,
-                           threshold_diff=threshold_diff, debug=debug)
+    flattest(step_input_filename, dflat_path=dflat_path, sflat_path=sflat_path, fflat_path=fflat_path,
+             msa_shutter_conf=msa_shutter_conf, writefile=writefile, show_figs=show_figs, save_figs=save_figs,
+             plot_name=plot_name, threshold_diff=threshold_diff, debug=debug)
 
 
 if __name__ == '__main__':

@@ -32,16 +32,17 @@ __version__ = "2.6"
 # Sept 2019 - Version 2.6: Updated line to call model for SlitModel to work correctly with pipeline changes.
 
 
-def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefile=True,
-             show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-7, debug=False):
+def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=True,
+             show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-7,
+             output_directory=None, debug=False):
     """
     This function calculates the difference between the pipeline and the calculated flat field values.
     The functions uses the output of the compute_world_coordinates.py script.
 
     Args:
         step_input_filename: str, name of the output fits file from the 2d_extract step (with full path)
-        dflatref_path: str, path of where the D-flat reference fits files
-        sfile_path: str, path of where the S-flat reference fits files
+        dflat_path: str, path of where the D-flat reference fits files
+        sflat_path: str, path of where the S-flat reference fits files
         fflat_path: str, path of where the F-flat reference fits files
         writefile: boolean, if True writes the fits files of the calculated flat and difference images
         show_figs: boolean, whether to show plots or not
@@ -49,6 +50,7 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
         plot_name: string, desired name (if name is not given, the plot function will name the plot by
                     default)
         threshold_diff: float, threshold difference between pipeline output and ESA file
+        output_directory: None or string, path to the output_directory where to save the plots and output files
         debug: boolean, if true a series of print statements will show on-screen
 
     Returns:
@@ -63,32 +65,52 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
     # start the timer
     flattest_start_time = time.time()
 
-    # get info from the rate file header
-    det = fits.getval(step_input_filename, "DETECTOR", 0)
-    msg = 'step_input_filename=' + step_input_filename
-    print(msg)
-    log_msgs.append(msg)
-    exptype = fits.getval(step_input_filename, "EXP_TYPE", 0)
-    grat = fits.getval(step_input_filename, "GRATING", 0)
-    filt = fits.getval(step_input_filename, "FILTER", 0)
-    msg = "flat_field_file  -->     Grating:" + grat + "   Filter:" + filt + "   EXP_TYPE:" + exptype
-    print(msg)
-    log_msgs.append(msg)
+    # get basic info from the input file
+    if isinstance(step_input_filename, str):
+        msg = 'step_input_filename=' + step_input_filename
+        print(msg)
+        log_msgs.append(msg)
+        if "extract_2d" not in step_input_filename:
+            extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
 
-    # read in the on-the-fly flat image
-    flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
-    # flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")  # for testing code only!
+        # read in the on-the-fly flat image
+        flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
+        # flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")  # for testing code only!
+
+        # paths to save plots and files
+        file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
+        if output_directory is not None:
+            file_path = output_directory
+        else:
+            file_path = step_input_filename.replace(file_basename, "")
+
+    else:
+        file_path = output_directory
+        extract2d_wcs_file = step_input_filename
+        flatfile = os.path.join(file_path, "interpolatedflat.fits")
+        file_basename = ''
+
+    model = datamodels.MultiSlitModel(extract2d_wcs_file)
+    det = model.meta.instrument.detector
+    grat = model.meta.instrument.grating
+    filt = model.meta.instrument.filter
+    lamp = model.meta.instrument.lamp_state
+    exp_type = model.meta.exposure.type.upper()
+
+    msg = "flat_field_file  -->     Grating:" + grat + "   Filter:" + filt + "   LAMP:" + lamp
+    print(msg)
+    log_msgs.append(msg)
 
     # get the reference files
     # D-Flat
-    if ".fits" not in dflatref_path:
+    if ".fits" not in dflat_path:
         dflat_ending = "f_01.03.fits"
-        t = (dflatref_path, "nrs1", dflat_ending)
+        t = (dflat_path, "nrs1", dflat_ending)
         dfile = "_".join(t)
         if det == "NRS2":
             dfile = dfile.replace("nrs1", "nrs2")
     else:
-        dfile = dflatref_path
+        dfile = dflat_path
     msg = "Using D-flat: " + dfile
     print(msg)
     log_msgs.append(msg)
@@ -135,16 +157,16 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
 
-    if ".fits" not in sfile_path:
+    if ".fits" not in sflat_path:
         sflat_ending = "f_01.01.fits"
-        t = (sfile_path, grat, "OPAQUE", flat, "nrs1", sflat_ending)
+        t = (sflat_path, grat, "OPAQUE", flat, "nrs1", sflat_ending)
         sfile = "_".join(t)
         if det == "NRS2":
             sfile = sfile.replace("nrs1", "nrs2")
     else:
-        sfile = sfile_path
+        sfile = sflat_path
 
-    if mode not in sfile_path:
+    if mode not in sflat_path:
         msg = "Wrong path in for mode S-flat. This script handles mode " + mode + "only."
         print(msg)
         log_msgs.append(msg)
@@ -208,10 +230,6 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
 
     # now go through each pixel in the test data
 
-    # get the datamodel from the assign_wcs output file
-    extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
-    model = datamodels.MultiSlitModel(extract2d_wcs_file)
-
     if writefile:
         # create the fits list to hold the calculated flat values for each slit
         hdu0 = fits.PrimaryHDU()
@@ -235,7 +253,7 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
         sltname_list.append("S200B1")
 
     # but check if data is BOTS
-    if fits.getval(step_input_filename, "EXP_TYPE", 0) == "NRS_BRIGHTOBJ":
+    if exp_type == "NRS_BRIGHTOBJ":
         sltname_list = ["S1600A1"]
 
     # get all the science extensions
@@ -244,7 +262,7 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
     # do the loop over the slits
     for slit_id in sltname_list:
         continue_flat_field_test = False
-        if fits.getval(step_input_filename, "EXP_TYPE", 0) == "NRS_BRIGHTOBJ":
+        if exp_type == "NRS_BRIGHTOBJ":
             slit = model
             continue_flat_field_test = True
         else:
@@ -544,19 +562,22 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
-                    file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
-                    t = (file_basename, "FS_flattest_" + slit_id + "_histogram.pdf")
-                    plt_name = "_".join(t)
-                    plt_name = os.path.join(file_path, plt_name)
+                    if output_directory is not None:
+                        t = (file_basename, "FS_flattest_" + slit_id + "_histogram.pdf")
+                        plt_name = os.path.join(file_path, "_".join(t))
+                    else:
+                        plt_name = None
+                        save_figs = False
+                        print("No output_directory was provided. Figures will NOT be saved.")
                     difference_img = (pipeflat - flatcor)  # /flatcor
                     in_slit = np.logical_and(difference_img < 900.0,
                                              difference_img > -900.0)  # ignore points out of the slit,
                     difference_img[~in_slit] = np.nan  # Set values outside the slit to NaN
                     # nanind = np.isnan(difference_img)   # get all the nan indexes
                     # difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
-                    vminmax = [-5 * delfg_std,
-                               5 * delfg_std]  # set the range of values to be shown in the image, will affect color scale
+
+                    # set the range of values to be shown in the image, will affect color scale
+                    vminmax = [-5 * delfg_std, 5 * delfg_std]
                     auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
                                                  vminmax=vminmax,
                                                  plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
@@ -591,8 +612,8 @@ def flattest(step_input_filename, dflatref_path, sfile_path, fflat_path, writefi
                 log_msgs.append(msg)
 
     if writefile:
-        outfile_name = step_input_filename.replace("flat_field.fits", det + "_flat_calc.fits")
-        complfile_name = step_input_filename.replace("flat_field.fits", det + "_flat_comp.fits")
+        outfile_name = flatfile.replace("interpolatedflat.fits", det + "_flat_calc.fits")
+        complfile_name = flatfile.replace("interpolatedflat.fits", det + "_flat_comp.fits")
 
         # create the fits list to hold the calculated flat values for each slit
         outfile.writeto(outfile_name, overwrite=True)
@@ -655,11 +676,11 @@ def main():
                         action='store',
                         default=None,
                         help='Name of input fits file prior to assign_wcs step, i.e. blah_rate.fits')
-    parser.add_argument("dflatref_path",
+    parser.add_argument("dflat_path",
                         action='store',
                         default=None,
                         help='Path and name of D-flat file.')
-    parser.add_argument("sfile_path",
+    parser.add_argument("sflat_path",
                         action='store',
                         default=None,
                         help='Path and name of S-flat file.')
@@ -688,6 +709,11 @@ def main():
                         default=9.999e-05,
                         type=float,
                         help='Use flag -t to change the default threshold (currently set to 9.999e-05).')
+    parser.add_argument("-o",
+                        dest="output_directory",
+                        action='store',
+                        default=None,
+                        help='Use flag -o to provide the output_directory to save the figures and files.')
     parser.add_argument("-d",
                         dest="debug",
                         action='store_true',
@@ -697,13 +723,14 @@ def main():
 
     # Set variables
     step_input_filename = args.step_input_filename
-    dflatref_path = args.dflatref_path
-    sfile_path = args.sfile_path
+    dflat_path = args.dflat_path
+    sflat_path = args.sflat_path
     fflat_path = args.fflat_path
     writefile = args.writefile
     save_figs = args.save_figs
     show_figs = args.show_figs
     threshold_diff = args.threshold_diff
+    output_directory = args.output_directory
     debug = args.debug
 
     # print pipeline version
@@ -712,9 +739,9 @@ def main():
     print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script
-    flattest(step_input_filename, dflatref_path=dflatref_path, sfile_path=sfile_path,
+    flattest(step_input_filename, dflat_path=dflat_path, sflat_path=sflat_path,
              fflat_path=fflat_path, writefile=writefile, show_figs=show_figs, save_figs=save_figs,
-             plot_name=None, threshold_diff=threshold_diff, debug=debug)
+             plot_name=None, threshold_diff=threshold_diff, output_directory=output_directory, debug=debug)
 
 
 if __name__ == '__main__':
