@@ -53,7 +53,7 @@ keywd_dict['SCICAT'] = 'N/A'  # science category assigned during TAC process, e.
 keywd_dict['CONT_ID'] = 1  # int, continuation of the specified previous program, e.g. N/A
 
 # Observation identifiers
-keywd_dict['DATE-OBS'] = '2017-05-01'  # UTC date at start of exposure, e.g. 2013-01-19
+keywd_dict['DATE-OBS'] = '2016-05-11'  # UTC date at start of exposure, e.g. 2013-01-19
 keywd_dict['TIME-OBS'] = '17:29:39.026'  # UTC time at start of exposure, e.g. 18:23:34.230
 keywd_dict['OBS_ID'] = 'V84600010001P0000000002101'  # full programmatic observation identifier
 keywd_dict['VISIT_ID'] = ''  # visit identifier

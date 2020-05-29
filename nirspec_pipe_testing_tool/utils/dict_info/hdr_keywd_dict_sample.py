@@ -45,7 +45,7 @@ keywd_dict['FILETYPE'] = 'UNCALIBRATED'  # Type of data found in file
 keywd_dict['SDP_VER'] = 'B7.0'  # Data processing software version number, e.g. 0.1.1
 
 # Observation identifiers
-keywd_dict['DATE-OBS'] = '2017-05-01'  # UTC date at start of exposure, e.g. 2013-01-19
+keywd_dict['DATE-OBS'] = '2016-05-11'  # UTC date at start of exposure, e.g. 2013-01-19
 keywd_dict['TIME-OBS'] = '17:29:39.026'  # UTC time at start of exposure, e.g. 18:23:34.230
 keywd_dict['OBS_ID'] = 'V84600010001P0000000002101'  # full programmatic observation identifier
 keywd_dict['VISIT_ID'] = ''  # visit identifier

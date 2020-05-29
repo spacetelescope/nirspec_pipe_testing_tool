@@ -16,7 +16,6 @@ from .dict_info import hdr_keywd_dict_sample as shkvd
 # import subarray dictionary
 from .dict_info import subarray_dict as subdict
 
-
 '''
 This script checks that the fits files to be used as input for the pipeline build 7.1, have the expected keywords in
 the primary and science headers.
@@ -38,7 +37,6 @@ will crash if this config file does not exist.
 
 '''
 
-
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
 __version__ = "1.2"
@@ -50,6 +48,7 @@ __version__ = "1.2"
 
 ### Paths
 path_to_tilt_files = "/grp/jwst/wit4/nirspec/CDP3/03_Instrument_model/3.1_Files/NIRS_FM2_05_CV3_FIT1/Description"
+
 
 ### General functions
 
@@ -77,7 +76,7 @@ def read_hdrfits(fits_file_name):
     #  Read the fits file
     hdulist = fits.open(fits_file_name)
     # print on screen what extensions are in the file
-    #print ('\n FILE INFORMATION: \n')
+    # print ('\n FILE INFORMATION: \n')
     hdulist.info()
     # get and print header
     hdr = hdulist[0].header
@@ -93,7 +92,7 @@ def read_hdrfits(fits_file_name):
     # read the text file
     keywd_dict = read_hdrtxt(text_file_name)
     # remove the text file
-    os.system("rm "+text_file_name)
+    os.system("rm " + text_file_name)
     return keywd_dict
 
 
@@ -109,14 +108,14 @@ def read_hdrtxt(hdr_txt_file):
     '''
     keywd_dict = collections.OrderedDict()
     with open(hdr_txt_file, 'r') as htf:
-        for line in htf.readlines():   # identify keywords by lines containing a =
+        for line in htf.readlines():  # identify keywords by lines containing a =
             if '=' in line:
                 line_list = line.split('=')
-                keywd = line_list[0].split()[0]   # remove the white spaces from the keyword
+                keywd = line_list[0].split()[0]  # remove the white spaces from the keyword
                 keywd_val = line_list[1].split()[0]  # remove the white spaces from the keyword value
                 if "'" in keywd_val:
-                    keywd_val = keywd_val.replace("'", "")   # remove the extra '
-                keywd_dict[keywd] = keywd_val   # add dictionary entry
+                    keywd_val = keywd_val.replace("'", "")  # remove the extra '
+                keywd_dict[keywd] = keywd_val  # add dictionary entry
     return keywd_dict
 
 
@@ -151,7 +150,7 @@ def check_addedkeywds_file(addedkeywds_file_name):
     with open(addedkeywds_file_name, 'r') as wf:
         lines = wf.readlines()
         if len(lines) == 1:
-            os.system('rm '+addedkeywds_file_name)
+            os.system('rm ' + addedkeywds_file_name)
 
 
 ### Functions to check specific keyword values
@@ -178,13 +177,13 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
 
     # If we don't want a string, check for numerics
     if dict_type != str:
-        #regex patterns
+        # regex patterns
         float_pattern = re.compile(r"\b\s*[+-]?(?=\d*[.eE])([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?(?=\s|$)")
         int_pattern = re.compile(r"\b\s*[-+]?\d+(?=\s|$)")
 
         if val is None or valtype == '':
             warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
-            print (warning)
+            print(warning)
             return None, warning, dict_type
         if valtype == str:
             if not float_pattern.fullmatch(val) is None:
@@ -201,8 +200,8 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
         print('{:<15} {:<9} {:<28} {:<16}'.format(key, ext, 'Allowed value type', val))
         warning = None
     else:
-        warning = '{:<15} {:<9} {:<28}'.format(key, ext, 'Incorrect value type. Expected e.g. '+repr(hkwd_val[0]) +
-                                               ', got: '+repr(val))
+        warning = '{:<15} {:<9} {:<28}'.format(key, ext, 'Incorrect value type. Expected e.g. ' + repr(hkwd_val[0]) +
+                                               ', got: ' + repr(val))
         print(warning)
 
     return val, warning, dict_type
@@ -220,7 +219,7 @@ def check3numbers(key, val, ext='primary'):
         A warning (if the format is not what is expected) or nothing if it is.
 
     """
-    warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value format. Expected: 0.0.0, got: '+str(val))
+    warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value format. Expected: 0.0.0, got: ' + str(val))
     r = re.compile('\d.\d.\d')  # check that the string has a structure like 0.1.1
     if r.match(val) is None:
         print(warning)
@@ -246,11 +245,13 @@ def check_len(key, val, val_len=2, ext='primary'):
         string_length = len(str(val))
     else:
         string_length = len(val)
-    warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect length of value. Expected: '+repr(val_len)+', got '+repr(string_length))
+    warning = '{:<15} {:<9} {:<25}'.format(key, ext,
+                                           'Incorrect length of value. Expected: ' + repr(val_len) + ', got ' + repr(
+                                               string_length))
     if not string_length == val_len:
         print(warning)
         return warning
-    #else:
+    # else:
     #    print('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct format'))
 
 
@@ -273,7 +274,7 @@ def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='
         vlist = val.split(':')
         v = float(vlist[-1])
         v = str(int(np.round(v, decimals=0)))
-        val = vlist[0]+':'+vlist[1]+':'+v
+        val = vlist[0] + ':' + vlist[1] + ':' + v
     if check_time:
         val = datetime.strptime(val, '%H:%M:%S')
     if check_date:
@@ -283,7 +284,7 @@ def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='
     if not isinstance(val, datetime):
         print(warning)
         return warning
-    #else:
+    # else:
     #    print('{:<15} {:<9} {:<28} {:<16}'.format(key, ext, 'Correct value format', val))
 
 
@@ -392,7 +393,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     warning = None
                 else:
                     new_val, warning, dict_type = check_value_type(key, val, hkwd_val)
-                    if warning is not None  and  "Incorrect value type" in warning:
+                    if warning is not None and "Incorrect value type" in warning:
                         if dict_type == int:
                             new_val = int(float(new_val))
                         else:
@@ -404,34 +405,36 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         missing_keywds.append(key)
 
                 # Check for specific keywords
-                if key=='DPSW_VER':
+                if key == 'DPSW_VER':
                     warning = check3numbers(key, val)
-                elif (key=='VISITGRP') or (key=='ACT_ID'):
+                elif (key == 'VISITGRP') or (key == 'ACT_ID'):
                     warning = check_len(key, val, val_len=2)
-                elif (key=='OBSERVTN') or (key=='VISIT'):
+                elif (key == 'OBSERVTN') or (key == 'VISIT'):
                     warning = check_len(key, val, val_len=3)
-                elif (key=='EXPOSURE'):
+                elif key == 'EXPOSURE':
                     warning = check_len(key, val, val_len=5)
-                elif (key=='DATE') or (key=='VSTSTART'):
+                elif (key == 'DATE') or (key == 'VSTSTART'):
                     warning = check_datetimeformat(key, val, check_date=False, check_datetime=True,
                                                    check_time=False)
-                elif key=='DATE-OBS':
+                elif key == 'DATE-OBS':
                     warning = check_datetimeformat(key, val, check_date=True, check_datetime=False,
                                                    check_time=False)
+                    """ THIS ISSUE SEEMS TO HAVE BEEN SOLVED FOR NOW, BUT REMAINS HERE IN CASE IT RESURFACES
                     # check that for IFU data date is later than 2016-5-11, this is so that the latest IFU_post
-                    # file is used, otherwise assign_wcs will crash
+                    # file is used, otherwise assign_wcs will crash 
                     if mode_used == "IFU":
                         yr = val.split("-")[0]
                         mo = val.split("-")[1]
                         if int(yr) < 2016:
-                            val = "2017-10-11"
+                            val = "2016-05-12"
                             specific_keys_dict[key] = val
                             missing_keywds.append(key)
                         elif int(mo) < 5:
-                            val = "2017-10-11"
+                            val = "2016-05-12"
                             specific_keys_dict[key] = val
                             missing_keywds.append(key)
-                elif key=='TIME-OBS':
+                    """
+                elif key == 'TIME-OBS':
                     warning = check_datetimeformat(key, val, check_date=False, check_datetime=False,
                                                    check_time=True)
 
@@ -439,19 +442,19 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 if key == 'VISITYPE':
                     if val not in hkwd_val:
                         # for now always set this keyword to generic
-                        print ("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
-                        #fits.setval(ff, key, 0, value='GENERIC')
+                        print("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
+                        # fits.setval(ff, key, 0, value='GENERIC')
                         specific_keys_dict[key] = 'GENERIC'
                         missing_keywds.append(key)
 
                 # specific check for SUBARRAY
                 if key == 'SUBARRAY':
-                    if 'IFU' in mode_used  or  "MOS" in mode_used:
+                    if 'IFU' in mode_used or "MOS" in mode_used:
                         if val not in hkwd_val:
-                            print ("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
+                            print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
                             specific_keys_dict[key] = 'GENERIC'
                             missing_keywds.append(key)
-                    elif mode_used == "FS"  or  mode_used == "BOTS":
+                    elif mode_used == "FS" or mode_used == "BOTS":
                         # set the subarray according to size
                         substrt1 = fits.getval(ff, "substrt1", 0)
                         substrt2 = fits.getval(ff, "substrt2", 0)
@@ -462,8 +465,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             sst2_dict = subarrd_vals_dir["substrt2"]
                             ssz1 = subarrd_vals_dir["subsize1"]
                             ssz2 = subarrd_vals_dir["subsize2"]
-                            #print ("sst1=", sst1, "  sst2_list=", sst2_list, "  ssz1=", ssz1, "  ssz2=", ssz2)
-                            if substrt1 == sst1  and  subsize1 == ssz1  and  subsize2 == ssz2:
+                            # print ("sst1=", sst1, "  sst2_list=", sst2_list, "  ssz1=", ssz1, "  ssz2=", ssz2)
+                            if substrt1 == sst1 and subsize1 == ssz1 and subsize2 == ssz2:
                                 for grat, sst2_tuple in sst2_dict.items():
                                     if grat.lower() == grating.lower():
                                         if 'FULL' in subarrd_key:
@@ -477,7 +480,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                         elif '400A1' in subarrd_key:
                                             subarrd_key = 'SUBS400A1'
                                         specific_keys_dict[key] = subarrd_key
-                                        print ("changing subarray keyword to ", subarrd_key)
+                                        print("changing subarray keyword to ", subarrd_key)
                                         missing_keywds.append(key)
                                         # this part is simply to check that the subarray values are correct
                                         # but no values will be changed in the input file
@@ -485,10 +488,12 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                             sst2 = sst2_tuple[0]
                                         elif "2" in detector:
                                             sst2 = sst2_tuple[1]
-                                        print ("Subarray values in input file: \n", )
-                                        print("substrt1=", substrt1, " substrt2=", substrt2,  " subsize1=", subsize1, " subsize2=", subsize2)
-                                        print ("Subarray values in PTT dictionary: \n", )
-                                        print("substrt1=", sst1, " substrt2=", sst2,  " subsize1=", ssz1, " subsize2=", ssz2)
+                                        print("Subarray values in input file: \n", )
+                                        print("substrt1=", substrt1, " substrt2=", substrt2, " subsize1=", subsize1,
+                                              " subsize2=", subsize2)
+                                        print("Subarray values in PTT dictionary: \n", )
+                                        print("substrt1=", sst1, " substrt2=", sst2, " subsize1=", ssz1, " subsize2=",
+                                              ssz2)
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
@@ -554,7 +559,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 missing_keywds.append(key)
                 warnings_list.append(warning)
                 with open(warnings_file_name, "a") as tf:
-                    tf.write(warning+'\n')
+                    tf.write(warning + '\n')
         else:
             # add the WCS keywords to science extension
             missing_keywds.append(key)
@@ -563,7 +568,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 warning = '{:<15} {:<9} {:<25}'.format(subkey, 'sci', 'New keyword added to header')
                 warnings_list.append(warning)
                 with open(warnings_file_name, "a") as tf:
-                    tf.write(warning+'\n')
+                    tf.write(warning + '\n')
 
     print("keywords to be modified: ", list(OrderedDict.fromkeys(missing_keywds)))
     return specific_keys_dict
@@ -580,7 +585,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
         specific_keys_dict: dictionary with specific keys and values that need to be changed
     '''
     missing_keywds = list(OrderedDict.fromkeys(missing_keywds))
-    #print ("specific_keys_dict = ", specific_keys_dict)
+    # print ("specific_keys_dict = ", specific_keys_dict)
     # create name for updated fits file
     updated_fitsfile = fits_file
     if not only_update:
@@ -588,11 +593,11 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
         subprocess.run(["cp", fits_file, updated_fitsfile])
     # add missimg keywords
     wcs_keywds_from_main_hdr = {}
-    print ('Saving keyword values in file: ', updated_fitsfile)
+    print('Saving keyword values in file: ', updated_fitsfile)
     ext = 0
     for i, key in enumerate(missing_keywds):
         if key in specific_keys_dict:
-            #print ("found it in the dict: ", key, specific_keys_dict[key])
+            # print ("found it in the dict: ", key, specific_keys_dict[key])
             if specific_keys_dict[key] == 'remove':
                 # keyword to be deleted
                 try:
@@ -609,7 +614,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
         new_value = shkvd.keywd_dict[key]
         after_key = list(shkvd.keywd_dict.keys())[prev_key_idx]
         if after_key == 'wcsinfo':
-            after_key = list(shkvd.keywd_dict.keys())[prev_key_idx-1]
+            after_key = list(shkvd.keywd_dict.keys())[prev_key_idx - 1]
         if key != 'wcsinfo':
             print("adding keyword: ", key, " in extension: primary    after: ", after_key,
                   "    with value: ", new_value)
@@ -634,17 +639,16 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
             for subkey, new_value in shkvd.keywd_dict["wcsinfo"].items():
                 # first remove these keywords from the main header
                 if subkey in main_hdr:
-                    #val = fits.getval(updated_fitsfile, subkey, 0)
-                    #wcs_keywds_from_main_hdr[subkey] = val
+                    # val = fits.getval(updated_fitsfile, subkey, 0)
+                    # wcs_keywds_from_main_hdr[subkey] = val
                     fits.delval(updated_fitsfile, subkey, 0)
                 # following commented lines are not working
                 # uncomment this line if wanting to use the original keyword value given by create_data
-                #new_value = wcs_keywds_from_main_hdr[subkey]
+                # new_value = wcs_keywds_from_main_hdr[subkey]
                 if subkey not in sci_hdr:
                     print("adding keyword: ", subkey, " in extension: ", extname, " with value: ", new_value)
                     fits.setval(updated_fitsfile, subkey, 1, value=new_value, after='EXTNAME')
-            print ("Science header has been updated.")
-
+            print("Science header has been updated.")
 
 
 def check_hdr_keywds(fits_file, only_update, mode_used):
