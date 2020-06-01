@@ -12,7 +12,6 @@ from . import TESTSDIR
 This script contains functions frequently used in the test suite.
 '''
 
-
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
 __version__ = "1.2"
@@ -24,27 +23,27 @@ __version__ = "1.2"
 
 # dictionary of the steps and corresponding strings to be added to the file name after the step has ran
 step_string_dict = collections.OrderedDict()
-step_string_dict["assign_wcs"]       = {"outfile" : True, "suffix" : "_assign_wcs"}
-step_string_dict["bkg_subtract"]     = {"outfile" : True, "suffix" : "_subtract_images"}
-step_string_dict["imprint_subtract"] = {"outfile" : True, "suffix" : "_imprint"}
-step_string_dict["msa_flagging"]     = {"outfile" : True, "suffix" : "_msa_flagging"}
-step_string_dict["extract_2d"]       = {"outfile" : True, "suffix" : "_extract_2d"}
-step_string_dict["flat_field"]       = {"outfile" : True, "suffix" : "_flat_field"}
-step_string_dict["srctype"]          = {"outfile" : True, "suffix" : "_srctype"}
-#step_string_dict["straylight"]       = {"outfile" : True, "suffix" : "_stray"}   # MIRI only
-#step_string_dict["fringe"]           = {"outfile" : True, "suffix" : "_fringe"}   # MIRI only
-step_string_dict["pathloss"]         = {"outfile" : True, "suffix" : "_pathloss"}
-step_string_dict["barshadow"]        = {"outfile" : True, "suffix" : "_barshadow"}
-step_string_dict["photom"]           = {"outfile" : True, "suffix" : "_photom"}
-step_string_dict["resample_spec"]    = {"outfile" : True, "suffix" : "_s2d"}
-step_string_dict["cube_build"]       = {"outfile" : True, "suffix" : "_s3d"}
-step_string_dict["extract_1d"]       = {"outfile" : True, "suffix" : "_x1d"}
+step_string_dict["assign_wcs"] = {"outfile": True, "suffix": "_assign_wcs"}
+step_string_dict["bkg_subtract"] = {"outfile": True, "suffix": "_subtract_images"}
+step_string_dict["imprint_subtract"] = {"outfile": True, "suffix": "_imprint"}
+step_string_dict["msa_flagging"] = {"outfile": True, "suffix": "_msa_flagging"}
+step_string_dict["extract_2d"] = {"outfile": True, "suffix": "_extract_2d"}
+step_string_dict["flat_field"] = {"outfile": True, "suffix": "_flat_field"}
+step_string_dict["srctype"] = {"outfile": True, "suffix": "_srctype"}
+# step_string_dict["straylight"]       = {"outfile" : True, "suffix" : "_stray"}   # MIRI only
+# step_string_dict["fringe"]           = {"outfile" : True, "suffix" : "_fringe"}   # MIRI only
+step_string_dict["pathloss"] = {"outfile": True, "suffix": "_pathloss"}
+step_string_dict["barshadow"] = {"outfile": True, "suffix": "_barshadow"}
+step_string_dict["photom"] = {"outfile": True, "suffix": "_photom"}
+step_string_dict["resample_spec"] = {"outfile": True, "suffix": "_s2d"}
+step_string_dict["cube_build"] = {"outfile": True, "suffix": "_s3d"}
+step_string_dict["extract_1d"] = {"outfile": True, "suffix": "_x1d"}
 
 
 def getlist(option, sep=',', chars=None):
     """Return a list from a ConfigParser option. By default,
        split on a comma and strip whitespaces."""
-    return [ chunk.strip(chars) for chunk in option.split(sep) ]
+    return [chunk.strip(chars) for chunk in option.split(sep)]
 
 
 def read_hdrfits(fits_file_name, info=False, show_hdr=False, ext=0):
@@ -64,13 +63,13 @@ def read_hdrfits(fits_file_name, info=False, show_hdr=False, ext=0):
     hdulist = fits.open(fits_file_name)
     # print on screen what extensions are in the file
     if info:
-        print ('\n FILE INFORMATION: \n')
+        print('\n FILE INFORMATION: \n')
         hdulist.info()
     # get and print header
     hdrl = hdulist[ext].header
     if show_hdr:
-        print ('\n FILE HEADER: \n')
-        print (repr(hdrl))
+        print('\n FILE HEADER: \n')
+        print(repr(hdrl))
     # close the fits file
     hdulist.close()
     return hdrl
@@ -149,7 +148,7 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
     if "_uncal_rate" in initial_input_file_basename:
         initial_input_file_basename = initial_input_file_basename.replace("_uncal_rate", "")
     if detector.lower() not in initial_input_file_basename.lower():
-        initial_input_file_basename = initial_input_file_basename.replace(".fits", "_"+detector+".fits")
+        initial_input_file_basename = initial_input_file_basename.replace(".fits", "_" + detector + ".fits")
 
     # get the right input and output name according to the steps dictionary
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = "", "", "", ""
@@ -158,7 +157,7 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
             if debug:
                 print("Found step in dictionary: ", step)
             # find the input suffix according to the step
-            if stp=="assign_wcs":
+            if stp == "assign_wcs":
                 step_input_filename = initial_input_file
             else:
                 # recurrently go backwards in the step dictionary until an input file exists
@@ -168,11 +167,11 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
                     print("Will enter while loop to find the appropriate input file name for this step.")
                 while not exit_while_loop:
                     # look for the input file starting from the end of the dictionary
-                    j = len(step_string_dict.items())-1
+                    j = len(step_string_dict.items()) - 1
                     for s in reversed(step_string_dict.items()):
                         # This is to make sure we do not enter an infinite while loop
                         counter += 1
-                        if counter > len(step_string_dict.items()):   # 13 is the number of steps of calwebb_spec2
+                        if counter > len(step_string_dict.items()):  # 13 is the number of steps of calwebb_spec2
                             exit_while_loop = True
                             print("Limiting number of iterations reached. No input file found. ")
                             print("PTT will use initial input file for step ", step)
@@ -187,7 +186,8 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
                             outfile = step_string_dict[s[0]]["outfile"]
                             if outfile:
                                 in_file_suffix = step_string_dict[s[0]]["suffix"]
-                                step_input_basename = initial_input_file_basename.replace(".fits", in_file_suffix+".fits")
+                                step_input_basename = initial_input_file_basename.replace(".fits",
+                                                                                          in_file_suffix + ".fits")
                                 if "gain_scale" in step_input_basename:
                                     step_input_basename = step_input_basename.replace("_gain_scale", "")
                                 step_input_filename = os.path.join(output_directory, step_input_basename)
@@ -230,14 +230,14 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
                 out_file_suffix = step_string_dict[stp]["suffix"]
             else:
                 out_file_suffix = in_file_suffix
-            step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix+".fits")
+            step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix + ".fits")
             if '_rate' in step_output_basename:
                 step_output_basename = step_output_basename.replace('_rate', '')
             # Special case for BOTS files after extract_1d
             if "extract_1d" in stp:
                 inhdu = read_hdrfits(initial_input_file, info=False, show_hdr=False)
                 if check_BOTS_true(inhdu):
-                    step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix+"ints.fits")
+                    step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix + "ints.fits")
             # remove the step name _gain_scale if it is still in the base name
             if "_gain_scale".lower() in step_output_basename.lower():
                 step_output_basename = step_output_basename.replace("_gain_scale", "")
@@ -265,15 +265,15 @@ def add_detector2filename(output_directory, step_input_file):
     """
     # dictionary of the steps and corresponding strings to be added to the file name after the step has ran
     step_strings = ["_assign_wcs", "_bkg_subtract", "_imprint_subtract", "_msa_flagging", "_extract_2d", "_flat_field",
-                   "_srctype", "_pathloss", "_barshadow", "_photom", "_resample_spec", "_cube_build", "_extract_1d",
+                    "_srctype", "_pathloss", "_barshadow", "_photom", "_resample_spec", "_cube_build", "_extract_1d",
                     "_interpolatedflat", "_s2d", "_s3d", "_x1d", "_cal"]
 
     # get the detector name and add it
     det = fits.getval(step_input_file, "DETECTOR", 0)
-    #step_input_file_basename = os.path.basename(step_input_file).replace(".fits", "")
+    # step_input_file_basename = os.path.basename(step_input_file).replace(".fits", "")
     ptt_directory = TESTSDIR  # directory where PTT lives
-    #step_files = glob.glob(os.path.join(ptt_directory, step_input_file_basename+"*.fits"))  # get all fits files just created
-    #if len(step_files) == 0:
+    # step_files = glob.glob(os.path.join(ptt_directory, step_input_file_basename+"*.fits"))  # get all fits files just created
+    # if len(step_files) == 0:
     #    step_files = glob.glob(os.path.join(ptt_directory, "*.fits"))
     step_files = glob.glob(os.path.join(ptt_directory, "*.fits"))
     for sf in step_files:
@@ -283,7 +283,7 @@ def add_detector2filename(output_directory, step_input_file):
                 if "msaflagopenstep" in sf:
                     sf = sf.replace("msaflagopenstep", "msa_flagging")
                 if det.lower() not in sf.lower():  # only add the detector to the name if it is not part of the basename
-                    new_name = os.path.basename(sf.replace(stp_str+".fits", "_"+det+stp_str+".fits"))
+                    new_name = os.path.basename(sf.replace(stp_str + ".fits", "_" + det + stp_str + ".fits"))
                 else:
                     print("Detector ", det, " is already part of the file name ", os.path.basename(sf),
                           ", PTT will not add it again.")
@@ -291,7 +291,6 @@ def add_detector2filename(output_directory, step_input_file):
                 # move to the working directory
                 new_name = os.path.join(output_directory, new_name)
                 subprocess.run(["mv", sf, new_name])
-
 
 
 def read_True_steps_suffix_map(txtfile_name_with_path):
@@ -348,6 +347,7 @@ def calculate_step_run_time(screen_output_txt):
         step_running_times: dictionary, with the following structure for all steps that where ran
                            step_running_times["assign_wcs"] = {start_time: float, end_time: float, run_time: float}
     """
+
     def get_timestamp(time_list):
         """
         This sub-function obtains a time stamp from the time strings read from the screen output text file.
@@ -392,7 +392,7 @@ def calculate_step_run_time(screen_output_txt):
     with open(screen_output_txt, "r") as sot:
         for line in sot.readlines():
             line = line.replace("\n", "")
-            if "Ending" in line:   # make sure not to overwrite the dictionary
+            if "Ending" in line:  # make sure not to overwrite the dictionary
                 continue
             for pstp in pipe_steps:
                 if pstp in line and "running with args" in line:
@@ -406,7 +406,7 @@ def calculate_step_run_time(screen_output_txt):
                     if end_time is None:
                         continue
                     run_time = end_time - start_time
-                    step_running_times[pstp] = {"start_time" : start_time, "end_time" : end_time, "run_time" : run_time}
+                    step_running_times[pstp] = {"start_time": start_time, "end_time": end_time, "run_time": run_time}
     return step_running_times
 
 
@@ -423,21 +423,21 @@ def get_stp_run_time_from_screenfile(step, det, output_directory):
         end_time: string, running time for this step
 
     """
+
     # add the running time for this step
-    calspec2_pilelog = "calspec2_pipeline_"+det+".log"
-    # make sure we are able to find calspec2_pilelog either in the calwebb_spec2 directory or in the working dir
-    if not os.path.isfile(calspec2_pilelog):
-        calspec2_pilelog = os.path.join(output_directory, calspec2_pilelog)
+    calspec2_pipelog = "calspec2_pipeline_" + det + ".log"
+    # make sure we are able to find calspec2_pipelog either in the calwebb_spec2 directory or in the working dir
+    if not os.path.isfile(calspec2_pipelog):
+        calspec2_pipelog = os.path.join(output_directory, calspec2_pipelog)
 
     # if the pipelog is not found look for the step pipelog
-    if not os.path.isfile(calspec2_pilelog):
-        calspec2_pilelog = calspec2_pilelog.replace(det+".log", step+"_"+det+".log")
-
+    if not os.path.isfile(calspec2_pipelog):
+        calspec2_pipelog = calspec2_pipelog.replace(det + ".log", step + "_" + det + ".log")
 
     # if PTT can find either log file
     end_time = None
-    if os.path.isfile(calspec2_pilelog):
-        step_running_times = calculate_step_run_time(calspec2_pilelog)
+    if os.path.isfile(calspec2_pipelog):
+        step_running_times = calculate_step_run_time(calspec2_pipelog)
 
         for stp in step_string_dict:
             if stp in step_running_times:
@@ -449,12 +449,11 @@ def get_stp_run_time_from_screenfile(step, det, output_directory):
                 continue
 
     if end_time is None:
-        print("\n * PTT unable to calculate time from "+calspec2_pilelog+" for step ", step)
+        print("\n * PTT unable to calculate time from " + calspec2_pipelog + " for step ", step)
         print("   - This means that the step has not been run yet, or was set not to run in PTT_config. \n")
         end_time = "0.0"
 
     return end_time
-
 
 
 def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_completed, end_time):
@@ -470,17 +469,17 @@ def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_c
     Returns:
         nothing
     """
-    #print ("Map saved at: ", True_steps_suffix_map)
+    # print ("Map saved at: ", True_steps_suffix_map)
     if (float(end_time)) > 60.0:
-        end_time_min = float(end_time)/60.  # this is in minutes
+        end_time_min = float(end_time) / 60.  # this is in minutes
         if end_time_min > 60.0:
-            end_time_hr = end_time_min/60.  # this is in hours
-            end_time = end_time+"  ="+repr(round(end_time_hr, 1))+"hr"
+            end_time_hr = end_time_min / 60.  # this is in hours
+            end_time = end_time + "  =" + repr(round(end_time_hr, 1)) + "hr"
         else:
-            end_time = repr(end_time)+"  ="+repr(round(end_time_min, 1))+"min"
+            end_time = repr(end_time) + "  =" + repr(round(end_time_min, 1)) + "min"
     line2write = "{:<20} {:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed), end_time)
     with open(True_steps_suffix_map, "a") as tf:
-        tf.write(line2write+"\n")
+        tf.write(line2write + "\n")
 
 
 def start_end_PTT_time(txt_name, start_time=None, end_time=None):
@@ -497,11 +496,11 @@ def start_end_PTT_time(txt_name, start_time=None, end_time=None):
     """
     if start_time is not None:
         # start the timer to compute the step running time of PTT
-        #print("PTT starting time: ", repr(start_time), "\n")
+        # print("PTT starting time: ", repr(start_time), "\n")
         line2write = "{:<20} {:<20}".format('# Starting PTT running time: ', repr(start_time))
-        print (line2write)
+        print(line2write)
         with open(txt_name, "a") as tf:
-            tf.write(line2write+"\n")
+            tf.write(line2write + "\n")
 
     if end_time is not None:
         # get the start time from the file
@@ -511,23 +510,23 @@ def start_end_PTT_time(txt_name, start_time=None, end_time=None):
                     PTT_start_time = float(line.split(":")[-1])
                     break
         # compute end the timer to compute PTT running time
-        PTT_total_time = end_time - PTT_start_time   # this is in seconds
+        PTT_total_time = end_time - PTT_start_time  # this is in seconds
         if PTT_total_time > 60.0:
-            PTT_total_time_min = round(PTT_total_time / 60.0, 1)   # in minutes
-            PTT_total_run_time = repr(PTT_total_time_min)+"min"
+            PTT_total_time_min = round(PTT_total_time / 60.0, 1)  # in minutes
+            PTT_total_run_time = repr(PTT_total_time_min) + "min"
             if PTT_total_time_min > 60.0:
-                PTT_total_time_hr = round(PTT_total_time_min / 60.0, 1)   # in hrs
-                PTT_total_run_time = repr(PTT_total_time_hr)+"hr"
+                PTT_total_time_hr = round(PTT_total_time_min / 60.0, 1)  # in hrs
+                PTT_total_run_time = repr(PTT_total_time_hr) + "hr"
         else:
-            PTT_total_run_time = repr(round(PTT_total_time, 1))+"sec"
+            PTT_total_run_time = repr(round(PTT_total_time, 1)) + "sec"
 
-        print ("The total time for PTT to run (including pipeline) was "+repr(PTT_total_time)+" seconds.")
-        line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'PTT+pipe_total_time ', repr(PTT_total_time)+'  ='+PTT_total_run_time)
-        print (line2write)
+        print("The total time for PTT to run (including pipeline) was " + repr(PTT_total_time) + " seconds.")
+        line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'PTT+pipe_total_time ',
+                                                          repr(PTT_total_time) + '  =' + PTT_total_run_time)
+        print(line2write)
         with open(txt_name, "a") as tf:
-            tf.write(line2write+"\n")
+            tf.write(line2write + "\n")
         print("writen to: ", txt_name)
-
 
 
 def get_correct_input_step_filename(initial_input_file, steps_list, suffix_list, completion_list):
@@ -547,7 +546,7 @@ def get_correct_input_step_filename(initial_input_file, steps_list, suffix_list,
     step_input_filename = initial_input_file
     for i, stp in enumerate(steps_list):
         if str_to_bool(completion_list[i]):
-            step_input_filename = step_input_filename.replace(".fits", suffix_list[i]+".fits")
+            step_input_filename = step_input_filename.replace(".fits", suffix_list[i] + ".fits")
     return step_input_filename
 
 
@@ -561,9 +560,9 @@ def str_to_bool(s):
         boolean value of s
     """
     if s == 'True':
-         return True
+        return True
     elif s == 'False':
-         return False
+        return False
 
 
 def set_inandout_filenames(step, config):
@@ -586,18 +585,18 @@ def set_inandout_filenames(step, config):
     initial_input_file = os.path.join(data_directory, initial_input_file_basename)
     # Get the detector used
     detector = fits.getval(initial_input_file, "DETECTOR", 0)
-    True_steps_suffix_map = "full_run_map_"+detector+".txt"
+    True_steps_suffix_map = "full_run_map_" + detector + ".txt"
     if os.path.isfile(initial_input_file):
         print("\n Taking initial input file from data_directory:")
     else:
         initial_input_file = os.path.join(output_directory, initial_input_file_basename)
         print("\n Taking initial file from output_directory: ")
-    print(" Initial input file = ", initial_input_file , "\n")
+    print(" Initial input file = ", initial_input_file, "\n")
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
 
     if not run_calwebb_spec2:
         pytests_directory = TESTSDIR
-        True_steps_suffix_map = os.path.join(pytests_directory, "True_steps_suffix_map_"+detector+".txt")
+        True_steps_suffix_map = os.path.join(pytests_directory, "True_steps_suffix_map_" + detector + ".txt")
         print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map,
               ", located in working directory.")
     else:
@@ -628,7 +627,8 @@ def read_info4outputhdul(config, step_info):
     step_input_file = os.path.join(output_directory, step_input_filename)
     step_output_file = os.path.join(output_directory, output_file)
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
-    set_inandout_filenames_info = [step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix]
+    set_inandout_filenames_info = [step, txt_name, step_input_file, step_output_file, run_calwebb_spec2,
+                                   outstep_file_suffix]
 
     return set_inandout_filenames_info
 
@@ -729,11 +729,12 @@ def check_completed_steps(step, step_input_file, caldet1=False):
         # check that calwebb_detector1 was run
         if caldet1:
             for pstp in steps_caldet1:
-                if "S_"+pstp in hdr:
+                if "S_" + pstp in hdr:
                     if val == "COMPLETE" or val == "SKIPPED":
                         continue
                 else:
-                    print("*** WARNING: calwebb_detector1 step ", pstp, " was not run. Please make sure this is intentional. \n")
+                    print("*** WARNING: calwebb_detector1 step ", pstp,
+                          " was not run. Please make sure this is intentional. \n")
         # check that calwebb_spec2 steps up to relevant step were ran
         step_list = []
         for pstp in steps_calwebbspec2:
@@ -742,10 +743,12 @@ def check_completed_steps(step, step_input_file, caldet1=False):
             step_list.append(pstp)
 
     for s in step_list:
-        keyword = "S_"+steps_calwebbspec2[s]
+        keyword = "S_" + steps_calwebbspec2[s]
         if keyword not in hdr:
-            print("*** WARNING: Keyword ", keyword, " for step completion does not appear in the header of the input file. This means the step may not have been ran, ")
-            print("             please make sure this is intentional or output products beyond this step may be incorrect. \n")
+            print("*** WARNING: Keyword ", keyword,
+                  " for step completion does not appear in the header of the input file. This means the step may not have been ran, ")
+            print(
+                "             please make sure this is intentional or output products beyond this step may be incorrect. \n")
 
 
 def find_which_slit(output_hdul):
@@ -763,7 +766,7 @@ def find_which_slit(output_hdul):
         for i, s in enumerate(slits):
             print("slit: ", s, i)
             if s in output_hdul["FXD_SLIT"]:
-                return i+1, s
+                return i + 1, s
 
 
 def find_DETECTOR(output_hdul):
@@ -790,7 +793,7 @@ def get_time_to_run_pipeline(True_steps_suffix_map):
         total_time: string, total calculate the total time by reading the time of each step from the map
 
     """
-    #times_per_step = np.loadtxt(True_steps_suffix_map, comments="#", usecols=(3), unpack=True)
+    # times_per_step = np.loadtxt(True_steps_suffix_map, comments="#", usecols=(3), unpack=True)
     times_per_step = []
     with open(True_steps_suffix_map, "r") as tf:
         for line in tf.readlines():
@@ -799,7 +802,7 @@ def get_time_to_run_pipeline(True_steps_suffix_map):
             # this is in case there are = signs in the line
             if "=" in line:
                 line = line.split("=")[0]
-            t=line.split()[3]
+            t = line.split()[3]
             if "'" in t:
                 t = t.replace("'", "")
             t = float(t)
@@ -830,16 +833,16 @@ def get_latest_file(filetype, detector=None, disregard_known_files=False):
         if detector is None:
             print("get_latest_file: DETECTOR not defined.")
             exit()
-        if "True_steps_suffix_map_"+detector+".txt" in list_of_filetypefiles:
-            idx = list_of_filetypefiles.index("True_steps_suffix_map_"+detector+".txt")
+        if "True_steps_suffix_map_" + detector + ".txt" in list_of_filetypefiles:
+            idx = list_of_filetypefiles.index("True_steps_suffix_map_" + detector + ".txt")
             list_of_filetypefiles.pop(idx)
-        if "full_run_map_"+detector+".txt" in list_of_filetypefiles:
-            idx = list_of_filetypefiles.index("full_run_map_"+detector+".txt")
+        if "full_run_map_" + detector + ".txt" in list_of_filetypefiles:
+            idx = list_of_filetypefiles.index("full_run_map_" + detector + ".txt")
             list_of_filetypefiles.pop(idx)
     latest_filetypefile = "File not found."
     if len(list_of_filetypefiles) > 0:
         latest_filetypefile = max(list_of_filetypefiles, key=os.path.getctime)
-    #print("filetype, latest_filetypefile = ", filetype, latest_filetypefile)
+    # print("filetype, latest_filetypefile = ", filetype, latest_filetypefile)
     return latest_filetypefile
 
 
@@ -851,14 +854,14 @@ def convert_html2pdf(detector):
     and the OSX 64-bit download from: https://wkhtmltopdf.org/downloads.html
     """
     # get a list of all the html files in the calwebb_spec2_pytests dir
-    latest_htmlfile = get_latest_file("*"+detector+"*.html")
+    latest_htmlfile = get_latest_file("*" + detector + "*.html")
     # create the pdf output name
     pdf_file = latest_htmlfile.replace(".html", ".pdf")
     # convert the html report into a pdf file
-    #import pdfkit
-    #options = {'dpi': 96}
-    #pdfkit.from_file(latest_htmlfile, pdf_file, options=options)
-    print ("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
+    # import pdfkit
+    # options = {'dpi': 96}
+    # pdfkit.from_file(latest_htmlfile, pdf_file, options=options)
+    print("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
 
 
 def move_txt_files_2workdir(config, detector):
@@ -873,15 +876,14 @@ def move_txt_files_2workdir(config, detector):
     # get the working directory
     output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     # get a list of all the txt files in the calwebb_spec2_pytests dir
-    latest_screenoutputtxtfile = get_latest_file("*screen*"+detector+"*.txt", detector, disregard_known_files=True) # this should pick up the output_screen file
-    latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map_"+detector+".txt")
-    latest_fullrunmaptxtfile = get_latest_file("full_run_map_"+detector+".txt")
+    latest_screenoutputtxtfile = get_latest_file("*screen*" + detector + "*.txt", detector,
+                                                 disregard_known_files=True)  # this should pick up the output_screen file
+    latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map_" + detector + ".txt")
+    latest_fullrunmaptxtfile = get_latest_file("full_run_map_" + detector + ".txt")
     # move these files into the working directory
     files2move = [latest_screenoutputtxtfile,
                   latest_suffixmaptxtfile, latest_fullrunmaptxtfile]
     for f in files2move:
-        if f != "File not found."  and  os.path.isfile(f):
+        if f != "File not found." and os.path.isfile(f):
             subprocess.run(["mv", f, output_dir])
             print(f, " moved to ", output_dir)
-
-

@@ -256,7 +256,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     if exp_type == "NRS_BRIGHTOBJ":
         sltname_list = ["S1600A1"]
 
-    # get all the science extensions
+    # get all the science extensions from the interpolated flat file
     sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
     # do the loop over the slits
@@ -290,12 +290,19 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             msg = "\nWorking with slit: " + slit_id
             print(msg)
             log_msgs.append(msg)
-            try:
-                ext = sci_ext_list[slit_id]  # this is for getting the science extension in the pipeline calculated flat
-            except KeyError:
-                # the extension does not exist in the file, look for the next slit name
-                #ext = sltname_list.index(slit_id)
-                continue
+
+            # obtain corresponding occurrence of the SCI extension, i.e. for second occurrence of SCI then ext=2
+            ext = 1
+            if len(sci_ext_list) > 1:
+                ei = sltname_list.index(slit_id)
+                print("ei = ", ei)
+                ext += ei
+
+            print("exp_type = ", exp_type)
+            print("SCI ext = ", ext)
+            ff = fits.open(step_input_filename)
+            print(ff.info())
+            ff.close()
 
             # get the wavelength
             # slit.x(y)start are 1-based, turn them to 0-based for extraction
@@ -327,9 +334,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             delf = np.zeros([nw2, nw1]) + 999.0
             flatcor = np.zeros([nw2, nw1]) + 999.0
 
-            # read the pipeline-calculated flat image
-            # there are four extensions in the flatfile: SCI, DQ, ERR, WAVELENGTH
-            pipeflat = fits.getdata(flatfile, ext)
+            # read the pipeline-calculated flat image, using the corresponding SCI extension number
+            pipeflat = fits.getdata(flatfile, "SCI", ext)
 
             # make sure the two arrays are the same shape
             if np.shape(flatcor) != np.shape(pipeflat):
@@ -566,9 +572,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                         t = (file_basename, "FS_flattest_" + slit_id + "_histogram.pdf")
                         plt_name = os.path.join(file_path, "_".join(t))
                     else:
-                        plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        plt_name = os.path.join(os.getcwd(), "FS_flattest_" + det + "_" + slit_id + "_histogram.pdf")
+                        print("No output_directory was provided. Figures will be saved in current working directory:")
+                        print(plt_name + "\n")
                     difference_img = (pipeflat - flatcor)  # /flatcor
                     in_slit = np.logical_and(difference_img < 900.0,
                                              difference_img > -900.0)  # ignore points out of the slit,
