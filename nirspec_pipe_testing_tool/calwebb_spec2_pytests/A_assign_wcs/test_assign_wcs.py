@@ -136,6 +136,13 @@ def output_hdul(set_inandout_filenames, config):
         print('     ->  For now, all pytests will be skipped since there are now image-specific routines yet. \n')
         # TODO: add imaging tests
 
+    # get the name of the configuration file and run the pipeline
+    calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
+
+    # copy the configuration file to create the pipeline log
+    stpipelogcfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "stpipe-log.cfg")
+    subprocess.run(["cp", stpipelogcfg, os.getcwd()])
+
     # run the pipeline
     if run_calwebb_spec2:
 
@@ -166,11 +173,6 @@ def output_hdul(set_inandout_filenames, config):
         # start the timer to compute the step running time of PTT
         core_utils.start_end_PTT_time(txt_name, start_time=PTT_start_time, end_time=None)
 
-        # get the name of the configuration file and run the pipeline
-        calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
-        calwebb_image2_cfg = False
-        # NOTE: this block is commented out as of build 7.4 testing because spec2 crashes with calwebb_tso-spec2.cfg
-        # file, but it runs fine with calwebb_spec2.cfg
         if mode_used == "bots":
             calwebb_spec2_cfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "calwebb_tso-spec2.cfg")
             print('\nUsing the following configuration file to run TSO pipeline:')
@@ -198,10 +200,7 @@ def output_hdul(set_inandout_filenames, config):
 
         # run the pipeline
         print('Running pipeline... \n')
-        # copy the configuration file to create the pipeline log
-        stpipelogcfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "stpipe-log.cfg")
-        subprocess.run(["cp", stpipelogcfg, "."])
-        if not calwebb_image2_cfg:
+        if not imaging_mode:
             Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)#, logcfg=stpipelogcfg)
         else:
             Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
@@ -229,22 +228,22 @@ def output_hdul(set_inandout_filenames, config):
 
         # rename and move the pipeline log file
         try:
-            calspec2_pilelog = "calspec2_pipeline_" + detector + ".log"
+            calspec2_pipelog = "calspec2_pipeline_" + detector + ".log"
             if imaging_mode:
-                calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
+                calspec2_pipelog = calspec2_pipelog.replace('calspec2', 'calimage2')
             path_where_pipeline_was_run = os.getcwd()
             logfile = glob(path_where_pipeline_was_run + "/pipeline.log")[0]
             print(logfile)
-            os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
-        except:
-            IndexError
+            os.rename(logfile, os.path.join(output_directory, calspec2_pipelog))
+        except IndexError:
+            print("\nWARNING: Something went wrong. Could not find a pipeline.log file \n")
 
-        # make sure we are able to find calspec2_pilelog either in the calwebb_spec2 directory or in the working dir
-        if not os.path.isfile(calspec2_pilelog):
-            calspec2_pilelog = os.path.join(output_directory, calspec2_pilelog)
+        # make sure we are able to find calspec2_pipelog either in the calwebb_spec2 directory or in the working dir
+        if not os.path.isfile(calspec2_pipelog):
+            calspec2_pipelog = os.path.join(output_directory, calspec2_pipelog)
 
         # add the running time for all steps
-        step_running_times = core_utils.calculate_step_run_time(calspec2_pilelog)
+        step_running_times = core_utils.calculate_step_run_time(calspec2_pipelog)
         end_time_list = []
         for stp in core_utils.step_string_dict:
             if stp in step_running_times:
@@ -343,14 +342,14 @@ def output_hdul(set_inandout_filenames, config):
 
                 # rename and move the pipeline log file
                 try:
-                    calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
+                    calspec2_pipelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
                     if imaging_mode:
-                        calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
+                        calspec2_pipelog = calspec2_pipelog.replace('calspec2', 'calimage2')
                     pytest_workdir = TESTSDIR
                     logfile = glob(pytest_workdir + "/pipeline.log")[0]
-                    os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
-                except:
-                    IndexError
+                    os.rename(logfile, os.path.join(output_directory, calspec2_pipelog))
+                except IndexError:
+                    print("\n* WARNING: Something went wrong. Could not find a pipeline.log file \n")
 
             else:
                 msg = "Skipping step. Input file " + step_input_file + " does not exit."
@@ -377,7 +376,7 @@ def output_hdul(set_inandout_filenames, config):
             pytest.skip()
 
 
-### THESE FUNCTIONS ARE TO VALIDATE THE WCS STEP
+# THESE FUNCTIONS ARE TO VALIDATE THE WCS STEP
 
 # fixture to validate the WCS
 @pytest.fixture(scope="module")

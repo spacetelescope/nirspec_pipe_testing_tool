@@ -36,7 +36,7 @@ def find_nearest(arr, value):
     :param value = float or integer
     :return: The array element closest to value and its index
     '''
-    idx=(np.abs(arr-value)).argmin()
+    idx = (np.abs(arr-value)).argmin()
     return arr[idx], idx
 
 
@@ -52,14 +52,13 @@ def get_sci_extensions(fits_file_name):
     hdulist = fits.open(fits_file_name)
     hdulist.info()
     sci_dict = {}
-    s=0
+    s = 0
     for ext, hdu in enumerate(hdulist):
         if hdu.name == "SCI":
             try:
                 sltname = hdu.header["SLTNAME"]
                 sci_dict[sltname] = ext
-            except:
-                KeyError
+            except KeyError:
                 sltname = "Slit_"+repr(s+1)
                 sci_dict[sltname] = ext
 
