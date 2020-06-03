@@ -82,7 +82,7 @@ def find_FSwindowcorners(infile_name, esa_files_path, extract_2d_threshold_diff=
 
         # Find esafile (most of this copy-pasted from compare_wcs_fs)
         sltname = sci_header["SLTNAME"]
-        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
         specifics = [sltname]
         # check if ESA data is not in the regular directory tree
         NIDs = ["30055", "30055", "30205", "30133", "30133"]
@@ -359,7 +359,7 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path, extract_2d
         pipeline_corners = [px0, py0, px1, py1]
 
         # Identify the associated ESA file
-        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file()
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
         msg = "Using this raw data file to find the corresponding ESA file: "+raw_data_root_file
         print(msg)
         log_msgs.append(msg)
