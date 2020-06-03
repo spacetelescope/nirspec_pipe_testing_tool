@@ -451,7 +451,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 print(msg)
                 log_msgs.append(msg)
             else:
-                specific_plt_name = "_rel_wave_diffs.jpg"
+                specific_plt_name = "_rel_wave_diffs.png"
                 if isinstance(infile_name, str):
                     plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+specific_plt_name)
                 else:
@@ -475,7 +475,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 print(msg)
                 log_msgs.append(msg)
             else:
-                specific_plt_name = "_rel_slitY_diffs.jpg"
+                specific_plt_name = "_rel_slitY_diffs.png"
                 if isinstance(infile_name, str):
                     plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+specific_plt_name)
                 else:
@@ -499,7 +499,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 print(msg)
                 log_msgs.append(msg)
             else:
-                specific_plt_name = "_rel_MSAx_diffs.jpg"
+                specific_plt_name = "_rel_MSAx_diffs.png"
                 if isinstance(infile_name, str):
                     plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+specific_plt_name)
                 else:
@@ -523,7 +523,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                 print(msg)
                 log_msgs.append(msg)
             else:
-                specific_plt_name = "_rel_MSAy_diffs.jpg"
+                specific_plt_name = "_rel_MSAy_diffs.png"
                 if isinstance(infile_name, str):
                     plt_name = infile_name.replace(basenameinfile_name, slitlet_name+"_"+det+specific_plt_name)
                 else:
@@ -549,7 +549,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    specific_plt_name = "_rel_V2_diffs.jpg"
+                    specific_plt_name = "_rel_V2_diffs.png"
                     if isinstance(infile_name, str):
                         plt_name = infile_name.replace(basenameinfile_name,
                                                        slitlet_name + "_" + det + specific_plt_name)
@@ -575,7 +575,7 @@ def compare_wcs(infile_name, esa_files_path, msa_conf_name, show_figs=True, save
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    specific_plt_name = "_rel_V3_diffs.jpg"
+                    specific_plt_name = "_rel_V3_diffs.png"
                     if isinstance(infile_name, str):
                         plt_name = infile_name.replace(basenameinfile_name,
                                                        slitlet_name + "_" + det + specific_plt_name)
