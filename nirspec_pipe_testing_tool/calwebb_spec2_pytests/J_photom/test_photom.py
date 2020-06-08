@@ -136,7 +136,6 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 return hdul, step_output_file, run_pytests
 
-
             else:
                 msg = "Skipping running pipeline step "+step
                 print(msg)
@@ -152,15 +151,14 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = False
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    pytest.skip()
+                    pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
 
         else:
-            msg =" The input file does not exist. Skipping step."
+            msg = " The input file does not exist. Skipping step."
             print(msg)
             logging.info(msg)
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+" because the input file does not exist.")
-
 
 
 # Unit tests

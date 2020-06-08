@@ -191,7 +191,7 @@ def output_hdul(set_inandout_filenames, config):
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             # move the final reporting files to the working directory
             core_utils.move_txt_files_2workdir(config, detector)
-            pytest.skip()
+            pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
 
         # get the total running time and print it in the file
         total_time = repr(core_utils.get_time_to_run_pipeline(txt_name))
