@@ -611,7 +611,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     else:
                         file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
                         file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
-                        t = (file_basename, "MOS_flattest_"+slitlet_id+"_histogram.pdf")
+                        t = (file_basename, "MOS_flattest_"+slitlet_id+"_histogram.png")
                         plt_name = "_".join(t)
                         plt_name = os.path.join(file_path, plt_name)
                         difference_img = (pipeflat - flatcor)#/flatcor

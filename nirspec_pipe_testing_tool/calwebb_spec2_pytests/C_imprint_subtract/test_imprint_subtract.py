@@ -176,15 +176,13 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = False
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    pytest.skip()
-
+                    pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
 
     else:
         pytest.skip("Skipping "+step+" because data is neither IFU or MOS.")
 
 
-
-### VALIDATION FUNCTIONS
+# VALIDATION FUNCTIONS
 
 # fixture to validate the subtraction works fine: re-run the step with the same file as msa_imprint file
 @pytest.fixture(scope="module")

@@ -61,7 +61,7 @@ def output_hdul(set_inandout_filenames, config):
     if not os.path.isfile(initial_input_file):
         pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
 
-    if mode_used != "bots"  and  mode_used != "ifu":
+    if mode_used != "bots" and mode_used != "ifu":
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
 
@@ -159,12 +159,10 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = False
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    pytest.skip()
-
+                    pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
 
     else:
         pytest.skip("Skipping "+step+" because data is either IFU or BOTS.")
-
 
 
 # Unit tests
