@@ -36,8 +36,6 @@ __version__ = "2.6"
 # Jun 2019 - Version 2.6: Updated name of interpolated flat to be the default pipeline name for this file.
 
 
-
-
 def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name):
     # create histogram
     font = {#'family' : 'normal',
@@ -76,7 +74,7 @@ def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_f
 
     if save_figs:
         if plot_name is None:
-            t = (title, ".pdf")
+            t = (title, ".png")
             plot_name = "".join(t)
         plt.savefig(plot_name)
         print('\n Plot saved: ', plot_name)
@@ -475,7 +473,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 # create histogram
                 t = (file_basename, det, pslice, "IFUflatcomp_histogram")
                 title =  filt+"   "+grat+"   SLICE="+pslice+"\n"
-                plot_name = "".join((file_path, ("_".join(t))+".pdf"))
+                plot_name = "".join((file_path, ("_".join(t))+".png"))
                 #mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name=plot_name)
                 bins = None   # binning for the histograms, if None the function will select them automatically
                 title = title+"Residuals"
@@ -551,7 +549,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             mean_of_delfg_mean = np.mean(all_delfg_mean_arr)
             median_of_delfg_median = np.median(all_delfg_median_arr)
             medians_std = np.std(median_of_delfg_median)
-            plot_name = "".join((file_path, title, ".pdf"))
+            plot_name = "".join((file_path, title, ".png"))
             mk_hist(title, all_delfg_median_arr, mean_of_delfg_mean, median_of_delfg_median, medians_std, save_figs, show_figs,
                     plot_name=plot_name)
         elif not save_figs and not show_figs:

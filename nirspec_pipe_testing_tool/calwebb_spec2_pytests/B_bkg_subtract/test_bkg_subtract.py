@@ -171,8 +171,7 @@ def output_hdul(set_inandout_filenames, config):
                 else:
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    pytest.skip()
-
+                    pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
 
     else:
         msg = "Skipping "+step+" because data is BOTS."
@@ -182,7 +181,7 @@ def output_hdul(set_inandout_filenames, config):
         pytest.skip(msg)
 
 
-### FUNCTION FOR VALIDATION
+# FUNCTION FOR VALIDATION
 
 # fixture to validate the background substract
 #@pytest.fixture(scope="module")

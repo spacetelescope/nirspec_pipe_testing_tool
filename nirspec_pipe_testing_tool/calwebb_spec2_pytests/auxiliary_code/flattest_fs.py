@@ -75,7 +75,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
         # read in the on-the-fly flat image
         flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
-        # flatfile = step_input_filename.replace("flat_field.fits", "intflat.fits")  # for testing code only!
 
         # paths to save plots and files
         file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
@@ -295,7 +294,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             ext = 1
             if len(sci_ext_list) > 1:
                 ei = sltname_list.index(slit_id)
-                print("ei = ", ei)
                 ext += ei
 
             print("exp_type = ", exp_type)
@@ -569,10 +567,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     log_msgs.append(msg)
                 else:
                     if output_directory is not None:
-                        t = (file_basename, "FS_flattest_" + slit_id + "_histogram.pdf")
+                        t = (file_basename, "FS_flattest_" + slit_id + "_histogram.png")
                         plt_name = os.path.join(file_path, "_".join(t))
                     else:
-                        plt_name = os.path.join(os.getcwd(), "FS_flattest_" + det + "_" + slit_id + "_histogram.pdf")
+                        plt_name = os.path.join(os.getcwd(), "FS_flattest_" + det + "_" + slit_id + "_histogram.png")
                         print("No output_directory was provided. Figures will be saved in current working directory:")
                         print(plt_name + "\n")
                     difference_img = (pipeflat - flatcor)  # /flatcor
