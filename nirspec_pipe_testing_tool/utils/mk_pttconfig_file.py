@@ -124,13 +124,14 @@ def write_ptt_cfg(calwebb_spec2_input_file, esa_intermediary_products, run_calwe
     config.set("run_pytest", "srctype_completion_tests", run_pytest[12])
     config.set("run_pytest", "pathloss_completion_tests", run_pytest[13])
     config.set("run_pytest", "pathloss_reffile_tests", run_pytest[14])
-    config.set("run_pytest", "barshadow_completion_tests", run_pytest[15])
-    config.set("run_pytest", "barshadow_validation_tests", run_pytest[16])
-    config.set("run_pytest", "photom_completion_tests", run_pytest[17])
-    config.set("run_pytest", "resample_spec_completion_tests", run_pytest[18])
-    config.set("run_pytest", "cube_build_completion_tests", run_pytest[19])
-    config.set("run_pytest", "extract_1d_completion_tests", run_pytest[20])
-    config.set("run_pytest", "extract_1d_reffile_tests", run_pytest[21])
+    config.set("run_pytest", "pathloss_validation_tests", run_pytest[15])
+    config.set("run_pytest", "barshadow_completion_tests", run_pytest[16])
+    config.set("run_pytest", "barshadow_validation_tests", run_pytest[17])
+    config.set("run_pytest", "photom_completion_tests", run_pytest[18])
+    config.set("run_pytest", "resample_spec_completion_tests", run_pytest[19])
+    config.set("run_pytest", "cube_build_completion_tests", run_pytest[20])
+    config.set("run_pytest", "extract_1d_completion_tests", run_pytest[21])
+    config.set("run_pytest", "extract_1d_reffile_tests", run_pytest[22])
 
     config.add_section("additional_arguments")
     config.set("additional_arguments", "wcs_threshold_diff", additional_arguments[0])
@@ -207,7 +208,7 @@ def pepare_variables(output_directory, rate_input_file, mode_used, raw_data_root
         fflat_path = "".join(['/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/', mode_used, '/nirspec_',
                               mode_used, '_fflat'])
 
-    spec2_steps = ['assign_wcs', 'bkg_subtract', 'imprint_subtract', 'msa_flagging' , 'extract_2d', 'flat_field',
+    spec2_steps = ['assign_wcs', 'bkg_subtract', 'imprint_subtract', 'msa_flagging', 'extract_2d', 'flat_field',
                    'srctype', 'pathloss', 'barshadow', 'photom', 'resample_spec', 'cube_build', 'extract_1d']
 
     ptt_pytests = ['assign_wcs_completion_tests', 'assign_wcs_reffile_tests', 'assign_wcs_validation_tests',
@@ -217,7 +218,7 @@ def pepare_variables(output_directory, rate_input_file, mode_used, raw_data_root
                    'extract_2d_completion_tests', 'extract_2d_validation_tests',
                    'flat_field_completion_tests', 'flat_field_reffile_tests', 'flat_field_validation_tests',
                    'srctype_completion_tests',
-                   'pathloss_completion_tests', 'pathloss_reffile_tests',
+                   'pathloss_completion_tests', 'pathloss_reffile_tests', 'pathloss_validation_tests',
                    'barshadow_completion_tests', 'barshadow_validation_tests',
                    'photom_completion_tests',
                    'resample_spec_completion_tests',
@@ -258,9 +259,9 @@ def pepare_variables(output_directory, rate_input_file, mode_used, raw_data_root
     # set the full ESA path to compare the data
     if comparison_file_path is None:
         esa_files_full_path = "".join([esa_files_path, mode_used, "_CV3/ESA_Int_products"])
-        input_file = os.path.join(output_directory, rate_input_file)
-        if "FULL" in fits.getval(input_file, "SUBARRAY"):
-            esa_files_full_path = "".join([esa_files_path, mode_used, "_CV3_cutouts/ESA_Int_products"])
+        if "F" in mode_used and "S" in mode_used:
+            if not fits.getval(raw_data_root_file, "SUBARRAY"):
+                esa_files_full_path = "".join([esa_files_path, mode_used, "_CV3_cutouts/ESA_Int_products"])
     else:
         esa_files_full_path = comparison_file_path
 
@@ -288,7 +289,7 @@ def pepare_variables(output_directory, rate_input_file, mode_used, raw_data_root
     if flattest_threshold_diff is None:
         flattest_threshold_diff = 9.999e-5
     write_flattest_files = True
-    pathloss_threshold_diff = 0.0025
+    pathloss_threshold_diff = 1.0e-7
     write_pathloss_files = True
     barshadow_threshold_diff = 0.0025
     write_barshadow_files = True

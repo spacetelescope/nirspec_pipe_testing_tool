@@ -44,7 +44,7 @@ def r_pthlos_exists(output_hdul):
     """
     result = "R_PTHLOS" in output_hdul
     if result:
-        print (" Reference file used for pathloss step: ", output_hdul["R_PTHLOS"])
+        print(" Reference file used for pathloss step: ", output_hdul["R_PTHLOS"])
     return result
 
 

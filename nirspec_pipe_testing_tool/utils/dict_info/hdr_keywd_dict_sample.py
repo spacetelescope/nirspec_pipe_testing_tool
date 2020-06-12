@@ -217,6 +217,28 @@ keywd_dict['PA_APER'] = -999.0  # [deg] position angle of aperture used, e.g. -9
 
 # WCS parameters in science extension
 keywd_dict['wcsinfo'] = {
+    # general information in science extension header
+    'XTENSION': 'IMAGE',  # Image extension
+    'BITPIX': -32,  # array data type
+    'NAXIS': 2,  # number of array dimensions
+    'NAXIS1': 1404,
+    'NAXIS2': 64,
+    'PCOUNT': 0,  # number of parameters
+    'GCOUNT': 1,  # number of groups
+    'EXTNAME': 'SCI',  # extension name
+    'SRCTYPE': 'POINT',  # Source type used for calibration
+    'EXTVER': 1,  # extension value
+    'SLTNAME': 'S200A1',  # Name of the slit
+    'SLTSTRT1': 645,  # Starting pixel in x direction
+    'SLTSIZE1': 1404,  # Number of pixels in x direction
+    'SLTSTRT2': 1056,  # Starting pixel in y direction
+    'SLTSIZE2': 64,  # Number of pixels in y direction
+    'SOURCEID': 1,  # Source ID
+    'SRCXPOS': 0.0,  # Source position in slit (x-axis)
+    'SRCYPOS': 0.0,  # Source position in slit (y-axis)
+    'BUNIT': 'DN/s',  # physical units of the array values
+
+    # WCS parameters
     'WCSAXES': 3,  # number of World Coordinate System axes, e.g. 3
     'CRPIX1': 1024,  # x-coordinate of the reference pixel, e.g. 1024.0
     'CRPIX2': 1024,  # y-coordinate of the reference pixel, e.g. 128.0

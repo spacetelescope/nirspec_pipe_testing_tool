@@ -8,3 +8,9 @@ from . import flattest_fs
 from . import flattest_ifu
 from . import flattest_mos
 from . import reffile_test
+from . import pathloss_fs_ps
+from . import pathloss_fs_uni
+from . import pathloss_ifu_ps
+from . import pathloss_ifu_uni
+from . import pathloss_mos_ps
+from . import pathloss_mos_uni
