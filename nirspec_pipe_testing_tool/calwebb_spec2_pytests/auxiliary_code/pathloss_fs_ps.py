@@ -4,7 +4,8 @@ from astropy import wcs
 import numpy as np
 from astropy.io import fits
 import scipy
-import pdb
+import argparse
+import sys
 
 import jwst
 from gwcs import wcstools
@@ -14,6 +15,7 @@ from . import auxiliary_functions as auxfunc
 from astropy.visualization import (ImageNormalize, AsinhStretch)
 import matplotlib
 import matplotlib.pyplot as plt
+#matplotlib.use("macOSX")
 
 """
 This script tests the FS pipeline pathloss step output for a Point Source.
@@ -21,12 +23,13 @@ This script tests the FS pipeline pathloss step output for a Point Source.
 
 # HEADER
 __author__ = "T King"
-__version__ = "1.2"
+__version__ = "1.3"
 
 # HISTORY
 # October 19, 2019 - Version 1.0: initial version started
 # February 5, 2020 - Version 1.1: Tests pass
 # February 26, 2020 - Version 1.2: Mostly pep8 compliant
+# June 8, 2020 - Version 1.3: Added changes to be able to run within NPTT
 
 
 def get_ps_uni_extensions(fits_file_name, is_point_source):
@@ -63,7 +66,7 @@ def get_ps_uni_extensions(fits_file_name, is_point_source):
 
 
 def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, show_figs=True,
-             save_figs=False, plot_name=None, threshold_diff=1e-7,
+             save_figs=False, threshold_diff=1e-7,
              debug=False):
     """
     This function calculates the difference between the pipeline and the
@@ -79,10 +82,9 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         show_figs: boolean, whether to show plots or not
         save_figs: boolean, save the plots (the 3 plots can be saved or not
         independently with the function call)
-        plot_name: string, desired name (if name is not given, the plot
         function will name the plot by default)
         threshold_diff: float, threshold difference between pipeline output
-        and ESA file
+        and comparison file
         debug: boolean, if true a series of print statements will show
         on-screen
     Returns:
@@ -109,14 +111,10 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
     print(msg)
     log_msgs.append(msg)
 
-    msg = "Using reference file: "+reffile
-    print(msg)
-    log_msgs.append(msg)
-
     is_point_source = True
 
     # get the datamodel from the assign_wcs output file
-    extract2d_wcs_file = '/Users/tking/documents/king_FS_NRS1_V2/final_output_caldet1_NRS1_extract_2d.fits'
+    extract2d_wcs_file = step_input_filename.replace("srctype.fits", "extract_2d.fits")
     model = datamodels.MultiSlitModel(extract2d_wcs_file)
 
     if writefile:
@@ -165,6 +163,10 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
 
     # get the comparison data model
     pathloss_pipe = datamodels.open(comparison_filename)
+    # For the moment, the pipeline is using the wrong reference file for slit 400A1, so read file that
+    # re-processed with the right reference file and open corresponding data model
+    pathloss_400a1 = step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")
+    pathloss_pipe_400a1 = datamodels.open(pathloss_400a1)
     if debug:
         print('got comparison datamodel!')
 
@@ -182,7 +184,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         print('got input datamodel!')
 
     # loop through the wavelengths
-    msg = "Looping through the wavelengths... "  # SLITS?
+    msg = "Looping through the wavelengths... "
     print(msg)
     log_msgs.append(msg)
 
@@ -192,9 +194,9 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
 
         slit_id = pipe_slit.name
         # with the current reference file, skip S400A1
-        if slit_id=="S400A1": 
-            continue
-        print('Working with slitlet ', slit_id)
+        #if slit_id == "S400A1":
+        #    continue
+        print('\nWorking with slitlet ', slit_id)
 
         if slit.name == slit_id:
             msg = """Slitlet name in fits file previous to pathloss
@@ -253,20 +255,24 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         slit_y = slit.source_ypos
         if debug:
             print("slit_x, slit_y", slit_x, slit_y)
-        
-        # reffile = '/Users/tking/jwst_nirspec_pathloss_0001.fits'  # Don't have slit_val > 3 using wrong reffile
-        # if slit_val == 3:
-        #     if is_point_source:
-        #         ext = 1
-        #     else:
-        #         ext = 3
-        #     reffile = "/Users/tking/Desktop/jwst-nirspec-a400.plrf/jwst-nirspec-a400.plrf.fits"
 
+        if slit_id == "S400A1":
+            if is_point_source:
+                ext = 1
+            else:
+                ext = 3
+            reffile2use = "jwst-nirspec-a400.plrf.fits"
+        else:
+            reffile2use = reffile
 
-        plcor_ref_ext = fits.getdata(reffile, ext)
+        msg = "Using reference file: " + reffile2use
+        print(msg)
+        log_msgs.append(msg)
+
+        plcor_ref_ext = fits.getdata(reffile2use, ext)
         if debug:
             print("ext:", ext)
-        hdul = fits.open(reffile)
+        hdul = fits.open(reffile2use)
         plcor_ref = hdul[1].data
         w = wcs.WCS(hdul[1].header)
         
@@ -277,6 +283,16 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
 
         previous_sci = slit.data
         pipe_correction = pipe_slit.pathloss
+        if slit_id == "S400A1":
+            for pipe_slit_400a1 in pathloss_pipe_400a1.slits:
+                if pipe_slit_400a1.name == "S400A1":
+                    pipe_correction = pipe_slit_400a1.pathloss
+                    break
+                else:
+                    continue
+        if len(pipe_correction) == 0:
+            print("Pipeline pathloss correction in datamodel is empty. Skipping testing this slit.")
+            continue
 
         # Set up manually to test correction at nonzero point
         # slit_x = 0.2
@@ -327,12 +343,12 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         matplotlib.rc('font', **font)
 
         # Plots:
+        step_input_filepath = step_input_filename.replace(".fits", "")
         # my correction values
         fig = plt.figure()
         plt.subplot(221)
         norm = ImageNormalize(corr_vals)
-        plt.imshow(corr_vals, norm=norm, aspect=10.0, origin='lower',
-                   cmap='viridis')
+        plt.imshow(corr_vals, norm=norm, aspect=10.0, origin='lower', cmap='viridis')
         plt.xlabel('dispersion in pixels')
         plt.ylabel('y in pixels')
         plt.title('Calculated Correction')
@@ -340,8 +356,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         # pipe correction
         plt.subplot(222)
         norm = ImageNormalize(pipe_correction)
-        plt.imshow(pipe_correction, norm=norm, aspect=10.0, origin='lower',
-                   cmap='viridis')
+        plt.imshow(pipe_correction, norm=norm, aspect=10.0, origin='lower', cmap='viridis')
         plt.title("Pipeline Correction")
         plt.xlabel('dispersion in pixels')
         plt.ylabel('y in pixels')
@@ -350,8 +365,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         corr_residuals = pipe_correction - corr_vals
         plt.subplot(223)
         norm = ImageNormalize(corr_residuals)
-        plt.imshow(corr_residuals, norm=norm, aspect=10.0, origin='lower',
-                   cmap='viridis')
+        plt.imshow(corr_residuals, norm=norm, aspect=10.0, origin='lower', cmap='viridis')
         plt.xlabel('dispersion in pixels')
         plt.ylabel('y in pixels')
         plt.title('Correction residuals')
@@ -359,8 +373,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         # my science data after
         plt.subplot(224)
         norm = ImageNormalize(corrected_array)
-        plt.imshow(corrected_array, norm=norm, aspect=10.0, origin='lower',
-                   cmap='viridis')
+        plt.imshow(corrected_array, norm=norm, aspect=10.0, origin='lower', cmap='viridis')
         plt.title('My science data after pathloss')
         plt.xlabel('dispersion in pixels')
         plt.ylabel('y in pixels')
@@ -368,7 +381,8 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         fig.suptitle("FS PS Pathloss Correction Test for slit " + str(slit_id))
 
         if save_figs:
-            plt_name = step_input_filename + "_Pathloss_test_slitlet_"+str(mode) + "_" + str(slit_id) + "_" + str(slit_val) + ".pdf"
+            plt_name = step_input_filepath + "_Pathloss_test_slitlet_"+str(mode) + "_" + str(slit_id) + "_" + \
+                       str(slit_val) + ".png"
             plt.savefig(plt_name)
             print('Figure saved as: ', plt_name)
         if show_figs:
@@ -399,46 +413,49 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
             compfile_ext = fits.ImageHDU(corr_residuals, name=slit_id)
             compfile.append(compfile_ext)
 
-        if debug:
-            if corr_residuals[~np.isnan(corr_residuals)].size == 0:
-                msg1 = " * Unable to calculate statistics because difference array has all values as NaN. Test will be set to FAILED."
+        if corr_residuals[~np.isnan(corr_residuals)].size == 0:
+            msg1 = " * Unable to calculate statistics because difference array has all values as NaN. " \
+                   "Test will be set to FAILED."
+            print(msg1)
+            log_msgs.append(msg1)
+            test_result = "FAILED"
+        else:
+            msg = "Calculating statistics... "
+            print(msg)
+            log_msgs.append(msg)
+            corr_residuals = corr_residuals[np.where((corr_residuals != 999.0) & (corr_residuals < 0.1) &
+                                                     (corr_residuals > -0.1))]   # ignore outliers
+            if corr_residuals.size == 0:
+                msg1 = " * Unable to calculate statistics because difference array has all outlier values. " \
+                       "Test will be set to FAILED."
                 print(msg1)
                 log_msgs.append(msg1)
                 test_result = "FAILED"
             else:
-                msg = "Calculating statistics... "
-                print(msg)
-                log_msgs.append(msg)
-                corr_residuals = corr_residuals[np.where((corr_residuals != 999.0) & (corr_residuals < 0.1) & (corr_residuals > -0.1))]   # ignore outliers
-                if corr_residuals.size == 0:
-                    msg1 = " * Unable to calculate statistics because difference array has all outlier values. Test will be set to FAILED."
-                    print(msg1)
-                    log_msgs.append(msg1)
-                    test_result = "FAILED"
-                else:
-                    stats_and_strings = auxfunc.print_stats(corr_residuals, "Difference", float(threshold_diff), abs=True)
-                    stats, stats_print_strings = stats_and_strings
-                    corr_residuals_mean, corr_residuals_median, corr_residuals_std = stats
-                    for msg in stats_print_strings:
-                        log_msgs.append(msg)
-
-                    # This is the key argument for the assert pytest function
-                    median_diff = False
-                    if abs(corr_residuals_median) <= float(threshold_diff):
-                        median_diff = True
-                    if median_diff:
-                        test_result = "PASSED"
-                    else:
-                        test_result = "FAILED"
-
-                    msg = " *** Result of the test: "+test_result+"\n"
-                    print(msg)
+                stats_and_strings = auxfunc.print_stats(corr_residuals, "Difference", float(threshold_diff),
+                                                        abs=True)
+                stats, stats_print_strings = stats_and_strings
+                corr_residuals_mean, corr_residuals_median, corr_residuals_std = stats
+                for msg in stats_print_strings:
                     log_msgs.append(msg)
-                    total_test_result.append(test_result)
+
+                # This is the key argument for the assert pytest function
+                median_diff = False
+                if abs(corr_residuals_median) <= float(threshold_diff):
+                    median_diff = True
+                if median_diff:
+                    test_result = "PASSED"
+                else:
+                    test_result = "FAILED"
+
+        msg = " *** Result of the test: "+test_result+"\n"
+        print(msg)
+        log_msgs.append(msg)
+        total_test_result.append(test_result)
 
     if writefile:
-        outfile_name = step_input_filename.replace("srctype", "_calcuated_FS_PS_pathloss")
-        compfile_name = step_input_filename.replace("srctype", "_comparison_FS_PS_pathloss")
+        outfile_name = step_input_filename.replace("srctype", "calcuated_FS_PS_pathloss")
+        compfile_name = step_input_filename.replace("srctype", "comparison_FS_PS_pathloss")
 
         # create the fits list to hold the calculated flat values for each slit
         outfile.writeto(outfile_name, overwrite=True)
@@ -494,25 +511,69 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
     return FINAL_TEST_RESULT, result_msg, log_msgs
 
 
-if __name__ == '__main__':
+def main():
 
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument("step_input_filename",
+                        action='store',
+                        default=None,
+                        help='Name of input fits file prior to assign_wcs step, i.e. blah_rate.fits')
+    parser.add_argument("reffile",
+                        action='store',
+                        default=None,
+                        help='Path and name of reference file to use for the test.')
+    parser.add_argument("comparison_filename",
+                        action='store',
+                        default=None,
+                        help='Path and name the comparison file, i.e. the pathloss output file')
+    parser.add_argument("-w",
+                        dest="writefile",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -w to NOT write files with calculated correction.')
+    parser.add_argument("-f",
+                        dest="save_figs",
+                        action='store_false',
+                        default=True,
+                        help='Use flag -f to NOT save final figures.')
+    parser.add_argument("-s",
+                        dest="show_figs",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -s to show final figures.')
+    parser.add_argument("-t",
+                        dest="threshold_diff",
+                        action='store',
+                        default=1.0e-07,
+                        type=float,
+                        help='Use flag -t to change the default threshold (currently set to 1.0e-07).')
+    parser.add_argument("-d",
+                        dest="debug",
+                        action='store_true',
+                        default=False,
+                        help='Use flag -d to turn on debug mode.')
+    args = parser.parse_args()
+
+    # Set variables
+    step_input_filename = args.step_input_filename
+    reffile = args.reffile
+    comparison_filename = args.comparison_filename
+    writefile = args.writefile
+    save_figs = args.save_figs
+    show_figs = args.show_figs
+    threshold_diff = args.threshold_diff
+    debug = args.debug
+
+    # print pipeline version
     print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
-    pipeline_path = '/Users/tking/nirspec_pipe_testing_tool'
-
-    # input parameters that the script expects
-    step_input_filename = '/Users/tking/Documents/FS_NRS1_V2_test_run_pipeline/final_output_caldet1_NRS1_srctype.fits'
-    reffile = '/Users/tking/jwst_nirspec_pathloss_0001.fits'
-    comparison_filename = '/Users/tking/Documents/FS_NRS1_V2_test_run_pipeline/final_output_caldet1_NRS1_pathloss.fits'
-
-    # name of the output images
-    writefile = True
-
-    # set the names of the resulting plots
-    plot_name = None  # "FS_pathtest_histogram.pdf"
-
     # Run the principal function of the script
-    median_diff = pathtest(step_input_filename, reffile, comparison_filename, writefile=writefile,
-                           show_figs=False, save_figs=True,
-                           plot_name=plot_name, threshold_diff=1.0e-7,
-                           debug=True)
+    pathtest(step_input_filename, reffile, comparison_filename, writefile=writefile,
+             show_figs=show_figs, save_figs=save_figs, threshold_diff=threshold_diff,
+             debug=debug)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
+

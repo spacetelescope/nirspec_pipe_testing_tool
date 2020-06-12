@@ -4,7 +4,8 @@ from astropy import wcs
 import numpy as np
 from astropy.io import fits
 import scipy
-import pdb
+import argparse
+import sys
 
 import jwst
 from gwcs import wcstools
@@ -116,7 +117,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
     is_point_source = True
 
     # get the datamodel from the assign_wcs output file
-    extract2d_wcs_file = '/Users/tking/documents/king_FS_NRS1_V2/final_output_caldet1_NRS1_extract_2d.fits'
+    extract2d_wcs_file = step_input_filename.replace("srctype.fits", "extract_2d.fits")
     model = datamodels.MultiSlitModel(extract2d_wcs_file)
 
     if writefile:
@@ -257,14 +258,13 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         if debug:
             print("slit_x, slit_y", slit_x, slit_y)
         
-        reffile = '/Users/tking/jwst_nirspec_pathloss_0001.fits'
+        reffile = 'wst_nirspec_pathloss_0001.fits'
         if slit_val == 3:
             if is_point_source:
                 ext = 1
             else:
                 ext = 3
-            reffile = "/Users/tking/Desktop/jwst-nirspec-a400.plrf/jwst-nirspec-a400.plrf.fits"
-
+            reffile = "jwst-nirspec-a400.plrf.fits"
 
         plcor_ref_ext = fits.getdata(reffile, ext)
         if debug:
@@ -300,7 +300,6 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         wave_ref_flat = wave_ref.reshape(wave_ref.size)
 
         ref_xy = np.column_stack((slitx_ref.reshape(slitx_ref.size), slity_ref.reshape(slitx_ref.size)))
-
         
         # loop through slices in lambda from reference file
         shape = 0
@@ -374,7 +373,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         fig.suptitle("FS PS Pathloss Correction Test for slit " + str(slit_id))
 
         if save_figs:
-            plt_name = step_input_filename + "_Pathloss_test_slitlet_"+str(mode) + "_" + str(slit_id) + "_" + str(slit_val) + ".jpg"
+            plt_name = step_input_filename + "_Pathloss_test_slitlet_"+str(mode) + "_" + str(slit_id) + "_" + str(slit_val) + ".png"
             plt.savefig(plt_name)
             print('Figure saved as: ', plt_name)
         if show_figs:
@@ -494,18 +493,16 @@ if __name__ == '__main__':
 
     print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
-    pipeline_path = '/Users/tking/nirspec_pipe_testing_tool'
-
     # input parameters that the script expects
-    step_input_filename = '/Users/tking/Documents/FS_NRS1_V2_test_run_pipeline/final_output_caldet1_NRS1_srctype.fits'
-    reffile = '/Users/tking/jwst_nirspec_pathloss_0001.fits'
-    comparison_filename = '/Users/tking/Documents/FS_NRS1_V2_test_run_pipeline/final_output_caldet1_NRS1_pathloss.fits'
+    step_input_filename = 'final_output_caldet1_NRS1_srctype.fits'
+    reffile = 'jwst_nirspec_pathloss_0001.fits'
+    comparison_filename = 'final_output_caldet1_NRS1_pathloss.fits'
 
     # name of the output images
     writefile = True
 
     # set the names of the resulting plots
-    plot_name = None  # "FS_pathtest_histogram.pdf"
+    plot_name = None  # "FS_pathtest_histogram.png"
 
     # Run the principal function of the script
     median_diff = pathtest(step_input_filename, reffile, comparison_filename, writefile=writefile,

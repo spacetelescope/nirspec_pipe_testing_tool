@@ -258,8 +258,8 @@ def validate_flat_field(output_hdul):
     return median_diff
 
 
-
 # Unit tests
+
 
 def test_s_flat_exists(output_hdul):
     # want to run this pytest?
@@ -274,7 +274,9 @@ def test_s_flat_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert flat_field_utils.s_flat_exists(output_hdul[0]), "The keyword S_FLAT was not added to the header --> flat_field step was not completed."
+        assert flat_field_utils.s_flat_exists(output_hdul[0]), "The keyword S_FLAT was not added to the header --> " \
+                                                               "flat_field step was not completed."
+
 
 def test_validate_flat_field(output_hdul, request):
     # want to run this pytest?
@@ -289,7 +291,8 @@ def test_validate_flat_field(output_hdul, request):
         msg = "\n * Running validation pytest...\n"
         print(msg)
         logging.info(msg)
-        assert request.getfixturevalue("validate_flat_field"), "Output value from flattest.py is greater than threshold."
+        assert request.getfixturevalue("validate_flat_field"), "Output value from flat test is greater than threshold."
+
 
 def test_fflat_rfile(output_hdul):
     # want to run this pytest?
@@ -310,6 +313,7 @@ def test_fflat_rfile(output_hdul):
             logging.info(log_msg)
         assert not result[0], result[0]
 
+
 def test_sflat_sfile(output_hdul):
     # want to run this pytest?
     # output_hdul[4] = flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests
@@ -328,6 +332,7 @@ def test_sflat_sfile(output_hdul):
             print(log_msg)
             logging.info(log_msg)
         assert not result[0], result[0]
+
 
 def test_dflat_dfile(output_hdul):
     # want to run this pytest?

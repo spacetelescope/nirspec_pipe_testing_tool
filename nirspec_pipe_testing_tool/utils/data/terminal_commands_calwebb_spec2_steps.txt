@@ -33,6 +33,7 @@ strun jwst.srctype.SourceTypeStep fits_file.fits
 
 # Pathloss
 strun jwst.pathloss.PathLossStep fits_file.fits
+jwst.pathloss.PathLossStep final_output_caldet1_NRS1_srctype.fits --override_pathloss=jwst-nirspec-a400.plrf.fits
 
 # Barshadow (only MOS data)
 strun jwst.barshadow.BarShadowStep fits_file.fits

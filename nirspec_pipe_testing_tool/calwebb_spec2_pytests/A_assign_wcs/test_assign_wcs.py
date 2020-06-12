@@ -12,6 +12,7 @@ from glob import glob
 from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
 from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
 from jwst.pipeline.calwebb_image2 import Image2Pipeline
+from jwst.pathloss.pathloss_step import PathLossStep
 
 from . import assign_wcs_utils
 from .. import core_utils
@@ -205,6 +206,22 @@ def output_hdul(set_inandout_filenames, config):
         else:
             Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
         subprocess.run(["rm", "stpipe-log.cfg"])
+
+        # For the moment, the pipeline is using the wrong reference file for slit 400A1, so the
+        # file needs to be re-processed with the right reference file
+        if core_utils.check_FS_true(inhdu):
+            print("\n * WARNING: For the moment, the wrong reference file is being used for "
+                  "processing slit 400A1. The file will be re-processed ")
+            # print("   $ jwst.pathloss.PathLossStep final_output_caldet1_NRS1_srctype.fits "
+            #      "--override_pathloss=jwst-nirspec-a400.plrf.fits \n")
+            pathloss_400a1 = step_input_file.replace("srctype.fits", "pathloss_400A1.fits")
+            reffile_400a1 = "jwst-nirspec-a400.plrf.fits"
+            print("Re-processing slit with new reference file: ", reffile_400a1)
+            pl = PathLossStep()
+            pl.override_pathloss = reffile_400a1
+            pl.run(step_input_file)
+            subprocess.run(["mv", step_input_file.replace("srctype", "pathlossstep"), pathloss_400a1])
+            print("Saved pipeline re-processed file as: ", pathloss_400a1)
 
         # end the timer to compute calwebb_spec2 running time
         end_time = repr(time.time() - start_time)  # this is in seconds

@@ -39,7 +39,12 @@ def keywd_in_dict_or_new_keywd(sample_kyewd_dict, extension_number, keyword, val
         dict_value_type = type(sample_kyewd_dict[keyword])
         new_value = dict_value_type(value)
     else:
-        new_value = new_keywd(extension_number, value)
+        # check if the keyword is in the science extension
+        if keyword in sample_kyewd_dict['wcsinfo']:
+            dict_value_type = type(sample_kyewd_dict['wcsinfo'][keyword])
+            new_value = dict_value_type(value)
+        else:
+            new_value = new_keywd(extension_number, value)
     return new_value
 
 
@@ -82,7 +87,6 @@ def chkeywd(fits_file, keyword, value, ext_number):
     fits.setval(fits_file, keyword, extension_number, value=new_value)
 
     print('\n * Script  change_keywd.py  finished * \n')
-
 
 
 def main():
