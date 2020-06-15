@@ -82,7 +82,7 @@ def get_mos_ps_uni_extensions(fits_file_name, is_point_source):
 
 
 def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
-             show_figs=True, save_figs=False, threshold_diff=1.0e-7, debug=False):
+             show_figs=False, save_figs=True, threshold_diff=1.0e-7, debug=False):
     """
     This function calculates the difference between the pipeline and
     the calculated pathloss values. The functions use the output of
@@ -434,10 +434,10 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
         total_test_result.append(test_result)
 
     if writefile:
-        outfile_name = step_input_filename.replace("srctype", "MOS_PS_calcuated_FS_UNI_pathloss")
-        compfile_name = step_input_filename.replace("srctype", "MOS_PS_comparison_FS_UNI_pathloss")
+        outfile_name = step_input_filename.replace("srctype", "_calcuated_pathloss")
+        compfile_name = step_input_filename.replace("srctype", "_comparison_pathloss")
 
-        # create the fits list to hold the calculated flat values for each slit
+        # create the fits list to hold the calculated pathloss values for each slit
         outfile.writeto(outfile_name, overwrite=True)
 
         # this is the file to hold the image of pipeline-calculated difference values
