@@ -63,8 +63,8 @@ def get_ps_uni_extensions(fits_file_name, is_point_source):
     return ps_dict, uni_dict
 
 
-def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, show_figs=True,
-             save_figs=False, plot_name=None, threshold_diff=1e-7,
+def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, show_figs=False,
+             save_figs=True, plot_name=None, threshold_diff=1e-7,
              debug=False):
     """
     This function calculates the difference between the pipeline and the
@@ -432,10 +432,10 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
                     total_test_result.append(test_result)
 
     if writefile:
-        outfile_name = step_input_filename.replace("srctype", "_calcuated_FS_PS_pathloss")
-        compfile_name = step_input_filename.replace("srctype", "_comparison_FS_PS_pathloss")
+        outfile_name = step_input_filename.replace("srctype", "_calcuated_pathloss")
+        compfile_name = step_input_filename.replace("srctype", "_comparison_pathloss")
 
-        # create the fits list to hold the calculated flat values for each slit
+        # create the fits list to hold the calculated pathloss values for each slit
         outfile.writeto(outfile_name, overwrite=True)
 
         # this is the file to hold the image of pipeline-calculated difference values

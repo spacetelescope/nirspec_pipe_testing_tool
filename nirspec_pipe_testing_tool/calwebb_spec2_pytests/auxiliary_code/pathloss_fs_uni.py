@@ -5,6 +5,7 @@ import numpy as np
 from astropy.io import fits
 import argparse
 import sys
+import io
 
 import jwst
 from gwcs import wcstools
@@ -65,7 +66,7 @@ def get_ps_uni_extensions(fits_file_name, is_point_source):
 
 
 def pathtest(step_input_filename, reffile, comparison_filename,
-             writefile=True, show_figs=True, save_figs=False,
+             writefile=True, show_figs=False, save_figs=True,
              threshold_diff=1.0e-7, debug=False):
     """
     This function calculates the difference between the pipeline and
@@ -140,8 +141,9 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     pathloss_pipe = datamodels.open(comparison_filename)
     # For the moment, the pipeline is using the wrong reference file for slit 400A1, so read file that
     # re-processed with the right reference file and open corresponding data model
-    pathloss_400a1 = step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")
-    pathloss_pipe_400a1 = datamodels.open(pathloss_400a1)
+    if os.path.isfile(step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")):
+        pathloss_400a1 = step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")
+        pathloss_pipe_400a1 = datamodels.open(pathloss_400a1)
     if debug:
         print('got comparison datamodel!')
 
@@ -238,13 +240,14 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
         previous_sci = slit.data
         if slit_id == 'S400A1':
-            for pipe_slit_400a1 in pathloss_pipe_400a1.slits:
-                if pipe_slit_400a1.name == "S400A1":
-                    comp_sci = pipe_slit_400a1.data
-                    pipe_correction = pipe_slit_400a1.pathloss
-                    break
-                else:
-                    continue
+            if pathloss_pipe_400a1 is not None:
+                for pipe_slit_400a1 in pathloss_pipe_400a1.slits:
+                    if pipe_slit_400a1.name == "S400A1":
+                        comp_sci = pipe_slit_400a1.data
+                        pipe_correction = pipe_slit_400a1.pathloss
+                        break
+                    else:
+                        continue
         else:
             comp_sci = pipe_slit.data
             pipe_correction = pipe_slit.pathloss
@@ -438,10 +441,10 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                 total_test_result.append(test_result)
 
     if writefile:
-        outfile_name = step_input_filename.replace("srctype", det+"_calcuated_FS_UNI_pathloss")
-        compfile_name = step_input_filename.replace("srctype", det+"_comparison_FS_UNI_pathloss")
+        outfile_name = step_input_filename.replace("srctype", det+"_calcuated_pathloss")
+        compfile_name = step_input_filename.replace("srctype", det+"_comparison_pathloss")
 
-        # create the fits list to hold the calculated flat values for each slit
+        # create the fits list to hold the calculated pathloss values for each slit
         outfile.writeto(outfile_name, overwrite=True)
 
         # this is the file to hold the image of pipeline-calculated difference values
