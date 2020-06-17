@@ -59,8 +59,7 @@ def set_inandout_filenames(config):
     # Get the detector used
     detector = fits.getval(initial_input_file, "DETECTOR", 0)
     True_steps_suffix_map = "spec2_suffix_map_" + detector + ".txt"
-    pytests_directory = TESTSDIR
-    True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
+    True_steps_suffix_map = os.path.join(output_directory, True_steps_suffix_map)
     suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, output_directory)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames
     return step, step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map
@@ -69,8 +68,19 @@ def set_inandout_filenames(config):
 # fixture to read the output file header
 @pytest.fixture(scope="module")
 def output_hdul(set_inandout_filenames, config):
+    # determine if the pipeline is to be run in full, per steps, or skipped
+    run_calwebb_spec2 = config.get("run_calwebb_spec2_in_full", "run_calwebb_spec2")
+    if run_calwebb_spec2 == "skip":
+        print('\n * PTT finished processing run_calwebb_spec2 is set to skip. \n')
+        pytest.exit("Skipping pipeline run and tests for spec2, run_calwebb_spec2 is set to skip in PTT_config file.")
+    elif "T" in run_calwebb_spec2:
+        run_calwebb_spec2 = True
+    else:
+        run_calwebb_spec2 = False
+
+    # get the general info
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
-    step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
+    step, txt_name, step_input_file, step_output_file, outstep_file_suffix = set_inandout_filenames_info
 
     # start the timer to compute the step running time of PTT
     PTT_start_time = time.time()
@@ -83,8 +93,6 @@ def output_hdul(set_inandout_filenames, config):
                                    "Further steps will be skipped. \n"
         print(change_filter_opaque_msg)
 
-    # determine if the pipeline is to be run in full
-    run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     # determine which steps are to be run, if not run in full
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     # determine which tests are to be run

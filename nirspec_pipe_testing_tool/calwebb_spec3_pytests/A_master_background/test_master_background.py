@@ -60,23 +60,25 @@ def set_inandout_filenames(request, config):
 # fixture to read the output file header
 @pytest.fixture(scope="module")
 def output_hdul(set_inandout_filenames, config):
+    # determine if the pipeline is to be run in full, per steps, or skipped
+    run_calwebb_spec3 = config.get("calwebb_spec3", "run_calwebb_spec3")
+    print("run_calwebb_spec3 = ", run_calwebb_spec3)
+    if run_calwebb_spec3 == "skip":
+        print('\n * PTT finished processing run_calwebb_spec3 is set to skip. \n')
+        pytest.exit("Finished processing file, run_calwebb_spec3 is set to skip in configuration file.")
+    else:
+        run_calwebb_spec3 = bool(run_calwebb_spec3)
+
+    # get the general info
     step, step_input_filename, output_file, in_file_suffix, outstep_file_suffix, True_steps_suffix_map = set_inandout_filenames
     output_directory = config.get("calwebb_spec2_input_file", "output_directory")
     txt_name = os.path.join(output_directory, True_steps_suffix_map)
     step_input_file = os.path.join(output_directory, step_input_filename)
     step_output_file = os.path.join(output_directory, output_file)
     mode_used = config.get("calwebb_spec2_input_file", "mode_used").lower()
-    association = config.getboolean("calwebb_spec3", "association")
-    if not association:
-        print('\n * PTT finished processing file since it is not an association. \n')
-        pytest.exit("Finished processing file. Pipeline calwebb_spec3 requires an association as an input.")
 
     # start the timer to compute the step running time of NPTT
     nptt_start_time = time.time()
-
-    # determine if the pipeline is to be run in full
-    run_calwebb_spec3 = config.getboolean("calwebb_spec3", "run_calwebb_spec3")
-    print("run_calwebb_spec3 = ", run_calwebb_spec3)
 
     # determine which steps are to be run, if not run in full
     run_pipe_step = config.getboolean("run_pipe_steps", step)

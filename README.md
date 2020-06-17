@@ -532,20 +532,15 @@ nptt_run_PTT name_of_the_html_report PTT_config.cfg
 The ```spec3``` pipeline can also be run within NPTT. It will be automatically run if the 
 variable ```associations``` in the ```PTT_config.cfg``` file is set to ```True```,
 otherwise NPTT will stop processing the file and exit gracefully. An ```.html``` report
-will be written independently for each pipeline. When running the ```spec3``` pipeline, 
-```spec2``` can be skipped with the flag ```-s``` at the end of the previous command:  
-```bash
-nptt_run_PTT name_of_the_html_report PTT_config.cfg -s
-```
+will be written independently for each pipeline. 
 
 This module can also be called from a script in the following way:
 ```bash
 # set the variables
 report_name = 'my_report'
-skip_spec2 = False
 
 # run the module
-nptt.utils.run_PTT.run_PTT(report_name, PTT_config.cfg, skip_spec2)
+nptt.utils.run_PTT.run_PTT(report_name, PTT_config.cfg)
 ```
 
 
@@ -560,8 +555,11 @@ overwrite the full pipeline run log files.
 
 -> To only run a few pipeline steps you need to:
 a) Make sure that the variable ```run_calwebb_spec2``` in the ```PTT_config.cfg``` file
-is set to False (otherwise the pipeline will run in full and we have no control of
-individual steps).
+is set to False (if True, the pipeline will run in full and we have no control of
+individual steps). Another option is ```skip``` and this is to skip pipeline running and testing 
+of the ```spec2``` pipeline and go straight to ```spec3```. Similarly, the variable 
+```run_calwebb_spec3``` can also be set to ```True```, ```False```, or ```skip```, to
+only run the ```spec2``` pipeline. Each pipeline will produce its own report.
 b) Turn off (i.e. set to False) the steps you do not want to run in the ```PTT_config.cfg``` 
 file, which are located in the section ```run_pipe_steps``` of the file.
 

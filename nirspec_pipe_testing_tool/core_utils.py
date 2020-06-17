@@ -594,8 +594,7 @@ def set_inandout_filenames(step, config):
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
 
     if not run_calwebb_spec2:
-        pytests_directory = TESTSDIR
-        True_steps_suffix_map = os.path.join(pytests_directory, "spec2_suffix_map_" + detector + ".txt")
+        True_steps_suffix_map = os.path.join(output_directory, "spec2_suffix_map_" + detector + ".txt")
         print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map,
               ", located in working directory.")
     else:
@@ -625,9 +624,7 @@ def read_info4outputhdul(config, step_info):
     txt_name = os.path.join(output_directory, True_steps_suffix_map)
     step_input_file = os.path.join(output_directory, step_input_filename)
     step_output_file = os.path.join(output_directory, output_file)
-    run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
-    set_inandout_filenames_info = [step, txt_name, step_input_file, step_output_file, run_calwebb_spec2,
-                                   outstep_file_suffix]
+    set_inandout_filenames_info = [step, txt_name, step_input_file, step_output_file, outstep_file_suffix]
 
     return set_inandout_filenames_info
 
@@ -878,7 +875,7 @@ def move_txt_files_2workdir(config, detector):
     latest_screenoutputtxtfile = get_latest_file("*screen*" + detector + "*.txt", detector,
                                                  disregard_known_files=True)  # this picks up the output_screen file
     latest_suffixmaptxtfile = get_latest_file("spec2_suffix_map_" + detector + ".txt")
-    latest_fullrunmaptxtfile = get_latest_file("spec2full_run_map_" + detector + ".txt")
+    latest_fullrunmaptxtfile = get_latest_file("spec2_full_run_map_" + detector + ".txt")
     spec3_suffixmaptxtfile = get_latest_file("spec3_suffix_map_" + detector + ".txt")
     spec3_fullrunmaptxtfile = get_latest_file("spec3_full_run_map_" + detector + ".txt")
     # move these files into the working directory

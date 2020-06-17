@@ -43,8 +43,19 @@ def set_inandout_filenames(request, config):
 # fixture to read the output file header
 @pytest.fixture(scope="module")
 def output_hdul(set_inandout_filenames, config):
+    # determine if the pipeline is to be run in full, per steps, or skipped
+    run_calwebb_spec2 = config.get("run_calwebb_spec2_in_full", "run_calwebb_spec2")
+    if run_calwebb_spec2 == "skip":
+        print('\n * PTT finished processing run_calwebb_spec2 is set to skip. \n')
+        pytest.exit("Skipping pipeline run and tests for spec2, run_calwebb_spec2 is set to skip in PTT_config file.")
+    elif "T" in run_calwebb_spec2:
+        run_calwebb_spec2 = True
+    else:
+        run_calwebb_spec2 = False
+
+    # get the general info
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
-    step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
+    step, txt_name, step_input_file, step_output_file, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     # determine which tests are to be run
     run_pytests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
@@ -58,7 +69,8 @@ def output_hdul(set_inandout_filenames, config):
     if change_filter_opaque:
         is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
         if is_filter_opaque:
-            filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Source Type pytest now set to Skip."
+            filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Source " \
+                                "Type pytest now set to Skip."
             print(filter_opaque_msg)
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")

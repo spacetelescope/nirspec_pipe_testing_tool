@@ -90,14 +90,17 @@ def write_ptt_cfg(calwebb_spec2_input_file, esa_intermediary_products, run_calwe
 
     config.add_section("run_calwebb_spec2_in_full")
     run_calwebb_spec2, calwebb_spec2_cfg = run_calwebb_spec2_in_full
+    config.set("run_calwebb_spec2_in_full", "# options for run_calwebb_spec2: True (will run in full), "
+                                            "False (run individual steps), skip (go to spec3)", None)
     config.set("run_calwebb_spec2_in_full", "run_calwebb_spec2", run_calwebb_spec2)
     config.set("run_calwebb_spec2_in_full", "calwebb_spec2_cfg", calwebb_spec2_cfg)
 
     config.add_section("calwebb_spec3")
-    config.set("calwebb_spec3", "association", spec3_args[0])
+    config.set("calwebb_spec3", "# options for run_calwebb_spec3: True (will run in full), "
+                                "False (run individual steps), skip (only do spec2)", None)
+    config.set("calwebb_spec3", "run_calwebb_spec3", spec3_args[0])
     config.set("calwebb_spec3", "s3_input_file", spec3_args[1])
-    config.set("calwebb_spec3", "run_calwebb_spec3", spec3_args[2])
-    config.set("calwebb_spec3", "calwebb_spec3_cfg", spec3_args[3])
+    config.set("calwebb_spec3", "calwebb_spec3_cfg", spec3_args[2])
 
     config.add_section("run_pipe_steps")
     config.set("run_pipe_steps", "# Spec2 steps", None)
@@ -185,7 +188,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
                      local_pipe_cfg_path=None, comparison_file_path=None, msa_conf_name=None, dflat_path=None,
                      sflat_path=None, fflat_path=None, run_calwebb_spec2=None, wcs_threshold_diff=None,
                      save_plots=True, change_filter_opaque=False, extract_2d_threshold_diff=None,
-                     flattest_threshold_diff=None, association=False):
+                     flattest_threshold_diff=None, association=None):
     """
     This function prepares all the input variables for the ConfigParser to write the PTT configuration file.
     :param output_directory: string
@@ -205,7 +208,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     :param change_filter_opaque: boolean
     :param extract_2d_threshold_diff: float, acceptable difference between the comparison and the pipeline file
     :param flattest_threshold_diff: float, acceptable difference between the comparison and the pipeline file
-    :param association: boolean, if True Spec3 will be able to continue
+    :param association: string, values are True, False, or skip. With True or False spec3 tests will be ran
     :return: variables: list, contains lists of the variables included in each section of the PTT config file
     """
     if data_directory is None:
@@ -286,12 +289,13 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
         esa_files_full_path = comparison_file_path
 
     # spec3 variables
+    if association is None:
+        run_calwebb_spec3 = True
+    else:
+        run_calwebb_spec3 = association
+    calwebb_spec3_cfg = calwebb_spec2_cfg.replace("2", "3")
     s3_input_file = rate_input_file.replace("caldet1", "spec2")
     s3_input_file = s3_input_file.replace(".fits", "_cal.fits")
-    run_calwebb_spec3 = False
-    if association:
-        run_calwebb_spec3 = True
-    calwebb_spec3_cfg = calwebb_spec2_cfg.replace("2", "3")
 
     # set the additional parameters section
     if wcs_threshold_diff is None:
@@ -327,7 +331,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
                                 change_filter_opaque, raw_data_root_file, local_pipe_cfg_path]
     esa_intermediary_products = [esa_files_full_path, msa_conf_name, dflat_path, sflat_path, fflat_path]
     run_calwebb_spec2_in_full = [run_calwebb_spec2, calwebb_spec2_cfg]
-    spec3_args = [association, s3_input_file, run_calwebb_spec3, calwebb_spec3_cfg]
+    spec3_args = [run_calwebb_spec3, s3_input_file, calwebb_spec3_cfg]
     additional_arguments = [wcs_threshold_diff, save_wcs_plots, bkg_list, msa_imprint_structure,
                             extract_2d_threshold_diff, flattest_threshold_diff, save_flattest_plot,
                             write_flattest_files, pathloss_threshold_diff, save_pathloss_plot, write_pathloss_files,
@@ -352,7 +356,7 @@ def mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file, data
                local_pipe_cfg_path=None, comparison_file_path=None, msa_conf_name=None, dflat_path=None,
                sflat_path=None, fflat_path=None, run_calwebb_spec2=None, wcs_threshold_diff=None,
                save_plots=True, change_filter_opaque=False, extract_2d_threshold_diff=None,
-               flattest_threshold_diff=None, association=False):
+               flattest_threshold_diff=None, association=None):
     """
     This function makes the PTT configuration file.
     :param output_directory: string
@@ -372,7 +376,7 @@ def mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file, data
     :param change_filter_opaque: boolean
     :param extract_2d_threshold_diff: float, acceptable difference between the comparison and the pipeline file
     :param flattest_threshold_diff: float, acceptable difference between the comparison and the pipeline file
-    :param association: boolean, if True Spec3 will be able to continue
+    :param association: string, values are True, False, or skip. With True or False spec3 tests will be ran.
     :return: nothing
     """
     # prepare all variables to create the PTT config file
@@ -498,8 +502,8 @@ def main():
                              'between the pipeline product and the comparison file for the flat_field test.')
     parser.add_argument("-a",
                         dest="association",
-                        action='store_true',
-                        default=False,
+                        action='store',
+                        default=None,
                         help='Use the -a flag if the file is an association and needs Spec3 processing.')
     args = parser.parse_args()
 
