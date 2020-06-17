@@ -13,7 +13,7 @@ from jwst.extract_1d.extract_1d_step import Extract1dStep
 
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from . import extract_1d_utils
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 
 
@@ -32,7 +32,7 @@ __version__ = "2.3"
 
 # Default names of pipeline input and output files
 @pytest.fixture(scope="module")
-def set_inandout_filenames(request, config):
+def set_inandout_filenames(config):
     step = "extract_1d"
     step_info = core_utils.set_inandout_filenames(step, config)
     step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map = step_info
@@ -42,9 +42,19 @@ def set_inandout_filenames(request, config):
 # fixture to read the output file header
 @pytest.fixture(scope="module")
 def output_hdul(set_inandout_filenames, config):
+    # determine if the pipeline is to be run in full, per steps, or skipped
+    run_calwebb_spec2 = config.get("run_calwebb_spec2_in_full", "run_calwebb_spec2")
+    if run_calwebb_spec2 == "skip":
+        print('\n * PTT finished processing run_calwebb_spec2 is set to skip. \n')
+        pytest.exit("Skipping pipeline run and tests for spec2, run_calwebb_spec2 is set to skip in PTT_config file.")
+    elif "T" in run_calwebb_spec2:
+        run_calwebb_spec2 = True
+    else:
+        run_calwebb_spec2 = False
+
+    # get the general info
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
-    step, txt_name, step_input_file, step_output_file, run_calwebb_spec2, outstep_file_suffix = set_inandout_filenames_info
-    output_directory = config.get("calwebb_spec2_input_file", "output_directory")
+    step, txt_name, step_input_file, step_output_file, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     # determine which tests are to be run
     extract_1d_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
@@ -55,7 +65,8 @@ def output_hdul(set_inandout_filenames, config):
     # Make sure at this point the MSA shutter configuration file is removed from the calwebb_spec2_pytests directory
     msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
     msametfl = os.path.basename(msa_shutter_conf)
-    if os.path.isfile(msametfl):
+    if os.getcwd() != os.path.dirname(msa_shutter_conf):
+        print("Removing MSA config file from: ", os.getcwd())
         os.remove(msametfl)
 
     # check if processing an image, then set proper variables
@@ -81,9 +92,11 @@ def output_hdul(set_inandout_filenames, config):
     # check if the filter is to be changed
     change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
     if change_filter_opaque:
-        is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
+        is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file,
+                                                                                                  step=step)
         if is_filter_opaque:
-            filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Extract_1d pytest now set to Skip."
+            filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. " \
+                                "Extract_1d pytest now set to Skip."
             print(filter_opaque_msg)
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             #core_utils.convert_html2pdf()   # convert the html report into a pdf file
@@ -229,7 +242,6 @@ def output_hdul(set_inandout_filenames, config):
         return hdul, step_output_file, run_pytests
 
 
-
 """
 # Move the files at the end of the pytests
 @pytest.fixture(scope="function", autouse=True)
@@ -271,6 +283,7 @@ def test_extract1d_rfile(output_hdul):
             logging.info(log_msg)
         assert not result[0], result[0]
 
+
 def test_s_extr1d_exists(output_hdul):
     # want to run this pytest?
     # output_hdul[2] = extract_1d_completion_tests, extract_1d_reffile_tests, extract_1d_validation_tests
@@ -284,6 +297,7 @@ def test_s_extr1d_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
+        assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the " \
+                                                                 "header --> Extract 1D step was not completed."
 
 

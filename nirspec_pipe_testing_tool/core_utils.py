@@ -1,12 +1,11 @@
 import collections
 import os
 import re
-import configparser
 import glob
 import time
 import subprocess
 from astropy.io import fits
-from . import TESTSDIR
+from nirspec_pipe_testing_tool.calwebb_spec2_pytests import TESTSDIR
 
 '''
 This script contains functions frequently used in the test suite.
@@ -23,6 +22,7 @@ __version__ = "1.2"
 
 # dictionary of the steps and corresponding strings to be added to the file name after the step has ran
 step_string_dict = collections.OrderedDict()
+# spec2
 step_string_dict["assign_wcs"] = {"outfile": True, "suffix": "_assign_wcs"}
 step_string_dict["bkg_subtract"] = {"outfile": True, "suffix": "_subtract_images"}
 step_string_dict["imprint_subtract"] = {"outfile": True, "suffix": "_imprint"}
@@ -38,6 +38,8 @@ step_string_dict["photom"] = {"outfile": True, "suffix": "_photom"}
 step_string_dict["resample_spec"] = {"outfile": True, "suffix": "_s2d"}
 step_string_dict["cube_build"] = {"outfile": True, "suffix": "_s3d"}
 step_string_dict["extract_1d"] = {"outfile": True, "suffix": "_x1d"}
+# spec3
+step_string_dict["master_background"] = {"outfile": True, "suffix": "_master_background"}
 
 
 def getlist(option, sep=',', chars=None):
@@ -272,9 +274,6 @@ def add_detector2filename(output_directory, step_input_file):
     det = fits.getval(step_input_file, "DETECTOR", 0)
     # step_input_file_basename = os.path.basename(step_input_file).replace(".fits", "")
     ptt_directory = TESTSDIR  # directory where PTT lives
-    # step_files = glob.glob(os.path.join(ptt_directory, step_input_file_basename+"*.fits"))  # get all fits files just created
-    # if len(step_files) == 0:
-    #    step_files = glob.glob(os.path.join(ptt_directory, "*.fits"))
     step_files = glob.glob(os.path.join(ptt_directory, "*.fits"))
     for sf in step_files:
         for stp_str in step_strings:
@@ -585,7 +584,7 @@ def set_inandout_filenames(step, config):
     initial_input_file = os.path.join(data_directory, initial_input_file_basename)
     # Get the detector used
     detector = fits.getval(initial_input_file, "DETECTOR", 0)
-    True_steps_suffix_map = "full_run_map_" + detector + ".txt"
+    True_steps_suffix_map = "spec2_full_run_map_" + detector + ".txt"
     if os.path.isfile(initial_input_file):
         print("\n Taking initial input file from data_directory:")
     else:
@@ -595,8 +594,7 @@ def set_inandout_filenames(step, config):
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
 
     if not run_calwebb_spec2:
-        pytests_directory = TESTSDIR
-        True_steps_suffix_map = os.path.join(pytests_directory, "True_steps_suffix_map_" + detector + ".txt")
+        True_steps_suffix_map = os.path.join(output_directory, "spec2_suffix_map_" + detector + ".txt")
         print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map,
               ", located in working directory.")
     else:
@@ -626,9 +624,7 @@ def read_info4outputhdul(config, step_info):
     txt_name = os.path.join(output_directory, True_steps_suffix_map)
     step_input_file = os.path.join(output_directory, step_input_filename)
     step_output_file = os.path.join(output_directory, output_file)
-    run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
-    set_inandout_filenames_info = [step, txt_name, step_input_file, step_output_file, run_calwebb_spec2,
-                                   outstep_file_suffix]
+    set_inandout_filenames_info = [step, txt_name, step_input_file, step_output_file, outstep_file_suffix]
 
     return set_inandout_filenames_info
 
@@ -746,9 +742,11 @@ def check_completed_steps(step, step_input_file, caldet1=False):
         keyword = "S_" + steps_calwebbspec2[s]
         if keyword not in hdr:
             print("*** WARNING: Keyword ", keyword,
-                  " for step completion does not appear in the header of the input file. This means the step may not have been ran, ")
+                  " for step completion does not appear in the header of the input file. This means the step "
+                  "may not have been ran, ")
             print(
-                "             please make sure this is intentional or output products beyond this step may be incorrect. \n")
+                "             please make sure this is intentional or output products beyond this step "
+                "may be incorrect. \n")
 
 
 def find_which_slit(output_hdul):
@@ -793,7 +791,6 @@ def get_time_to_run_pipeline(True_steps_suffix_map):
         total_time: string, total calculate the total time by reading the time of each step from the map
 
     """
-    # times_per_step = np.loadtxt(True_steps_suffix_map, comments="#", usecols=(3), unpack=True)
     times_per_step = []
     with open(True_steps_suffix_map, "r") as tf:
         for line in tf.readlines():
@@ -833,16 +830,15 @@ def get_latest_file(filetype, detector=None, disregard_known_files=False):
         if detector is None:
             print("get_latest_file: DETECTOR not defined.")
             exit()
-        if "True_steps_suffix_map_" + detector + ".txt" in list_of_filetypefiles:
-            idx = list_of_filetypefiles.index("True_steps_suffix_map_" + detector + ".txt")
+        if "spec2_suffix_map_" + detector + ".txt" in list_of_filetypefiles:
+            idx = list_of_filetypefiles.index("spec2_suffix_map_" + detector + ".txt")
             list_of_filetypefiles.pop(idx)
-        if "full_run_map_" + detector + ".txt" in list_of_filetypefiles:
-            idx = list_of_filetypefiles.index("full_run_map_" + detector + ".txt")
+        if "spec2_full_run_map_" + detector + ".txt" in list_of_filetypefiles:
+            idx = list_of_filetypefiles.index("spec2_full_run_map_" + detector + ".txt")
             list_of_filetypefiles.pop(idx)
     latest_filetypefile = "File not found."
     if len(list_of_filetypefiles) > 0:
         latest_filetypefile = max(list_of_filetypefiles, key=os.path.getctime)
-    # print("filetype, latest_filetypefile = ", filetype, latest_filetypefile)
     return latest_filetypefile
 
 
@@ -877,12 +873,15 @@ def move_txt_files_2workdir(config, detector):
     output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     # get a list of all the txt files in the calwebb_spec2_pytests dir
     latest_screenoutputtxtfile = get_latest_file("*screen*" + detector + "*.txt", detector,
-                                                 disregard_known_files=True)  # this should pick up the output_screen file
-    latest_suffixmaptxtfile = get_latest_file("True_steps_suffix_map_" + detector + ".txt")
-    latest_fullrunmaptxtfile = get_latest_file("full_run_map_" + detector + ".txt")
+                                                 disregard_known_files=True)  # this picks up the output_screen file
+    latest_suffixmaptxtfile = get_latest_file("spec2_suffix_map_" + detector + ".txt")
+    latest_fullrunmaptxtfile = get_latest_file("spec2_full_run_map_" + detector + ".txt")
+    spec3_suffixmaptxtfile = get_latest_file("spec3_suffix_map_" + detector + ".txt")
+    spec3_fullrunmaptxtfile = get_latest_file("spec3_full_run_map_" + detector + ".txt")
     # move these files into the working directory
     files2move = [latest_screenoutputtxtfile,
-                  latest_suffixmaptxtfile, latest_fullrunmaptxtfile]
+                  latest_suffixmaptxtfile, latest_fullrunmaptxtfile,
+                  spec3_suffixmaptxtfile, spec3_fullrunmaptxtfile]
     for f in files2move:
         if f != "File not found." and os.path.isfile(f):
             subprocess.run(["mv", f, output_dir])

@@ -22,6 +22,7 @@ import configparser
 import argparse
 from astropy.io import fits
 from .. import calwebb_spec2_pytests
+from .. import calwebb_spec3_pytests
 
 
 # HEADER
@@ -48,7 +49,9 @@ def read_PTTconfig_file(config_path):
     output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     input_file = config.get("calwebb_spec2_input_file", "input_file")
     input_file = os.path.join(output_dir, input_file)
-    cfg_info = [output_dir, input_file]
+    spec2 = config.get("run_calwebb_spec2_in_full", "run_calwebb_spec2")
+    spec3 = config.get("calwebb_spec3", "run_calwebb_spec3")
+    cfg_info = [output_dir, input_file, spec2, spec3]
     return cfg_info
 
 
@@ -75,9 +78,16 @@ def run_PTT(report_name, config_path=None):
 
     # get the html report and the info from the PTT config file
     cfg_info = read_PTTconfig_file(config_path)
-    
+    output_dir, input_file, spec2, spec3 = cfg_info
+    skip_spec2 = True
+    if spec2 != "skip":
+        skip_spec2 = False
+    skip_spec3 = True
+    if spec3 != "skip":
+        skip_spec3 = False
+
     # get the detector and make sure it is in the name of the output html report
-    detector = fits.getval(cfg_info[1], "DETECTOR", 0)
+    detector = fits.getval(input_file, "DETECTOR", 0)
     if 'html' not in report_name:
         report_name = report_name+'.html'
     if detector not in report_name:
@@ -85,15 +95,28 @@ def run_PTT(report_name, config_path=None):
         report_name = report_name_list[0]+'_'+detector+".html"
         print('-> The detector used added to the html report name: ', report_name)
 
-    # run PTT
-    cmd = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
-           '--self-contained-html', calwebb_spec2_pytests.TESTSDIR]
-    subprocess.call(cmd)
+    # run tests for spec2
+    if not skip_spec2:
+        print("Running spec2 and tests")
+        report_name = report_name.replace(".html", "_spec2.html")
+        args = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
+                '--self-contained-html', calwebb_spec2_pytests.TESTSDIR]
+        subprocess.run(args)
+
+    # run tests for spec3
+    if not skip_spec3:
+        print("Running spec3 and tests")
+        if "spec2" in report_name:
+            report_name = report_name.replace("_spec2", "")
+        report_name = report_name.replace(".html", "_spec3.html")
+        args = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
+                '--self-contained-html', calwebb_spec3_pytests.TESTSDIR]
+        subprocess.run(args)
 
     # move the html report
     if os.path.isfile(report_name):
         print('Moving PTT html report to working directory')
-        os.rename(report_name, os.path.join(cfg_info[0], report_name))
+        os.rename(report_name, os.path.join(output_dir, report_name))
         print('Done.')
     else:
         print('WARNING: The html report was not created, something went wrong!')

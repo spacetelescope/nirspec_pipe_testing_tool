@@ -2,12 +2,8 @@
 py.test configuration for the *entire* test suite
 """
 
-import os
-import re
 import pytest
 import configparser
-from ..utils import data
-
 
 
 # HEADER
@@ -35,7 +31,6 @@ def config(request):
     # place the report in the working directory unless otherwise specified
     output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     request.htmlpath = request.config.getoption('htmlpath', output_dir+"/report.html")
-    #request.htmlpath = output_dir+"/report.html"
     config.read(request.config.getoption("--config_file"))
     return config
 
