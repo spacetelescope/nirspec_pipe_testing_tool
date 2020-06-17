@@ -1,0 +1,24 @@
+# Commands to run the calwebb_spec2 steps from the terminal as of June-2020
+# pipeline version 7.5
+
+# PLEASE MAKE SURE YOUR CONDA TESTING ENVIRONMENT IS ON
+
+# Full calwebb_sepc3
+strun jwst.pipeline.Spec3Pipeline final_output_from_spec2_cal.fits
+
+
+# Master background
+strun jwst.master_background.MasterBackgroundStep fits_file.fits
+
+# Outlier detection
+strun jwst.outlier_detection. OutlierDetectionStep fits_file.fits 
+
+# Resample (FS and MOS data)
+strun jwst.resample.ResampleSpecStep fits_file
+
+# Cube build (only IFU data)
+strun jwst.cube_build.CubeBuildStep fits_file.fits
+
+# Combine 1d
+strun jwst.combine_1d. Combine1dStep fits_file.fits
+
