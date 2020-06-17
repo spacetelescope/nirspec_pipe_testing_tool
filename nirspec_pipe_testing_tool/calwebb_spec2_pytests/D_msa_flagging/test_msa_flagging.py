@@ -11,7 +11,7 @@ from glob import glob
 from astropy.io import fits
 from jwst.msaflagopen.msaflagopen_step import MSAFlagOpenStep
 
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from . import msa_flagging_utils
 

@@ -13,7 +13,7 @@ from jwst.resample import ResampleSpecStep
 
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from . import resample_utils
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 
 

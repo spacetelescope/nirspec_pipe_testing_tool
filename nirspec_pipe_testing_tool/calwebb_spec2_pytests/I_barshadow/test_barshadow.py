@@ -12,7 +12,7 @@ from astropy.io import fits
 from jwst.barshadow.barshadow_step import BarShadowStep
 
 from . import barshadow_utils
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from .. auxiliary_code import barshadow_testing
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science

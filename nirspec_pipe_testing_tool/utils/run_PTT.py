@@ -22,6 +22,7 @@ import configparser
 import argparse
 from astropy.io import fits
 from .. import calwebb_spec2_pytests
+from .. import calwebb_spec3_pytests
 
 
 # HEADER
@@ -85,10 +86,16 @@ def run_PTT(report_name, config_path=None):
         report_name = report_name_list[0]+'_'+detector+".html"
         print('-> The detector used added to the html report name: ', report_name)
 
-    # run PTT
-    cmd = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
-           '--self-contained-html', calwebb_spec2_pytests.TESTSDIR]
-    subprocess.call(cmd)
+    # run tests for spec2
+    args = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
+            '--self-contained-html', calwebb_spec2_pytests.TESTSDIR]
+    subprocess.run(args)
+
+    # run tests for spec3
+    report_name = report_name.replace("spec2", "spec3")
+    args = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
+            '--self-contained-html', calwebb_spec3_pytests.TESTSDIR]
+    subprocess.run(args)
 
     # move the html report
     if os.path.isfile(report_name):

@@ -11,7 +11,7 @@ from glob import glob
 from astropy.io import fits
 from jwst.background.background_step import BackgroundStep
 
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from . import bkg_subtract_utils
 

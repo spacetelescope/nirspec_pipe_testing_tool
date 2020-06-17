@@ -12,10 +12,9 @@ from glob import glob
 from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
 from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
 from jwst.pipeline.calwebb_image2 import Image2Pipeline
-from jwst.pathloss.pathloss_step import PathLossStep
 
 from . import assign_wcs_utils
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from ..auxiliary_code import compare_wcs_ifu
@@ -59,7 +58,7 @@ def set_inandout_filenames(config):
     print(" Initial input file = ", initial_input_file, "\n")
     # Get the detector used
     detector = fits.getval(initial_input_file, "DETECTOR", 0)
-    True_steps_suffix_map = "True_steps_suffix_map_" + detector + ".txt"
+    True_steps_suffix_map = "spec2_suffix_map_" + detector + ".txt"
     pytests_directory = TESTSDIR
     True_steps_suffix_map = os.path.join(pytests_directory, True_steps_suffix_map)
     suffix_and_filenames = core_utils.get_step_inandout_filename(step, initial_input_file, output_directory)
@@ -80,7 +79,8 @@ def output_hdul(set_inandout_filenames, config):
     change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
     if change_filter_opaque:
         _, step_input_file = change_filter_opaque2science.change_filter_opaque(step_input_file)
-        change_filter_opaque_msg = " * With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Further steps will be skipped. \n"
+        change_filter_opaque_msg = " * With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. " \
+                                   "Further steps will be skipped. \n"
         print(change_filter_opaque_msg)
 
     # determine if the pipeline is to be run in full
@@ -166,7 +166,7 @@ def output_hdul(set_inandout_filenames, config):
         logging.info(run_calwebb_spec2_msg)
 
         # create the map
-        txt_name = "full_run_map_" + detector + ".txt"
+        txt_name = "spec2_full_run_map_" + detector + ".txt"
         if os.path.isfile(txt_name):
             os.remove(txt_name)
         assign_wcs_utils.create_completed_steps_txtfile(txt_name, step_input_file)
@@ -205,8 +205,8 @@ def output_hdul(set_inandout_filenames, config):
             Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)#, logcfg=stpipelogcfg)
         else:
             Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
-        subprocess.run(["rm", "stpipe-log.cfg"])
 
+        """
         # For the moment, the pipeline is using the wrong reference file for slit 400A1, so the
         # file needs to be re-processed with the right reference file
         if core_utils.check_FS_true(inhdu):
@@ -222,6 +222,7 @@ def output_hdul(set_inandout_filenames, config):
             pl.run(step_input_file)
             subprocess.run(["mv", step_input_file.replace("srctype", "pathlossstep"), pathloss_400a1])
             print("Saved pipeline re-processed file as: ", pathloss_400a1)
+        """
 
         # end the timer to compute calwebb_spec2 running time
         end_time = repr(time.time() - start_time)  # this is in seconds
@@ -231,7 +232,8 @@ def output_hdul(set_inandout_filenames, config):
 
         # remove the copy of the MSA shutter configuration file
         if core_utils.check_MOS_true(inhdu):
-            subprocess.run(["rm", msametfl])
+            if os.getcwd() != output_directory:
+                subprocess.run(["rm", msametfl])
 
         # add the detector string to the name of the files and move them to the working directory
         core_utils.add_detector2filename(output_directory, step_input_file)
@@ -285,6 +287,14 @@ def output_hdul(set_inandout_filenames, config):
         # move the final reporting text files to the working directory
         core_utils.move_txt_files_2workdir(config, detector)
 
+        # rename the _cal file
+        last_suffix = os.path.basename(step_output_file).split(".fits")[0].split("_")[-1]
+        cal_file = step_output_file.replace(last_suffix, "_cal")
+        if os.path.isfile(cal_file):
+            if "caldet1" in cal_file:
+                spec2_cal_file = cal_file.replace("caldet1", "spec2")
+                os.rename(cal_file, spec2_cal_file)
+
         # end script for imaging case
         if imaging_mode:
             print('\nPTT finished processing imaging mode. \n')
@@ -332,8 +342,9 @@ def output_hdul(set_inandout_filenames, config):
                 stp = AssignWcsStep()
 
                 if core_utils.check_MOS_true(inhdu):
-                    # copy the MSA shutter configuration file into the pytest directory
-                    subprocess.run(["cp", msa_shutter_conf, "."])
+                    if os.getcwd() != output_directory:
+                        # copy the MSA shutter configuration file into the pytest directory
+                        subprocess.run(["cp", msa_shutter_conf, "."])
 
                 # get the right configuration files to run the step
                 local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
@@ -354,8 +365,9 @@ def output_hdul(set_inandout_filenames, config):
                 logging.info(msg)
 
                 if core_utils.check_MOS_true(inhdu):
-                    # remove the copy of the MSA shutter configuration file
-                    subprocess.run(["rm", msametfl])
+                    if os.getcwd() != output_directory:
+                        # remove the copy of the MSA shutter configuration file
+                        subprocess.run(["rm", msametfl])
 
                 # rename and move the pipeline log file
                 try:

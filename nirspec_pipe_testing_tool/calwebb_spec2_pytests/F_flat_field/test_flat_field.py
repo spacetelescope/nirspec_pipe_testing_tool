@@ -14,7 +14,7 @@ from astropy.io import fits
 from jwst.flatfield.flat_field_step import FlatFieldStep
 
 from . import flat_field_utils
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from .. auxiliary_code import flattest_fs
 from .. auxiliary_code import flattest_ifu

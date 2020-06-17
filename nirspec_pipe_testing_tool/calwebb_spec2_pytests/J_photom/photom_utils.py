@@ -1,4 +1,3 @@
-from .. import core_utils
 from .. auxiliary_code.reffile_test import create_rfile_test
 
 """

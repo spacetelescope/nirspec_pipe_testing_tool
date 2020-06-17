@@ -13,7 +13,7 @@ from jwst.extract_1d.extract_1d_step import Extract1dStep
 
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from . import extract_1d_utils
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 
 
@@ -32,7 +32,7 @@ __version__ = "2.3"
 
 # Default names of pipeline input and output files
 @pytest.fixture(scope="module")
-def set_inandout_filenames(request, config):
+def set_inandout_filenames(config):
     step = "extract_1d"
     step_info = core_utils.set_inandout_filenames(step, config)
     step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map = step_info
@@ -229,7 +229,6 @@ def output_hdul(set_inandout_filenames, config):
         return hdul, step_output_file, run_pytests
 
 
-
 """
 # Move the files at the end of the pytests
 @pytest.fixture(scope="function", autouse=True)
@@ -271,6 +270,7 @@ def test_extract1d_rfile(output_hdul):
             logging.info(log_msg)
         assert not result[0], result[0]
 
+
 def test_s_extr1d_exists(output_hdul):
     # want to run this pytest?
     # output_hdul[2] = extract_1d_completion_tests, extract_1d_reffile_tests, extract_1d_validation_tests
@@ -284,6 +284,7 @@ def test_s_extr1d_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the header --> Extract 1D step was not completed."
+        assert extract_1d_utils.s_extr1d_exists(output_hdul[0]), "The keyword S_EXTR1D was not added to the " \
+                                                                 "header --> Extract 1D step was not completed."
 
 

@@ -14,7 +14,7 @@ import urllib.request
 from jwst.pathloss.pathloss_step import PathLossStep
 
 from . import pathloss_utils
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from .. auxiliary_code import pathloss_fs_ps

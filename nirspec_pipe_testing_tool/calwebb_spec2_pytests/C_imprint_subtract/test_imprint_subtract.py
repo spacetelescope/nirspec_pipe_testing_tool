@@ -13,7 +13,7 @@ from glob import glob
 from astropy.io import fits
 from jwst.imprint.imprint_step import ImprintStep
 
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from . import imprint_subtract_utils
 

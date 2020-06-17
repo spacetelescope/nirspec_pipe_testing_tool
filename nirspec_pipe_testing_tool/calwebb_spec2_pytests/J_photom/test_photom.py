@@ -12,7 +12,7 @@ from astropy.io import fits
 from jwst.photom.photom_step import PhotomStep
 
 from . import photom_utils
-from .. import core_utils
+from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 
