@@ -53,7 +53,7 @@ def read_PTTconfig_file(config_path):
     return cfg_info
 
 
-def run_PTT(report_name, config_path=None):
+def run_PTT(report_name, config_path=None, skip_spec2=False):
     """
     This function runs PTT and then moves the html report into the working directory specified
     in the PTT configuration file.
@@ -87,12 +87,14 @@ def run_PTT(report_name, config_path=None):
         print('-> The detector used added to the html report name: ', report_name)
 
     # run tests for spec2
-    args = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
-            '--self-contained-html', calwebb_spec2_pytests.TESTSDIR]
-    subprocess.run(args)
+    if skip_spec2:
+        report_name = report_name.replace(".html", "_spec2.html")
+        args = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
+                '--self-contained-html', calwebb_spec2_pytests.TESTSDIR]
+        subprocess.run(args)
 
     # run tests for spec3
-    report_name = report_name.replace("spec2", "spec3")
+    report_name = report_name.replace(".html", "_spec3.html")
     args = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
             '--self-contained-html', calwebb_spec3_pytests.TESTSDIR]
     subprocess.run(args)
@@ -129,15 +131,21 @@ def main():
                              "Keep in mind that this PTT config file (in the output directory) has multiple "
                              "default values. Create the PTT config from the terminal with the command: "
                              "$ nptt_mk_pttconfig_file output_directory input_file mode_used raw_data_root_file")
+    parser.add_argument("-s",
+                        dest="skip_spec2",
+                        action='store_false',
+                        default=True,
+                        help='Use the -s flag to skip running spec2 and go straight to spec3 processing.')
 
     args = parser.parse_args()
                         
     # Set the variables
     report_name = args.report_name
     config_path = args.config
+    skip_spec2 = args.skip_spec2
 
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
-    run_PTT(report_name, config_path)
+    run_PTT(report_name, config_path, skip_spec2)
 
 
 if __name__ == '__main__':
