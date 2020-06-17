@@ -241,6 +241,7 @@ def output_hdul(set_inandout_filenames, config):
         # remove the copy of the MSA shutter configuration file
         if core_utils.check_MOS_true(inhdu):
             if os.getcwd() != output_directory:
+                print("Removing MSA config file from: ", os.getcwd())
                 subprocess.run(["rm", msametfl])
 
         # add the detector string to the name of the files and move them to the working directory
@@ -375,6 +376,7 @@ def output_hdul(set_inandout_filenames, config):
                 if core_utils.check_MOS_true(inhdu):
                     if os.getcwd() != output_directory:
                         # remove the copy of the MSA shutter configuration file
+                        print("Removing MSA config file from: ", os.getcwd())
                         subprocess.run(["rm", msametfl])
 
                 # rename and move the pipeline log file

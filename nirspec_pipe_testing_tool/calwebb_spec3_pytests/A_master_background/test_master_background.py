@@ -112,8 +112,13 @@ def output_hdul(set_inandout_filenames, config):
             fits.setval(step_input_file, "MSAMETFL", 0, value=msametfl)
 
         # copy the MSA shutter configuration file to this directory if not the working directory
-        if os.getcwd() != output_directory:
+        print(os.getcwd(), os.path.dirname(msa_shutter_conf))
+        input()
+        if os.getcwd() != os.path.dirname(msa_shutter_conf):
             # copy the MSA shutter configuration file into the pytest directory
+            print("REMOVING MSA config file")
+            input()
+            exit()
             subprocess.run(["cp", msa_shutter_conf, "."])
 
     # check if processing an image, then set proper variables
@@ -193,9 +198,14 @@ def output_hdul(set_inandout_filenames, config):
         hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
         # scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
 
+        print(os.getcwd(), os.path.dirname(msa_shutter_conf))
+        input()
         if core_utils.check_MOS_true(inhdu):
-            if os.getcwd() != output_directory:
+            if os.getcwd() != os.path.dirname(msa_shutter_conf):
                 # remove the copy of the MSA shutter configuration file
+                print("REMOVING FILE")
+                input()
+                exit()
                 subprocess.run(["rm", msametfl])
 
         # rename and move the pipeline log file
@@ -294,9 +304,14 @@ def output_hdul(set_inandout_filenames, config):
                 print(msg)
                 logging.info(msg)
 
+                print(os.getcwd(), os.path.dirname(msa_shutter_conf))
+                input()
                 if core_utils.check_MOS_true(inhdu):
                     # remove the copy of the MSA shutter configuration file
-                    if os.getcwd() != output_directory:
+                    if os.getcwd() != os.path.dirname(msa_shutter_conf):
+                        print("REMOVING")
+                        input()
+                        exit()
                         subprocess.run(["rm", msametfl])
 
                 # rename and move the pipeline log file
