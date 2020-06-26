@@ -21,12 +21,13 @@ from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.2"
+__version__ = "1.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Mar 2019 - Version 1.1: introduced structure to separate completion from other tests if needed
 # Apr 2019 - Version 1.2: implemented logging capability
+# Jun 2020 - Version 1.3: implemented APT user input vs pipeline logic
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -89,8 +90,8 @@ def output_hdul(set_inandout_filenames, config):
 
         if run_calwebb_spec2:
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            #print ("Step srctype does not produce an output product.")
-            return hdul, step_output_file, run_pytests
+            scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+            return hdul, step_output_file, run_pytests, scihdul
 
         else:
             if run_pipe_step:
@@ -137,6 +138,7 @@ def output_hdul(set_inandout_filenames, config):
 
                     step_completed = True
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
 
                     # rename and move the pipeline log file
                     try:
@@ -149,7 +151,7 @@ def output_hdul(set_inandout_filenames, config):
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests
+                    return hdul, step_output_file, run_pytests, scihdul
 
                 else:
                     msg = " The input file does not exist. Skipping step."
@@ -165,10 +167,11 @@ def output_hdul(set_inandout_filenames, config):
                 end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
                 if os.path.isfile(step_output_file):
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
                     step_completed = True
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests
+                    return hdul, step_output_file, run_pytests, scihdul
                 else:
                     step_completed = False
                     # add the running time for this step
@@ -193,5 +196,22 @@ def test_s_srctyp_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert srctype_utils.s_srctyp_exists(output_hdul[0]), "The keyword S_SRCTYP was not added to the header --> Srctype step was not completed."
+        assert srctype_utils.s_srctyp_exists(output_hdul[0]), "The keyword S_SRCTYP was not added to the header " \
+                                                              "--> Srctype step was not completed."
+
+
+def test_srctyp_logic(output_hdul):
+    # want to run this pytest?
+    run_pytests = output_hdul[2]
+    if not run_pytests:
+        msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        logging.info(msg)
+        pytest.skip(msg)
+    else:
+        msg = "\n * Running source type logic pytest...\n"
+        print(msg)
+        logging.info(msg)
+        test_result, test_msg = srctype_utils.srctype_logic_correct(output_hdul)
+        assert test_result, test_msg
 

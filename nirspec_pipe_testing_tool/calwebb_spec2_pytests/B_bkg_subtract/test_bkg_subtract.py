@@ -6,6 +6,8 @@ py.test module for unit testing the bkg_subtract step.
 import pytest
 import os
 import time
+import copy
+import subprocess
 import logging
 from glob import glob
 from astropy.io import fits
@@ -16,15 +18,15 @@ from .. import TESTSDIR
 from . import bkg_subtract_utils
 
 
-
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.2"
+__version__ = "1.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Mar 2019 - Version 1.1: separated completion from numerical tests
 # Apr 2019 - Version 1.2: implemented logging capability
+# Jun 2020 - Version 1.3: implemented numerical test
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -59,9 +61,9 @@ def output_hdul(set_inandout_filenames, config):
     run_pipe_step = config.getboolean("run_pipe_steps", step)
     # determine which tests are to be run
     bkg_subtract_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
-    #bkg_subtract_numerical_tests = config.getboolean("run_pytest", "_".join((step, "numerical", "tests")))
+    bkg_subtract_numerical_tests = config.getboolean("run_pytest", "_".join((step, "numerical", "tests")))
     #bkg_subtract_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
-    run_pytests = [bkg_subtract_completion_tests]#, bkg_subtract_numerical_tests, bkg_subtract_validation_tests]
+    run_pytests = [bkg_subtract_completion_tests, bkg_subtract_numerical_tests]#, bkg_subtract_validation_tests]
 
     # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
     step_completed = False
@@ -121,7 +123,8 @@ def output_hdul(set_inandout_filenames, config):
                         print(msg)
                         logging.info(msg)
                         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                        pytest.skip("Skipping "+step+" because files listed on bkg_list in the configuration file do not exist.")
+                        pytest.skip("Skipping "+step+" because files listed on bkg_list in the configuration "
+                                                     "file do not exist.")
                     else:
                         # continue since the file(s) exist
 
@@ -195,23 +198,34 @@ def output_hdul(set_inandout_filenames, config):
 
 # FUNCTION FOR VALIDATION
 
-# fixture to validate the background substract
-#@pytest.fixture(scope="module")
-#def check_if_subtract_is_zero(step_input_file):
+# fixture to validate the subtraction works fine: re-run the step with the same file as msa_imprint file
+@pytest.fixture(scope="module")
+def check_output_is_zero(output_hdul):
     """
-    This function uses a copy of the background input file and runs it through the step to test if the subtraction
-    is performed correctly, i.e. if the result is zero.
-    Args:
-        step_input_file: string, name of the step input file
-
-    Returns:
-        result: float, the result from the subtraction step.
+    This test is a simple subtraction of the input file minus a copy of the input file (instead of the actual
+    backfround file(s). The output is expected to be zero.
+    :param output_hdul: list
+    :return: result: boolean
     """
-#    bgfile_copy = copy.deepcopy(step_input_file)
-#    stp = BackgroundStep()
-#    result = stp.call(step_input_file, bgfile_copy)
-
-
+    # output_hdul = hdul, step_output_file, step_input_file, run_pytests, run_pipe_step
+    step_input_file = output_hdul[2]
+    step_output_file = output_hdul[1]
+    # set specifics for the test
+    bgfile_copy = copy.deepcopy(step_input_file)
+    result_to_check = step_output_file.replace(".fits", "_zerotest.fits")
+    # run the step with the specifics
+    stp = BackgroundStep()
+    res = stp.call(step_input_file, bgfile_copy)
+    res.save(result_to_check)
+    # check that the end product of image - image is zero
+    c = fits.getdata(result_to_check)
+    subtraction = sum(c.flatten())
+    result = False
+    if subtraction == 0.0:
+        result = True
+    # erase test output file
+    subprocess.run(["rm", result_to_check])
+    return result
 
 
 # Unit tests
@@ -229,5 +243,22 @@ def test_s_bkdsub_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert bkg_subtract_utils.s_bkdsub_exists(output_hdul[0]), "The keyword S_BKDSUB was not added to the header --> background step was not completed."
+        assert bkg_subtract_utils.s_bkdsub_exists(output_hdul[0]), "The keyword S_BKDSUB was not added to the header " \
+                                                                   "--> background step was not completed."
+
+
+def test_check_output_is_zero(output_hdul, request):
+    # want to run this pytest?
+    # output_hdu[3] = bkg_subtract_completion_tests, bkg_subtract_numerical_tests, bkg_subtract_validation_tests
+    run_pytests = output_hdul[3][1]
+    if not run_pytests:
+        msg = "Skipping pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        logging.info(msg)
+        pytest.skip(msg)
+    else:
+        msg = "\n * Running numerical accuracy pytest...\n"
+        print(msg)
+        logging.info(msg)
+        assert request.getfixturevalue('check_output_is_zero'), "Subtraction result is not equal to zero."
 

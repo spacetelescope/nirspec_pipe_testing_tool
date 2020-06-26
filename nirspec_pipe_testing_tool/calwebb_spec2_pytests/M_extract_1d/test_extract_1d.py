@@ -65,9 +65,12 @@ def output_hdul(set_inandout_filenames, config):
     # Make sure at this point the MSA shutter configuration file is removed from the calwebb_spec2_pytests directory
     msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
     msametfl = os.path.basename(msa_shutter_conf)
-    if os.getcwd() != os.path.dirname(msa_shutter_conf):
-        print("Removing MSA config file from: ", os.getcwd())
-        os.remove(msametfl)
+    # remove the copy of the MSA shutter configuration file
+    inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
+    if core_utils.check_MOS_true(inhdu):
+        if os.getcwd() != os.path.dirname(msa_shutter_conf):
+            print("Removing MSA config file from: ", os.getcwd())
+            os.remove(msametfl)
 
     # check if processing an image, then set proper variables
     imaging_mode = False

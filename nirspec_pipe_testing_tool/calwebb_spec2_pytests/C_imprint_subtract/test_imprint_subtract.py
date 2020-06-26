@@ -90,7 +90,7 @@ def output_hdul(set_inandout_filenames, config):
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
             else:
                 pytest.skip("Skipping "+step+" because the output file does not exist.")
-            return hdul, step_output_file, run_pipe_step, step_input_file, run_pytests
+            return hdul, step_output_file, step_input_file, run_pytests
 
         else:
 
@@ -120,9 +120,10 @@ def output_hdul(set_inandout_filenames, config):
                     logging.info(msg)
 
                     if not os.path.isfile(msa_imprint_structure):
-                        print (" Need msa_imprint_structure file to continue. Step will be skipped.")
+                        print(" Need msa_imprint_structure file to continue. Step will be skipped.")
                         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                        pytest.skip("Skipping "+step+" because msa_imprint_structure file in the configuration file does not exist.")
+                        pytest.skip("Skipping "+step+" because msa_imprint_structure file in the configuration "
+                                                     "file does not exist.")
 
                     else:
 
@@ -164,7 +165,7 @@ def output_hdul(set_inandout_filenames, config):
 
                         # add the running time for this step
                         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                        return hdul, step_output_file, run_pipe_step, step_input_file, run_pytests
+                        return hdul, step_output_file, step_input_file, run_pytests
 
                 else:
                     msg = " The input file does not exist. Skipping step."
@@ -199,39 +200,43 @@ def output_hdul(set_inandout_filenames, config):
 # fixture to validate the subtraction works fine: re-run the step with the same file as msa_imprint file
 @pytest.fixture(scope="module")
 def check_output_is_zero(output_hdul):
-    run_step = output_hdul[2]
-    step_input_file = output_hdul[3]
+    """
+    This test is a simple subtraction of the input file minus a copy of the input file (instead of the actual
+    MSA imprint file. The output is expected to be zero.
+    :param output_hdul: list
+    :return: result: boolean
+    """
+    # output_hdul = hdul, step_output_file, step_input_file, run_pytests
+    step_input_file = output_hdul[2]
     step_output_file = output_hdul[1]
     # Only run test if data is IFU or MSA
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if core_utils.check_IFU_true(inhdu) or core_utils.check_MOS_true(inhdu):
-        if run_step:
-            # set specifics for the test
-            msa_imprint_structure = copy.deepcopy(step_input_file)
-            result_to_check = step_output_file.replace(".fits", "_zerotest.fits")
-            # run the step with the specifics
-            stp = ImprintStep()
-            res = stp.call(step_input_file, msa_imprint_structure)
-            res.save(result_to_check)
-            # check that the end product of image - image is zero
-            c = fits.getdata(result_to_check)
-            substraction = sum(c.flatten())
-            result = False
-            if substraction == 0.0:
-                result = True
-            # erase test output file
-            subprocess.run(["rm", result_to_check])
-            return result
-        pytest.skip("Skipping validation check for imprint_subtract. Step set to False in configuration file.")
+        # set specifics for the test
+        msa_imprint_structure = copy.deepcopy(step_input_file)
+        result_to_check = step_output_file.replace(".fits", "_zerotest.fits")
+        # run the step with the specifics
+        stp = ImprintStep()
+        res = stp.call(step_input_file, msa_imprint_structure)
+        res.save(result_to_check)
+        # check that the end product of image - image is zero
+        c = fits.getdata(result_to_check)
+        subtraction = sum(c.flatten())
+        result = False
+        if subtraction == 0.0:
+            result = True
+        # erase test output file
+        subprocess.run(["rm", result_to_check])
+        return result
 
 
-
-### Unit tests
+# Unit tests
 
 def test_s_imprint_exists(output_hdul):
     # want to run this pytest?
-    # output_hdu[4] = imprint_subtract_completion_tests, imprint_subtract_numerical_tests, imprint_subtract_validation_tests
-    run_pytests = output_hdul[4][0]
+    # output_hdu[3] = imprint_subtract_completion_tests, imprint_subtract_numerical_tests,
+    #                 imprint_subtract_validation_tests
+    run_pytests = output_hdul[3][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -241,12 +246,16 @@ def test_s_imprint_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert imprint_subtract_utils.s_imprint_exists(output_hdul[0]), "The keyword S_IMPRINT was not added to the header --> imprint_subtract step was not completed."
+        assert imprint_subtract_utils.s_imprint_exists(output_hdul[0]), "The keyword S_IMPRINT was not added to the " \
+                                                                        "header --> imprint_subtract step was " \
+                                                                        "not completed."
+
 
 def test_check_output_is_zero(output_hdul, request):
     # want to run this pytest?
-    # output_hdu[4] = imprint_subtract_completion_tests, imprint_subtract_numerical_tests, imprint_subtract_validation_tests
-    run_pytests = output_hdul[4][1]
+    # output_hdu[3] = imprint_subtract_completion_tests, imprint_subtract_numerical_tests,
+    #                 imprint_subtract_validation_tests
+    run_pytests = output_hdul[3][1]
     if not run_pytests:
         msg = "Skipping pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -256,4 +265,4 @@ def test_check_output_is_zero(output_hdul, request):
         msg = "\n * Running numerical accuracy pytest...\n"
         print(msg)
         logging.info(msg)
-        assert request.getfixturevalue('check_output_is_zero'), "Substraction result is not equal to zero."
+        assert request.getfixturevalue('check_output_is_zero'), "Subtraction result is not equal to zero."

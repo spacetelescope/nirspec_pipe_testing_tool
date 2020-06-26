@@ -426,7 +426,7 @@ def test_wavran_rfile(output_hdul):
 # keyword tests
 
 
-def test_wavstart_exists(output_hdul):
+def test_masterbg_exists(output_hdul):
     # want to run this pytest?
     # output_hdul = hdul, step_output_file, msa_shutter_conf, run_pytests, mode_used
     # run_pytests = master_background_completion_tests, master_background_reffile_tests,
@@ -442,7 +442,7 @@ def test_wavstart_exists(output_hdul):
         msg = "\n * Running reference file pytest...\n"
         print(msg)
         logging.info(msg)
-        assert master_background_utils.wavstart_exists(output_hdul[1]), "The keyword WAVSTART was not added to " \
+        assert master_background_utils.masterbg_exists(output_hdul[1]), "The keyword MASTERBG was not added to " \
                                                                         "the header."
 
 

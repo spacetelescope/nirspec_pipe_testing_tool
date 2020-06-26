@@ -17,16 +17,16 @@ from .. import TESTSDIR
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 
 
-
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.2"
+__version__ = "2.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
 # May 2018 - Version 2.1: Maria separated completion from other tests
 # Apr 2019 - Version 2.2: implemented logging capability
+# Jun 2020 - Version 2.3: implemented change of units test
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -77,9 +77,11 @@ def output_hdul(set_inandout_filenames, config):
     # check if the filter is to be changed
     change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
     if change_filter_opaque:
-        is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
+        is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file,
+                                                                                                  step=step)
         if is_filter_opaque:
-            filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Photometry pytest now set to Skip."
+            filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. " \
+                                "Photometry pytest now set to Skip."
             print(filter_opaque_msg)
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
@@ -147,29 +149,25 @@ def output_hdul(set_inandout_filenames, config):
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 return hdul, step_output_file, run_pytests
 
-            else:
-                msg = "Skipping running pipeline step "+step
-                print(msg)
-                logging.info(msg)
-                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
-                if os.path.isfile(step_output_file):
-                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                    step_completed = True
-                    # add the running time for this step
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests
-                else:
-                    step_completed = False
-                    # add the running time for this step
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
-
         else:
-            msg = " The input file does not exist. Skipping step."
+            msg = "Skipping running pipeline step "+step
             print(msg)
             logging.info(msg)
-            core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            pytest.skip("Skipping "+step+" because the input file does not exist.")
+            end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
+            if os.path.isfile(step_output_file):
+                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                step_completed = True
+                # add the running time for this step
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                return hdul, step_output_file, run_pytests
+            else:
+                step_completed = False
+                msg = " The input file does not exist. Skipping step."
+                print(msg)
+                logging.info(msg)
+                # add the running time for this step
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                pytest.skip("Skipping "+step+" because the input file does not exist.")
 
 
 # Unit tests
@@ -187,5 +185,22 @@ def test_s_photom_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert photom_utils.s_photom_exists(output_hdul[0]), "The keyword S_PHOTOM was not added to the header --> Photom step was not completed."
+        assert photom_utils.s_photom_exists(output_hdul[0]), "The keyword S_PHOTOM was not added to the header --> " \
+                                                             "Photom step was not completed."
 
+
+def test_units_logic(output_hdul):
+    # want to run this pytest?
+    # output_hdul[2] = photom_completion_tests, photom_reffile_tests, photom_validation_tests
+    run_pytests = output_hdul[2][0]
+    if not run_pytests:
+        msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        logging.info(msg)
+        pytest.skip(msg)
+    else:
+        msg = "\n * Running units logic pytest...\n"
+        print(msg)
+        logging.info(msg)
+        test_result, test_msg = photom_utils.units_logic(output_hdul)
+        assert test_result, test_msg
