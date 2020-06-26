@@ -54,16 +54,16 @@ def print_time2file(txt_name, end_time, string2print):
 
 # VERIFICATION FUNCTIONS
 
-def wavstart_exists(output_hdul):
+def masterbg_exists(output_hdul):
     """
-    This function checks that the keyword WAVSTART was added.
+    This function checks that the keyword MASTERBG was added.
     Args:
         outout_hdul: the HDU list of the header keywords
 
     Returns:
         result: boolean, true if the keyword was indeed added
     """
-    result = "WAVSTART" in output_hdul
+    result = "MASTERBG" in output_hdul
     return result
 
 

@@ -126,29 +126,30 @@ def write_ptt_cfg(calwebb_spec2_input_file, esa_intermediary_products, run_calwe
     config.set("run_pytest", "assign_wcs_reffile_tests", run_pytest[1])
     config.set("run_pytest", "assign_wcs_validation_tests", run_pytest[2])
     config.set("run_pytest", "bkg_subtract_completion_tests", run_pytest[3])
-    config.set("run_pytest", "imprint_subtract_completion_tests", run_pytest[4])
-    config.set("run_pytest", "imprint_subtract_numerical_tests", run_pytest[5])
-    config.set("run_pytest", "msa_flagging_completion_tests", run_pytest[6])
-    config.set("run_pytest", "extract_2d_completion_tests", run_pytest[7])
-    config.set("run_pytest", "extract_2d_validation_tests", run_pytest[8])
-    config.set("run_pytest", "flat_field_completion_tests", run_pytest[9])
-    config.set("run_pytest", "flat_field_reffile_tests", run_pytest[10])
-    config.set("run_pytest", "flat_field_validation_tests", run_pytest[11])
-    config.set("run_pytest", "srctype_completion_tests", run_pytest[12])
-    config.set("run_pytest", "pathloss_completion_tests", run_pytest[13])
-    config.set("run_pytest", "pathloss_reffile_tests", run_pytest[14])
-    config.set("run_pytest", "pathloss_validation_tests", run_pytest[15])
-    config.set("run_pytest", "barshadow_completion_tests", run_pytest[16])
-    config.set("run_pytest", "barshadow_validation_tests", run_pytest[17])
-    config.set("run_pytest", "photom_completion_tests", run_pytest[18])
-    config.set("run_pytest", "resample_spec_completion_tests", run_pytest[19])
-    config.set("run_pytest", "cube_build_completion_tests", run_pytest[20])
-    config.set("run_pytest", "extract_1d_completion_tests", run_pytest[21])
-    config.set("run_pytest", "extract_1d_reffile_tests", run_pytest[22])
+    config.set("run_pytest", "bkg_subtract_numerical_tests", run_pytest[4])
+    config.set("run_pytest", "imprint_subtract_completion_tests", run_pytest[5])
+    config.set("run_pytest", "imprint_subtract_numerical_tests", run_pytest[6])
+    config.set("run_pytest", "msa_flagging_completion_tests", run_pytest[7])
+    config.set("run_pytest", "extract_2d_completion_tests", run_pytest[8])
+    config.set("run_pytest", "extract_2d_validation_tests", run_pytest[9])
+    config.set("run_pytest", "flat_field_completion_tests", run_pytest[10])
+    config.set("run_pytest", "flat_field_reffile_tests", run_pytest[11])
+    config.set("run_pytest", "flat_field_validation_tests", run_pytest[12])
+    config.set("run_pytest", "srctype_completion_tests", run_pytest[13])
+    config.set("run_pytest", "pathloss_completion_tests", run_pytest[14])
+    config.set("run_pytest", "pathloss_reffile_tests", run_pytest[15])
+    config.set("run_pytest", "pathloss_validation_tests", run_pytest[16])
+    config.set("run_pytest", "barshadow_completion_tests", run_pytest[17])
+    config.set("run_pytest", "barshadow_validation_tests", run_pytest[18])
+    config.set("run_pytest", "photom_completion_tests", run_pytest[19])
+    config.set("run_pytest", "resample_spec_completion_tests", run_pytest[20])
+    config.set("run_pytest", "cube_build_completion_tests", run_pytest[21])
+    config.set("run_pytest", "extract_1d_completion_tests", run_pytest[22])
+    config.set("run_pytest", "extract_1d_reffile_tests", run_pytest[23])
     config.set("run_pytest", "# Spec3 tests", None)
-    config.set("run_pytest", "master_background_completion_tests", run_pytest[23])
-    config.set("run_pytest", "master_background_reffile_tests", run_pytest[24])
-    config.set("run_pytest", "master_background_validation_tests", run_pytest[25])
+    config.set("run_pytest", "master_background_completion_tests", run_pytest[24])
+    config.set("run_pytest", "master_background_reffile_tests", run_pytest[25])
+    config.set("run_pytest", "master_background_validation_tests", run_pytest[26])
 
     config.add_section("additional_arguments")
     config.set("additional_arguments", "wcs_threshold_diff", additional_arguments[0])
@@ -232,7 +233,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
                   'master_background']
 
     ptt_pytests = ['assign_wcs_completion_tests', 'assign_wcs_reffile_tests', 'assign_wcs_validation_tests',
-                   'bkg_subtract_completion_tests',
+                   'bkg_subtract_completion_tests', 'bkg_subtract_numerical_tests',
                    'imprint_subtract_completion_tests', 'imprint_subtract_numerical_tests',
                    'msa_flagging_completion_tests',
                    'extract_2d_completion_tests', 'extract_2d_validation_tests',
@@ -321,7 +322,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     if flattest_threshold_diff is None:
         flattest_threshold_diff = 9.999e-5
     write_flattest_files = True
-    pathloss_threshold_diff = 1.0e-7
+    pathloss_threshold_diff = 9.999e-5
     write_pathloss_files = True
     barshadow_threshold_diff = 0.0025
     write_barshadow_files = True

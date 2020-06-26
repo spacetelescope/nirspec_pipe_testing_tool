@@ -228,7 +228,6 @@ def validate_barshadow(output_hdul):
     return barshadow_testresult
 
 
-
 # Unit tests
 
 def test_s_barsha_exists(output_hdul):
@@ -244,7 +243,8 @@ def test_s_barsha_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert barshadow_utils.s_barsha_exists(output_hdul[0]), "The keyword S_BARSHA was not added to the header --> Barshadow step was not completed."
+        assert barshadow_utils.s_barsha_exists(output_hdul[0]), "The keyword S_BARSHA was not added to the header " \
+                                                                "--> Barshadow step was not completed."
 
 
 def test_validate_barshadow(output_hdul, request):
@@ -260,6 +260,7 @@ def test_validate_barshadow(output_hdul, request):
         msg = "\n * Running validation pytest...\n"
         print(msg)
         logging.info(msg)
-        assert request.getfixturevalue("validate_barshadow"), "Output value from barshadow_testing.py is greater than threshold."
+        assert request.getfixturevalue("validate_barshadow"), "Output value from barshadow_testing.py is " \
+                                                              "greater than threshold."
 
 
