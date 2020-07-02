@@ -1,5 +1,6 @@
 from . import auxiliary_functions
 from . import barshadow_testing
+from . import check_corners_extract2d
 from . import compare_wcs_fs
 from . import compare_wcs_ifu
 from . import compare_wcs_mos

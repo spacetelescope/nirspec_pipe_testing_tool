@@ -60,11 +60,11 @@ def output_hdul(set_inandout_filenames, config):
     # get the general info
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, outstep_file_suffix = set_inandout_filenames_info
-    msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
+    msa_shutter_conf = config.get("benchmark_intermediary_products", "msa_conf_name")
     msametfl = os.path.basename(msa_shutter_conf)
-    dflat_path = config.get("esa_intermediary_products", "dflat_path")
-    sflat_path = config.get("esa_intermediary_products", "sflat_path")
-    fflat_path = config.get("esa_intermediary_products", "fflat_path")
+    dflat_path = config.get("benchmark_intermediary_products", "dflat_path")
+    sflat_path = config.get("benchmark_intermediary_products", "sflat_path")
+    fflat_path = config.get("benchmark_intermediary_products", "fflat_path")
     flattest_threshold_diff = config.get("additional_arguments", "flattest_threshold_diff")
     save_flattest_plot = config.getboolean("additional_arguments", "save_flattest_plot")
     write_flattest_files = config.getboolean("additional_arguments", "write_flattest_files")
@@ -84,9 +84,11 @@ def output_hdul(set_inandout_filenames, config):
     # check if the filter is to be changed
     change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
     if change_filter_opaque:
-        is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
+        is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file,
+                                                                                                  step=step)
         if is_filter_opaque:
-            filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat Field pytest now set to Skip."
+            filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Flat " \
+                                "Field pytest now set to Skip."
             print(filter_opaque_msg)
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
             pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
@@ -164,11 +166,14 @@ def output_hdul(set_inandout_filenames, config):
                 # move the on-the-fly flat to the working directory
                 subprocess.run(["mv", os.path.basename(ontheflyflat), ontheflyflat])
                 # raname and move the flat_field output
-                subprocess.run(["mv", os.path.basename(step_output_file).replace("_flat_field.fits", "_flatfieldstep.fits"),
+                subprocess.run(["mv", os.path.basename(step_output_file).replace("_flat_field.fits",
+                                                                                 "_flatfieldstep.fits"),
                                 step_output_file])
                 if core_utils.check_MOS_true(inhdu):
-                    # remove the copy of the MSA shutter configuration file
-                    subprocess.run(["rm", msametfl])
+                    if TESTSDIR == os.path.dirname(msametfl):
+                        # remove the copy of the MSA shutter configuration file
+                        print("Removing MSA config file from: ", TESTSDIR)
+                        subprocess.run(["rm", msametfl])
 
                 step_completed = True
                 hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)

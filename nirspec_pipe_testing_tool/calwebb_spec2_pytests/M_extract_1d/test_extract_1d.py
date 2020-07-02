@@ -59,17 +59,17 @@ def output_hdul(set_inandout_filenames, config):
     # determine which tests are to be run
     extract_1d_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
     extract_1d_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
-    #extract_1d_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+    # extract_1d_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
     run_pytests = [extract_1d_completion_tests, extract_1d_reffile_tests]#, extract_1d_validation_tests]
 
     # Make sure at this point the MSA shutter configuration file is removed from the calwebb_spec2_pytests directory
-    msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
+    msa_shutter_conf = config.get("benchmark_intermediary_products", "msa_conf_name")
     msametfl = os.path.basename(msa_shutter_conf)
     # remove the copy of the MSA shutter configuration file
     inhdu = core_utils.read_hdrfits(step_input_file, info=False, show_hdr=False)
     if core_utils.check_MOS_true(inhdu):
-        if os.getcwd() != os.path.dirname(msa_shutter_conf):
-            print("Removing MSA config file from: ", os.getcwd())
+        if TESTSDIR == os.path.dirname(msametfl):
+            print("Removing MSA config file from: ", TESTSDIR)
             os.remove(msametfl)
 
     # check if processing an image, then set proper variables

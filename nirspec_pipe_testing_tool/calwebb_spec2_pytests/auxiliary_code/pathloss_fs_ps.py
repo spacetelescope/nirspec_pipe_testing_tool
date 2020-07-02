@@ -166,8 +166,11 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
     pathloss_pipe = datamodels.open(comparison_filename)
     # For the moment, the pipeline is using the wrong reference file for slit 400A1, so read file that
     # re-processed with the right reference file and open corresponding data model
+    # BUT we are skipping this since this is not in the released candidate of the pipeline
+    """
     pathloss_400a1 = step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")
     pathloss_pipe_400a1 = datamodels.open(pathloss_400a1)
+    """
     if debug:
         print('got comparison datamodel!')
 
@@ -257,6 +260,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         if debug:
             print("slit_x, slit_y", slit_x, slit_y)
 
+        """
         if slit_id == "S400A1":
             if is_point_source:
                 ext = 1
@@ -269,8 +273,8 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
                 print(msg)
                 log_msgs.append(msg)
                 continue
-        else:
-            reffile2use = reffile
+        else:"""
+        reffile2use = reffile
 
         msg = "Using reference file: " + reffile2use
         print(msg)
@@ -290,6 +294,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
 
         previous_sci = slit.data
         pipe_correction = pipe_slit.pathloss
+        """
         if slit_id == "S400A1":
             for pipe_slit_400a1 in pathloss_pipe_400a1.slits:
                 if pipe_slit_400a1.name == "S400A1":
@@ -297,6 +302,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
                     break
                 else:
                     continue
+        """
         if len(pipe_correction) == 0:
             print("Pipeline pathloss correction in datamodel is empty. Skipping testing this slit.")
             continue
