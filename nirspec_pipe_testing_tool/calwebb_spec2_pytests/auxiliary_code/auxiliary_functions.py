@@ -561,7 +561,7 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, abs=Fa
 
     """
     # get rid of nans and restrict according to slit-y
-    in_slit = np.logical_and(edy<.5, edy>-.5)
+    in_slit = np.logical_and(edy < .5,  edy > -.5)
     arr[~in_slit] = np.nan   # Set lam values outside the slit to NaN
     nanind = np.isnan(arr)   # get all the nan indexes
     notnan = ~nanind   # get all the not-nan indexes
@@ -576,7 +576,8 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, abs=Fa
     else:
         DATAMODEL_diff = (arr - esa_arr) / esa_arr
     if arr[notnan].size == 0:
-        print(arr_name, " has all NaN values. Differences array will also be NaNs and statistics calculations will fail.")
+        print(arr_name, " has all NaN values. Differences array will also be NaNs and statistics "
+                        "calculations will fail.")
         notnan_reldiffarr_stats = np.nan, np.nan, np.nan
     else:
         # calculate and print stats
@@ -584,7 +585,8 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, abs=Fa
             abs_difference = True
         else:
             abs_difference = False
-        notnan_reldiffarr_stats, stats_print_strings = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff, abs=abs_difference)
+        notnan_reldiffarr_stats, stats_print_strings = print_stats(DATAMODEL_diff[notnan], arr_name, threshold_diff,
+                                                                   abs=abs_difference)
     return DATAMODEL_diff, DATAMODEL_diff[notnan], notnan_reldiffarr_stats, stats_print_strings
 
 

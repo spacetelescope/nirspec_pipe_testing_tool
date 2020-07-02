@@ -303,19 +303,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             ff.close()
 
             # get the wavelength
-            # slit.x(y)start are 1-based, turn them to 0-based for extraction
-            # xstart, xend = slit.xstart - 1, slit.xstart -1 + slit.xsize
-            # ystart, yend = slit.ystart - 1, slit.ystart -1 + slit.ysize
-            # y, x = np.mgrid[ystart: yend, xstart: xend]
             x, y = wcstools.grid_from_bounding_box(slit.meta.wcs.bounding_box, step=(1, 1), center=True)
             ra, dec, wave = slit.meta.wcs(x, y)  # wave is in microns
-            # detector2slit = slit.meta.wcs.get_transform('detector', 'slit_frame')
-            # sx, sy, ls = detector2slit(x, y)
-            # world_coordinates = np.array([wave, ra, dec, sy])#, x, y])
-
-            # msg = "wavelength array: "+repr(wave[19, 483])
-            # print(msg)
-            # log_msgs.append(msg)
 
             # get the subwindow origin
             px0 = slit.xstart - 1 + model.meta.subarray.xstart

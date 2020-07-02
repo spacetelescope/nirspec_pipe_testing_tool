@@ -334,7 +334,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         row = slit.xcen  #slitlet_info.field("SHUTTER_ROW")[isrc]
         col = slit.ycen  #slitlet_info.field("SHUTTER_COLUMN")[isrc]
         slitlet_id = repr(row)+"_"+repr(col)
-        msg = 'silt_id='+repr(slit_id)+"   quad="+repr(quad)+"   row="+repr(row)+"   col="+repr(col)+"   slitlet_id="+repr(slitlet_id)
+        msg = 'silt_id='+repr(slit_id)+"   quad="+repr(quad)+"   row="+repr(row)+"   col="+repr(col)+\
+              "   slitlet_id="+repr(slitlet_id)
         print(msg)
         log_msgs.append(msg)
 
@@ -500,11 +501,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         xmin = wave[k, j]-0.01
                         xmax = wave[k, j]+0.01
                         plt.xlim(xmin, xmax)
-                        plt.plot(dfwave, dfim[:, pind[0], pind[1]], linewidth=7, marker='D', color='k', label="dflat_im")
+                        plt.plot(dfwave, dfim[:, pind[0], pind[1]], linewidth=7, marker='D', color='k',
+                                 label="dflat_im")
                         plt.plot(wave[k, j], dfs, linewidth=7, marker='D', color='r')
                         plt.plot(dfrqe_wav, dfrqe_rqe, linewidth=7, marker='D', c='k', label="dflat_vec")
                         plt.plot(wave[k, j], dff, linewidth=7, marker='D', color='r')
-                        plt.plot(sfimwave, sfim[:, pind[0], pind[1]], linewidth=7, marker='D', color='k', label="sflat_im")
+                        plt.plot(sfimwave, sfim[:, pind[0], pind[1]], linewidth=7, marker='D', color='k',
+                                 label="sflat_im")
                         plt.plot(wave[k, j], sfs, linewidth=7, marker='D', color='r')
                         plt.plot(sfv_wav, sfv_dat, linewidth=7, marker='D', color='k', label="sflat_vec")
                         plt.plot(wave[k, j], sff, linewidth=7, marker='D', color='r')
@@ -513,7 +516,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         ax.set_position([box.x0, box.y0, box.width * 1.0, box.height])
                         ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
                         plt.minorticks_on()
-                        plt.tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+                        plt.tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in',
+                                        labelbottom=True)
                         plt.show()
                         msg = "Exiting the program. Unable to calculate statistics. Test set to be SKIPPED."
                         print(msg)
@@ -528,7 +532,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         print("sff = ", sff)
                         print("sfs = ", sfs)
                         print("ffs = ", ffs)
-    
 
                     # read the pipeline-calculated flat image
                     # there are four extensions in the flatfile: SCI, DQ, ERR, WAVELENGTH
@@ -619,9 +622,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         difference_img[~in_slit] = np.nan   # Set values outside the slit to NaN
                         nanind = np.isnan(difference_img)   # get all the nan indexes
                         difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
-                        vminmax = [-5*delfg_std, 5*delfg_std]   # set the range of values to be shown in the image, will affect color scale
-                        auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name, vminmax=vminmax,
-                                                     plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+                        # set the range of values to be shown in the image, will affect color scale
+                        vminmax = [-5*delfg_std, 5*delfg_std]
+                        auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
+                                                     vminmax=vminmax, plt_origin=plt_origin, show_figs=show_figs,
+                                                     save_figs=save_figs)
 
 
                 elif not save_figs and not show_figs:
@@ -633,13 +638,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     print(msg)
                     log_msgs.append(msg)
 
-
         msg = " *** Result of the test: "+test_result+"\n"
         print(msg)
         log_msgs.append(msg)
         total_test_result.append(test_result)
 
-    
         # create fits file to hold the calculated flat for each slit
         if writefile:
             # this is the file to hold the image of the correction values
@@ -651,10 +654,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
             complfile.append(complfile_ext)
 
             # the file is not yet written, indicate that this slit was appended to list to be written
-            msg = "Extension corresponding to slitlet "+slitlet_id+" appended to list to be written into calculated and comparison fits files."
+            msg = "Extension corresponding to slitlet "+slitlet_id+" appended to list to be written into calculated " \
+                                                                   "and comparison fits files."
             print(msg)
             log_msgs.append(msg)
-
 
     if writefile:
         outfile_name = step_input_filename.replace("flat_field.fits", det+"_flat_calc.fits")
@@ -677,8 +680,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         print(complfile_name)
         log_msgs.append(msg)
         log_msgs.append(complfile_name)
-
-
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = True

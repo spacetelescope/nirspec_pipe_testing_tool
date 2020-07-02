@@ -67,7 +67,7 @@ import argparse
 from astropy.io import fits
 
 
-def write_ptt_cfg(calwebb_spec2_input_file, esa_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
+def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
                   run_pytest, spec3_args, additional_arguments):
 
     config = configparser.ConfigParser(allow_no_value=True)
@@ -80,13 +80,18 @@ def write_ptt_cfg(calwebb_spec2_input_file, esa_intermediary_products, run_calwe
     config.set("calwebb_spec2_input_file", "raw_data_root_file", calwebb_spec2_input_file[5])
     config.set("calwebb_spec2_input_file", "local_pipe_cfg_path", calwebb_spec2_input_file[6])
 
-    config.add_section("esa_intermediary_products")
-    esa_files_path, msa_conf_name, dflat_path, sflat_path, fflat_path = esa_intermediary_products
-    config.set("esa_intermediary_products", "esa_files_path", esa_files_path)
-    config.set("esa_intermediary_products", "msa_conf_name", msa_conf_name)
-    config.set("esa_intermediary_products", "dflat_path", dflat_path)
-    config.set("esa_intermediary_products", "sflat_path", sflat_path)
-    config.set("esa_intermediary_products", "fflat_path", fflat_path)
+    config.add_section("benchmark_intermediary_products")
+    esa_files_path, msa_conf_name, dflat_path, sflat_path, fflat_path, truth_awcs, truth_e2d = benchmark_intermediary_products
+    config.set("benchmark_intermediary_products", "compare_assign_wcs_and_extract_2d_with_esa", True)
+    config.set("benchmark_intermediary_products", "esa_files_path", esa_files_path)
+    config.set("benchmark_intermediary_products", "msa_conf_name", msa_conf_name)
+    config.set("benchmark_intermediary_products", "dflat_path", dflat_path)
+    config.set("benchmark_intermediary_products", "sflat_path", sflat_path)
+    config.set("benchmark_intermediary_products", "fflat_path", fflat_path)
+    config.set("benchmark_intermediary_products", "# the 'truths' files (or benchmark file to compare to) is expected "
+                                                  "to be in the data_directory", None)
+    config.set("benchmark_intermediary_products", "truth_file_assign_wcs", truth_awcs)
+    config.set("benchmark_intermediary_products", "truth_file_extract_2d", truth_e2d)
 
     config.add_section("run_calwebb_spec2_in_full")
     run_calwebb_spec2, calwebb_spec2_cfg = run_calwebb_spec2_in_full
@@ -226,6 +231,8 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     if fflat_path is None:
         fflat_path = "".join(['/grp/jwst/wit4/nirspec/CDP3/04_Flat_field/4.1_F_Flat/', mode_used, '/nirspec_',
                               mode_used, '_fflat'])
+    truth_assign_wcs = rate_input_file.replace(".fits", "_assign_wcs_truth.fits")
+    truth_extract_2d = rate_input_file.replace(".fits", "_extract_2d_truth.fits")
 
     pipe_steps = ['assign_wcs', 'bkg_subtract', 'imprint_subtract', 'msa_flagging', 'extract_2d', 'flat_field',
                   'srctype', 'pathloss', 'barshadow', 'photom', 'resample_spec', 'cube_build', 'extract_1d',  # spec2
@@ -330,7 +337,8 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     # set the config file list sections
     calwebb_spec2_input_file = [output_directory, data_directory, rate_input_file, mode_used,
                                 change_filter_opaque, raw_data_root_file, local_pipe_cfg_path]
-    esa_intermediary_products = [esa_files_full_path, msa_conf_name, dflat_path, sflat_path, fflat_path]
+    benchmark_intermediary_products = [esa_files_full_path, msa_conf_name, dflat_path, sflat_path, fflat_path,
+                                       truth_assign_wcs, truth_extract_2d]
     run_calwebb_spec2_in_full = [run_calwebb_spec2, calwebb_spec2_cfg]
     spec3_args = [run_calwebb_spec3, s3_input_file, calwebb_spec3_cfg]
     additional_arguments = [wcs_threshold_diff, save_wcs_plots, bkg_list, msa_imprint_structure,
@@ -341,14 +349,14 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
 
     # make sure all variables are strings for creating the configuration file
     calwebb_spec2_input_file = list2_allstrings_list(calwebb_spec2_input_file)
-    esa_intermediary_products = list2_allstrings_list(esa_intermediary_products)
+    benchmark_intermediary_products = list2_allstrings_list(benchmark_intermediary_products)
     run_calwebb_spec2_in_full = list2_allstrings_list(run_calwebb_spec2_in_full)
     run_pipe_steps = list2_allstrings_list(run_pipe_steps)
     run_pytests = list2_allstrings_list(run_pytests)
     spec3_args = list2_allstrings_list(spec3_args)
     additional_arguments = list2_allstrings_list(additional_arguments)
 
-    variables = [calwebb_spec2_input_file, esa_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
+    variables = [calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
                  run_pytests, spec3_args, additional_arguments]
     return variables
 
@@ -391,10 +399,10 @@ def mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file, data
                                   flattest_threshold_diff=flattest_threshold_diff,
                                   association=association)
 
-    calwebb_spec2_input_file, esa_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps, run_pytests, spec3_args, additional_arguments = variables
+    calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps, run_pytests, spec3_args, additional_arguments = variables
 
     # Create the PTT config file
-    write_ptt_cfg(calwebb_spec2_input_file, esa_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
+    write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
                   run_pytests, spec3_args, additional_arguments)
     print('\n * Script  mk_pttconfig_file.py  finished * \n')
 

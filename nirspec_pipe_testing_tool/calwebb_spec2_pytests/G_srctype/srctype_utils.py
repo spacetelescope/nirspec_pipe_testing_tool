@@ -50,26 +50,30 @@ def srctype_logic_correct(output_hdul):
             if srctype == 'EXTENDED':
                 result = True
             else:
-                msg = 'SRCTYPE keyword in SCI extension is NOT set to default value of EXTENDED for IFU data.'
+                msg = 'SRCTYPE keyword WRONG in SCI extension. With SRCTYAPT=UNKNOWN for IFU data ' \
+                      'expected_value=EXTENDED, pipeline_value=' + srctype
         else:
             if srctype == 'POINT':
                 result = True
             else:
-                msg = 'SRCTYPE keyword in SCI extension is NOT set to default value of POINT for non IFU data.'
+                msg = 'SRCTYPE keyword WRONG in SCI extension. With SRCTYAPT=UNKNOWN for non-IFU data ' \
+                      'expected_value=POINT, pipeline_value=' + srctype
 
     # point source in APT, then pipeline should be the same
     if srctyapt == possible_apt_values[1]:
         if srctype == 'POINT':
             result = True
         else:
-            msg = 'SRCTYPE keyword in SCI extension is NOT set to expected value of POINT (from APT user input).'
+            msg = 'SRCTYPE keyword WRONG in SCI extension. With SRCTYAPT=POINT expected_value=POINT, ' \
+                  'pipeline_value=' + srctype
 
     # extended source in APT, then pipeline should be the same
     if srctyapt == possible_apt_values[2]:
         if srctype == 'EXTENDED':
             result = True
         else:
-            msg = 'SRCTYPE keyword in SCI extension is NOT set to expected value of EXTENDED (from APT user input).'
+            msg = 'SRCTYPE keyword WRONG in SCI extension. With SRCTYAPT=EXTENDED expected_value=EXTENDED, ' \
+                  'pipeline_value=' + srctype
 
     return result, msg
 

@@ -5,10 +5,11 @@
 
 Simply put, a Pytest is a pass or fail Python test. For instance, with the WCS step, we 
 have Python scripts (which we are calling auxiliary code within the frame of the testing 
-tool) that compare the pipeline product with the ESA corresponding intermediary file, and 
-calculates a difference. The Pytest is to assert if that difference is less than or equal 
-to an X threshold value. Hence, a failed test means that the condition was not met. If an
-error should occur with the pipeline, the test will be flagged as an error.
+tool) that compares the pipeline product with either the corresponding ESA intermediary file 
+or our verified "truth" (or benchmark) files, and calculates a difference. The Pytest is to 
+assert if that difference is less than or equal to an X threshold value. Hence, a failed test 
+means that the condition was not met. If an error should occur with the pipeline, the test 
+will be flagged as an error.
 
 
 

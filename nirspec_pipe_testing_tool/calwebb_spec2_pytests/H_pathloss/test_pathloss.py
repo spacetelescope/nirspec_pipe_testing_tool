@@ -146,14 +146,16 @@ def output_hdul(set_inandout_filenames, config):
                     result.save(step_output_file)
 
                     # For the moment, the pipeline is using the wrong reference file for slit 400A1, so the
-                    # file needs to be re-processed with the right reference file
+                    # file needs to be re-processed with the right reference file BUT we are
+                    # skipping this slit
+                    """
                     if core_utils.check_FS_true(inhdu):
                         print("\n * WARNING: For the moment, the wrong reference file is being used for "
                               "processing slit 400A1. The file will be re-processed ")
-                        """ The file can manually be re-run with
-                        $ strun jwst.pathloss.PathLossStep final_output_caldet1_NRS1_srctype.fits
-                                                                        --override_pathloss=jwst-nirspec-a400.plrf.fits
-                        """
+                        # The file can manually be re-run with
+                        # $ strun jwst.pathloss.PathLossStep final_output_caldet1_NRS1_srctype.fits
+                        #                                                --override_pathloss=jwst-nirspec-a400.plrf.fits
+                        
                         pathloss_400a1 = step_input_file.replace("srctype.fits", "pathloss_400A1.fits")
                         reffile_400a1 = "jwst-nirspec-a400.plrf.fits"
                         print("Re-processing slit with new reference file: ", reffile_400a1)
@@ -164,6 +166,7 @@ def output_hdul(set_inandout_filenames, config):
                         #import subprocess
                         #subprocess.run(["mv", step_input_file.replace("srctype", "pathlossstep"), pathloss_400a1])
                         print("Saved pipeline re-processed file as: ", pathloss_400a1)
+                    """
 
                     # end the timer to compute calwebb_spec2 running time
                     end_time = repr(time.time() - start_time)   # this is in seconds

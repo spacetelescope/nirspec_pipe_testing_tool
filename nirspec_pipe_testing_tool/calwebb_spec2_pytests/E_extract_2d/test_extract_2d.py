@@ -11,21 +11,24 @@ from glob import glob
 from astropy.io import fits
 
 from jwst.extract_2d.extract_2d_step import Extract2dStep
+
 from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from . import extract_2d_utils
 from .. auxiliary_code import compare_wcs_mos
+from .. auxiliary_code import check_corners_extract2d
 
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & G. Kanarek"
-__version__ = "2.2"
+__version__ = "2.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Jan 2019 - Version 2.0: test separated from assign_wcs
 # Mar 2019 - Version 2.1: separated completion from validation tests
 # Apr 2019 - Version 2.2: implemented logging capability
+# Jun 2020 - Version 2.3: Changed comparison file to be our own instead of ESA files
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -63,8 +66,16 @@ def output_hdul(set_inandout_filenames, config):
     assign_wcs_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
     run_pytests = [extract_2d_completion_tests, extract_2d_validation_tests, assign_wcs_validation_tests]
     # get other relevat info from PTT config file
-    esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
-    msa_conf_name = config.get("esa_intermediary_products", "msa_conf_name")
+    compare_assign_wcs_and_extract_2d_with_esa = config.getboolean("benchmark_intermediary_products",
+                                                                   "compare_assign_wcs_and_extract_2d_with_esa")
+    esa_files_path = config.get("benchmark_intermediary_products", "esa_files_path")
+    data_directory = config.get("calwebb_spec2_input_file", "data_directory")
+    truth_file = os.path.join(data_directory, config.get("benchmark_intermediary_products", "truth_file_assign_wcs"))
+    if compare_assign_wcs_and_extract_2d_with_esa:
+        truth_file = esa_files_path
+    print("Will use this 'truth' file to compare result of extract_2d: ")
+    print(truth_file)
+    msa_conf_name = config.get("benchmark_intermediary_products", "msa_conf_name")
     extract_2d_threshold_diff = int(config.get("additional_arguments", "extract_2d_threshold_diff"))
     
     # Check if the mode used is MOS_sim and get the threshold for the assign_wcs test
@@ -89,7 +100,8 @@ def output_hdul(set_inandout_filenames, config):
     if not core_utils.check_IFU_true(inhdu):
         if run_calwebb_spec2:
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, extract_2d_threshold_diff
+            return hdul, step_output_file, msa_conf_name, truth_file, run_pytests, mode_used, wcs_threshold_diff, \
+                   save_wcs_plots, extract_2d_threshold_diff, compare_assign_wcs_and_extract_2d_with_esa
             
         else:
             if run_pipe_step:
@@ -147,7 +159,8 @@ def output_hdul(set_inandout_filenames, config):
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, extract_2d_threshold_diff
+                    return hdul, step_output_file, msa_conf_name, truth_file, run_pytests, mode_used, \
+                           wcs_threshold_diff, save_wcs_plots, extract_2d_threshold_diff, compare_assign_wcs_and_extract_2d_with_esa
 
                 else:
                     msg = " The input file does not exist. Skipping step."
@@ -167,21 +180,20 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = True
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, msa_conf_name, esa_files_path, run_pytests, mode_used, wcs_threshold_diff, save_wcs_plots, extract_2d_threshold_diff
+                    return hdul, step_output_file, msa_conf_name, truth_file, run_pytests, mode_used, \
+                           wcs_threshold_diff, save_wcs_plots, extract_2d_threshold_diff, compare_assign_wcs_and_extract_2d_with_esa
                 else:
                     step_completed = False
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
-        
 
     else:
         core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
         pytest.skip("Skipping "+step+" because data is IFU.")
 
 
-
-### THESE FUNCTIONS ARE TO VALIDATE BOTH THE WCS AND THE 2D_EXTRACT STEPS
+# THESE FUNCTIONS ARE TO VALIDATE BOTH THE WCS AND THE 2D_EXTRACT STEPS
 
 # fixture to validate the WCS and extract 2d steps only for MOS simulations
 @pytest.fixture(scope="module")
@@ -189,10 +201,15 @@ def validate_MOSsim_wcs_extract2d(output_hdul):
     # get the input information for the wcs routine
     infile_name = output_hdul[1]
     msa_conf_name = output_hdul[2]
-    esa_files_path = output_hdul[3]
+    truth_file = output_hdul[3]
     mode_used = output_hdul[5]
-    
-    # define the threshold difference between the pipeline output and the ESA files for the pytest to pass or fail
+    compare_assign_wcs_and_extract_2d_with_esa = output_hdul[9]
+    esa_files_path = None
+    if compare_assign_wcs_and_extract_2d_with_esa:
+        esa_files_path = output_hdul[3]
+        truth_file = None
+
+    # define the threshold difference between the pipeline output and the benchmark files for the pytest to pass or fail
     threshold_diff = float(output_hdul[6])
     
     # save the output plots
@@ -205,14 +222,18 @@ def validate_MOSsim_wcs_extract2d(output_hdul):
     print(msg)
     logging.info(msg)
     if mode_used == "mos_sim":
-        result, log_msgs = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path, msa_conf_name=msa_conf_name,
-                                             show_figs=show_figs, save_figs=save_wcs_plots,
-                                             threshold_diff=threshold_diff, mode_used=mode_used, debug=False)
+        result, log_msgs = compare_wcs_mos.compare_wcs(infile_name, msa_conf_name=msa_conf_name, truth_file=truth_file,
+                                                       esa_files_path=esa_files_path,
+                                                       show_figs=show_figs, save_figs=save_wcs_plots,
+                                                       threshold_diff=threshold_diff,
+                                                       raw_data_root_file=None,
+                                                       output_directory=None, debug=False)
         for msg in log_msgs:
             logging.info(msg)
 
     else:
-        pytest.skip("Skipping pytest for WCS validation: The fits file is not MOS simulated data, the validation test was done after the assign_wcs step.")
+        pytest.skip("Skipping pytest for WCS validation: The fits file is not MOS simulated data, the validation "
+                    "test was done after the assign_wcs step.")
     
     if result == "skip":
         pytest.skip("Pytest for assign_wcs validation after extract_2d will be skipped.")
@@ -224,17 +245,33 @@ def validate_MOSsim_wcs_extract2d(output_hdul):
 @pytest.fixture(scope="module")
 def validate_extract2d(output_hdul):
     # get the input information for the wcs routine
-    hdu, infile_name, msa_conf_name, esa_files_path, _, _, _, _, extract_2d_threshold_diff = output_hdul
+    hdu = output_hdul[0]
+    infile_name = output_hdul[1]
+    msa_conf_name = output_hdul[2]
+    truth_file = output_hdul[3]
+    extract_2d_threshold_diff = output_hdul[8]
+    compare_assign_wcs_and_extract_2d_with_esa = output_hdul[9]
+    esa_files_path = None
+    if compare_assign_wcs_and_extract_2d_with_esa:
+        esa_files_path = output_hdul[3]
+        truth_file = None
     print('Will be using this number of pixels as threshold for extract_2d test: ', extract_2d_threshold_diff)
 
     msg = "\n Performing extract_2d validation test... "
     print(msg)
     logging.info(msg)
     if core_utils.check_FS_true(hdu):
-        result, log_msgs = extract_2d_utils.find_FSwindowcorners(infile_name, esa_files_path)
+        result, log_msgs = check_corners_extract2d.find_FSwindowcorners(infile_name, truth_file=truth_file,
+                                                                        esa_files_path=esa_files_path,
+                                                                        extract_2d_threshold_diff=
+                                                                        extract_2d_threshold_diff)
 
     elif core_utils.check_MOS_true(hdu):
-        result, log_msgs = extract_2d_utils.find_MOSwindowcorners(infile_name, msa_conf_name, esa_files_path)
+        result, log_msgs = check_corners_extract2d.find_MOSwindowcorners(infile_name, msa_conf_name,
+                                                                         truth_file=truth_file,
+                                                                         esa_files_path=esa_files_path,
+                                                                         extract_2d_threshold_diff=
+                                                                         extract_2d_threshold_diff)
         
     else:
         pytest.skip("Skipping pytest: The fits file is not FS or MOS.")
@@ -248,8 +285,7 @@ def validate_extract2d(output_hdul):
     return result
 
 
-
-### Unit tests
+# Unit tests
 
 def test_s_ext2d_exists(output_hdul):
     # want to run this pytest?
@@ -264,7 +300,8 @@ def test_s_ext2d_exists(output_hdul):
         msg = "\n * Running completion pytest...\n"
         print(msg)
         logging.info(msg)
-        assert extract_2d_utils.s_ext2d_exists(output_hdul[0]), "The keyword S_EXTR2D was not added to the header --> extract_2d step was not completed."
+        assert extract_2d_utils.s_ext2d_exists(output_hdul[0]), "The keyword S_EXTR2D was not added to the header " \
+                                                                "--> extract_2d step was not completed."
 
 
 def test_validate_MOSsim_wcs_extract2d(output_hdul, request):
@@ -281,7 +318,8 @@ def test_validate_MOSsim_wcs_extract2d(output_hdul, request):
         msg = "\n * Running validation pytest...\n"
         print(msg)
         logging.info(msg)
-        assert request.getfixturevalue("validate_MOSsim_wcs_extract2d"), "Output value from compare_wcs.py is greater than threshold."
+        assert request.getfixturevalue("validate_MOSsim_wcs_extract2d"), "Output value from compare_wcs.py is " \
+                                                                         "greater than threshold."
 
 
 def test_validate_extract2d(output_hdul, request):

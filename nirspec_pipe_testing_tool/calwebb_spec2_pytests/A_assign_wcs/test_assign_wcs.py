@@ -29,7 +29,7 @@ print(pipeline_version)
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.3"
+__version__ = "2.4"
 
 
 # HISTORY
@@ -38,6 +38,7 @@ __version__ = "2.3"
 # Feb 2019 - Version 2.1: Maria made changes to be able to process 491 and 492 files in the same directory
 # Apr 2019 - Version 2.2: implemented logging capability
 # Dec 2019 - Version 2.3: implemented image processing and text file name handling
+# Jun 2020 - Version 2.4: Changed comparison file to be our own instead of ESA files
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -102,7 +103,15 @@ def output_hdul(set_inandout_filenames, config):
     run_pytests = [assign_wcs_completion_tests, assign_wcs_reffile_tests, assign_wcs_validation_tests]
 
     # get other relevant info from PTT config file
-    esa_files_path = config.get("esa_intermediary_products", "esa_files_path")
+    compare_assign_wcs_and_extract_2d_with_esa = config.getboolean("benchmark_intermediary_products",
+                                                                   "compare_assign_wcs_and_extract_2d_with_esa")
+    esa_files_path = config.get("benchmark_intermediary_products", "esa_files_path")
+    data_directory = config.get("calwebb_spec2_input_file", "data_directory")
+    truth_file = os.path.join(data_directory, config.get("benchmark_intermediary_products", "truth_file_assign_wcs"))
+    if compare_assign_wcs_and_extract_2d_with_esa:
+        truth_file = esa_files_path
+    print("Will use this 'truth' file to compare result of assign_wcs: ")
+    print(truth_file)
     wcs_threshold_diff = config.get("additional_arguments", "wcs_threshold_diff")
     save_wcs_plots = config.getboolean("additional_arguments", "save_wcs_plots")
     output_directory = config.get("calwebb_spec2_input_file", "output_directory")
@@ -128,7 +137,7 @@ def output_hdul(set_inandout_filenames, config):
     # get the shutter configuration file for MOS data only
     msa_shutter_conf = "No shutter configuration file will be used."
     if core_utils.check_MOS_true(inhdu):
-        msa_shutter_conf = config.get("esa_intermediary_products", "msa_conf_name")
+        msa_shutter_conf = config.get("benchmark_intermediary_products", "msa_conf_name")
 
         # check if the configuration shutter file name is in the header of the fits file and if not add it
         msametfl = fits.getval(step_input_file, "MSAMETFL", 0)
@@ -210,7 +219,7 @@ def output_hdul(set_inandout_filenames, config):
         # run the pipeline
         print('Running pipeline... \n')
         if not imaging_mode:
-            Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)#, logcfg=stpipelogcfg)
+            Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)  # , logcfg=stpipelogcfg)
         else:
             Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
 
@@ -240,8 +249,8 @@ def output_hdul(set_inandout_filenames, config):
 
         # remove the copy of the MSA shutter configuration file
         if core_utils.check_MOS_true(inhdu):
-            if os.getcwd() != output_directory:
-                print("Removing MSA config file from: ", os.getcwd())
+            if TESTSDIR == os.path.dirname(msametfl):
+                print("Removing MSA config file from: ", TESTSDIR)
                 subprocess.run(["rm", msametfl])
 
         # add the detector string to the name of the files and move them to the working directory
@@ -309,7 +318,8 @@ def output_hdul(set_inandout_filenames, config):
             print('\nPTT finished processing imaging mode. \n')
             pytest.exit("Skipping pytests for now because they need to be written for imaging mode.")
 
-        return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
+        return hdul, step_output_file, msa_shutter_conf, truth_file, wcs_threshold_diff, save_wcs_plots, \
+               run_pytests, mode_used, compare_assign_wcs_and_extract_2d_with_esa
 
     else:
 
@@ -361,6 +371,7 @@ def output_hdul(set_inandout_filenames, config):
                 # start the timer to compute the step running time
                 print("running pipeline...")
                 start_time = time.time()
+
                 if local_pipe_cfg_path == "pipe_source_tree_code":
                     result = stp.call(step_input_file)
                 else:
@@ -374,9 +385,9 @@ def output_hdul(set_inandout_filenames, config):
                 logging.info(msg)
 
                 if core_utils.check_MOS_true(inhdu):
-                    if os.getcwd() != output_directory:
+                    if TESTSDIR == os.path.dirname(msametfl):
                         # remove the copy of the MSA shutter configuration file
-                        print("Removing MSA config file from: ", os.getcwd())
+                        print("Removing MSA config file from: ", TESTSDIR)
                         subprocess.run(["rm", msametfl])
 
                 # rename and move the pipeline log file
@@ -407,12 +418,13 @@ def output_hdul(set_inandout_filenames, config):
             step_completed = True
             # add the running time for this step
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            return hdul, step_output_file, msa_shutter_conf, esa_files_path, wcs_threshold_diff, save_wcs_plots, run_pytests, mode_used
+            return hdul, step_output_file, msa_shutter_conf, truth_file, wcs_threshold_diff, save_wcs_plots, \
+                   run_pytests, mode_used, compare_assign_wcs_and_extract_2d_with_esa
         else:
             step_completed = False
             # add the running time for this step
             core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-            pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
+            pytest.skip("Test skipped because input file " + step_output_file + " does not exist.")
 
 
 # THESE FUNCTIONS ARE TO VALIDATE THE WCS STEP
@@ -424,10 +436,15 @@ def validate_wcs(output_hdul):
     hdu = output_hdul[0]
     infile_name = output_hdul[1]
     msa_conf_name = output_hdul[2]
-    esa_files_path = output_hdul[3]
+    truth_file = output_hdul[3]
     mode_used = output_hdul[7]
+    compare_assign_wcs_and_extract_2d_with_esa = output_hdul[8]
+    esa_files_path = None
+    if compare_assign_wcs_and_extract_2d_with_esa:
+        esa_files_path = output_hdul[3]
+        truth_file = None
 
-    # define the threshold difference between the pipeline output and the ESA files for the pytest to pass or fail
+    # define the threshold difference between the pipeline output and the truth files for the pytest to pass or fail
     threshold_diff = float(output_hdul[4])
 
     # save the output plots
@@ -441,29 +458,30 @@ def validate_wcs(output_hdul):
     logging.info(msg)
     log_msgs = None
     if core_utils.check_FS_true(hdu):
-        result, log_msgs = compare_wcs_fs.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
-                                                      save_figs=save_wcs_plots, threshold_diff=threshold_diff,
-                                                      raw_data_root_file=None,
+        result, log_msgs = compare_wcs_fs.compare_wcs(infile_name, truth_file=truth_file, esa_files_path=esa_files_path,
+                                                      show_figs=show_figs, save_figs=save_wcs_plots,
+                                                      threshold_diff=threshold_diff, raw_data_root_file=None,
                                                       output_directory=None,
                                                       debug=False)
 
     elif core_utils.check_MOS_true(hdu) and mode_used != "MOS_sim":
-        result, log_msgs = compare_wcs_mos.compare_wcs(infile_name, esa_files_path=esa_files_path,
-                                                       msa_conf_name=msa_conf_name,
+        result, log_msgs = compare_wcs_mos.compare_wcs(infile_name, msa_conf_name=msa_conf_name, truth_file=truth_file,
+                                                       esa_files_path=esa_files_path,
                                                        show_figs=show_figs, save_figs=save_wcs_plots,
                                                        threshold_diff=threshold_diff,
                                                        raw_data_root_file=None,
                                                        output_directory=None, debug=False)
 
     elif core_utils.check_IFU_true(hdu):
-        result, log_msgs = compare_wcs_ifu.compare_wcs(infile_name, esa_files_path=esa_files_path, show_figs=show_figs,
-                                                       save_figs=save_wcs_plots, threshold_diff=threshold_diff,
-                                                       raw_data_root_file=None,
+        result, log_msgs = compare_wcs_ifu.compare_wcs(infile_name, truth_file=truth_file,
+                                                       esa_files_path=esa_files_path,
+                                                       show_figs=show_figs, save_figs=save_wcs_plots,
+                                                       threshold_diff=threshold_diff, raw_data_root_file=None,
                                                        output_directory=None,
                                                        debug=False)
 
     else:
-        # We do not have ESA data to compare with for BOTS
+        # We do not have truth data to compare with for BOTS
         pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU.")
 
     if log_msgs is not None:
