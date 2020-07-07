@@ -9,6 +9,7 @@ import pytest
 import logging
 from astropy.io import fits
 from glob import glob
+
 from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
 from jwst.pipeline.calwebb_spec2 import Spec2Pipeline
 from jwst.pipeline.calwebb_image2 import Image2Pipeline
@@ -158,8 +159,9 @@ def output_hdul(set_inandout_filenames, config):
     calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
 
     # copy the configuration file to create the pipeline log
-    stpipelogcfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "stpipe-log.cfg")
-    subprocess.run(["cp", stpipelogcfg, os.getcwd()])
+    if not os.path.isfile("stpipe-log.cfg"):
+        stpipelogcfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "stpipe-log.cfg")
+        subprocess.run(["cp", stpipelogcfg, os.getcwd()])
 
     # run the pipeline
     if run_calwebb_spec2:
@@ -264,16 +266,17 @@ def output_hdul(set_inandout_filenames, config):
         # scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
 
         # rename and move the pipeline log file
+        pipelog = "pipeline_" + detector + ".log"
         try:
             calspec2_pipelog = "calspec2_pipeline_" + detector + ".log"
             if imaging_mode:
                 calspec2_pipelog = calspec2_pipelog.replace('calspec2', 'calimage2')
             path_where_pipeline_was_run = os.getcwd()
-            logfile = glob(path_where_pipeline_was_run + "/pipeline.log")[0]
+            logfile = glob(path_where_pipeline_was_run + "/"+pipelog)[0]
             print(logfile)
             os.rename(logfile, os.path.join(output_directory, calspec2_pipelog))
         except IndexError:
-            print("\nWARNING: Something went wrong. Could not find a pipeline.log file \n")
+            print("\nWARNING: Something went wrong. Could not find a ", pipelog, " file \n")
 
         # make sure we are able to find calspec2_pipelog either in the calwebb_spec2 directory or in the working dir
         if not os.path.isfile(calspec2_pipelog):
@@ -391,15 +394,16 @@ def output_hdul(set_inandout_filenames, config):
                         subprocess.run(["rm", msametfl])
 
                 # rename and move the pipeline log file
+                pipelog = "pipeline_" + detector + ".log"
                 try:
                     calspec2_pipelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
                     if imaging_mode:
                         calspec2_pipelog = calspec2_pipelog.replace('calspec2', 'calimage2')
                     pytest_workdir = TESTSDIR
-                    logfile = glob(pytest_workdir + "/pipeline.log")[0]
+                    logfile = glob(pytest_workdir + "/" + pipelog)[0]
                     os.rename(logfile, os.path.join(output_directory, calspec2_pipelog))
                 except IndexError:
-                    print("\n* WARNING: Something went wrong. Could not find a pipeline.log file \n")
+                    print("\n* WARNING: Something went wrong. Could not find a ", pipelog, " file \n")
 
             else:
                 msg = "Skipping step. Input file " + step_input_file + " does not exit."

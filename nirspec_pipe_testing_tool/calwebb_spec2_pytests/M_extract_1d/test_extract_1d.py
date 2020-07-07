@@ -232,15 +232,16 @@ def output_hdul(set_inandout_filenames, config):
         core_utils.move_txt_files_2workdir(config, detector)
 
         # rename and move the PTT log file
+        pipelog = "pipeline_" + detector + ".log"
         try:
-            PTT_calspec2_log = "PTT_calspec2_" + detector + ".log"
+            calspec2_pipelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
             if imaging_mode:
-                PTT_calspec2_log = PTT_calspec2_log.replace('calspec2', 'calimage2')
+                calspec2_pipelog = calspec2_pipelog.replace('calspec2', 'calimage2')
             pytest_workdir = TESTSDIR
-            logfile = glob(pytest_workdir + "/pipeline.log")[0]
-            os.rename(logfile, os.path.join(output_directory, PTT_calspec2_log))
-        except:
-            IndexError
+            logfile = glob(pytest_workdir + "/" + pipelog)[0]
+            os.rename(logfile, os.path.join(output_directory, calspec2_pipelog))
+        except IndexError:
+            print("\n* WARNING: Something went wrong. Could not find a ", pipelog, " file \n")
 
         return hdul, step_output_file, run_pytests
 

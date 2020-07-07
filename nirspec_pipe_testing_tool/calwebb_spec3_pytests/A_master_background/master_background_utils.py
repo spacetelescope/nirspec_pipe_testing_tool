@@ -10,7 +10,8 @@ __version__ = "1.0"
 
 def create_completed_steps_txtfile(txt_suffix_map, step_input_file):
     """
-    This function creates the completed steps along with the corresponding suffix of the output file name into a text file.
+    This function creates the completed steps along with the corresponding suffix of the output file name into a
+    text file.
     Args:
         txt_suffix_map: string, full path of where the text file will be written into
         step_input_file: string, name of the input file for the pipeline step

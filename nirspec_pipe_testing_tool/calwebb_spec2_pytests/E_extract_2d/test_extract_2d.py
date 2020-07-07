@@ -65,7 +65,7 @@ def output_hdul(set_inandout_filenames, config):
     extract_2d_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
     assign_wcs_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
     run_pytests = [extract_2d_completion_tests, extract_2d_validation_tests, assign_wcs_validation_tests]
-    # get other relevat info from PTT config file
+    # get other relevant info from PTT config file
     compare_assign_wcs_and_extract_2d_with_esa = config.getboolean("benchmark_intermediary_products",
                                                                    "compare_assign_wcs_and_extract_2d_with_esa")
     esa_files_path = config.get("benchmark_intermediary_products", "esa_files_path")
@@ -149,13 +149,14 @@ def output_hdul(set_inandout_filenames, config):
                     logging.info(msg)
 
                     # rename and move the pipeline log file
+                    pipelog = "pipeline_" + detector + ".log"
                     try:
                         calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
                         pytest_workdir = TESTSDIR
-                        logfile = glob(pytest_workdir + "/pipeline.log")[0]
+                        logfile = glob(pytest_workdir + "/" + pipelog)[0]
                         os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
-                    except:
-                        IndexError
+                    except IndexError:
+                        print("\n* WARNING: Something went wrong. Could not find a ", pipelog, " file \n")
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
