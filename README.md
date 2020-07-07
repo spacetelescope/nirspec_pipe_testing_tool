@@ -129,7 +129,12 @@ conda env remove -n name_of_your_old_environment
 
 **STEP 3.** Install PTT. There are three ways to install the tool:
 
-- Option A. For non-developers and without PTT source code. In the terminal type:
+- Option A. For non-developers and without PTT source code. For the **latest stable tag** type: 
+```bash
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.0.2
+```
+where the numbers at the end represent the latest stable version of NPTT; for the most recent code, in the 
+terminal type:
 ```bash
 pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@master
 ```
@@ -180,8 +185,10 @@ After this is done, you should see a full copy of the PTT in your directory.
 **Updating PTT**
 - If you are not a developer and do not have the source code, simply run again the command:
 ```bash
-pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@master
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@version
 ```
+where ```version``` is either ```master``` for the most recent code, or the latest stable tag (see **step 3**). 
+
 - If you are not a developer but have the source code, in the terminal go to where you placed
 the ```nirspec_pipe_testing_tool``` directory. Then, use the following commands to update
 the code:
@@ -539,9 +546,11 @@ This module can also be called from a script in the following way:
 ```bash
 # set the variables
 report_name = 'my_report'
+config_file = 'PTT_config_NRS2.cfg'
+quiet = False   # this flag will show progress on-screen
 
 # run the module
-nptt.utils.run_PTT.run_PTT(report_name, PTT_config.cfg)
+nptt.utils.run_PTT.run_PTT(report_name, config_file, quiet)
 ```
 
 
@@ -577,6 +586,39 @@ located in the section ```run_pipe_steps``` of the file.
 c) Set to True all pytest you want to run in the ```PTT_config.cfg``` file. These are 
 located in the section ```run_pytest``` of the file.
 
+**MULTIPROCESSING**
+
+We chose multiprocessing instead of multithreading because the multiprocess library uses
+separate memory space, multiple CPU cores, bypasses Global Interpretor Lock (GIL) limitations 
+in CPython, child processes are killable, and is much easier to use. Threads, in turn, run in the same 
+unique memory heap, so multiple threads can write to the same location in memory. This is why
+Python uses the GIL, to prevent conflicts between parallel threads of execution on multiple cores.
+
+NPTT can run several data sets at the same time using the Python library multiprocessing. To use
+this mode you have to create a ```multiprocess_PTT_config.cfg``` file with :
+```bash
+nptt_mk_multiprocessing_cfg
+```
+this command will create a .cfg file in the directory you are in. Open this file and modify it as you need.
+
+NPTT expects to find a ```PTT_config_NRS1.cfg``` file (and/or NRS2) to be present in each of 
+the directories provided in the ```data_sets``` variable in the  
+```multiprocess_PTT_config.cfg``` file.  
+
+If the variable is ```cores2use``` in the ```multiprocess_PTT_config.cfg``` file is set to ```all```, 
+then the code will automatically use all available processors. If you wish to know how many processors 
+your computer has type the following in python:
+```bash
+>>> import os
+>>> print(os.cpu_count())
+```
+
+Once all of this is set, run the following command and enjoy:
+```bash
+nptt_run_PTT_with_multiprocess path_to_find_my_file/multiprocess_PTT_config.cfg
+```
+
+
 
 **STEP 10.** Report your findings. Contact the testing lead to determine if you should
 create a report Jira ticket per step. If this is the case, you will need to link the
@@ -608,10 +650,11 @@ command line as well, and that you make sure that the outcome intermediary files
 consistent with the ones ran with scripts, i.e. the PTT. This sanity check is minor 
 but important to verify. If you have the PTT source code, you will find two very
  useful text files in the ```utils/data``` directory. The two text files are named
-```terminal_commands_calwebb_detector1_steps.txt``` and
-```terminal_commands_calwebb_spec2_steps.txt```. These files contain all the commands 
-you can use from the terminal to run the calwebb_detector1 and calwebb spec2 steps,
-respectively.
+```terminal_commands_calwebb_detector1_steps.txt``` ,
+```terminal_commands_calwebb_spec2_steps.txt```,
+```terminal_commands_calwebb_spec3_steps.txt```. These files contain all the commands 
+you can use from the terminal to run the ```calwebb_detector1```, ```calwebb_spec2``` steps, 
+and ```calwebb_spec3```, respectively.
 - Finally, remember that:
 
 a. Whenever you need to read either the main or science headers of a file,

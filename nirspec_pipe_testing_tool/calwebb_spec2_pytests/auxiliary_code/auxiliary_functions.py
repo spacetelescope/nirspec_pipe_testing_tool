@@ -122,6 +122,9 @@ def get_modeused_and_rawdatrt_PTT_cfg_file(infile_name):
     # get script directory and config name
     out_dir = os.path.dirname(infile_name)
     PPT_cfg_file = os.path.join(out_dir, "PTT_config.cfg")
+    if not os.path.isfile(PPT_cfg_file):
+        detector = fits.getval(infile_name, "DETECTOR")
+        PPT_cfg_file = PPT_cfg_file.replace(".cfg", "_"+detector+".cfg")
     with open(PPT_cfg_file, "r") as cfg:
         for i, line in enumerate(cfg.readlines()):
             if "#" not in line:

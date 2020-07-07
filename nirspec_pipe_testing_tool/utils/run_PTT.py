@@ -1,6 +1,5 @@
 """
-This script is a wrapper to run PTT and then move the report to the right directory. The script
-is to be run from the calwebb_spec2_pytests directory.
+This script is a wrapper to run PTT and then move the report to the right directory.
 
 Example usage:
     The code works from the terminal or called as a module.
@@ -12,7 +11,14 @@ Example usage:
     As a module
         # import the script
         import nirspec_pipe_testing_tool as nptt
-        nptt.utils.run_PTT.run_PTT(report_name, PTT_config.cfg)
+
+        # set the variables
+        report_name = 'my_report'
+        config_file = 'PTT_config_NRS1.cfg'
+        quiet = False
+
+        # run the module
+        nptt.utils.run_PTT.run_PTT(report_name, config_file, quiet)
 """
 
 import os
@@ -21,6 +27,7 @@ import sys
 import configparser
 import argparse
 from astropy.io import fits
+
 from .. import calwebb_spec2_pytests
 from .. import calwebb_spec3_pytests
 
@@ -33,12 +40,25 @@ __version__ = "1.0"
 # Sep 2019 - Version 1.0: initial version completed
 
 
+def mk_stpipe_log_cfg(detector):
+    """
+    Create a configuration file with the name pipeline_detector.log
+    :param detector: str, name of the detector to use
+    :return: nothing
+    """
+    config = configparser.ConfigParser()
+    config.add_section("*")
+    config.set("*", "handler", "file:pipeline_"+detector+".log")
+    config.set("*", "level", "INFO")
+    pipe_log_config = os.path.join(os.getcwd(), "stpipe-log.cfg")
+    config.write(open(pipe_log_config, "w"))
+
+
 def read_PTTconfig_file(config_path):
     """
     This function reads the PTT configuration file to get needed info.
-    
-    Returns:
-        cfg_info = list of read info
+    :param config_path: string, path of the PTT configuration file to use
+    :return: cfg_info: list of read info
     """
 
     if not os.path.exists(config_path):
@@ -55,12 +75,13 @@ def read_PTTconfig_file(config_path):
     return cfg_info
 
 
-def run_PTT(report_name, config_path=None):
+def run_PTT(report_name=None, config_path=None, verbose=False):
     """
     This function runs PTT and then moves the html report into the working directory specified
     in the PTT configuration file.
-    Args:
-    report_name: string, name of the html report
+    :param report_name: string, name of the html report
+    :param config_path: string, path of the PTT configuration file to use
+    :param verbose: boolean
     """
     print('Running PTT. This may take a while...')
 
@@ -86,8 +107,15 @@ def run_PTT(report_name, config_path=None):
     if spec3 != "skip":
         skip_spec3 = False
 
+    # make sure you are in the data directory to run the pipeline
+    cwd = os.getcwd()
+    if cwd != output_dir:
+        os.chdir(output_dir)
+
     # get the detector and make sure it is in the name of the output html report
     detector = fits.getval(input_file, "DETECTOR", 0)
+    if report_name is None:
+        report_name = 'report'
     if 'html' not in report_name:
         report_name = report_name+'.html'
     if detector not in report_name:
@@ -95,12 +123,17 @@ def run_PTT(report_name, config_path=None):
         report_name = report_name_list[0]+'_'+detector+".html"
         print('-> The detector used added to the html report name: ', report_name)
 
+    # create the ST pipeline configuration file in the current working directory
+    mk_stpipe_log_cfg(detector)
+
     # run tests for spec2
     if not skip_spec2:
         print("Running spec2 and tests")
         report_name = report_name.replace(".html", "_spec2.html")
         args = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
                 '--self-contained-html', calwebb_spec2_pytests.TESTSDIR]
+        if not verbose:
+            args.pop(1)
         subprocess.run(args)
 
     # run tests for spec3
@@ -111,6 +144,8 @@ def run_PTT(report_name, config_path=None):
         report_name = report_name.replace(".html", "_spec3.html")
         args = ['pytest', '-s', '--config_file='+config_path, '--html='+report_name,
                 '--self-contained-html', calwebb_spec3_pytests.TESTSDIR]
+        if not verbose:
+            args.pop(1)
         subprocess.run(args)
 
     # move the html report
@@ -145,15 +180,21 @@ def main():
                              "Keep in mind that this PTT config file (in the output directory) has multiple "
                              "default values. Create the PTT config from the terminal with the command: "
                              "$ nptt_mk_pttconfig_file output_directory input_file mode_used raw_data_root_file")
+    parser.add_argument("-q",
+                        dest="quiet",
+                        action='store_false',
+                        default=True,
+                        help='Use the -q flag to set verbose to False, and not show progress messages on-screen.')
 
     args = parser.parse_args()
                         
     # Set the variables
     report_name = args.report_name
     config_path = args.config
+    quiet = args.quiet
 
-    # Perform data move to the science extension and the keyword check on the file with the right number of extensions
-    run_PTT(report_name, config_path)
+    # Run NPTT
+    run_PTT(report_name, config_path, quiet)
 
 
 if __name__ == '__main__':

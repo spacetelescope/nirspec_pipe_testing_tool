@@ -149,13 +149,14 @@ def output_hdul(set_inandout_filenames, config):
                     logging.info(msg)
 
                     # rename and move the pipeline log file
+                    pipelog = "pipeline_" + detector + ".log"
                     try:
                         calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
                         pytest_workdir = TESTSDIR
-                        logfile = glob(pytest_workdir + "/pipeline.log")[0]
+                        logfile = glob(pytest_workdir + "/" + pipelog)[0]
                         os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
-                    except:
-                        IndexError
+                    except IndexError:
+                        print("\n* WARNING: Something went wrong. Could not find a ", pipelog, " file \n")
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)

@@ -64,7 +64,8 @@ def output_hdul(set_inandout_filenames, config):
     save_barshadow_final_plot = config.getboolean("additional_arguments", "save_barshadow_final_plot")
     save_barshadow_intermediary_plots = config.getboolean("additional_arguments", "save_barshadow_intermediary_plots")
     write_barshadow_files = config.getboolean("additional_arguments", "write_barshadow_files")
-    barshadow_switches = [barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots, write_barshadow_files]
+    barshadow_switches = [barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots,
+                          write_barshadow_files]
 
     end_time = '0.0'
 
@@ -86,9 +87,11 @@ def output_hdul(set_inandout_filenames, config):
         # check if the filter is to be changed
         change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
         if change_filter_opaque:
-            is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file, step=step)
+            is_filter_opaque, step_input_filename = change_filter_opaque2science.change_filter_opaque(step_input_file,
+                                                                                                      step=step)
             if is_filter_opaque:
-                filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. Barshadow pytest now set to Skip."
+                filter_opaque_msg = "With FILTER=OPAQUE, the calwebb_spec2 will run up to the extract_2d step. " \
+                                    "Barshadow pytest now set to Skip."
                 print(filter_opaque_msg)
                 core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                 pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
@@ -143,13 +146,14 @@ def output_hdul(set_inandout_filenames, config):
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
 
                     # rename and move the pipeline log file
+                    pipelog = "pipeline_" + detector + ".log"
                     try:
-                        calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
+                        calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
                         pytest_workdir = TESTSDIR
-                        logfile = glob(pytest_workdir+"/pipeline.log")[0]
+                        logfile = glob(pytest_workdir + "/" + pipelog)[0]
                         os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
-                    except:
-                        IndexError
+                    except IndexError:
+                        print("\n* WARNING: Something went wrong. Could not find a ", pipelog, " file \n")
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
@@ -194,10 +198,12 @@ def validate_barshadow(output_hdul):
 
     # Determine if data is MOS
     if core_utils.check_MOS_true(hdu):
-        # Determine if the source is point or extended. If extended, unknown, or not present, correction will be applied.
+        # Determine if the source is point or extended. If extended, unknown, or not present, correction
+        # will be applied.
         if 'SRCTYPE' in hdu:
             if hdu['SRCTYPE'] == 'POINT':
-                pytest.skip("Skipping pytest: The SRCTYPE keyword is set to POINT so barshadow correction is not applied.")
+                pytest.skip("Skipping pytest: The SRCTYPE keyword is set to POINT so barshadow correction is not "
+                            "applied.")
 
         plfile = output_hdul[1].replace('_barshadow', '_pathloss')
         bsfile = output_hdul[1]
