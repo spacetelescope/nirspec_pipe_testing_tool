@@ -263,7 +263,7 @@ def output_hdul(set_inandout_filenames, config):
             npttcalspec3_log = os.path.join(output_directory, 'NPTT_calspec3_' + detector + '_' + step + '.log')
             if os.path.isfile(npttcalspec3_log):
                 os.remove(npttcalspec3_log)
-            print("Information outputed to screen from NPTT will be logged in file: ", npttcalspec3_log)
+            print("Output information on screen from NPTT will be logged in file: ", npttcalspec3_log)
             for handler in logging.root.handlers[:]:
                 logging.root.removeHandler(handler)
             logging.basicConfig(filename=npttcalspec3_log, level=logging.INFO)
@@ -310,7 +310,7 @@ def output_hdul(set_inandout_filenames, config):
                     logfile = glob(pytest_workdir + "/" + pipelog)[0]
                     os.rename(logfile, os.path.join(output_directory, calspec3_pipelog))
                 except IndexError:
-                    print("\n* WARNING: Something went wrong. Could not find a pipeline.log file \n")
+                    print("\n* WARNING: Something went wrong. Could not find a ", pipelog, " file \n")
 
             else:
                 msg = "Skipping step. Input file " + step_input_file + " does not exit."
@@ -433,7 +433,6 @@ def test_masterbg_exists(output_hdul):
     # run_pytests = master_background_completion_tests, master_background_reffile_tests,
     #               master_background_validation_tests
     run_pytests = output_hdul[3][0]
-    print("got here")
     if not run_pytests:
         msg = "Skipping pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)

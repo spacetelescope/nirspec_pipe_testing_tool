@@ -1,12 +1,9 @@
 from .. auxiliary_code.reffile_test import create_rfile_test
 
 """
-This file contains the functions which will be used to test the extract_1d step
-of the JWST Calibration Pipeline.
+This file contains the functions which will be used to test the extract_1d step of the JWST Calibration Pipeline.
 
 """
-
-
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
@@ -17,7 +14,7 @@ __version__ = "2.0"
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
 
 
-### VERIFICATION FUNCTIONS
+# VERIFICATION FUNCTIONS
 
 def s_extr1d_exists(output_hdul):
     """
