@@ -83,10 +83,12 @@ def output_hdul(set_inandout_filenames, config):
     run_pipe_step = config.getboolean("run_pipe_steps", step)
 
     # determine which tests are to be run
-    completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
+    #completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
     #reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
     #validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
-    run_pytests = [completion_tests]  # , reffile_tests, validation_tests]
+    #run_pytests = [completion_tests, reffile_tests, validation_tests]
+    # TODO - booleans for different tests have not been implemented in the configuration file yet
+    run_pytests = [False]
 
     # Get the detector used
     detector = fits.getval(step_input_file, "DETECTOR", 0)
@@ -222,10 +224,9 @@ def test_wavran_rfile(output_hdul):
 
 def test_masterbg_exists(output_hdul):
     # want to run this pytest?
-    # output_hdul = hdul, step_output_file, msa_shutter_conf, run_pytests, mode_used
-    # run_pytests = master_background_completion_tests, master_background_reffile_tests,
-    #               master_background_validation_tests
-    run_pytests = output_hdul[3][0]
+    # output_hdul = hdul, step_output_file, run_pytests, mode_used
+    # run_pytests = completion_tests, reffile_tests, validation_tests
+    run_pytests = output_hdul[2][0]
     if not run_pytests:
         msg = "Skipping pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
