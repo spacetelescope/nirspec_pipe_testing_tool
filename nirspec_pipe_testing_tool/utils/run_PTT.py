@@ -28,6 +28,7 @@ import configparser
 import argparse
 from astropy.io import fits
 
+from . import run_cal_detector1
 from .. import calwebb_spec2_pytests
 from .. import calwebb_spec3_pytests
 
@@ -75,12 +76,13 @@ def read_PTTconfig_file(config_path):
     return cfg_info
 
 
-def run_PTT(report_name=None, config_path=None, verbose=False):
+def run_PTT(report_name=None, config_path=None, run_detector1=None, verbose=False):
     """
     This function runs PTT and then moves the html report into the working directory specified
     in the PTT configuration file.
     :param report_name: string, name of the html report
     :param config_path: string, path of the PTT configuration file to use
+    :param run_detector1: string, name of the fits file to use as input for the calwebb_detector1 pipeline
     :param verbose: boolean
     """
     print('Running PTT. This may take a while...')
@@ -111,6 +113,15 @@ def run_PTT(report_name=None, config_path=None, verbose=False):
     cwd = os.getcwd()
     if cwd != output_dir:
         os.chdir(output_dir)
+
+    # run the detector_1 pipeline
+    if run_detector1 is not None:
+        print("Running the detector1 pipeline ")
+        if os.path.isfile(run_detector1):
+            run_cal_detector1.run_caldet1(run_detector1, step_by_step=False)
+        else:
+            print("Unable to run the calwebb_detector1 pipeline because the input file does not exist: ",
+                  run_detector1)
 
     # get the detector and make sure it is in the name of the output html report
     detector = fits.getval(input_file, "DETECTOR", 0)
@@ -180,6 +191,12 @@ def main():
                              "Keep in mind that this PTT config file (in the output directory) has multiple "
                              "default values. Create the PTT config from the terminal with the command: "
                              "$ nptt_mk_pttconfig_file output_directory input_file mode_used raw_data_root_file")
+    parser.add_argument("-d1",
+                        dest="run_detector1",
+                        action='store',
+                        default=None,
+                        help='Use the -d1 flag to tell NPTT to run the calwebb_detector_1 pipeline as well, '
+                             'e.g. -d1=jwdata0010010_11010_0001_NRS1_uncal.fits')
     parser.add_argument("-q",
                         dest="quiet",
                         action='store_false',
@@ -190,11 +207,12 @@ def main():
                         
     # Set the variables
     report_name = args.report_name
-    config_path = args.config
+    config = args.config
+    run_detector1 = args.run_detector1
     quiet = args.quiet
 
     # Run NPTT
-    run_PTT(report_name, config_path, quiet)
+    run_PTT(report_name=report_name, config_path=config, run_detector1=run_detector1, verbose=quiet)
 
 
 if __name__ == '__main__':

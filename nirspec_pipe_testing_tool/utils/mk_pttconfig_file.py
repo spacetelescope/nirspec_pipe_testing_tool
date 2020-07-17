@@ -82,7 +82,7 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
 
     config.add_section("benchmark_intermediary_products")
     esa_files_path, msa_conf_name, dflat_path, sflat_path, fflat_path, truth_awcs, truth_e2d = benchmark_intermediary_products
-    config.set("benchmark_intermediary_products", "compare_assign_wcs_and_extract_2d_with_esa", True)
+    config.set("benchmark_intermediary_products", "compare_assign_wcs_and_extract_2d_with_esa", "True")
     config.set("benchmark_intermediary_products", "esa_files_path", esa_files_path)
     config.set("benchmark_intermediary_products", "msa_conf_name", msa_conf_name)
     config.set("benchmark_intermediary_products", "dflat_path", dflat_path)
@@ -173,7 +173,8 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     config.set("additional_arguments", "save_barshadow_intermediary_plots", additional_arguments[13])
     config.set("additional_arguments", "write_barshadow_files", additional_arguments[14])
 
-    ptt_config = os.path.join(calwebb_spec2_input_file[0], "PTT_config.cfg")
+    detector = fits.getval(calwebb_spec2_input_file[5], "DETECTOR")
+    ptt_config = os.path.join(calwebb_spec2_input_file[0], "PTT_config_"+detector+".cfg")
     config.write(open(ptt_config, "w"))
 
 

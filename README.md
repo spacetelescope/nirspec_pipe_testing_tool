@@ -323,10 +323,22 @@ then set ```raw_data_root_file = F170LP-G235M_MOS_observation-6-c0e0_001.fits```
 correct, e.g. threshold values, figure switches, and additional fits files.
 
 
-**STEP 6.** Run the ```calwebb_detector1``` pipeline. The final output of this is the level
-2 data required to run the PTT. In a terminal, please make sure that the testing conda
+**STEP 6.** Run the stage 1 pipeline, ```calwebb_detector1```. The final output of this is 
+the level 2 data required to run the PTT. In a terminal, please make sure that the testing conda
 environment is active, and that you are in the directory where your ```PTT_config.cfg```
-lives. Type the following command:
+lives. There are two ways to run the stage 1 pipeline:
+
+1) Automatically done by adding a flag to the command of step 9. This command will run both
+the stage 1 pipeline and the spec2 and/or spec3. To do this you will need the name of
+the fits file created in step 4b. With this information, in the terminal type:
+```bash
+nptt_run_PTT name_of_the_html_report PTT_config.cfg -d1=jwdata0010010_11010_0001_NRS1_uncal.fits
+```
+if you do this you can skip directly to step 10.
+
+OR
+
+2) You manually run the stages 1 and 2/3 pipelines. To do this type the following command:
 ```bash
 nptt_run_cal_detector1 /path_where_the_uncal_file_lives/uncal_file.fits
 ```
@@ -604,6 +616,22 @@ this command will create a .cfg file in the directory you are in. Open this file
 NPTT expects to find a ```PTT_config_NRS1.cfg``` file (and/or NRS2) to be present in each of 
 the directories provided in the ```data_sets``` variable in the  
 ```multiprocess_PTT_config.cfg``` file.  
+
+The variable ```cal_det1_input_files``` is for the calwebb detector1 pipeline. The variable can
+be set to one of three possibilities:
+
+a) ```cal_det1_input_files=skip``` then the code will jump directly to run the spec2 and/or spec3 
+pipelines
+
+b) ```cal_det1_input_files=all``` then the code will assume that the prepare_data2run script was
+run and there will be files with names such as jwdata0010010_11010_0001_NRS1_uncal.fits. NPTT will 
+expect to find one these files per ```PTT_config_NRS1.cfg```  file in each of the directores given in 
+the ```data_sets``` variable.
+
+c) Give the specific names of the ```_uncal```  files to use for running the stage 1 pipeline, e.g.
+```cal_det1_input_files = file1_uncal.fits,file2_uncal.fits,file3_uncal.fits```. Note
+that this list of files is expected to correspond with the total number of ```PTT_config_NRS1.cfg``` files
+in the directores given in the ```data_sets``` variable.
 
 If the variable is ```cores2use``` in the ```multiprocess_PTT_config.cfg``` file is set to ```all```, 
 then the code will automatically use all available processors. If you wish to know how many processors 

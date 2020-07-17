@@ -47,14 +47,24 @@ __version__ = "1.4"
 # May 2019 - Version 1.4: added capability to process darks
 
 
-def get_caldet1cfg_and_workingdir():
+def get_caldet1cfg_and_workingdir(detector):
     """
     This function gets the path to where the pipeline testing tool lives
+    Args:
+        detector - string
     Returns:
-        calwebb_detector1_cfg = string, path to where the config file lives
+        calwebb_detector1_cfg - string, path to where the config file lives
     """
     ptt_config = 'PTT_config.cfg'
+    get_config_info = False
     if os.path.isfile(ptt_config):
+        get_config_info = True
+    else:
+        ptt_config = ptt_config.replace('.cfg', '_'+detector+'.cfg')
+        if os.path.isfile(ptt_config):
+            get_config_info = True
+
+    if get_config_info:
         config = configparser.ConfigParser()
         config.read([ptt_config])
         calwebb_detector1_cfg = os.path.realpath(__file__).replace("run_cal_detector1.py", "data/calwebb_detector1.cfg")
@@ -143,6 +153,25 @@ def calculate_step_run_time(pipelog_file, pipe_steps):
     return step_running_times
 
 
+def set_pipe_log(calwebb_detector1_cfg, detector):
+    # copy the configuration file to create the pipeline log
+    stpipelogcfg = calwebb_detector1_cfg.replace("calwebb_detector1.cfg", "stpipe-log.cfg")
+    subprocess.run(["cp", stpipelogcfg, "."])
+    # make sure that the handler has the correct name for creating the pipeline log
+    config = configparser.ConfigParser()
+    config.read([stpipelogcfg])
+    handler = config.get("*", "handler")
+    # correct the right pipeline log name if needed
+    if "pipeline.log" in handler:
+        # re-write the .cfg file
+        config = configparser.ConfigParser()
+        config.add_section("*")
+        config.set("*", "handler", "file:pipeline_"+detector+".log")
+        config.set("*", "level", "INFO")
+        config.write(open("stpipe-log.cfg", "w"))
+        print("Pipeline log name set to:  pipeline_"+detector+".log")
+
+
 def run_caldet1(fits_input_uncal_file, step_by_step=False):
     if not os.path.isfile(fits_input_uncal_file):
         print("Input file not found in the current directory. Unable to proceed, exiting script.")
@@ -152,7 +181,8 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
     detector = fits.getval(fits_input_uncal_file, "DETECTOR", 0)
 
     # Get the cfg file
-    calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, rawdatrt = get_caldet1cfg_and_workingdir()
+    cfg_info = get_caldet1cfg_and_workingdir(detector)
+    calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, rawdatrt = cfg_info
     if mode_used != "BOTS" and mode_used.lower() != "dark":
         cfg_file = calwebb_detector1_cfg
     elif mode_used == "BOTS":
@@ -181,13 +211,12 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
         tf.write(line1+"\n")
 
     # Name of the file containing all the pipeline output
-    caldetector1_pipeline_log = "pipeline.log"
+    caldetector1_pipeline_log = "pipeline_"+detector+".log"
 
-    # copy the configuration file to create the pipeline log
-    stpipelogcfg = calwebb_detector1_cfg.replace("calwebb_detector1.cfg", "stpipe-log.cfg")
-    subprocess.run(["cp", stpipelogcfg, "."])
+    # copy the configuration file to create the pipeline log make sure that the handler has the correct name for the log
+    set_pipe_log(calwebb_detector1_cfg, detector)
 
-    #final_output_caldet1 = "gain_scale.fits"
+    # final_output_caldet1 = "gain_scale.fits"
     final_output_caldet1 = "final_output_caldet1_"+detector+".fits"
     output_names = ["group_scale.fits", "dq_init.fits", "saturation.fits", "superbias.fits", "refpix.fits",
                     "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits",
@@ -233,7 +262,7 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
                 with open(txt_outputs_summary, "a") as tf:
                     tf.write(line2write+"\n")
         else:
-            print("No pipeline.log found. Unable to record times per step.")
+            print("No pipeline log found. Unable to record times per step.")
 
     else:
         print("Got arguments and will run the calwebb_detector1 pipeline step by step.")
@@ -255,7 +284,7 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
                 continue_while = True
                 while continue_while:
                     step_input_file = output_names[i-j]
-                    if (i-j == 0):
+                    if i-j == 0:
                         step_input_file = fits_input_uncal_file
                         break
                     if i == len(output_names)-1:
@@ -287,7 +316,7 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
             else:
                 # the pipeline works differently for the ramp_fit step because it has more than one output
                 # this step is also hanging from the command line
-                #subprocess.call(["strun", "jwst.ramp_fitting.RampFitStep", "jump.fits"])
+                # subprocess.call(["strun", "jwst.ramp_fitting.RampFitStep", "jump.fits"])
                 (out_slope, int_slope) = stp.call(step_input_file)
                 out_slope.save(output_names[i])
                 try:

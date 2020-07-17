@@ -451,7 +451,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         print(msg)
         log_msgs.append(msg)
         #print(" median = ", delfg_median, "    stdev =", delfg_std)
-        stats_and_strings= auxfunc.print_stats(delfg, "Flat Difference", float(threshold_diff), abs=True)
+        stats_and_strings= auxfunc.print_stats(delfg, "Flat Difference", float(threshold_diff), absolute=True)
         stats, stats_print_strings = stats_and_strings
         delfg_mean, delfg_median, delfg_std = stats
         for msg in stats_print_strings:

@@ -357,7 +357,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             log_msgs.append(msg1)
             test_result = "FAILED"
         else:
-            stats_and_strings = auxfunc.print_stats(corr_residuals, "Difference", float(threshold_diff), abs=True)
+            stats_and_strings = auxfunc.print_stats(corr_residuals, "Difference", float(threshold_diff), absolute=True)
             stats, stats_print_strings = stats_and_strings
             corr_residuals_mean, corr_residuals_median, corr_residuals_std = stats
             for msg in stats_print_strings:

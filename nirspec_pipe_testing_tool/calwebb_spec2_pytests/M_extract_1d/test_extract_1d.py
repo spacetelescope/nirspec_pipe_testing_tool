@@ -92,6 +92,9 @@ def output_hdul(set_inandout_filenames, config):
     else:
         pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
 
+    # set the name of the pipeline log to be read for times and renamed at the end for book-keeping
+    pipelog = "pipeline_" + detector + ".log"
+
     # check if the filter is to be changed
     change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
     if change_filter_opaque:
@@ -171,9 +174,7 @@ def output_hdul(set_inandout_filenames, config):
                 calspec2_pilelog = "calspec2_pipeline_"+step+"_"+detector+".log"
                 if imaging_mode:
                     calspec2_pilelog = calspec2_pilelog.replace('calspec2', 'calimage2')
-                pytest_workdir = TESTSDIR
-                logfile = glob(pytest_workdir+"/pipeline.log")[0]
-                os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
+                os.rename(pipelog, os.path.join(output_directory, calspec2_pilelog))
 
             else:
                 msg = " The input file does not exist. Skipping step."
@@ -232,7 +233,6 @@ def output_hdul(set_inandout_filenames, config):
         core_utils.move_txt_files_2workdir(config, detector)
 
         # rename and move the PTT log file
-        pipelog = "pipeline_" + detector + ".log"
         try:
             calspec2_pipelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
             if imaging_mode:

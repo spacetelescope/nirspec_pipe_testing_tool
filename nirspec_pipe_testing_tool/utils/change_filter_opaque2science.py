@@ -44,6 +44,7 @@ def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, s
     """
 
     gain_scale_basename = os.path.basename(cal_detector1_output)
+    detector = fits.getval(cal_detector1_output, "DETECTOR", 0)
     exp_type = fits.getval(cal_detector1_output, "EXP_TYPE", 0)
     filt = fits.getval(cal_detector1_output, "FILTER", 0)
     grat = fits.getval(cal_detector1_output, "GRATING", 0)
@@ -53,12 +54,13 @@ def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, s
     if force_filter_change:
         change_filter_opaque = True
     else:
-        # get the switch in the configuration file
-        if calwebb_spec2_pytests_dir is None:
-            auxiliary_code_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-            calwebb_spec2_pytests_dir = auxiliary_code_dir.replace("/auxiliary_code", "")
-        PPT_cfg_file = os.path.join(calwebb_spec2_pytests_dir, "PTT_config.cfg")
-        print("PPT_cfg_file=", PPT_cfg_file)
+        # get the switch from the configuration file
+        PPT_cfg_file = "PTT_config.cfg"
+        if not os.path.isfile(PPT_cfg_file):
+            PPT_cfg_file = PPT_cfg_file.replace(".cfg", "_" + detector + ".cfg")
+            if not os.path.isfile(PPT_cfg_file):
+                print("Unable to obtain change_filter_opaque switch from the PTT configuration file.")
+        print("PPT configuration file=", PPT_cfg_file)
         with open(PPT_cfg_file, "r") as cfg:
             for line in cfg.readlines():
                 if "#" not in line:
@@ -79,7 +81,7 @@ def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, s
             print(" The switch to change the filter is set to False, so the filter will *NOT* be changed.\n")
             return is_filter_opaque, cal_detector1_output
         if not force_filter_change:
-            if step is not None  and  step!="assign_wcs":
+            if step is not None and step != "assign_wcs":
                 return is_filter_opaque, cal_detector1_output
 
     else:
@@ -96,7 +98,7 @@ def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, s
             print(" The switch to change the filter is set to False, so the filter will *NOT* be changed.\n")
             return is_filter_opaque, cal_detector1_output
         if not force_filter_change:
-            if step is not None  and  step!="assign_wcs":
+            if step is not None and step != "assign_wcs":
                 return is_filter_opaque, cal_detector1_output
 
     # make a copy of the file with the suffix _opaque
@@ -112,6 +114,7 @@ def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, s
     else:
         # change the filter keyword in the new file
         lamp = fits.getval(cal_detector1_output, "LAMP", 0)
+        # correspondence obtained from the NIRSpec Operations Concept Document, table 3-10
         if 'LINE1' in lamp:
             filt = 'F100LP'
         elif 'LINE2' in lamp:
@@ -123,6 +126,8 @@ def change_filter_opaque(cal_detector1_output, calwebb_spec2_pytests_dir=None, s
         elif 'FLAT4' in lamp:
             filt = 'F070LP'
         elif 'REF' in lamp:
+            filt = 'F100LP'
+        elif 'NO_LAMP' in lamp and 'G140' in grat:
             filt = 'F100LP'
         print("Since  LAMP =", lamp, "  =>  setting  FILTER =", filt)
         filt_gain_scale_basename = gain_scale_basename.replace(".fits", "_"+filt+".fits")

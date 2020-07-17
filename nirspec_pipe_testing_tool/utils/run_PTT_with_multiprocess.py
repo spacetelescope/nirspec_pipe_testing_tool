@@ -47,8 +47,13 @@ def read_multiprocess_config_file(config_path):
     config.read([config_path])
     common_path = config.get("data_sets_to_run", "common_path")
     data_sets = config.get("data_sets_to_run", "data_sets")
+    cal_det1 = config.get("data_sets_to_run", "cal_det1")
+    if cal_det1 == "all" or cal_det1 == "skip":
+        cal_det1_input_file_list = cal_det1
+    else:
+        cal_det1_input_file_list = cal_det1.split(",")
     cores2use = config.get("data_sets_to_run", "cores2use")
-    cfg_info = [common_path, data_sets, cores2use]
+    cfg_info = [common_path, data_sets, cal_det1_input_file_list, cores2use]
     return cfg_info
 
 
@@ -82,7 +87,7 @@ def run_PTT_with_multiprocess(multiprocessing_PTT_config_file):
 
     # get the information from the multiprocessing configuration file
     cfg_info = read_multiprocess_config_file(multiprocessing_PTT_config_file)
-    common_path, data_sets, cores2use = cfg_info
+    common_path, data_sets, cal_det1_input_file_list, cores2use = cfg_info
 
     # get all the NPTT configuration files to use - i.e. the times NPTT needs to be run
     cfg_files2run_NPTT = get_cfg_files2run_NPTT(common_path, data_sets)
@@ -94,6 +99,21 @@ def run_PTT_with_multiprocess(multiprocessing_PTT_config_file):
         r = os.path.join(d, "report")
         report_names.append(r)
 
+    # gather the list of input files for the stage 1 pipeline if option set to all
+    if cal_det1_input_file_list == "all" or cal_det1_input_file_list == "skip":
+        det1_input_file_list = []
+    else:
+        det1_input_file_list = cal_det1_input_file_list
+    for ptt_cfg in cfg_files2run_NPTT:
+        if cal_det1_input_file_list == "all":
+            if "NRS1" in ptt_cfg:
+                det = "NRS1"
+            if "NRS2" in ptt_cfg:
+                det = "NRS2"
+            det1_input_file_list.append("jwdata0010010_11010_0001_"+det+"_uncal.fits")
+        if cal_det1_input_file_list == "skip":
+            det1_input_file_list.append(None)
+
     # set the cores to use for NPTT
     if cores2use == "all":
         cores2use = os.cpu_count()
@@ -102,7 +122,7 @@ def run_PTT_with_multiprocess(multiprocessing_PTT_config_file):
 
     # set the pool of cores to use for NPTT
     p = multiprocessing.Pool(cores2use)
-    p.starmap(run_PTT.run_PTT, zip(report_names, cfg_files2run_NPTT))
+    p.starmap(run_PTT.run_PTT, zip(report_names, cfg_files2run_NPTT, det1_input_file_list))
     p.close()
     p.join()
 
