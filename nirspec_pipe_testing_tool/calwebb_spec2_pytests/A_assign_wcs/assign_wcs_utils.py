@@ -1,3 +1,6 @@
+import subprocess
+import configparser
+
 from .. auxiliary_code.reffile_test import create_rfile_test
 
 """
@@ -30,7 +33,7 @@ def create_completed_steps_txtfile(txt_suffix_map, step_input_file):
         Nothing. A text file will be created in the pytests directory where all steps will be added
     """
     # name of the text file to collect the step name and suffix
-    #print ("Map created at: ", txt_suffix_map)
+    # print ("Map created at: ", txt_suffix_map)
     line0 = "# {:<20}".format("Input file: "+step_input_file)
     line1 = "# {:<17} {:<20} {:<20} {:<20}".format("Step", "Added suffix", "Step complition", "Time to run [s]")
     print(line1)
@@ -59,14 +62,34 @@ def print_time2file(txt_name, end_time, string2print):
             total_time = total_time_hr+'hr'
         end_time = end_time+'  ='+total_time
     line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', string2print, end_time)
-    print (line2write)
+    print(line2write)
     with open(txt_name, "a") as tf:
         tf.write(line2write+"\n")
 
 
+def set_pipe_log(calwebb_spec2_cfg, detector):
+    # copy the configuration file to create the pipeline log
+    stpipelogcfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "stpipe-log.cfg")
+    subprocess.run(["cp", stpipelogcfg, "."])
+    # make sure that the handler has the correct name for creating the pipeline log
+    config = configparser.ConfigParser()
+    config.read([stpipelogcfg])
+    handler = config.get("*", "handler")
+    # correct the right pipeline log name if needed
+    pipelog = "pipeline.log"
+    if pipelog in handler:
+        # re-write the .cfg file
+        pipelog = "pipeline_" + detector + ".log"
+        config = configparser.ConfigParser()
+        config.add_section("*")
+        config.set("*", "handler", "file:" + pipelog)
+        config.set("*", "level", "INFO")
+        config.write(open("stpipe-log.cfg", "w"))
+        print("Pipeline log name set to:  ", pipelog)
+    return pipelog
 
 
-### VERIFICATION FUNCTIONS
+# VERIFICATION FUNCTIONS
 
 def wavstart_exists(output_hdul):
     """

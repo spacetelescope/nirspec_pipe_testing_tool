@@ -379,7 +379,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         # Determine if median test is passed
         slitlet_test_result_list = []
         tested_quantity = 'barshadow_correction'
-        stats = auxfunc.print_stats(reldiff[notnan], tested_quantity, barshadow_threshold_diff, abs=False,
+        stats = auxfunc.print_stats(reldiff[notnan], tested_quantity, barshadow_threshold_diff, absolute=False,
                                     return_percentages=True)
         _, stats_print_strings, percentages = stats
         result = auxfunc.does_median_pass_tes(arr_median, barshadow_threshold_diff)

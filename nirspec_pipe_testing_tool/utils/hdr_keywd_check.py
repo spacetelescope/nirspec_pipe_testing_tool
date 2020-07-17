@@ -46,25 +46,35 @@ __version__ = "1.2"
 # Apr 2019 - Version 1.1: added dictionary to choose right GWA_XTIL keyword value according to GRATING
 # May 2019 - Version 1.2: added logic for dark processing
 
-### Paths
+# Paths
 path_to_tilt_files = "/grp/jwst/wit4/nirspec/CDP3/03_Instrument_model/3.1_Files/NIRS_FM2_05_CV3_FIT1/Description"
 
 
-### General functions
+# General functions
 
-def get_modeused_PTT_cfg_file():
+def get_modeused_PTT_cfg_file(detector):
     # get script directory and config name
-    utils_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-    PPT_cfg_file = utils_dir.replace("utils", "calwebb_spec2_pytests/PTT_config.cfg")
-    with open(PPT_cfg_file, "r") as cfg:
-        for i, line in enumerate(cfg.readlines()):
-            if "mode_used" in line:
-                mode_used = line.split()[2]
+    ptt_cfg_file = "PTT_config.cfg"
+    get_mode = False
+    mode_used = 'N/A'
+    if os.path.isfile(ptt_cfg_file):
+        get_mode = True
+    else:
+        ptt_cfg_file = ptt_cfg_file.replace(".cfg", "_"+detector+".cfg")
+    if os.path.isfile(ptt_cfg_file):
+        get_mode = True
+    else:
+        print("Unable to obtain instrument mode from the PTT configuration file.")
+    if get_mode:
+        with open(ptt_cfg_file, "r") as cfg:
+            for i, line in enumerate(cfg.readlines()):
+                if "mode_used" in line:
+                    mode_used = line.split()[2]
     return mode_used
 
 
 def read_hdrfits(fits_file_name):
-    '''
+    """
     This function reads the header fits file and returns a dictionary of the keywords with
     corresponding values. Keywords will be stored in the order they are read.
     Args:
@@ -72,7 +82,7 @@ def read_hdrfits(fits_file_name):
 
     Returns:
         A dictionary of keywords with corresponding values
-    '''
+    """
     #  Read the fits file
     hdulist = fits.open(fits_file_name)
     # print on screen what extensions are in the file
@@ -81,7 +91,6 @@ def read_hdrfits(fits_file_name):
     # get and print header
     hdr = hdulist[0].header
     return hdr  # this is really what we should be using...
-    sci_hdr = hdulist[1].header
     # close the fits file
     hdulist.close()
     # set the name of the text file and save the header
@@ -97,7 +106,7 @@ def read_hdrfits(fits_file_name):
 
 
 def read_hdrtxt(hdr_txt_file):
-    '''
+    """
     This function reads the header text file and returns a dictionary of the keywords with
     corresponding values. Keywords will be stored in the order they are read.
     Args:
@@ -105,7 +114,7 @@ def read_hdrtxt(hdr_txt_file):
 
     Returns:
         A dictionary of keywords with corresponding values
-    '''
+    """
     keywd_dict = collections.OrderedDict()
     with open(hdr_txt_file, 'r') as htf:
         for line in htf.readlines():  # identify keywords by lines containing a =
@@ -153,7 +162,7 @@ def check_addedkeywds_file(addedkeywds_file_name):
             os.system('rm ' + addedkeywds_file_name)
 
 
-### Functions to check specific keyword values
+# Functions to check specific keyword values
 
 def check_value_type(key, val, hkwd_val, ext='primary'):
     """
@@ -342,7 +351,7 @@ def get_gwa_Ytil_val(grating, path_to_tilt_files):
     return gwa_ytil
 
 
-### keyword and format check
+# keyword and format check
 
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used):
     """
@@ -361,16 +370,16 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
     # get the name and path of the input fits file
     ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
 
-    # get the instrument mode used either from the input of the script or from the configuration file
-    if mode_used is None:
-        mode_used = get_modeused_PTT_cfg_file()
-
-    # initialize the dictionary to hold keyword values that will be changed and written to the file
-    specific_keys_dict = {}
-
     # get the detector and grating from the input file
     detector = fits.getval(ff, "DETECTOR", 0)
     grating = fits.getval(ff, "GRATING", 0)
+
+    # get the instrument mode used either from the input of the script or from the configuration file
+    if mode_used is None:
+        mode_used = get_modeused_PTT_cfg_file(detector)
+
+    # initialize the dictionary to hold keyword values that will be changed and written to the file
+    specific_keys_dict = {}
 
     # loop through the keywords and values of the PTT dictionary and add keywords that are not in input file
     for hkwd_key, hkwd_val in hkwd.keywd_dict.items():
@@ -575,7 +584,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
 
 def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
-    '''
+    """
     This function adds the missing keywords from the hdr_keywords_dictionary.py (hkwd) file and gives
     the fake values taken from the dictionary sample_hdr_keywd_vals_dict.py (shkvd).
     Args:
@@ -583,7 +592,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict):
                      updated header.
         missing_keywds: list, missing keywords will be appended here
         specific_keys_dict: dictionary with specific keys and values that need to be changed
-    '''
+    """
     missing_keywds = list(OrderedDict.fromkeys(missing_keywds))
     # print ("specific_keys_dict = ", specific_keys_dict)
     # create name for updated fits file
@@ -698,7 +707,8 @@ def main():
                         dest="mode_used",
                         action='store',
                         default=None,
-                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf - The code is not case-sensitive.')
+                        help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, '
+                             'msata, focus, mimf - The code is not case-sensitive.')
     args = parser.parse_args()
 
     # Set the variables

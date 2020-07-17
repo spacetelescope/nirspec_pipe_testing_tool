@@ -159,9 +159,7 @@ def output_hdul(set_inandout_filenames, config):
     calwebb_spec2_cfg = config.get("run_calwebb_spec2_in_full", "calwebb_spec2_cfg")
 
     # copy the configuration file to create the pipeline log
-    if not os.path.isfile("stpipe-log.cfg"):
-        stpipelogcfg = calwebb_spec2_cfg.replace("calwebb_spec2.cfg", "stpipe-log.cfg")
-        subprocess.run(["cp", stpipelogcfg, os.getcwd()])
+    pipelog = assign_wcs_utils.set_pipe_log(calwebb_spec2_cfg, detector)
 
     # run the pipeline
     if run_calwebb_spec2:
@@ -210,7 +208,7 @@ def output_hdul(set_inandout_filenames, config):
             input_file = input_file.replace("_uncal_rate", "")
         if "_uncal" in input_file:
             input_file = input_file.replace("_uncal", "")
-        final_output_name = input_file.replace(".fits", "_cal.fits")
+        final_output_name = "final_output_spec2_"+detector+"_cal.fits"
         if core_utils.check_MOS_true(inhdu):
             # copy the MSA shutter configuration file into the pytest directory
             subprocess.run(["cp", msa_shutter_conf, "."])
@@ -266,7 +264,6 @@ def output_hdul(set_inandout_filenames, config):
         # scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
 
         # rename and move the pipeline log file
-        pipelog = "pipeline_" + detector + ".log"
         try:
             calspec2_pipelog = "calspec2_pipeline_" + detector + ".log"
             if imaging_mode:
@@ -394,7 +391,6 @@ def output_hdul(set_inandout_filenames, config):
                         subprocess.run(["rm", msametfl])
 
                 # rename and move the pipeline log file
-                pipelog = "pipeline_" + detector + ".log"
                 try:
                     calspec2_pipelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
                     if imaging_mode:

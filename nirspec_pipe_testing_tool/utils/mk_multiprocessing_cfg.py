@@ -21,6 +21,15 @@ def write_ptt_multiprocessing_cfg():
     config.set("data_sets_to_run", "data_sets", "FS_G140H_opaque,MOS_G140M_opaque \n")
     config.set("data_sets_to_run", "", None)
 
+    config.set("data_sets_to_run", "# files for running the stage 1 pipeline, options are: ", None)
+    config.set("data_sets_to_run", "# skip = will skip running the stage 1 pipeline", None)
+    config.set("data_sets_to_run", "# all = will assume that input file names are e.g. "
+                                   "jwdata0010010_11010_0001_NRS1_uncal.fits", None)
+    config.set("data_sets_to_run", "# list of file names separated by a comma with no spaces in between, e.g.", None)
+    config.set("data_sets_to_run", "# cal_det1_input_files = file1_uncal.fits,file2_uncal.fits,file3_uncal.fits", None)
+    config.set("data_sets_to_run", "cal_det1", "all \n")
+    config.set("data_sets_to_run", "", None)
+
     config.set("data_sets_to_run", "# cores to use for multiprocessing - to use all set variable as cores2use=all",
                None)
     config.set("data_sets_to_run", "cores2use", "8 \n")

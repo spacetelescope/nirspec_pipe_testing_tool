@@ -48,14 +48,14 @@ __version__ = "1.3"
 # Dec 2019 - Version 1.2: added logic for image processing
 
 
-### Paths
+# Paths
 path_to_tilt_files = "/grp/jwst/wit4/nirspec/CDP3/03_Instrument_model/3.1_Files/NIRS_FM2_05_CV3_FIT1/Description"
 
 
-### General functions
+# General functions
 
 def read_hdrfits(fits_file_name):
-    '''
+    """
     This function reads the header fits file and returns a dictionary of the keywords with
     corresponding values. Keywords will be stored in the order they are read.
     Args:
@@ -63,17 +63,17 @@ def read_hdrfits(fits_file_name):
 
     Returns:
         A dictionary of keywords with corresponding values
-    '''
+    """
     #  Read the fits file
     hdulist = fits.open(fits_file_name)
     # print on screen what extensions are in the file
     print ('File contents')
     hdulist.info()
     # get and print header
-    #print ('\n FILE HEADER: \n')
+    # print ('\n FILE HEADER: \n')
     hdr = hdulist[0].header
     sci_hdr = hdulist[1].header
-    #print (repr(hdr))
+    # print (repr(hdr))
     # close the fits file
     hdulist.close()
     # set the name of the text file and save the header
@@ -89,7 +89,7 @@ def read_hdrfits(fits_file_name):
 
 
 def read_hdrtxt(hdr_txt_file):
-    '''
+    """
     This function reads the header text file and returns a dictionary of the keywords with
     corresponding values. Keywords will be stored in the order they are read.
     Args:
@@ -97,7 +97,7 @@ def read_hdrtxt(hdr_txt_file):
 
     Returns:
         A dictionary of keywords with corresponding values
-    '''
+    """
     keywd_dict = collections.OrderedDict()
     with open(hdr_txt_file, 'r') as htf:
         for line in htf.readlines():   # identify keywords by lines containing a =
@@ -121,7 +121,7 @@ def create_addedkeywds_file(fits_file):
         addedkeywds_file_name: string, the file name where all added keywords were saved
     """
     addedkeywds_file_name = fits_file.replace(".fits", "_addedkeywds.txt")
-    print ('Name of text file containing all keywords added:  ', addedkeywds_file_name)
+    print('Name of text file containing all keywords added:  ', addedkeywds_file_name)
     tf = open(addedkeywds_file_name, 'w')
     tf.write('### The following keywords were added or have the wrong format: \n')
     tf.write('# {:<12} {:<10} {:<25} \n'.format('Keyword', 'Extension', 'Comments'))
@@ -145,7 +145,7 @@ def check_addedkeywds_file(addedkeywds_file_name):
             os.system('rm '+addedkeywds_file_name)
 
 
-### Functions to check specific keyword values
+# Functions to check specific keyword values
 
 def check_value_type(key, val, hkwd_val, ext='primary'):
     """
@@ -348,17 +348,16 @@ def get_gwa_Ytil_val(grating, path_to_tilt_files):
     return gwa_ytil
 
 
-
-### keyword and format check
+# keyword and format check
 
 def set_exp_type_value(mode_used):
-    '''
+    """
     This function sets the appropriate value according to the mode.
     Args:
         mode_used: string
     Returns:
         val: string, expected pipeline value
-    '''
+    """
     print('   * MODE_USED  = ', mode_used)
     if mode_used.lower() == "fs":
         val = 'NRS_FIXEDSLIT'
@@ -662,7 +661,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
 
 def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_used):
-    '''
+    """
     This function adds the missing keywords from the hdr_keywords_dictionary.py (hkwd) file and gives
     the fake values taken from the dictionary sample_hdr_keywd_vals_dict.py (shkvd).
     Args:
@@ -672,7 +671,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
         specific_keys_dict: dictionary with specific keys and values that need to be changed
         mode_used: str or None, observation mode used FS, MOS, or IFU (if None then a configuration file
                     is expected to exist and contain a variable named mode_used)
-    '''
+    """
     missing_keywds = list(OrderedDict.fromkeys(missing_keywds))
     # create name for updated fits file
     updated_fitsfile = fits_file
@@ -736,15 +735,15 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
             for subkey, new_value in lev2bdict.keywd_dict["wcsinfo"].items():
                 # first remove these keywords from the main header
                 if subkey in main_hdr:
-                    #val = fits.getval(updated_fitsfile, subkey, 0)
-                    #wcs_keywds_from_main_hdr[subkey] = val
+                    # val = fits.getval(updated_fitsfile, subkey, 0)
+                    # wcs_keywds_from_main_hdr[subkey] = val
                     try:
                         fits.delval(updated_fitsfile, subkey, 0)
                     except:
                         KeyError
                 # following commented lines are not working
                 # uncomment this line if wanting to use the original keyword value given by create_data
-                #new_value = wcs_keywds_from_main_hdr[subkey]
+                # new_value = wcs_keywds_from_main_hdr[subkey]
                 if subkey not in sci_hdr:
                     print("adding keyword: ", subkey, " in extension: ", extname, " with value: ", new_value)
                     fits.setval(updated_fitsfile, subkey, 1, value=new_value, after='EXTNAME')
@@ -805,7 +804,6 @@ def main():
                         default=None,
                         help='Name of fits file, i.e. blah.fits')
     parser.add_argument("mode_used",
-                        #dest="mode_used",
                         action='store',
                         default=None,
                         help='Observation mode used: FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata,'

@@ -350,7 +350,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         tested_quantity = "Slit-Y Difference"
         # calculate and print statistics for slit-y and x relative differences
         rel_diff_pslity_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_slity, slity,
-                                                                tested_quantity, abs=False)
+                                                                tested_quantity, absolute=False)
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats, print_stats = rel_diff_pslity_data
         for msg in print_stats:
             log_msgs.append(msg)
