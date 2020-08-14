@@ -6,6 +6,7 @@ from astropy.io import fits
 import scipy
 import argparse
 import sys
+import io
 
 import jwst
 from gwcs import wcstools
@@ -65,8 +66,8 @@ def get_ps_uni_extensions(fits_file_name, is_point_source):
     return ps_dict, uni_dict
 
 
-def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, show_figs=True,
-             save_figs=False, threshold_diff=1e-7,
+def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, show_figs=False,
+             save_figs=True, threshold_diff=1e-7,
              debug=False):
     """
     This function calculates the difference between the pipeline and the
@@ -165,8 +166,11 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
     pathloss_pipe = datamodels.open(comparison_filename)
     # For the moment, the pipeline is using the wrong reference file for slit 400A1, so read file that
     # re-processed with the right reference file and open corresponding data model
+    # BUT we are skipping this since this is not in the released candidate of the pipeline
+    """
     pathloss_400a1 = step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")
     pathloss_pipe_400a1 = datamodels.open(pathloss_400a1)
+    """
     if debug:
         print('got comparison datamodel!')
 
@@ -194,7 +198,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
 
         slit_id = pipe_slit.name
         # with the current reference file, skip S400A1
-        #if slit_id == "S400A1":
+        # if slit_id == "S400A1":
         #    continue
         print('\nWorking with slitlet ', slit_id)
 
@@ -256,14 +260,21 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         if debug:
             print("slit_x, slit_y", slit_x, slit_y)
 
+        """
         if slit_id == "S400A1":
             if is_point_source:
                 ext = 1
             else:
                 ext = 3
-            reffile2use = "jwst-nirspec-a400.plrf.fits"
-        else:
-            reffile2use = reffile
+            if os.path.isfile("jwst-nirspec-a400.plrf.fits"):
+                reffile2use = "jwst-nirspec-a400.plrf.fits"
+            else:
+                msg = "Skipping slit S400A1 because reference file not present"
+                print(msg)
+                log_msgs.append(msg)
+                continue
+        else:"""
+        reffile2use = reffile
 
         msg = "Using reference file: " + reffile2use
         print(msg)
@@ -283,6 +294,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
 
         previous_sci = slit.data
         pipe_correction = pipe_slit.pathloss
+        """
         if slit_id == "S400A1":
             for pipe_slit_400a1 in pathloss_pipe_400a1.slits:
                 if pipe_slit_400a1.name == "S400A1":
@@ -290,6 +302,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
                     break
                 else:
                     continue
+        """
         if len(pipe_correction) == 0:
             print("Pipeline pathloss correction in datamodel is empty. Skipping testing this slit.")
             continue
@@ -433,7 +446,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
                 test_result = "FAILED"
             else:
                 stats_and_strings = auxfunc.print_stats(corr_residuals, "Difference", float(threshold_diff),
-                                                        abs=True)
+                                                        absolute=True)
                 stats, stats_print_strings = stats_and_strings
                 corr_residuals_mean, corr_residuals_median, corr_residuals_std = stats
                 for msg in stats_print_strings:
@@ -454,10 +467,10 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         total_test_result.append(test_result)
 
     if writefile:
-        outfile_name = step_input_filename.replace("srctype", "calcuated_FS_PS_pathloss")
-        compfile_name = step_input_filename.replace("srctype", "comparison_FS_PS_pathloss")
+        outfile_name = step_input_filename.replace("srctype", "calcuated_pathloss")
+        compfile_name = step_input_filename.replace("srctype", "comparison_pathloss")
 
-        # create the fits list to hold the calculated flat values for each slit
+        # create the fits list to hold the calculated pathloss values for each slit
         outfile.writeto(outfile_name, overwrite=True)
 
         # this is the file to hold the image of pipeline-calculated difference values

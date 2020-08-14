@@ -39,7 +39,7 @@ __version__ = "1.2"
 
 
 def pathtest(step_input_filename, reffile, comparison_filename,
-             writefile=True, show_figs=True, save_figs=False, threshold_diff=1.0e-7, debug=False):
+             writefile=True, show_figs=False, save_figs=True, threshold_diff=1.0e-7, debug=False):
     """
     This function calculates the difference between the pipeline and
     calculated pathloss values.
@@ -262,7 +262,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
         # Plots:
         step_input_filepath = step_input_filename.replace(".fits", "")
-        # my correction values
+        # calculated correction values
         fig = plt.figure(figsize=(15, 15))
         plt.subplot(221)
         norm = ImageNormalize(corr_vals)
@@ -281,7 +281,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         plt.ylabel('y in pixels')
         plt.title('Pipe Correction')
         plt.colorbar()
-        # residuals (pipe correction - my correction)
+        # residuals (pipe correction - calculated correction)
         if pipe_correction.shape == corr_vals.shape:
             corr_residuals = pipe_correction - corr_vals
             plt.subplot(223)
@@ -292,12 +292,12 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             plt.ylabel('y in pixels')
             plt.title('Correction residuals')
             plt.colorbar()
-        # my science data after pathloss
+        # calculated science data after pathloss
         plt.subplot(224)
         norm = ImageNormalize(corrected_array)
         plt.imshow(corrected_array, vmin=0, vmax=300, aspect=10.0,
                    origin='lower', cmap='viridis')
-        plt.title('My slit science data after pathloss')
+        plt.title('Calculated data after pathloss')
         plt.xlabel('dispersion in pixels')
         plt.ylabel('y in pixels')
         plt.colorbar()
@@ -357,7 +357,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             log_msgs.append(msg1)
             test_result = "FAILED"
         else:
-            stats_and_strings = auxfunc.print_stats(corr_residuals, "Difference", float(threshold_diff), abs=True)
+            stats_and_strings = auxfunc.print_stats(corr_residuals, "Difference", float(threshold_diff), absolute=True)
             stats, stats_print_strings = stats_and_strings
             corr_residuals_mean, corr_residuals_median, corr_residuals_std = stats
             for msg in stats_print_strings:
@@ -378,10 +378,10 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     total_test_result.append(test_result)
 
     if writefile:
-        outfile_name = step_input_filename.replace("srctype", "_calcuated_FS_UNI_pathloss")
-        compfile_name = step_input_filename.replace("srctype", "_comparison_FS_UNI_pathloss")
+        outfile_name = step_input_filename.replace("srctype", "_calcuated_pathloss")
+        compfile_name = step_input_filename.replace("srctype", "_comparison_pathloss")
 
-        # create the fits list to hold the calculated flat values for each slit
+        # create the fits list to hold the calculated pathloss values for each slit
         outfile.writeto(outfile_name, overwrite=True)
 
         # this is the file to hold the image of pipeline-calculated difference values
