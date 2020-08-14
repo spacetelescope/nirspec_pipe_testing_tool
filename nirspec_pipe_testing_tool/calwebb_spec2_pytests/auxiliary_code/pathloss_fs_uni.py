@@ -240,7 +240,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         slitx_ref, slity_ref, wave_ref = w.all_pix2world(x1, y1, w1, 0)
 
         previous_sci = slit.data
-        """if slit_id == 'S400A1':
+        if slit_id == 'S400A1':
             if pathloss_pipe_400a1 is not None:
                 for pipe_slit_400a1 in pathloss_pipe_400a1.slits:
                     if pipe_slit_400a1.name == "S400A1":
@@ -250,7 +250,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                     else:
                         continue
         else:
-            comp_sci = pipe_slit.data"""
+            comp_sci = pipe_slit.data
         pipe_correction = pipe_slit.pathloss
         if len(pipe_correction) == 0:
             print("Pipeline pathloss correction in datamodel is empty. Skipping testing this slit.")
