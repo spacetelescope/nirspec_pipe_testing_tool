@@ -54,6 +54,9 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         debug: boolean
 
     Returns:
+        FINAL_TEST_RESULT: boolean, True if smaller or equal to threshold
+        result_msg: string, message with reason for passing, failing, or skipped
+        log_msgs: list, diagnostic strings to be printed in log
 
     """
 
@@ -124,7 +127,6 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
             log_msgs.append(msg)
             return result, msg, log_msgs
 
-
         # obtain the data from the pathloss or extract_2d and the barshadow datamodels
         plsci = plslit.data
         bssci = bsslit.data
@@ -153,7 +155,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         file_path = bsfile.replace(os.path.basename(bsfile), "")
         file_basename = os.path.basename(bsfile.replace("_barshadow.fits", ""))
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_NormSciData_slitlet" + slit_id + ".pdf")
+            t = (file_basename, "Barshadowtest_NormSciData_slitlet" + slit_id + ".png")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -207,7 +209,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
 
         # Show and/or save figures
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_SpatialProfilesBe4correction_slitlet" + slit_id + ".pdf")
+            t = (file_basename, "Barshadowtest_SpatialProfilesBe4correction_slitlet" + slit_id + ".png")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -238,12 +240,14 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         bsslity = bsslity/1.15
 
         # compute bar shadow corrections independently, given the wavelength and slit_y from the data model
-        # get the reference file (need the mos1x1 for this internal lamp case, where each shutter was extracted separately)
-        #if bsslit.shutter_state == 'x':
+        # get the reference file (need the mos1x1 for this internal lamp case, where each shutter was
+        # extracted separately)
         if ref_file is None:
-            ref_file = '/grp/jwst/wit4/nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/referenceFilesBS-20160401/jwst-nirspec-mos1x1.bsrf.fits'
+            ref_file = '/grp/jwst/wit4/nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/' \
+                       'referenceFilesBS-20160401/jwst-nirspec-mos1x1.bsrf.fits'
             if bsslit.shutter_state == '1':
-                ref_file = '/grp/jwst/wit4/nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/referenceFilesBS-20160401/jwst-nirspec-mos1x3.bsrf.fits'
+                ref_file = '/grp/jwst/wit4/nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/' \
+                           'referenceFilesBS-20160401/jwst-nirspec-mos1x3.bsrf.fits'
         if debug:
             '''    shutter_state : str ----- ``Slit.shutter_state`` attribute - a combination of
                                     possible values: ``1`` - open shutter, ``0`` - closed shutter, ``x`` - main shutter
@@ -294,7 +298,6 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
             print('nax2, fi2, shutter_height:', nax2, fi2, shutter_height)
         yrow = fi2 + bsslity*shutter_height
         wcol = (bswave-cv1)/cd1
-        #print(yrow[9,1037],wcol[9,1037])
         if debug:
             print('np.shape(yrow)=', np.shape(yrow))
         point3 = [10, np.shape(yrow)[1]-50]
@@ -316,7 +319,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
 
         # Show and/or save figures
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_CorrectionComparison_slitlet" + slit_id + ".pdf")
+            t = (file_basename, "Barshadowtest_CorrectionComparison_slitlet" + slit_id + ".png")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -326,17 +329,14 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         plt.close()
 
         if debug:
-            #print('bscor_pipe[9,1037],bswave[9,1037],bsslity[9,1037],bscor[9,1037]: ',
-            #      bscor_pipe[9,1037],bswave[9,1037],bsslity[9,1037],bscor[9,1037])
             print('bscor_pipe[point3[0], point3[1]],bswave[point3[0], point3[1]],bsslity[point3[0], point3[1]],'
                   'bscor[point3[0], point3[1]]: ', bscor_pipe[point3[0], point3[1]], bswave[point3[0], point3[1]],
-                  bsslity[point3[0], point3[1]],bscor[point3[0], point3[1]])
-
+                  bsslity[point3[0], point3[1]], bscor[point3[0], point3[1]])
 
         print('Creating final barshadow test plot...')
         reldiff = (bscor_pipe-bscor)/bscor
         if debug:
-            print('np.nanmean(reldiff),np.nanstd(reldiff) : ', np.nanmean(reldiff),np.nanstd(reldiff))
+            print('np.nanmean(reldiff),np.nanstd(reldiff) : ', np.nanmean(reldiff), np.nanstd(reldiff))
         fig = plt.figure(figsize=(12, 10))
         # Top figure - 2D plot
         plt.subplot(211)
@@ -347,7 +347,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         plt.ylabel('y (pixels)')
         # Bottom figure - histogram
         ax = plt.subplot(212)
-        plt.hist(reldiff[~np.isnan(reldiff)], bins=100, range=(-0.1,0.1))
+        plt.hist(reldiff[~np.isnan(reldiff)], bins=100, range=(-0.1, 0.1))
         plt.xlabel('(Pipeline_correction - Calculated_correction) / Calculated_correction')
         plt.ylabel('N')
         # add vertical line at mean and median
@@ -367,7 +367,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
 
         # Show and/or save figures
         if save_final_figs:
-            t = (file_basename, "Barshadowtest_RelDifferences_slitlet" + slit_id + ".pdf")
+            t = (file_basename, "Barshadowtest_RelDifferences_slitlet" + slit_id + ".png")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -414,7 +414,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         plt.ylabel('Normalized data')
         # Show and/or save figures
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_CorrectedData_slitlet" + slit_id + ".pdf")
+            t = (file_basename, "Barshadowtest_CorrectedData_slitlet" + slit_id + ".png")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -444,7 +444,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         fig.suptitle('Corrected spatial profiles for slitlet '+slit_id, fontsize=20)
         # Show and/or save figures
         if save_intermediary_figs:
-            t = (file_basename, "Barshadowtest_CorrectedSpatialProfiles_slitlet" + slit_id + ".pdf")
+            t = (file_basename, "Barshadowtest_CorrectedSpatialProfiles_slitlet" + slit_id + ".png")
             plt_name = "_".join(t)
             plt_name = os.path.join(file_path, plt_name)
             plt.savefig(plt_name)
@@ -482,12 +482,12 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
             for t, tr in tdict.items():
                 if tr == "FAILED":
                     FINAL_TEST_RESULT = False
-                    msg = "\n * The test of "+t+" for slitlet "+sl+"  FAILED."
+                    msg = "\n * The test of " + t + " for slitlet " + sl + "  FAILED."
                     print(msg)
                     log_msgs.append(msg)
                 else:
                     FINAL_TEST_RESULT = True
-                    msg = "\n * The test of "+t+" for slitlet "+sl+ "  PASSED."
+                    msg = "\n * The test of " + t + " for slitlet " + sl + "  PASSED."
                     print(msg)
                     log_msgs.append(msg)
 
@@ -502,14 +502,17 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
 
     # end the timer
     barshadow_test_end_time = time.time() - barshadow_test_start_time
-    if barshadow_test_end_time > 60.0:
+    if barshadow_test_end_time >= 60.0:
         barshadow_test_end_time = barshadow_test_end_time/60.0  # in minutes
-        barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time)+" minutes to finish."
-        if barshadow_test_end_time > 60.0:
+        barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time) + \
+                                  " minutes to finish."
+        if barshadow_test_end_time >= 60.0:
             barshadow_test_end_time = barshadow_test_end_time/60.  # in hours
-            barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time)+" hours to finish."
+            barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time) + \
+                                      " hours to finish."
     else:
-        barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time)+" seconds to finish."
+        barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time) + \
+                                  " seconds to finish."
     print(barshadow_test_tot_time)
     log_msgs.append(barshadow_test_tot_time)
 

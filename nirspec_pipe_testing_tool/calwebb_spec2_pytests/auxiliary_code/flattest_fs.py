@@ -605,8 +605,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 log_msgs.append(msg)
 
     if writefile:
-        outfile_name = flatfile.replace("interpolatedflat.fits", det + "_flat_calc.fits")
-        complfile_name = flatfile.replace("interpolatedflat.fits", det + "_flat_comp.fits")
+        outfile_name = flatfile.replace("interpolatedflat.fits", "_flat_calc.fits")
+        complfile_name = flatfile.replace("interpolatedflat.fits", "_flat_comp.fits")
 
         # create the fits list to hold the calculated flat values for each slit
         outfile.writeto(outfile_name, overwrite=True)

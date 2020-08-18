@@ -32,7 +32,6 @@ This script will create the shutter configuration file for MOS data, while the p
         V9621500100101_metafile_msa.fits
 """
 
-
 # HEADER
 __author__ = "M. A. Pena-Guerrero & James Muzerolle"
 __version__ = "1.1"
@@ -57,63 +56,64 @@ def create_metafile(config_binary_file):
     hdul = fits.open(config_binary_file)
     # name of output metafile
     config_binary_file_list = config_binary_file.split(".")
-    outfile = config_binary_file_list[0]+'_metafile_msa.fits'
+    outfile = config_binary_file_list[0] + '_metafile_msa.fits'
 
     # create image for first extension
-    q1all = hdul['Q1'].data.field('STATUS').reshape((171,365))
-    q2all = hdul['Q2'].data.field('STATUS').reshape((171,365))
-    q3all = hdul['Q3'].data.field('STATUS').reshape((171,365))
-    q4all = hdul['Q4'].data.field('STATUS').reshape((171,365))
+    q1all = hdul['Q1'].data.field('STATUS').reshape((171, 365))
+    q2all = hdul['Q2'].data.field('STATUS').reshape((171, 365))
+    q3all = hdul['Q3'].data.field('STATUS').reshape((171, 365))
+    q4all = hdul['Q4'].data.field('STATUS').reshape((171, 365))
     # put quads together
-    im1 = np.concatenate((q2all,q1all))
-    im2 = np.concatenate((q3all,q4all))
-    image = np.concatenate((im2,im1),axis=1)
+    im1 = np.concatenate((q2all, q1all))
+    im2 = np.concatenate((q3all, q4all))
+    image = np.concatenate((im2, im1), axis=1)
 
     # find the open shutters (where status=1)
     # quad 1
     q1 = hdul['Q1'].data
     q1open = np.array(np.nonzero(q1.field('STATUS')))
     # convert to rows/cols
-    q1col = (q1open-1)//365+1
-    q1row = q1open-(q1col-1)*365
+    q1col = (q1open - 1) // 365 + 1
+    q1row = q1open - (q1col - 1) * 365
     # quad 2
     q2 = hdul['Q2'].data
     q2open = np.array(np.nonzero(q2.field('STATUS')))
     # convert to rows/cols
-    q2col = (q2open-1)//365+1
-    q2row = q2open-(q2col-1)*365
+    q2col = (q2open - 1) // 365 + 1
+    q2row = q2open - (q2col - 1) * 365
     # quad 3
     q3 = hdul['Q3'].data
     q3open = np.array(np.nonzero(q3.field('STATUS')))
     # convert to rows/cols
-    q3col = (q3open-1)//365+1
-    q3row = q3open-(q3col-1)*365
+    q3col = (q3open - 1) // 365 + 1
+    q3row = q3open - (q3col - 1) * 365
     # quad 4
     q4 = hdul['Q4'].data
     q4open = np.array(np.nonzero(q4.field('STATUS')))
     # convert to rows/cols
-    q4col = (q4open-1)//365+1
-    q4row = q4open-(q4col-1)*365
+    q4col = (q4open - 1) // 365 + 1
+    q4row = q4open - (q4col - 1) * 365
 
     hdul.close()
 
     # set up metafile table structure
     # SHUTTER_INFO table
-    allcol = np.squeeze(np.concatenate((q1col,q2col,q3col,q4col),axis=1))
-    allrow = np.squeeze(np.concatenate((q1row,q2row,q3row,q4row),axis=1))
-    quads = np.squeeze(np.concatenate((np.full_like(q1col,1),np.full_like(q2col,2),np.full_like(q3col,3),np.full_like(q4col,4)),axis=1))
+    allcol = np.squeeze(np.concatenate((q1col, q2col, q3col, q4col), axis=1))
+    allrow = np.squeeze(np.concatenate((q1row, q2row, q3row, q4row), axis=1))
+    quads = np.squeeze(np.concatenate((np.full_like(q1col, 1), np.full_like(q2col, 2), np.full_like(q3col, 3),
+                                       np.full_like(q4col, 4)), axis=1))
     # slitlet IDs - use one per shutter
-    slitlets = np.arange(0,len(allcol))+1
+    slitlets = np.arange(0, len(allcol)) + 1
     # source IDs - arbitrary for ground data, use slitlet ID
     sources = slitlets
     # metadata IDs - arbitrary for ground data
-    metaids = np.full_like(allcol,1)
+    metaids = np.full_like(allcol, 1)
     # background shutter?  default to all "N" for ground data
-    bkgd = np.full(len(allcol),'N',dtype=str)
+    bkgd = np.full(len(allcol), 'N', dtype=str)
     # shutter state - "OPEN", by definition
-    state = np.full(len(allcol),'OPEN',dtype="<U8")
+    state = np.full(len(allcol), 'OPEN', dtype="<U8")
     # source position in shutter - N/A for ground data, assume centered
-    srcx = np.full(len(allcol),0.)
+    srcx = np.full(len(allcol), 0.)
     srcy = srcx
     # add dither point index and primary source columns
     nrows = len(bkgd)
@@ -121,46 +121,47 @@ def create_metafile(config_binary_file):
     psrc = np.full(nrows, 'Y', dtype=str)
     dither_point_index = fits.Column(name='DITHER_POINT_INDEX', format='I', array=dithind)
     primary_source = fits.Column(name='PRIMARY_SOURCE', format='1A', array=psrc)
-    tabcol1 = fits.Column(name='SLITLET_ID',format='I',array=slitlets)
-    tabcol2 = fits.Column(name='MSA_METADATA_ID',format='I',array=metaids)
-    tabcol3 = fits.Column(name='SHUTTER_QUADRANT',format='I',array=quads)
-    tabcol4 = fits.Column(name='SHUTTER_ROW',format='I',array=allrow)
-    tabcol5 = fits.Column(name='SHUTTER_COLUMN',format='I',array=allcol)
-    tabcol6 = fits.Column(name='SOURCE_ID',format='I',array=sources)
-    tabcol7 = fits.Column(name='BACKGROUND',format='A',array=bkgd)
-    tabcol8 = fits.Column(name='SHUTTER_STATE',format='4A',array=state)
-    tabcol9 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_X',format='E',array=srcx)
-    tabcol10 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_Y',format='E',array=srcy)
+    tabcol1 = fits.Column(name='SLITLET_ID', format='I', array=slitlets)
+    tabcol2 = fits.Column(name='MSA_METADATA_ID', format='I', array=metaids)
+    tabcol3 = fits.Column(name='SHUTTER_QUADRANT', format='I', array=quads)
+    tabcol4 = fits.Column(name='SHUTTER_ROW', format='I', array=allrow)
+    tabcol5 = fits.Column(name='SHUTTER_COLUMN', format='I', array=allcol)
+    tabcol6 = fits.Column(name='SOURCE_ID', format='I', array=sources)
+    tabcol7 = fits.Column(name='BACKGROUND', format='A', array=bkgd)
+    tabcol8 = fits.Column(name='SHUTTER_STATE', format='4A', array=state)
+    tabcol9 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_X', format='E', array=srcx)
+    tabcol10 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_Y', format='E', array=srcy)
     hdu2 = fits.BinTableHDU.from_columns([tabcol1, tabcol2, tabcol3, tabcol4, tabcol5, tabcol6, tabcol7, tabcol8,
-                                          tabcol9, tabcol10, dither_point_index, primary_source],name='SHUTTER_INFO')
+                                          tabcol9, tabcol10, dither_point_index, primary_source], name='SHUTTER_INFO')
 
     # SOURCE_INFO table
     # program ID - arbitrary
-    program = np.full_like(allcol,1)
+    program = np.full_like(allcol, 1)
     # source name - arbitrary
-    name = np.full(len(allcol),'lamp',dtype="<U8")
+    name = np.full(len(allcol), 'lamp', dtype="<U8")
     # source alias - arbitrary
-    alias = np.full(len(allcol),'foo',dtype="<U8")
+    alias = np.full(len(allcol), 'foo', dtype="<U8")
     # catalog ID - arbitrary
-    catalog = np.full(len(allcol),'foo',dtype="<U8")
+    catalog = np.full(len(allcol), 'foo', dtype="<U8")
     # RA, DEC - N/A for ground data
-    ra = np.full(len(allcol),0.)
+    ra = np.full(len(allcol), 0.)
     dec = ra
     # preimage file name - N/A
-    preim = np.full(len(allcol),'foo.fits',dtype="<U8")
+    preim = np.full(len(allcol), 'foo.fits', dtype="<U8")
     # stellarity -- internal lamps are uniform illumination, so set to 0
     # ** if considering a point source, need to change this to 0, or actual value if known
-    stellarity = np.full(len(allcol),0.)
-    tabcol1 = fits.Column(name='PROGRAM',format='I',array=program)
-    tabcol2 = fits.Column(name='SOURCE_ID',format='I',array=sources)
-    tabcol3 = fits.Column(name='SOURCE_NAME',format='4A',array=name)
-    tabcol4 = fits.Column(name='ALIAS',format='3A',array=alias)
-    #tabcol5 = fits.Column(name='CATALOG_ID',format='3A',array=catalog)
-    tabcol6 = fits.Column(name='RA',format='D',array=ra)
-    tabcol7 = fits.Column(name='DEC',format='D',array=dec)
-    tabcol8 = fits.Column(name='PREIMAGE_ID',format='8A',array=preim)
-    tabcol9 = fits.Column(name='STELLARITY',format='E',array=stellarity)
-    hdu3 = fits.BinTableHDU.from_columns([tabcol1,tabcol2,tabcol3,tabcol4,tabcol5,tabcol6,tabcol7,tabcol8,tabcol9],name='SOURCE_INFO')
+    stellarity = np.full(len(allcol), 0.)
+    tabcol1 = fits.Column(name='PROGRAM', format='I', array=program)
+    tabcol2 = fits.Column(name='SOURCE_ID', format='I', array=sources)
+    tabcol3 = fits.Column(name='SOURCE_NAME', format='4A', array=name)
+    tabcol4 = fits.Column(name='ALIAS', format='3A', array=alias)
+    # tabcol5 = fits.Column(name='CATALOG_ID', format='3A', array=catalog)
+    tabcol6 = fits.Column(name='RA', format='D', array=ra)
+    tabcol7 = fits.Column(name='DEC', format='D', array=dec)
+    tabcol8 = fits.Column(name='PREIMAGE_ID', format='8A', array=preim)
+    tabcol9 = fits.Column(name='STELLARITY', format='E', array=stellarity)
+    hdu3 = fits.BinTableHDU.from_columns([tabcol1, tabcol2, tabcol3, tabcol4, tabcol5, tabcol6, tabcol7,
+                                          tabcol8, tabcol9], name='SOURCE_INFO')
 
     # create fits file
     hdu0 = fits.PrimaryHDU()
@@ -171,16 +172,17 @@ def create_metafile(config_binary_file):
     hdr.set('INSTRUME', 'NIRSPEC', 'identifier for instrument used to acquire data')
     hdr.set('DATE', now.isoformat())
     hdr.set('FILENAME', outfile, 'name of file')
-    hdr.set('PPSDBVER', 'PPSDB999', 'version of PPS database used') # N/A for non-OSS ground data, using arbitrary number
-    hdr.set('PROGRAM', '1', 'program number') # arbitrary
-    hdr.set('VISIT', '1', 'visit number') # arbitrary
-    hdr.set('OBSERVTN', '1', 'observation number') # arbitrary
-    hdr.set('VISIT_ID', '1', 'visit identifier') # arbitrary
-    #hdr.set('PNTG_SEQ', 1, 'pointing sequence number') # arbitrary
-    hdr.set('MSACFG10', 1, 'base 10 nirspec msa_at_pointing.msa_config_id') # arbitrary
-    hdr.set('MSACFG36', '01', 'base 36 version of MSACFG10') #arbitrary
-    hdu1 = fits.ImageHDU(image,name='SHUTTER_IMAGE')
-    hdu_all = fits.HDUList([hdu0,hdu1,hdu2,hdu3])
+    hdr.set('PPSDBVER', 'PPSDB999', 'version of PPS database used')  # N/A for non-OSS ground data,
+    # using arbitrary number
+    hdr.set('PROGRAM', '1', 'program number')  # arbitrary
+    hdr.set('VISIT', '1', 'visit number')  # arbitrary
+    hdr.set('OBSERVTN', '1', 'observation number')  # arbitrary
+    hdr.set('VISIT_ID', '1', 'visit identifier')  # arbitrary
+    # hdr.set('PNTG_SEQ', 1, 'pointing sequence number') # arbitrary
+    hdr.set('MSACFG10', 1, 'base 10 nirspec msa_at_pointing.msa_config_id')  # arbitrary
+    hdr.set('MSACFG36', '01', 'base 36 version of MSACFG10')  # arbitrary
+    hdu1 = fits.ImageHDU(image, name='SHUTTER_IMAGE')
+    hdu_all = fits.HDUList([hdu0, hdu1, hdu2, hdu3])
     hdu_all.writeto(outfile)
 
 
@@ -265,29 +267,21 @@ def create_metafile_sim(config_binary_file, targ_file_list):
             source_id = targinfo['ID'].data
             source_ra = targinfo['Source RA (Degrees)'].data
             source_dec = targinfo['Source Dec (Degrees)'].data
-            #		source_ra = targinfo['SourceRA(Degrees)'].data
-            #		source_dec = targinfo['SourceDec(Degrees)'].data
             source_quad = targinfo['Quadrant'].data
             source_row = targinfo['Row'].data
             source_col = targinfo['Column'].data
             source_xpos = targinfo['Offset (x)'].data
             source_ypos = targinfo['Offset (y)'].data
-            #		source_xpos = targinfo['Offset(x)'].data
-            #		source_ypos = targinfo['Offset(y)'].data
             iter = False
         else:
             source_id = np.concatenate(([source_id, targinfo['ID'].data]))
             source_ra = np.concatenate(([source_ra, targinfo['Source RA (Degrees)'].data]))
             source_dec = np.concatenate(([source_dec, targinfo['Source Dec (Degrees)'].data]))
-            #                source_ra = np.concatenate(([source_ra, targinfo['SourceRA(Degrees)'].data]))
-            #                source_dec = np.concatenate(([source_dec, targinfo['SourceDec(Degrees)'].data]))
             source_quad = np.concatenate(([source_quad, targinfo['Quadrant'].data]))
             source_row = np.concatenate(([source_row, targinfo['Row'].data]))
             source_col = np.concatenate(([source_col, targinfo['Column'].data]))
             source_xpos = np.concatenate(([source_xpos, targinfo['Offset (x)'].data]))
             source_ypos = np.concatenate(([source_ypos, targinfo['Offset (y)'].data]))
-    #                source_xpos = np.concatenate(([source_xpos, targinfo['Offset(x)'].data]))
-    #                source_ypos = np.concatenate(([source_ypos, targinfo['Offset(y)'].data]))
 
     # create image for first extension
     q1all = hdul['Q1'].data.field('STATUS').reshape((171, 365))
@@ -334,8 +328,8 @@ def create_metafile_sim(config_binary_file, targ_file_list):
     allcols = np.repeat(np.squeeze(np.concatenate((q1col, q2col, q3col, q4col), axis=1)), nnods)
     allrows = np.repeat(np.squeeze(np.concatenate((q1row, q2row, q3row, q4row), axis=1)), nnods)
     quads = np.repeat(np.squeeze(
-        np.concatenate((np.full_like(q1col, 1), np.full_like(q2col, 2), np.full_like(q3col, 3), np.full_like(q4col, 4)),
-                       axis=1)), nnods)
+        np.concatenate((np.full_like(q1col, 1), np.full_like(q2col, 2), np.full_like(q3col, 3),
+                        np.full_like(q4col, 4)), axis=1)), nnods)
 
     # initialize arrays for table columns
     # slitlet IDs - arbitrary numbering
@@ -370,13 +364,13 @@ def create_metafile_sim(config_binary_file, targ_file_list):
         sys.exit()
 
     for i in range(nshut):
-        #	print(quads[i],allrows[i],allcols[i])
+        # print(quads[i],allrows[i],allcols[i])
         match = np.intersect1d(np.where(quads[i] == source_quad),
                                np.intersect1d(np.where(allrows[i] == source_row), np.where(allcols[i] == source_col)))
         if match.size != 0:
-            #		print(source_quad[match],source_row[match],source_col[match],source_id[match],source_xpos[match])
+            # print(source_quad[match],source_row[match],source_col[match],source_id[match],source_xpos[match])
             tab_slitlet_id[i] = int(i / nnods / nnods) + 1
-            #		print(tab_slitlet_id[i])
+            # print(tab_slitlet_id[i])
             tab_source_id[i] = source_id[match]
             pos = np.mod(i, nnods * nnods)
             if pos in nod:
@@ -493,29 +487,21 @@ def create_metafile_dither(config_binary_file, targ_file_list):
             source_id = targinfo['ID'].data
             source_ra = targinfo['Source RA (Degrees)'].data
             source_dec = targinfo['Source Dec (Degrees)'].data
-            #source_ra = targinfo['SourceRA(Degrees)'].data
-            #source_dec = targinfo['SourceDec(Degrees)'].data
             source_quad = targinfo['Quadrant'].data
             source_row = targinfo['Row'].data
             source_col = targinfo['Column'].data
             source_xpos = targinfo['Offset (x)'].data
             source_ypos = targinfo['Offset (y)'].data
-            #source_xpos = targinfo['Offset(x)'].data
-            #source_ypos = targinfo['Offset(y)'].data
             iter = False
         else:
             source_id = np.concatenate(([source_id, targinfo['ID'].data]))
             source_ra = np.concatenate(([source_ra, targinfo['Source RA (Degrees)'].data]))
             source_dec = np.concatenate(([source_dec, targinfo['Source Dec (Degrees)'].data]))
-            #                source_ra = np.concatenate(([source_ra, targinfo['SourceRA(Degrees)'].data]))
-            #                source_dec = np.concatenate(([source_dec, targinfo['SourceDec(Degrees)'].data]))
             source_quad = np.concatenate(([source_quad, targinfo['Quadrant'].data]))
             source_row = np.concatenate(([source_row, targinfo['Row'].data]))
             source_col = np.concatenate(([source_col, targinfo['Column'].data]))
             source_xpos = np.concatenate(([source_xpos, targinfo['Offset (x)'].data]))
             source_ypos = np.concatenate(([source_ypos, targinfo['Offset (y)'].data]))
-    #                source_xpos = np.concatenate(([source_xpos, targinfo['Offset(x)'].data]))
-    #                source_ypos = np.concatenate(([source_ypos, targinfo['Offset(y)'].data]))
 
     # create image for first extension
     q1all = hdul['Q1'].data.field('STATUS').reshape((171, 365))
@@ -598,13 +584,13 @@ def create_metafile_dither(config_binary_file, targ_file_list):
         sys.exit()
 
     for i in range(nshut):
-        #	print(quads[i],allrows[i],allcols[i])
+        # print(quads[i],allrows[i],allcols[i])
         match = np.intersect1d(np.where(quads[i] == source_quad),
                                np.intersect1d(np.where(allrows[i] == source_row), np.where(allcols[i] == source_col)))
         if match.size != 0:
-            #		print(source_quad[match],source_row[match],source_col[match],source_id[match],source_xpos[match])
+            # print(source_quad[match],source_row[match],source_col[match],source_id[match],source_xpos[match])
             tab_slitlet_id[i] = int(i / nnods / nnods) + 1
-            #		print(tab_slitlet_id[i])
+            # print(tab_slitlet_id[i])
             tab_source_id[i] = source_id[match]
             pos = np.mod(i, nnods * nnods)
             if pos in nod:
@@ -706,7 +692,6 @@ def run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list)
 
 
 def main():
-
     # Get arguments to run script
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("config_binary_file",
@@ -740,5 +725,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
-

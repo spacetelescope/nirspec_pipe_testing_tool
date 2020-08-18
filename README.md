@@ -131,7 +131,7 @@ conda env remove -n name_of_your_old_environment
 
 - Option A. For non-developers and without PTT source code. For the **latest stable tag** type: 
 ```bash
-pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.0.2
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.0.3
 ```
 where the numbers at the end represent the latest stable version of NPTT; for the most recent code, in the 
 terminal type:
@@ -617,19 +617,19 @@ NPTT expects to find a ```PTT_config_NRS1.cfg``` file (and/or NRS2) to be presen
 the directories provided in the ```data_sets``` variable in the  
 ```multiprocess_PTT_config.cfg``` file.  
 
-The variable ```cal_det1_input_files``` is for the calwebb detector1 pipeline. The variable can
+The variable ```cal_det1``` is for the calwebb detector1 pipeline. The variable can
 be set to one of three possibilities:
 
-a) ```cal_det1_input_files=skip``` then the code will jump directly to run the spec2 and/or spec3 
+a) ```cal_det1=skip``` then the code will jump directly to run the spec2 and/or spec3 
 pipelines
 
-b) ```cal_det1_input_files=all``` then the code will assume that the prepare_data2run script was
+b) ```cal_det1=all``` then the code will assume that the prepare_data2run script was
 run and there will be files with names such as jwdata0010010_11010_0001_NRS1_uncal.fits. NPTT will 
 expect to find one these files per ```PTT_config_NRS1.cfg```  file in each of the directores given in 
 the ```data_sets``` variable.
 
 c) Give the specific names of the ```_uncal```  files to use for running the stage 1 pipeline, e.g.
-```cal_det1_input_files = file1_uncal.fits,file2_uncal.fits,file3_uncal.fits```. Note
+```cal_det1 = file1_uncal.fits,file2_uncal.fits,file3_uncal.fits```. Note
 that this list of files is expected to correspond with the total number of ```PTT_config_NRS1.cfg``` files
 in the directores given in the ```data_sets``` variable.
 

@@ -16,10 +16,11 @@ https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+R
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Jul 2020 - Version 1.2: checked all keywords and values according to pipeline repo
 
 
 # define dictionary
@@ -89,7 +90,9 @@ keywd_dict['EXPCOUNT'] = [int]  # count of the exposures in visit, e.g. 1
 keywd_dict['EXP_TYPE'] = ['NRS_WATA', 'NRS_MSATA', 'NRS_TACONFIRM', 'NRS_CONFIRM', ' NRS_IMAGE', ' NRS_FOCUS',
                           'NRS_MIMF', 'NRS_FIXEDSLIT', 'NRS_AUTOWAVE',
                           'NRS_IFU', 'NRS_MSASPEC', ' NRS_AUTOFLAT', ' NRS_DARK',
-                          'NRS_LAMP', 'NRS_BOTA', 'NRS_BRIGHTOBJ']  # type of data in exposure
+                          'NRS_LAMP', 'NRS_BOTA', 'NRS_BRIGHTOBJ']
+# type of data in exposure was taken from the pipeline repo:
+# https://github.com/spacetelescope/jwst/blob/aec6a2a6132386d614dfaeea8754558b979cc3b2/jwst/datamodels/schemas/keyword_pexptype.schema.yaml
 
 # Target information
 keywd_dict['TARGPROP'] = [str]  # proposer's name for the target

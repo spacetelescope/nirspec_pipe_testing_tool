@@ -39,12 +39,13 @@ will crash if this config file does not exist.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.2"
+__version__ = "1.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Apr 2019 - Version 1.1: added dictionary to choose right GWA_XTIL keyword value according to GRATING
 # May 2019 - Version 1.2: added logic for dark processing
+# Jul 2020 - Version 1.3: changed default value of SUBARRAY according to CRDS rules
 
 # Paths
 path_to_tilt_files = "/grp/jwst/wit4/nirspec/CDP3/03_Instrument_model/3.1_Files/NIRS_FM2_05_CV3_FIT1/Description"
@@ -460,10 +461,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 if key == 'SUBARRAY':
                     if 'IFU' in mode_used or "MOS" in mode_used:
                         if val not in hkwd_val:
-                            print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
-                            specific_keys_dict[key] = 'GENERIC'
+                            print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for N/A")
+                            specific_keys_dict[key] = 'N/A'
                             missing_keywds.append(key)
-                    elif mode_used == "FS" or mode_used == "BOTS":
+                    else:  # set SUBARRAY for anything else other than IFU or MOS
                         # set the subarray according to size
                         substrt1 = fits.getval(ff, "substrt1", 0)
                         substrt2 = fits.getval(ff, "substrt2", 0)
@@ -491,6 +492,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                         specific_keys_dict[key] = subarrd_key
                                         print("changing subarray keyword to ", subarrd_key)
                                         missing_keywds.append(key)
+                                        # and make sure to change the primary slit keyword accordingly
+                                        specific_keys_dict['FXD_SLIT'] = subarrd_key
+                                        print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
+                                        missing_keywds.append('FXD_SLIT')
                                         # this part is simply to check that the subarray values are correct
                                         # but no values will be changed in the input file
                                         if "1" in detector:
@@ -509,12 +514,24 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     print('   * MODE_USED  = ', mode_used)
                     if mode_used.lower() == "fs":
                         val = 'NRS_FIXEDSLIT'
+                        # set the lamp mode to the correct value
+                        specific_keys_dict['LAMPMODE'] = 'FIXEDSLIT'
+                        missing_keywds.append('LAMPMODE')
                     if mode_used.lower() == "ifu":
                         val = 'NRS_IFU'
+                        # set the lamp mode to the correct value
+                        specific_keys_dict['LAMPMODE'] = 'IFU'
+                        missing_keywds.append('LAMPMODE')
                     if mode_used.lower() == "mos":
                         val = 'NRS_MSASPEC'
+                        # set the lamp mode to the correct value
+                        specific_keys_dict['LAMPMODE'] = 'MSASPEC'
+                        missing_keywds.append('LAMPMODE')
                     if mode_used.lower() == "bots":
                         val = 'NRS_BRIGHTOBJ'
+                        # set the lamp mode to the correct value
+                        specific_keys_dict['LAMPMODE'] = 'BRIGHTOBJ'
+                        missing_keywds.append('LAMPMODE')
                     if mode_used.lower() == "dark":
                         val = 'NRS_DARK'
                     if mode_used.lower() == "image":

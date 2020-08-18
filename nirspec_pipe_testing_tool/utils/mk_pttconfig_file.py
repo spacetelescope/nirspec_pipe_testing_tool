@@ -81,17 +81,19 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     config.set("calwebb_spec2_input_file", "local_pipe_cfg_path", calwebb_spec2_input_file[6])
 
     config.add_section("benchmark_intermediary_products")
-    esa_files_path, msa_conf_name, dflat_path, sflat_path, fflat_path, truth_awcs, truth_e2d = benchmark_intermediary_products
+    esa_files_path, msa_conf_name, dflat_path, sflat_path, fflat_path, truth_awcs, truth_e2d, msa_flag_opref = benchmark_intermediary_products
     config.set("benchmark_intermediary_products", "compare_assign_wcs_and_extract_2d_with_esa", "True")
     config.set("benchmark_intermediary_products", "esa_files_path", esa_files_path)
-    config.set("benchmark_intermediary_products", "msa_conf_name", msa_conf_name)
-    config.set("benchmark_intermediary_products", "dflat_path", dflat_path)
-    config.set("benchmark_intermediary_products", "sflat_path", sflat_path)
-    config.set("benchmark_intermediary_products", "fflat_path", fflat_path)
     config.set("benchmark_intermediary_products", "# the 'truths' files (or benchmark file to compare to) is expected "
                                                   "to be in the data_directory", None)
     config.set("benchmark_intermediary_products", "truth_file_assign_wcs", truth_awcs)
     config.set("benchmark_intermediary_products", "truth_file_extract_2d", truth_e2d)
+    config.set("benchmark_intermediary_products", "# other necessary paths or files", None)
+    config.set("benchmark_intermediary_products", "msa_conf_name", msa_conf_name)
+    config.set("benchmark_intermediary_products", "msa_flagging_operability_ref", msa_flag_opref)
+    config.set("benchmark_intermediary_products", "dflat_path", dflat_path)
+    config.set("benchmark_intermediary_products", "sflat_path", sflat_path)
+    config.set("benchmark_intermediary_products", "fflat_path", fflat_path)
 
     config.add_section("run_calwebb_spec2_in_full")
     run_calwebb_spec2, calwebb_spec2_cfg = run_calwebb_spec2_in_full
@@ -135,43 +137,47 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     config.set("run_pytest", "imprint_subtract_completion_tests", run_pytest[5])
     config.set("run_pytest", "imprint_subtract_numerical_tests", run_pytest[6])
     config.set("run_pytest", "msa_flagging_completion_tests", run_pytest[7])
-    config.set("run_pytest", "extract_2d_completion_tests", run_pytest[8])
-    config.set("run_pytest", "extract_2d_validation_tests", run_pytest[9])
-    config.set("run_pytest", "flat_field_completion_tests", run_pytest[10])
-    config.set("run_pytest", "flat_field_reffile_tests", run_pytest[11])
-    config.set("run_pytest", "flat_field_validation_tests", run_pytest[12])
-    config.set("run_pytest", "srctype_completion_tests", run_pytest[13])
-    config.set("run_pytest", "pathloss_completion_tests", run_pytest[14])
-    config.set("run_pytest", "pathloss_reffile_tests", run_pytest[15])
-    config.set("run_pytest", "pathloss_validation_tests", run_pytest[16])
-    config.set("run_pytest", "barshadow_completion_tests", run_pytest[17])
-    config.set("run_pytest", "barshadow_validation_tests", run_pytest[18])
-    config.set("run_pytest", "photom_completion_tests", run_pytest[19])
-    config.set("run_pytest", "resample_spec_completion_tests", run_pytest[20])
-    config.set("run_pytest", "cube_build_completion_tests", run_pytest[21])
-    config.set("run_pytest", "extract_1d_completion_tests", run_pytest[22])
-    config.set("run_pytest", "extract_1d_reffile_tests", run_pytest[23])
+    config.set("run_pytest", "msa_flagging_validation_tests", run_pytest[8])
+    config.set("run_pytest", "extract_2d_completion_tests", run_pytest[9])
+    config.set("run_pytest", "extract_2d_validation_tests", run_pytest[10])
+    config.set("run_pytest", "flat_field_completion_tests", run_pytest[11])
+    config.set("run_pytest", "flat_field_reffile_tests", run_pytest[12])
+    config.set("run_pytest", "flat_field_validation_tests", run_pytest[13])
+    config.set("run_pytest", "srctype_completion_tests", run_pytest[14])
+    config.set("run_pytest", "pathloss_completion_tests", run_pytest[15])
+    config.set("run_pytest", "pathloss_reffile_tests", run_pytest[16])
+    config.set("run_pytest", "pathloss_validation_tests", run_pytest[17])
+    config.set("run_pytest", "barshadow_completion_tests", run_pytest[18])
+    config.set("run_pytest", "barshadow_validation_tests", run_pytest[19])
+    config.set("run_pytest", "photom_completion_tests", run_pytest[20])
+    config.set("run_pytest", "resample_spec_completion_tests", run_pytest[21])
+    config.set("run_pytest", "cube_build_completion_tests", run_pytest[22])
+    config.set("run_pytest", "extract_1d_completion_tests", run_pytest[23])
+    config.set("run_pytest", "extract_1d_reffile_tests", run_pytest[24])
     config.set("run_pytest", "# Spec3 tests", None)
-    config.set("run_pytest", "master_background_completion_tests", run_pytest[24])
-    config.set("run_pytest", "master_background_reffile_tests", run_pytest[25])
-    config.set("run_pytest", "master_background_validation_tests", run_pytest[26])
+    config.set("run_pytest", "master_background_completion_tests", run_pytest[25])
+    config.set("run_pytest", "master_background_reffile_tests", run_pytest[26])
+    config.set("run_pytest", "master_background_validation_tests", run_pytest[27])
 
     config.add_section("additional_arguments")
     config.set("additional_arguments", "wcs_threshold_diff", additional_arguments[0])
     config.set("additional_arguments", "save_wcs_plots", additional_arguments[1])
     config.set("additional_arguments", "bkg_list", additional_arguments[2])
     config.set("additional_arguments", "msa_imprint_structure", additional_arguments[3])
-    config.set("additional_arguments", "extract_2d_threshold_diff", additional_arguments[4])
-    config.set("additional_arguments", "flattest_threshold_diff", additional_arguments[5])
-    config.set("additional_arguments", "save_flattest_plot", additional_arguments[6])
-    config.set("additional_arguments", "write_flattest_files", additional_arguments[7])
-    config.set("additional_arguments", "pathloss_threshold_diff", additional_arguments[8])
-    config.set("additional_arguments", "save_pathloss_plot", additional_arguments[9])
-    config.set("additional_arguments", "write_pathloss_files", additional_arguments[10])
-    config.set("additional_arguments", "barshadow_threshold_diff", additional_arguments[11])
-    config.set("additional_arguments", "save_barshadow_final_plot", additional_arguments[12])
-    config.set("additional_arguments", "save_barshadow_intermediary_plots", additional_arguments[13])
-    config.set("additional_arguments", "write_barshadow_files", additional_arguments[14])
+    config.set("additional_arguments", "msa_flagging_threshold", additional_arguments[4])
+    config.set("additional_arguments", "stellarity", additional_arguments[5])
+    config.set("additional_arguments", "save_msa_flagging_plots", additional_arguments[6])
+    config.set("additional_arguments", "extract_2d_threshold_diff", additional_arguments[7])
+    config.set("additional_arguments", "flattest_threshold_diff", additional_arguments[8])
+    config.set("additional_arguments", "save_flattest_plot", additional_arguments[9])
+    config.set("additional_arguments", "write_flattest_files", additional_arguments[10])
+    config.set("additional_arguments", "pathloss_threshold_diff", additional_arguments[11])
+    config.set("additional_arguments", "save_pathloss_plot", additional_arguments[12])
+    config.set("additional_arguments", "write_pathloss_files", additional_arguments[13])
+    config.set("additional_arguments", "barshadow_threshold_diff", additional_arguments[14])
+    config.set("additional_arguments", "save_barshadow_final_plot", additional_arguments[15])
+    config.set("additional_arguments", "save_barshadow_intermediary_plots", additional_arguments[16])
+    config.set("additional_arguments", "write_barshadow_files", additional_arguments[17])
 
     detector = fits.getval(calwebb_spec2_input_file[5], "DETECTOR")
     ptt_config = os.path.join(calwebb_spec2_input_file[0], "PTT_config_"+detector+".cfg")
@@ -192,10 +198,12 @@ def list2_allstrings_list(a_list):
 
 
 def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_root_file, data_directory=None,
-                     local_pipe_cfg_path=None, comparison_file_path=None, msa_conf_name=None, dflat_path=None,
-                     sflat_path=None, fflat_path=None, run_calwebb_spec2=None, wcs_threshold_diff=None,
-                     save_plots=True, change_filter_opaque=False, extract_2d_threshold_diff=None,
-                     flattest_threshold_diff=None, association=None):
+                      local_pipe_cfg_path=None, comparison_file_path=None, msa_conf_name=None, dflat_path=None,
+                      sflat_path=None, fflat_path=None, msa_flag_opref=None,
+                      run_calwebb_spec2=None, wcs_threshold_diff=None,
+                      save_plots=True, change_filter_opaque=False,
+                      msa_flagging_threshold=None, stellarity=None, extract_2d_threshold_diff=None,
+                      flattest_threshold_diff=None, association=None):
     """
     This function prepares all the input variables for the ConfigParser to write the PTT configuration file.
     :param output_directory: string
@@ -209,10 +217,14 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     :param dflat_path: string, path and name of the D-flat
     :param sflat_path: string, path and name of the S-flat for this filter/grating configuration
     :param fflat_path: string, path and name of the F-flat for this filter configuration
+    :param msa_flag_opref: string, path and name of the msa_flagging operability reference file
     :param run_calwebb_spec2: string, name of the step to run in spec2
     :param wcs_threshold_diff: float, acceptable difference between the comparison and the pipeline file
     :param save_plots: boolean
     :param change_filter_opaque: boolean
+    :param msa_flagging_threshold: string, acceptable percentage of overlap of values found in index_opens and
+                                   index_trace for all slits with more than 100 pixels
+    :param stellarity: string, value for new desired stellarity
     :param extract_2d_threshold_diff: float, acceptable difference between the comparison and the pipeline file
     :param flattest_threshold_diff: float, acceptable difference between the comparison and the pipeline file
     :param association: string, values are True, False, or skip. With True or False spec3 tests will be ran
@@ -234,6 +246,8 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
                               mode_used, '_fflat'])
     truth_assign_wcs = rate_input_file.replace(".fits", "_assign_wcs_truth.fits")
     truth_extract_2d = rate_input_file.replace(".fits", "_extract_2d_truth.fits")
+    if msa_flag_opref is None:
+        msa_flag_opref = '/grp/crds/cache/references/jwst/jwst_nirspec_msaoper_0001.json'
 
     pipe_steps = ['assign_wcs', 'bkg_subtract', 'imprint_subtract', 'msa_flagging', 'extract_2d', 'flat_field',
                   'srctype', 'pathloss', 'barshadow', 'photom', 'resample_spec', 'cube_build', 'extract_1d',  # spec2
@@ -243,7 +257,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     ptt_pytests = ['assign_wcs_completion_tests', 'assign_wcs_reffile_tests', 'assign_wcs_validation_tests',
                    'bkg_subtract_completion_tests', 'bkg_subtract_numerical_tests',
                    'imprint_subtract_completion_tests', 'imprint_subtract_numerical_tests',
-                   'msa_flagging_completion_tests',
+                   'msa_flagging_completion_tests', 'msa_flagging_validation_tests',
                    'extract_2d_completion_tests', 'extract_2d_validation_tests',
                    'flat_field_completion_tests', 'flat_field_reffile_tests', 'flat_field_validation_tests',
                    'srctype_completion_tests',
@@ -312,6 +326,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     if save_plots:
         print(" * PTT will save all test output plots in the output directory.")
         save_wcs_plots = True
+        save_msa_flagging_plots = True
         save_flattest_plot = True
         save_pathloss_plot = True
         save_barshadow_final_plot = True
@@ -319,12 +334,17 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     else:
         print(" * PTT will NOT save any test output plots.")
         save_wcs_plots = False
+        save_msa_flagging_plots = False
         save_flattest_plot = False
         save_pathloss_plot = False
         save_barshadow_final_plot = False
         save_barshadow_intermediary_plots = False
     bkg_list = "/path_to_this_file/bkg_example1.fits, /path_to_this_file/bkg_example2.fits"
     msa_imprint_structure = "/path_to_this_file/msa_structure_imprint.fits"
+    if msa_flagging_threshold is None:
+        msa_flagging_threshold = 99.5
+    if stellarity is None:
+        stellarity = "source_type"
     if extract_2d_threshold_diff is None:
         extract_2d_threshold_diff = 4
     if flattest_threshold_diff is None:
@@ -339,10 +359,11 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     calwebb_spec2_input_file = [output_directory, data_directory, rate_input_file, mode_used,
                                 change_filter_opaque, raw_data_root_file, local_pipe_cfg_path]
     benchmark_intermediary_products = [esa_files_full_path, msa_conf_name, dflat_path, sflat_path, fflat_path,
-                                       truth_assign_wcs, truth_extract_2d]
+                                       truth_assign_wcs, truth_extract_2d, msa_flag_opref]
     run_calwebb_spec2_in_full = [run_calwebb_spec2, calwebb_spec2_cfg]
     spec3_args = [run_calwebb_spec3, s3_input_file, calwebb_spec3_cfg]
     additional_arguments = [wcs_threshold_diff, save_wcs_plots, bkg_list, msa_imprint_structure,
+                            msa_flagging_threshold, stellarity, save_msa_flagging_plots,
                             extract_2d_threshold_diff, flattest_threshold_diff, save_flattest_plot,
                             write_flattest_files, pathloss_threshold_diff, save_pathloss_plot, write_pathloss_files,
                             barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots,
@@ -364,9 +385,9 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
 
 def mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file, data_directory=None,
                local_pipe_cfg_path=None, comparison_file_path=None, msa_conf_name=None, dflat_path=None,
-               sflat_path=None, fflat_path=None, run_calwebb_spec2=None, wcs_threshold_diff=None,
-               save_plots=True, change_filter_opaque=False, extract_2d_threshold_diff=None,
-               flattest_threshold_diff=None, association=None):
+               sflat_path=None, fflat_path=None, msa_flag_opref=None, run_calwebb_spec2=None, wcs_threshold_diff=None,
+               save_plots=True, change_filter_opaque=False, msa_flagging_threshold=None, stellarity=None,
+               extract_2d_threshold_diff=None, flattest_threshold_diff=None, association=None):
     """
     This function makes the PTT configuration file.
     :param output_directory: string
@@ -380,22 +401,28 @@ def mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file, data
     :param dflat_path: string, path and name of the D-flat
     :param sflat_path: string, path and name of the S-flat for this filter/grating configuration
     :param fflat_path: string, path and name of the F-flat for this filter configuration
+    :param msa_flag_opref: string, path and name of the msa_flagging operability reference file
     :param run_calwebb_spec2: string, name of the step to run in spec2
-    :param wcs_threshold_diff: float, acceptable difference between the comparison and the pipeline file
+    :param wcs_threshold_diff: string, acceptable difference between the comparison and the pipeline file
     :param save_plots: boolean
     :param change_filter_opaque: boolean
-    :param extract_2d_threshold_diff: float, acceptable difference between the comparison and the pipeline file
-    :param flattest_threshold_diff: float, acceptable difference between the comparison and the pipeline file
+    :param msa_flagging_threshold: string, acceptable percentage of overlap of values found in index_opens and
+                                   index_trace for all slits with more than 100 pixels
+    :param stellarity: string, value for new desired stellarity
+    :param extract_2d_threshold_diff: string, acceptable difference between the comparison and the pipeline file
+    :param flattest_threshold_diff: string, acceptable difference between the comparison and the pipeline file
     :param association: string, values are True, False, or skip. With True or False spec3 tests will be ran.
     :return: nothing
     """
     # prepare all variables to create the PTT config file
     variables = prepare_variables(output_directory, input_file, mode_used, raw_data_root_file,
                                   data_directory=data_directory, local_pipe_cfg_path=local_pipe_cfg_path,
-                                  comparison_file_path=comparison_file_path,  msa_conf_name=msa_conf_name,
-                                  dflat_path=dflat_path, sflat_path=sflat_path,  fflat_path=fflat_path,
+                                  comparison_file_path=comparison_file_path, msa_conf_name=msa_conf_name,
+                                  dflat_path=dflat_path, sflat_path=sflat_path, fflat_path=fflat_path,
+                                  msa_flag_opref=msa_flag_opref,
                                   run_calwebb_spec2=run_calwebb_spec2, wcs_threshold_diff=wcs_threshold_diff,
                                   save_plots=save_plots, change_filter_opaque=change_filter_opaque,
+                                  msa_flagging_threshold=msa_flagging_threshold, stellarity=stellarity,
                                   extract_2d_threshold_diff=extract_2d_threshold_diff,
                                   flattest_threshold_diff=flattest_threshold_diff,
                                   association=association)
@@ -476,6 +503,12 @@ def main():
                         default=None,
                         help='Use the -F flag to change the path and name of the F-flat file, e.g. /grp/jwst/wit4/'
                              'nirspec/CDP3/04_Flat_field/4.1_F_Flat/FS/nirspec_FS_fflat_F100LP_01.01.fits')
+    parser.add_argument("-O",
+                        dest="msa_flag_opref",
+                        action='store',
+                        default=None,
+                        help='Use the -O flag to change the path and name of the msa_flagging operability reference'
+                             'file , e.g. /grp/crds/cache/references/jwst/jwst_nirspec_msaoper_0001.json')
     parser.add_argument("-r",
                         dest="run_calwebb_spec2",
                         action='store',
@@ -510,6 +543,18 @@ def main():
                         default=None,
                         help='Use the -f flag to change the float value that PTT will use as acceptable difference '
                              'between the pipeline product and the comparison file for the flat_field test.')
+    parser.add_argument("-t",
+                        dest="msa_flagging_threshold",
+                        action='store',
+                        default=None,
+                        help='Use the -t flag to change the float value that PTT will use as acceptable percentage '
+                             'of overlap of values found in index_opens and index_trace for all slits with more '
+                             'than 100 pixels.')
+    parser.add_argument("-s",
+                        dest="stellarity",
+                        action='store',
+                        default=None,
+                        help='Use the -s flag if to provide a specific value of stellarity, e.g. -s=0.8')
     parser.add_argument("-a",
                         dest="association",
                         action='store',
@@ -532,20 +577,24 @@ def main():
     dflat_path = args.dflat_path
     sflat_path = args.sflat_path
     fflat_path = args.fflat_path
+    msa_flag_opref = args.msa_flag_opref
     run_calwebb_spec2 = args.run_calwebb_spec2
     wcs_threshold_diff = args.wcs_threshold_diff
     save_plots = args.save_plots
     extract_2d_threshold_diff = args.extract_2d_threshold_diff
     flattest_threshold_diff = args.flattest_threshold_diff
+    msa_flagging_threshold = args.msa_flagging_threshold
+    stellarity = args.stellarity
     association = args.association
 
     # create the PTT config file
     mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file,
                data_directory=data_directory, local_pipe_cfg_path=local_pipe_cfg_path,
                comparison_file_path=comparison_file_path,  msa_conf_name=msa_conf_name,
-               dflat_path=dflat_path, sflat_path=sflat_path,  fflat_path=fflat_path,
+               dflat_path=dflat_path, sflat_path=sflat_path, fflat_path=fflat_path, msa_flag_opref=msa_flag_opref,
                run_calwebb_spec2=run_calwebb_spec2, wcs_threshold_diff=wcs_threshold_diff,
                save_plots=save_plots, change_filter_opaque=change_filter_opaque,
+               msa_flagging_threshold=msa_flagging_threshold, stellarity=stellarity,
                extract_2d_threshold_diff=extract_2d_threshold_diff,
                flattest_threshold_diff=flattest_threshold_diff,
                association=association)

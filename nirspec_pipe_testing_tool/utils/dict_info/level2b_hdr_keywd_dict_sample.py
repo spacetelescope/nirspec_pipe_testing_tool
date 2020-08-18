@@ -18,10 +18,11 @@ https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+R
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Jul 2020 - Version 1.2: changed default value of SUBARRAY according to CRDS rules
 
 
 # define dictionary
@@ -148,7 +149,7 @@ keywd_dict['NRS_NORM'] = 16  # int, Number of normal pixels in IRS2 readout, use
 keywd_dict['NRS_REF'] = 4  # int, Number of reference pixels in IRS2 readout, used also in IFU data
 
 # Subarray parameters
-keywd_dict['SUBARRAY'] = 'GENERIC'  # name of subarray used, options are:
+keywd_dict['SUBARRAY'] = 'N/A'  # name of subarray used, options are:
 #                          '1024X16', '128X128', '128X2048', '2048X128', '2048X64', '32X32', '64X2048', '8X8',
 #                          'ALLSLITS', 'BRIGHTSKY', 'FULL', 'GENERIC', 'MASK1065', 'MASK1140', 'MASK1550',
 #                          'MASKLYOT', 'S1600A1', 'S200A1', 'S200A2', 'S200B1', 'S400A1', 'SLITLESSPRISM',

@@ -56,6 +56,7 @@ def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, outstep_file_suffix = set_inandout_filenames_info
     run_pipe_step = config.getboolean("run_pipe_steps", step)
+
     # determine which tests are to be run
     extract_1d_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
     extract_1d_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
