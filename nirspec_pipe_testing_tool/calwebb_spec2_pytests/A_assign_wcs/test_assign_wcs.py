@@ -30,7 +30,7 @@ print(pipeline_version)
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.4"
+__version__ = "2.5"
 
 
 # HISTORY
@@ -40,6 +40,7 @@ __version__ = "2.4"
 # Apr 2019 - Version 2.2: implemented logging capability
 # Dec 2019 - Version 2.3: implemented image processing and text file name handling
 # Jun 2020 - Version 2.4: Changed comparison file to be our own instead of ESA files
+# Jul 2020 - Version 2.5: Added check to see if running spec2 is appropriate according to EXP_TYPE rules taken from CRDS
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -83,6 +84,17 @@ def output_hdul(set_inandout_filenames, config):
     # get the general info
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, outstep_file_suffix = set_inandout_filenames_info
+
+    # determine if the spec2 pipeline should be run or not - obtained from CRDS repo:
+    # https://github.com/spacetelescope/crds/blob/7fc216e73bd81d334b5d98d165be2caa3b6175e1/crds/jwst/jwst_system_crdscfg_b7.5.yaml
+    exp_type = fits.getval(step_input_file, 'EXP_TYPE')
+    allowed_exp_type_values = ['NRS_AUTOFLAT', 'NRS_AUTOWAVE', 'NRS_BRIGHTOBJ', 'NRS_CONFIRM', 'NRS_FIXEDSLIT',
+                               'NRS_FOCUS', 'NRS_IFU', 'NRS_IMAGE', 'NRS_LAMP', 'NRS_MIMF', 'NRS_MSASPEC',
+                               'NRS_MSATA', 'NRS_TACONFIRM', 'NRS_TACQ', 'NRS_TASLIT', 'NRS_WATA']
+    if exp_type not in allowed_exp_type_values:
+        print("EXP_TYPE=", exp_type, " is not in exposure types expected for running the stage 2 pipeline: ",
+              allowed_exp_type_values)
+        pytest.exit("The EXP_TYPE value of this data is not expected to run in the stage 2 pipeline.")
 
     # start the timer to compute the step running time of PTT
     PTT_start_time = time.time()

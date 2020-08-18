@@ -6,6 +6,9 @@
 # Full calwebb_detector1
 strun jwst.pipeline.Detector1Pipeline uncal_file.fits
 
+# For dark processing
+strun jwst.pipeline.DarkPipeline uncal_file.fits
+
 
 # Group Scale
 strun jwst.group_scale.GroupScaleStep fits_file.fits

@@ -14,6 +14,7 @@ from jwst.msaflagopen.msaflagopen_step import MSAFlagOpenStep
 from nirspec_pipe_testing_tool import core_utils
 from .. import TESTSDIR
 from . import msa_flagging_utils
+from .. auxiliary_code import msa_flagging_testing
 
 
 # HEADER
@@ -54,11 +55,6 @@ def output_hdul(set_inandout_filenames, config):
     set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, outstep_file_suffix = set_inandout_filenames_info
 
-    # determine which tests are to be run
-    msa_flagging_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
-    #msa_flagging_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
-    #msa_flagging_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
-    run_pytests = [msa_flagging_completion_tests]#, msa_flagging_reffile_tests, msa_flagging_validation_tests]
     # determine which steps are to be run, if not run in full
     run_pipe_step = config.getboolean("run_pipe_steps", step)
 
@@ -74,14 +70,29 @@ def output_hdul(set_inandout_filenames, config):
     else:
         pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
 
-    print ("Is data MOS or IFU?", core_utils.check_MOS_true(inhdu), core_utils.check_IFU_true(inhdu))
+    print("Is data MOS or IFU?", core_utils.check_MOS_true(inhdu), core_utils.check_IFU_true(inhdu))
     if core_utils.check_MOS_true(inhdu) or core_utils.check_IFU_true(inhdu):
+
+        # determine which tests are to be run
+        msa_flagging_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
+        # msa_flagging_reffile_tests = config.getboolean("run_pytest", "_".join((step, "reffile", "tests")))
+        msa_flagging_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
+        run_pytests = [msa_flagging_completion_tests, msa_flagging_validation_tests]
+
+        # get other info from the configuration file relevant only for this step
+        msa_flagging_operability_ref = config.get("benchmark_intermediary_products", "msa_flagging_operability_ref")
+        msa_flagging_threshold = config.get("additional_arguments", "msa_flagging_threshold")
+        stellarity = config.get("additional_arguments", "stellarity")
+        save_msa_flagging_figs = config.getboolean("additional_arguments", "save_msa_flagging_plots")
+        if stellarity == "source_type":
+            stellarity = None
+        testing_arguments = [msa_flagging_operability_ref, msa_flagging_threshold, stellarity, save_msa_flagging_figs]
 
         # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
         step_completed = False
         if run_calwebb_spec2:
             hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            return hdul, step_output_file, run_pytests
+            return hdul, step_output_file, step_input_file, run_pytests, testing_arguments
         else:
             if run_pipe_step:
 
@@ -110,12 +121,12 @@ def output_hdul(set_inandout_filenames, config):
                     logging.info(pipeline_version)
 
                     # get the right configuration files to run the step
-                    #local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                    # local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
                     # start the timer to compute the step running time
                     start_time = time.time()
-                    #if local_pipe_cfg_path == "pipe_source_tree_code":
+                    # if local_pipe_cfg_path == "pipe_source_tree_code":
                     result = stp.call(step_input_file)
-                    #else:
+                    # else:
                     #    result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/NOCONFIGFI.cfg')
                     result.save(step_output_file)
                     # end the timer to compute the step running time
@@ -138,7 +149,7 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = True
                     hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests
+                    return hdul, step_output_file, step_input_file, run_pytests, testing_arguments
 
                 else:
                     msg = " The input file does not exist. Skipping step."
@@ -156,7 +167,7 @@ def output_hdul(set_inandout_filenames, config):
                     step_completed = True
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, step_input_file, run_pytests
+                    return hdul, step_output_file, step_input_file, run_pytests, testing_arguments
                 else:
                     step_completed = False
                     # add the running time for this step
@@ -167,12 +178,37 @@ def output_hdul(set_inandout_filenames, config):
         pytest.skip("Skipping "+step+" because data is neither MOS or IFU.")
 
 
+# fixture to validate the msa_flagging step
+@pytest.fixture(scope="module")
+def validate_msa_flagging(output_hdul):
+    step_output_file = output_hdul[1]
+    msa_flagging_operability_ref, msa_flagging_threshold, stellarity, save_msa_flagging_figs = output_hdul[4]
+
+    msg = "\n Performing WCS validation test... "
+    print(msg)
+    logging.info(msg)
+    result, log_msgs = msa_flagging_testing.run_msa_flagging_testing(step_output_file,
+                                                                     msa_flagging_threshold=msa_flagging_threshold,
+                                                                     stellarity=stellarity,
+                                                                     operability_ref=msa_flagging_operability_ref,
+                                                                     save_figs=save_msa_flagging_figs,
+                                                                     show_figs=False, debug=False)
+    for msg in log_msgs:
+        logging.info(msg)
+
+    if result == "skip":
+        pytest.skip("MSA flagging validation test will be skipped.")
+
+    return result
+
+
 # Unit tests
 
 def test_msa_failed_open_exists(output_hdul):
     # want to run this pytest?
-    # output_hdu[2] = msa_flagging_completion_tests, msa_flagging_reffile_tests, msa_flagging_validation_tests
-    run_pytests = output_hdul[2][0]
+    # output_hdu = hdul, step_output_file, step_input_file, run_pytests, testing_arguments
+    # output_hdu[3] = msa_flagging_completion_tests, msa_flagging_validation_tests
+    run_pytests = output_hdul[3][0]
     if not run_pytests:
         msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
         print(msg)
@@ -185,3 +221,20 @@ def test_msa_failed_open_exists(output_hdul):
         assert msa_flagging_utils.msa_failed_open_exists(output_hdul[0]), "The keyword S_MSAFLG was not added to the " \
                                                                           "header --> msa_flagging step was not " \
                                                                           "completed."
+
+
+def test_validate_msa_flagging(output_hdul, request):
+    # want to run this pytest?
+    # output_hdu = hdul, step_output_file, step_input_file, run_pytests, testing_arguments
+    # output_hdu[3] = msa_flagging_completion_tests, msa_flagging_validation_tests
+    run_pytests = output_hdul[3][1]
+    if not run_pytests:
+        msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        print(msg)
+        logging.info(msg)
+        pytest.skip(msg)
+    else:
+        msg = "\n * Running validation pytest...\n"
+        print(msg)
+        logging.info(msg)
+        assert request.getfixturevalue("validate_msa_flagging")

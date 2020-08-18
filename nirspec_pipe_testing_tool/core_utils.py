@@ -146,6 +146,7 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
 
     # make sure the input file name has the detector included in the name of the output files
     detector = fits.getval(initial_input_file, "DETECTOR", 0)
+    exp_type = fits.getval(initial_input_file, "EXP_TYPE", 0)
     initial_input_file_basename = os.path.basename(initial_input_file)
     if "_uncal_rate" in initial_input_file_basename:
         initial_input_file_basename = initial_input_file_basename.replace("_uncal_rate", "")
@@ -193,6 +194,11 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
                                 if "gain_scale" in step_input_basename:
                                     step_input_basename = step_input_basename.replace("_gain_scale", "")
                                 step_input_filename = os.path.join(output_directory, step_input_basename)
+
+                                # make sure the cube_build step only runs for IFU data
+                                if "cube_build" in s and "IFU" not in exp_type:
+                                    continue
+
                                 # make sure the input file exists
                                 if debug:
                                     print("Step creates output file, checking if it exists: ", step_input_filename)

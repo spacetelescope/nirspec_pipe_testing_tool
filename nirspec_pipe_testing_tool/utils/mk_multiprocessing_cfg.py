@@ -26,7 +26,7 @@ def write_ptt_multiprocessing_cfg():
     config.set("data_sets_to_run", "# all = will assume that input file names are e.g. "
                                    "jwdata0010010_11010_0001_NRS1_uncal.fits", None)
     config.set("data_sets_to_run", "# list of file names separated by a comma with no spaces in between, e.g.", None)
-    config.set("data_sets_to_run", "# cal_det1_input_files = file1_uncal.fits,file2_uncal.fits,file3_uncal.fits", None)
+    config.set("data_sets_to_run", "# cal_det1 = file1_uncal.fits,file2_uncal.fits,file3_uncal.fits", None)
     config.set("data_sets_to_run", "cal_det1", "all \n")
     config.set("data_sets_to_run", "", None)
 

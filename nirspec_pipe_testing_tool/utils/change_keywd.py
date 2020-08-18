@@ -1,9 +1,8 @@
 import argparse
-import os
 import sys
 from astropy.io import fits
 
-from .dict_info import hdr_keywd_dict_sample as shkvd
+from nirspec_pipe_testing_tool.utils.dict_info import hdr_keywd_dict_sample as shkvd
 
 """
 This script changes the value of a keyword to the specified value. If no extension is given, the keyword will be

@@ -660,8 +660,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
             log_msgs.append(msg)
 
     if writefile:
-        outfile_name = step_input_filename.replace("flat_field.fits", det+"_flat_calc.fits")
-        complfile_name = step_input_filename.replace("flat_field.fits", det+"_flat_comp.fits")
+        outfile_name = flatfile.replace("interpolatedflat.fits", "_flat_calc.fits")
+        complfile_name = flatfile.replace("interpolatedflat.fits", "_flat_comp.fits")
 
         # this is the file to hold the image of pipeline-calculated difference values
         outfile.writeto(outfile_name, overwrite=True)

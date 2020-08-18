@@ -16,10 +16,11 @@ https://confluence.stsci.edu/display/JWSTPWG/Build+7.1+Updates+for+Testing+and+R
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
+# Jul 2020 - Version 1.2: changed default value of SUBARRAY according to CRDS rules
 
 
 # define dictionary
@@ -125,7 +126,7 @@ keywd_dict['EFFEXPTM'] = 53.68380000000001  # [seconds] effective exposure time,
 keywd_dict['DURATION'] = -1.0  # [seconds] total duration of exposuree.g. -1.0
 
 # Subarray parameters
-keywd_dict['SUBARRAY'] = 'GENERIC'  # name of subarray used, options are:
+keywd_dict['SUBARRAY'] = 'N/A'  # name of subarray used, options are:
 #                          '1024X16', '128X128', '128X2048', '2048X128', '2048X64', '32X32', '64X2048', '8X8',
 #                          'ALLSLITS', 'BRIGHTSKY', 'FULL', 'GENERIC', 'MASK1065', 'MASK1140', 'MASK1550',
 #                          'MASKLYOT', 'SUB1600A1', 'SUB200A1', 'SUB200A2', 'SUB200B1', 'SUB400A1', 'SLITLESSPRISM',
@@ -180,7 +181,7 @@ keywd_dict['LAMP'] = 'LINE1'  # internal lamp state, e.g. 'ARGON', the combinati
 # F290LP LINE3  FLAT3
 # CLEAR  LINE4  FLAT5
 # F070LP FLAT4
-keywd_dict['LAMPMODE'] = 'FIXEDSLIT'  # NIRSpec internal lamp exposures, possible values: BRIGHTOBJ, FIXEDSLIT,
+keywd_dict['LAMPMODE'] = 'NULL'  # NIRSpec internal lamp exposures, possible values: BRIGHTOBJ, FIXEDSLIT,
 # GRATING-ONLY, IFU, MSASPEC, NULL
 
 # Guide star information
@@ -225,18 +226,19 @@ keywd_dict['wcsinfo'] = {
     'NAXIS2': 64,
     'PCOUNT': 0,  # number of parameters
     'GCOUNT': 1,  # number of groups
-    'EXTNAME': 'SCI',  # extension name
-    'SRCTYPE': 'POINT',  # Source type used for calibration
-    'EXTVER': 1,  # extension value
-    'SLTNAME': 'S200A1',  # Name of the slit
-    'SLTSTRT1': 645,  # Starting pixel in x direction
-    'SLTSIZE1': 1404,  # Number of pixels in x direction
-    'SLTSTRT2': 1056,  # Starting pixel in y direction
-    'SLTSIZE2': 64,  # Number of pixels in y direction
-    'SOURCEID': 1,  # Source ID
-    'SRCXPOS': 0.0,  # Source position in slit (x-axis)
-    'SRCYPOS': 0.0,  # Source position in slit (y-axis)
     'BUNIT': 'DN/s',  # physical units of the array values
+    'EXTNAME': 'SCI',  # extension name
+    'EXTVER': 1,  # extension value
+    # 'SRCTYPE': 'POINT',  # Source type used for calibration - commented because it shows up after the source type step
+    # these only show up for Fixed slit - commented because they are filled out throughout the spec2 pipeline
+    # 'SLTNAME': 'S200A1',  # Name of the slit
+    # 'SLTSTRT1': 645,  # Starting pixel in x direction
+    # 'SLTSIZE1': 1404,  # Number of pixels in x direction
+    # 'SLTSTRT2': 1056,  # Starting pixel in y direction
+    # 'SLTSIZE2': 64,  # Number of pixels in y direction
+    # 'SOURCEID': 1,  # Source ID
+    # 'SRCXPOS': 0.0,  # Source position in slit (x-axis)
+    # 'SRCYPOS': 0.0,  # Source position in slit (y-axis)
 
     # WCS parameters
     'WCSAXES': 3,  # number of World Coordinate System axes, e.g. 3

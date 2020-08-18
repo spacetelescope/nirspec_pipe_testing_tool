@@ -39,13 +39,14 @@ will crash if this config file does not exist.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.3"
+__version__ = "1.4"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Apr 2019 - Version 1.1: added dictionary to choose right GWA_XTIL keyword value according to GRATING
 # May 2019 - Version 1.2: added logic for dark processing
-# Dec 2019 - Version 1.2: added logic for image processing
+# Dec 2019 - Version 1.3: added logic for image processing
+# Jul 2020 - Version 1.4: changed default value of SUBARRAY according to CRDS rules
 
 
 # Paths
@@ -498,10 +499,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 if key == 'SUBARRAY':
                     if 'IFU' in mode_used or "MOS" in mode_used:
                         if val != lev2bdict_val:
-                            print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for GENERIC")
-                            specific_keys_dict[key] = 'GENERIC'
+                            print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for N/A")
+                            specific_keys_dict[key] = 'N/A'
                             missing_keywds.append(key)
-                    elif mode_used == "FS" or mode_used == "BOTS":
+                    else:  # set SUBARRAY for anything else other than IFU or MOS
                         if subarray is not None:
                             # force the subarray keyword to be set to input
                             if 'FULL' in subarray:
@@ -517,6 +518,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             specific_keys_dict[key] = pipe_subarr_val
                             print("changing subarray keyword to ", pipe_subarr_val)
                             missing_keywds.append(key)
+                            # and make sure to change the primary slit keyword accordingly
+                            specific_keys_dict['FXD_SLIT'] = subarrd_key
+                            print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
+                            missing_keywds.append('FXD_SLIT')
                             # set the subarray sizes and start keywords accordingly
                             if subarray in subdict.subarray_dict:
                                 ssz1 = subdict.subarray_dict[subarray]["subsize1"]
@@ -570,6 +575,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                                 specific_keys_dict[key] = subarrd_key
                                                 print("changing subarray keyword to ", subarrd_key)
                                                 missing_keywds.append(key)
+                                                # and make sure to change the primary slit keyword accordingly
+                                                specific_keys_dict['FXD_SLIT'] = subarrd_key
+                                                print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
+                                                missing_keywds.append('FXD_SLIT')
                                                 # this part is simply to check that the subarray values are correct
                                                 # but no values will be changed in the input file
                                                 if "1" in detector:
@@ -583,7 +592,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                                 print("   substrt1=", sst1, " substrt2=", sst2,  " subsize1=", ssz1,
                                                       " subsize2=", ssz2)
                             except KeyError:
-                                pipe_subarr_val = "GENERIC"
+                                pipe_subarr_val = "N/A"
                                 specific_keys_dict[key] = pipe_subarr_val
                                 print("changing subarray keyword to ", pipe_subarr_val)
                                 missing_keywds.append(key)
