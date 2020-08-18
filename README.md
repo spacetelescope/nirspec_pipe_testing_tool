@@ -87,8 +87,8 @@ https://confluence.stsci.edu/pages/viewpage.action?pageId=123011558
 **STEP 1.** Create the conda environment for testing and get the configuration files.
 
 **1.a.** Conda environment for this testing campaign:
-- Please go to the developer's repository and follow the instructions for "Installing a
-DMS Operational Build" at https://github.com/spacetelescope/jwst. The most stable release
+- Please go to the pipeline's developers repository and follow the instructions for the latest GitHub tag in
+the "Installing From Github" section at https://github.com/spacetelescope/jwst. The most stable release
 candidate will be listed in the top line under the section "Software vs DMS build version
 map".
 
