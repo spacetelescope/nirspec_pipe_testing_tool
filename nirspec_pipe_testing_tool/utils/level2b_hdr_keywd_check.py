@@ -23,10 +23,10 @@ the primary and science headers.
 Example usage:
     The code works from the terminal.
     To create a NEW FS fits file with the updated header type:
-        $ nptt_level2b_hdr_keywd_check.py blah.fits IFU
+        $ nptt_level2b_hdr_keywd_check blah.fits IFU
 
     To simply update the header of the existing fits file type:
-        $ nptt_level2b_hdr_keywd_check.py blah.fits IFU -u
+        $ nptt_level2b_hdr_keywd_check blah.fits IFU -u
 
 where the mode is either FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.
 
@@ -39,7 +39,7 @@ will crash if this config file does not exist.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.4"
+__version__ = "1.5"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -47,6 +47,7 @@ __version__ = "1.4"
 # May 2019 - Version 1.2: added logic for dark processing
 # Dec 2019 - Version 1.3: added logic for image processing
 # Jul 2020 - Version 1.4: changed default value of SUBARRAY according to CRDS rules
+# Aug 2020 - Version 1.5: fixed bug with set_exp_type_value function
 
 
 # Paths
@@ -360,11 +361,12 @@ def set_exp_type_value(mode_used):
         val: string, expected pipeline value
     """
     print('   * MODE_USED  = ', mode_used)
+    val = None
     if mode_used.lower() == "fs":
         val = 'NRS_FIXEDSLIT'
     if mode_used.lower() == "ifu":
         val = 'NRS_IFU'
-    if mode_used.lower() == "mos":
+    if "mos" in mode_used.lower():
         val = 'NRS_MSASPEC'
     if mode_used.lower() == "bots":
         val = 'NRS_BRIGHTOBJ'
@@ -384,6 +386,11 @@ def set_exp_type_value(mode_used):
         val = 'NRS_FOCUS'
     if mode_used.lower() == "mimf":
         val = 'NRS_MIMF'
+    if val is None:
+        print("\nWARNING: Cannot determine the EXP_TYPE. Try again with one of these modes: FS, MOS, IFU, BOTS, \n"
+              "         dark, image, confirm, taconfirm, wata, msata, focus, mimf")
+        print("         Exiting script level2b_hdr_keywd_check. \n")
+        exit()
     return val
 
 
