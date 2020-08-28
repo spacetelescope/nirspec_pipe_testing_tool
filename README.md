@@ -68,8 +68,8 @@ equivalent: .bashrc, .bash_profile, .cshrc, .login, etc.) file.
 **II.-** If you work outside the internal network, i.e. in the visitors network or at home,
 you also want to set the environment variables listed at:
 https://innerspace.stsci.edu/pages/viewpage.action?pageId=123011558
-via terminal or add them to your .profile (or equivalent) file. These changes will not
-affect your work while working with the internal network at ST.
+Set these environment variables via terminal or add them to your .profile (or equivalent)
+file. These changes will not affect your work while working with the internal network at ST.
 
 **III.-** A brief description of what each pipeline step does, as well as a brief description
 of all the pytests implemented in the tool, the tests that are still in concept phase, and 
@@ -128,7 +128,7 @@ conda env remove -n name_of_your_old_environment
 
 - Option A. For non-developers and without PTT source code. For the **latest stable tag** type: 
 ```bash
-pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.0.4
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.1.0
 ```
 where the numbers at the end represent the latest stable version of NPTT; for the most recent code, in the 
 terminal type:
