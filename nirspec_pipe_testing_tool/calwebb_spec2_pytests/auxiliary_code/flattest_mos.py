@@ -20,7 +20,7 @@ This script tests the pipeline flat field step output for MOS data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "3.5"
+__version__ = "3.6"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -33,6 +33,9 @@ __version__ = "3.5"
 # Apr 2019 - Version 3.3: Implemented capability to return logging messages.
 # May 2019 - Version 3.4: Implemented images of the residuals.
 # Jun 2019 - Version 3.5: Updated name of interpolated flat to be the default pipeline name for this file.
+# Sep 2020 - Version 3.6: Fixed code to match latest pipeline changes to fix MOS flat field: set flat-d, -s, -f to 1
+#                         if the data is Nan or 0, then DQ flag is set to DO_NOT_USE + NO_FLAT_FIELD. The code now
+#                         only looks at the flat DQ flag set to DO_NOT_USE in determining if the data should be used.
 
 
 def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutter_conf,
@@ -102,8 +105,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     msg = "".join(["Using D-flat: ", dfile])
     print(msg)
     log_msgs.append(msg)
-    dfim = fits.getdata(dfile, "SCI")#1)
-    dfimdq = fits.getdata(dfile, "DQ")#4)
+    dfim = fits.getdata(dfile, "SCI")
+    dfimdq = fits.getdata(dfile, "DQ")
     # need to flip/rotate the image into science orientation
     ns = np.shape(dfim)
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
@@ -208,8 +211,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     msg = "Using F-flat: "+ffile
     print(msg)
     log_msgs.append(msg)
-    ffsq1 = fits.getdata(ffile, "SCI_Q1")#1)
-    naxis3 = fits.getval(ffile, "NAXIS3", "SCI_Q1")#1)
+    ffsq1 = fits.getdata(ffile, "SCI_Q1")
+    naxis3 = fits.getval(ffile, "NAXIS3", "SCI_Q1")
     ffswaveq1 = np.array([])
     for i in range(0, naxis3):
         if i <= 9 :
@@ -221,9 +224,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         if debug:
             print("1. F-flat -> ", keyword)
         ffswaveq1 = np.append(ffswaveq1, fits.getval(ffile, keyword, "SCI_Q1"))
-    ffserrq1 = fits.getdata(ffile, "ERR_Q1")#2)
-    ffsdqq1 = fits.getdata(ffile, "DQ_Q1")#3)
-    ffvq1 = fits.getdata(ffile, "Q1")#4)
+    ffserrq1 = fits.getdata(ffile, "ERR_Q1")
+    ffsdqq1 = fits.getdata(ffile, "DQ_Q1")
+    ffvq1 = fits.getdata(ffile, "Q1")
     ffsq2 = fits.getdata(ffile, "SCI_Q2")
     ffswaveq2 = np.array([])
     for i in range(0, naxis3):
@@ -242,7 +245,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     ffsq3 = fits.getdata(ffile, "SCI_Q3")
     ffswaveq3 = np.array([])
     for i in range(0, naxis3):
-        if i <= 9 :
+        if i <= 9:
             suff = "".join(("0", str(i)))
         else:
             suff = str(i)
@@ -375,7 +378,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     if debug:
                         print('j, k, jwav, px0, py0 : ', j, k, jwav, px0, py0)
                         print('pind = ', pind)
-    
+
                     # get the pixel bandwidth
                     if (j != 0) and (j < nw1-1):
                         if np.isfinite(wave[k, j+1]) and np.isfinite(wave[k, j-1]):
@@ -392,7 +395,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     if debug:
                         print("wave[k, j+1], wave[k, j-1] : ", np.isfinite(wave[k, j+1]), wave[k, j+1], wave[k, j-1])
                         print("delw = ", delw)
-    
+
                     # integrate over dflat fast vector
                     dfrqe_wav = dfrqe.field("WAVELENGTH")
                     dfrqe_rqe = dfrqe.field("RQE")
@@ -403,17 +406,17 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw[0]], dfrqe_rqe[iw[0]])
                         first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
                         dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
-    
+
                     if debug:
-                        #print("np.shape(dfrqe_wav) : ", np.shape(dfrqe_wav))
-                        #print("np.shape(dfrqe_rqe) : ", np.shape(dfrqe_rqe))
-                        #print("dfimdq[pind[0]][pind[1]] : ", dfimdq[pind[0]][pind[1]])
-                        #print("np.shape(iw) =", np.shape(iw))
-                        #print("np.shape(dfrqe_wav[iw[0]]) = ", np.shape(dfrqe_wav[iw[0]]))
-                        #print("np.shape(dfrqe_rqe[iw[0]]) = ", np.shape(dfrqe_rqe[iw[0]]))
-                        #print("int_tab=", int_tab)
+                        print("np.shape(dfrqe_wav) : ", np.shape(dfrqe_wav))
+                        print("np.shape(dfrqe_rqe) : ", np.shape(dfrqe_rqe))
+                        print("dfimdq[pind[0]][pind[1]] : ", dfimdq[pind[0]][pind[1]])
+                        print("np.shape(iw) =", np.shape(iw))
+                        print("np.shape(dfrqe_wav[iw[0]]) = ", np.shape(dfrqe_wav[iw[0]]))
+                        print("np.shape(dfrqe_rqe[iw[0]]) = ", np.shape(dfrqe_rqe[iw[0]]))
+                        print("int_tab=", int_tab)
                         print("dff = ", dff)
-    
+
                     # interpolate over dflat cube
                     iloc = auxfunc.idl_valuelocate(dfwave, wave[k, j])[0]
                     if dfwave[iloc] > wave[k, j]:
@@ -429,11 +432,12 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     dfs = 1.0
                     if (wave[k, j] <= max(dfwave)) and (wave[k, j] >= min(dfwave)) and (kk == 2):
                         dfs = np.interp(wave[k, j], dfwave[ibr], zz[zzwherenonan])
-                    # check DQ flags
+
+                    # check DQ flags for d-flat
                     if dfimdq[pind[0], pind[1]] != 0:
                         dfs = 1.0
-    
-                    # integrate over S-flat fast vector
+
+                    # integrate over s-flat fast vector
                     sfv_wav = sfv.field("WAVELENGTH")
                     sfv_dat = sfv.field("DATA")
                     iw = np.where((sfv_wav >= wave[k, j]-delw/2.0) & (sfv_wav <= wave[k, j]+delw/2.0))
@@ -457,11 +461,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     if (wave[k, j] <= max(sfimwave)) and (wave[k, j] >= min(sfimwave)) and (kk == 2):
                         sfs = np.interp(wave[k, j], sfimwave[ibr], zz[zzwherenonan])
 
-                    # check DQ flags
+                    # check DQ flags for s-flat
                     kk = np.where(sfimdq[:, pind[0], pind[1]][ibr] == 0)
-                    if np.size(kk) != 2:
+                    if np.size(kk) != 1:
                         sfs = 1.0
-    
+
                     # integrate over f-flat fast vector
                     # reference file wavelength range is from 0.6 to 5.206 microns, so need to force
                     # solution to 1 for wavelengths outside that range
@@ -477,23 +481,32 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
                     # interpolate over f-flat cube
                     ffs = np.interp(wave[k, j], ffsallwave, ffsall[:, col-1, row-1])
-                    
-                    flatcor[k, j] = dff * dfs * sff * sfs * fff * ffs
-    
+
+                    # check DQ flags for f-flat
+                    kk = np.where(ffsalldq[:, col-1, row-1] == 0)
+                    if np.size(kk) != 1:
+                        ffs = 1.0
+
+                    # add correction
+                    # set to 1.0 if the dq flag of s-flat, d-flat and f-flat are all DO_NOT_USE
+                    if ffs == 1.0 and sfs == 1.0 and dfs == 1.0:
+                        flatcor[k, j] = 1.0
+                    else:
+                        flatcor[k, j] = dff * dfs * sff * sfs * fff * ffs
+
                     if (pind[1]-px0+1 == 9999) and (pind[0]-py0+1 == 9999):
                         if debug:
                             print("pind = ", pind)
                             print("wave[k, j] = ", wave[k, j])
                             print("dfs, dff = ", dfs, dff)
                             print("sfs, sff = ", sfs, sff)
-    
+
                         msg = "Making the plot fot this slitlet..."
                         print(msg)
                         log_msgs.append(msg)
                         # make plot
-                        font = {#'family' : 'normal',
-                                'weight' : 'normal',
-                                'size'   : 16}
+                        font = {'weight': 'normal',
+                                'size': 16}
                         matplotlib.rc('font', **font)
                         fig = plt.figure(1, figsize=(12, 10))
                         plt.subplots_adjust(hspace=.4)
@@ -526,7 +539,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         result_msg = "Unable to calculate statistics. Test set be SKIP."
                         median_diff = "skip"
                         return median_diff, result_msg, log_msgs
-    
+
                     if debug:
                         print("dfs = ", dfs)
                         print("sff = ", sff)
@@ -552,7 +565,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                             print("delf[k, j] = ", delf[k, j])
                     except:
                         IndexError
-    
+
         nanind = np.isnan(delf)   # get all the nan indexes
         notnan = ~nanind   # get all the not-nan indexes
         delf = delf[notnan]   # get rid of NaNs
@@ -627,7 +640,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
                                                      vminmax=vminmax, plt_origin=plt_origin, show_figs=show_figs,
                                                      save_figs=save_figs)
-
 
                 elif not save_figs and not show_figs:
                     msg = "Not making plots because both show_figs and save_figs were set to False."

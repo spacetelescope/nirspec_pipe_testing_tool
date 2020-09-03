@@ -184,10 +184,10 @@ def validate_msa_flagging(output_hdul):
     step_output_file = output_hdul[1]
     msa_flagging_operability_ref, msa_flagging_threshold, stellarity, save_msa_flagging_figs = output_hdul[4]
 
-    msg = "\n Performing WCS validation test... "
+    msg = "\n Performing MSA flagging validation test... "
     print(msg)
     logging.info(msg)
-    result, log_msgs = msa_flagging_testing.run_msa_flagging_testing(step_output_file,
+    result, result_msg, log_msgs = msa_flagging_testing.run_msa_flagging_testing(step_output_file,
                                                                      msa_flagging_threshold=msa_flagging_threshold,
                                                                      stellarity=stellarity,
                                                                      operability_ref=msa_flagging_operability_ref,
