@@ -187,6 +187,10 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
 def set_ptt_immutable_paths():
     calwebb_spec2_cfg = os.path.realpath(__file__).replace("mk_pttconfig_file.py", "data/calwebb_spec2.cfg")
     wit4_path = os.environ.get('WIT4_PATH')
+    if wit4_path is None:
+        print("(msa_flagging_testing): The environment variable WIT4_PATH is not defined. To set it, follow the "
+              "instructions at: \n"
+              "                        https://github.com/spacetelescope/nirspec_pipe_testing_tool")
     test_data_suite = "nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/"
     esa_files_path = os.path.join(wit4_path, test_data_suite)
     return calwebb_spec2_cfg, esa_files_path
@@ -242,6 +246,11 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
         msa_conf_name = '/path_to_corresponding_MSA_shutter_configuration_file/V9621500100101_short_msa.fits'
 
     wit4_path = os.environ.get('WIT4_PATH')
+    if wit4_path is None:
+        print("(mk_pttconfig_file): The environment variable CRDS_PATH is not defined. To set it, follow the "
+              "instructions at: \n"
+              "                     https://github.com/spacetelescope/nirspec_pipe_testing_tool")
+        exit()
     if dflat_path is None:
         dflat_path = os.path.join(wit4_path, 'nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat')
     if sflat_path is None:
@@ -257,6 +266,11 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     truth_extract_2d = rate_input_file.replace(".fits", "_extract_2d_truth.fits")
 
     crds_path = os.environ.get('CRDS_PATH')
+    if wit4_path is None:
+        print("(mk_pttconfig_file): The environment variable CRDS_PATH is not defined. To set it, follow the "
+              "instructions at: \n"
+              "                     https://github.com/spacetelescope/nirspec_pipe_testing_tool")
+        exit()
     if msa_flag_opref is None:
         msa_flag_opref = os.path.join(crds_path, 'references/jwst/jwst_nirspec_msaoper_0001.json')
 
