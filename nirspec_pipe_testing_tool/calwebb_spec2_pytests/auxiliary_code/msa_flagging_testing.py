@@ -367,6 +367,8 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, stellarity
 
     # validation: overlap should be >= msa_flagging_threshold percent for all slits with more than 100 pixels
     FINAL_TEST_RESULT = False
+    if not isinstance(msa_flagging_threshold, float):
+        msa_flagging_threshold = float(msa_flagging_threshold)
     if (allchecks[allsizes >= 100] >= msa_flagging_threshold).all():
         FINAL_TEST_RESULT = True
     if FINAL_TEST_RESULT:
