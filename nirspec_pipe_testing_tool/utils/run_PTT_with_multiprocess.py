@@ -110,7 +110,10 @@ def run_PTT_with_multiprocess(multiprocessing_PTT_config_file):
                 det = "NRS1"
             if "NRS2" in ptt_cfg:
                 det = "NRS2"
-            det1_input_file_list.append("jwdata0010010_11010_0001_"+det+"_uncal.fits")
+            uncal_file = glob(os.path.join(os.path.dirname(ptt_cfg), '*'+det+'_uncal.fits'))
+            if len(uncal_file) == 0:
+                uncal_file = glob(os.path.join(os.path.dirname(ptt_cfg), '*' + det.lower() + '_uncal.fits'))
+            det1_input_file_list.append(uncal_file[0])
         if cal_det1_input_file_list == "skip":
             det1_input_file_list.append(None)
 

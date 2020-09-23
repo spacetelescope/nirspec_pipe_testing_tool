@@ -176,7 +176,7 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
         count = 0
         for v in val:
             # check if value is a float
-            if v=='.':
+            if v == '.':
                 count += 1
 
         # check if value has a negative sign
@@ -193,14 +193,14 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
                 no_letters_in_string = False
         if no_letters_in_string:
             if (count == 0) and (':' not in val) and (neg_in_value):
-                if val=='':
+                if val == '':
                     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
-                    print (warning)
+                    print(warning)
                     val_and_valtype = [val, dict_type]
                     return warning, val_and_valtype
 
                 val = int(val)
-            if (count==1) and (':' not in val):
+            if (count == 1) and (':' not in val):
                 val = float(val)
             valtype = type(val)
 
@@ -233,12 +233,12 @@ def check3numbers(key, val, ext='primary'):
 
     """
     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value format. Expected: 0.0.0, got: '+str(val))
-    r = re.compile('\d.\d.\d') # check that the string has a structure like 0.1.1
+    r = re.compile('\d.\d.\d')  # check that the string has a structure like 0.1.1
     if r.match(val) is None:
-        print (warning)
+        print(warning)
         return warning
     else:
-        print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Matches expected format'))
+        print('{:<15} {:<9} {:<25}'.format(key, ext, 'Matches expected format'))
 
 
 def check_len(key, val, val_len=2, ext='primary'):
@@ -261,9 +261,9 @@ def check_len(key, val, val_len=2, ext='primary'):
     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect length of value. Expected: ' + repr(val_len) +
                                            ', got ' + repr(string_length))
     if string_length == val_len:
-        print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct format'))
+        print('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct format'))
     else:
-        print (warning)
+        print(warning)
         return warning
 
 
@@ -530,6 +530,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             print("changing subarray keyword to ", pipe_subarr_val)
                             missing_keywds.append(key)
                             # and make sure to change the primary slit keyword accordingly
+                            if 'FULL' in subarrd_key:
+                                subarrd_key = 'S200A1'
                             specific_keys_dict['FXD_SLIT'] = subarrd_key
                             print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
                             missing_keywds.append('FXD_SLIT')
@@ -587,6 +589,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                                 print("changing subarray keyword to ", subarrd_key)
                                                 missing_keywds.append(key)
                                                 # and make sure to change the primary slit keyword accordingly
+                                                if 'FULL' in subarrd_key:
+                                                    subarrd_key = 'S200A1'
                                                 specific_keys_dict['FXD_SLIT'] = subarrd_key
                                                 print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
                                                 missing_keywds.append('FXD_SLIT')

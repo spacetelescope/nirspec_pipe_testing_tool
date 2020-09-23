@@ -220,7 +220,10 @@ def output_hdul(set_inandout_filenames, config):
             input_file = input_file.replace("_uncal_rate", "")
         if "_uncal" in input_file:
             input_file = input_file.replace("_uncal", "")
-        final_output_name = "final_output_spec2_"+detector+"_cal.fits"
+        # final_output_name = "final_output_spec2_"+detector+"_cal.fits"
+        if detector.lower() not in input_file.lower():
+            input_file = input_file.replace(".fits", "_" + detector + ".fits")
+        final_output_name = input_file.replace(".fits", "_cal.fits")
         if core_utils.check_MOS_true(inhdu):
             # copy the MSA shutter configuration file into the pytest directory
             subprocess.run(["cp", msa_shutter_conf, "."])

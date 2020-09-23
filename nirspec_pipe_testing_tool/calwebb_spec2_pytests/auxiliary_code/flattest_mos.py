@@ -437,6 +437,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     if dfimdq[pind[0], pind[1]] != 0:
                         dfs = 1.0
 
+                    # SETTING D-FLAT TO 1 FOR FIXING ISSUE WITH FLAT FIELD
+                    dfs = 1.0
+
                     # integrate over s-flat fast vector
                     sfv_wav = sfv.field("WAVELENGTH")
                     sfv_dat = sfv.field("DATA")

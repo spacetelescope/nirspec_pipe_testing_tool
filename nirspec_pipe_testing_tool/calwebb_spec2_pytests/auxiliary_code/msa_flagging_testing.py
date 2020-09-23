@@ -304,8 +304,11 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, stellarity
 
     # loop over the slits and compare pixel bounds with the flagged pixels from the original product
     for i, slit in enumerate(slits_list):
-        name = slit.name
-        print("\nWorking with slit: ", name)
+        try:
+            name = slit.name
+        except AttributeError:
+            name = i
+        print("\nWorking with slit/slice: ", name)
         print("Slit min and max in y direction: ", slit.ymin, slit.ymax)
         # get the WCS object for this particular slit
         wcs_slice = nirspec.nrs_wcs_set_input(awcs_fo, name)

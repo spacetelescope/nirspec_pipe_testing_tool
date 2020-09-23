@@ -85,7 +85,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
     # read in 2D spectra output from the bar shadow step
     if os.path.isfile(bsfile):
         if debug:
-            print('Bar shadow file does exist.')
+            print('Barshadow file does exist.')
     else:
         result_msg = 'Barshadow file does NOT exist. Barshadow test will be skipped.'
         log_msgs.append(result_msg)

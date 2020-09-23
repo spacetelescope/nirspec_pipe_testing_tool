@@ -500,6 +500,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                         print("changing subarray keyword to ", subarrd_key)
                                         missing_keywds.append(key)
                                         # and make sure to change the primary slit keyword accordingly
+                                        if 'FULL' in subarrd_key:
+                                            subarrd_key = 'S200A1'
                                         specific_keys_dict['FXD_SLIT'] = subarrd_key
                                         print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
                                         missing_keywds.append('FXD_SLIT')
