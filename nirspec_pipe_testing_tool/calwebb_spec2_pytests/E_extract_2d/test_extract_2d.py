@@ -70,7 +70,7 @@ def output_hdul(set_inandout_filenames, config):
                                                                    "compare_assign_wcs_and_extract_2d_with_esa")
     esa_files_path = config.get("benchmark_intermediary_products", "esa_files_path")
     data_directory = config.get("calwebb_spec2_input_file", "data_directory")
-    truth_file = os.path.join(data_directory, config.get("benchmark_intermediary_products", "truth_file_assign_wcs"))
+    truth_file = os.path.join(data_directory, config.get("benchmark_intermediary_products", "truth_file_extract_2d"))
     if compare_assign_wcs_and_extract_2d_with_esa:
         truth_file = esa_files_path
     print("Will use this 'truth' file to compare result of extract_2d: ")
