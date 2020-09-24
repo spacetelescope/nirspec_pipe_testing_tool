@@ -85,7 +85,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
     # read in 2D spectra output from the bar shadow step
     if os.path.isfile(bsfile):
         if debug:
-            print('Bar shadow file does exist.')
+            print('Barshadow file does exist.')
     else:
         result_msg = 'Barshadow file does NOT exist. Barshadow test will be skipped.'
         log_msgs.append(result_msg)
@@ -243,6 +243,11 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         # get the reference file (need the mos1x1 for this internal lamp case, where each shutter was
         # extracted separately)
         wit4_path = os.environ.get('WIT4_PATH')
+        if wit4_path is None:
+            print("(barshadow_testing): The environment variable WIT4_PATH is not defined. To set it, follow the "
+                  "instructions at: \n"
+                  "                     https://github.com/spacetelescope/nirspec_pipe_testing_tool")
+            exit()
         cdp3_barshadow = "nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/referenceFilesBS-20160401"
         path_to_ref_files = os.path.join(wit4_path, cdp3_barshadow)
         if ref_file is None:

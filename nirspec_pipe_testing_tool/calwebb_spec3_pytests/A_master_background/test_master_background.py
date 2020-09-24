@@ -185,7 +185,10 @@ def output_hdul(set_inandout_filenames, config):
         core_utils.add_detector2filename(output_directory, step_input_file)
 
         # state name of the final spec3 _cal file
-        final_output_name = step_input_file.replace("spec2", "spec3")
+        if "spec2" in step_input_file:
+            final_output_name = step_input_file.replace("spec2", "spec3")
+        else:
+            final_output_name = "final_output_spec3_"+detector+"_cal.fits"
         final_output_name_msg = "\nThe final pipeline product was saved in: " + final_output_name
         print(final_output_name_msg)
         logging.info(final_output_name_msg)

@@ -48,10 +48,34 @@ https://github.com/spacetelescope/jwst_validation_notebooks
 ## Quick Start Guide
 
 
-NOTE: This guide assumes that Conda has been installed. If you have not yet done 
+**IMPORTANT**:
+
+1. This guide assumes that Conda has been installed. If you have not yet done
 so, please follow the instructions at:
 https://astroconda.readthedocs.io/en/latest/
 Please use the latest python version (3.6 is the minimum supported)
+
+2. Keyword check for running the stage1 pipeline, i.e. calwebb_detector1. When you follow
+this guide from the beginning with any data set, the script that checks the keywords is
+automatically run and your data is ready for ingestion in cal_detector1, i.e. the
+_uncal.fits file has all the right keywords. Nonetheless, if you need/want to check
+keywords, run the following from the command line:
+```bash
+nptt_hdr_keywd_check file_rate.fits -m=bots -u
+```
+where the ```-u``` flag is to update the file rather than creating a new one with the
+updated header, and the ```-m``` flag sets the mode used, which can be any of these values:
+FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf.
+
+3. Keyword check for running the stage2 pipeline, i.e. spec2 or image2. If, however, you
+already have a _rate.fits file, i.e. the final output of cal_detector1, and you need/want
+to check keywords, run the following from the command line:
+```bash
+nptt_level2b_hdr_keywd_check file_rate.fits MODE -u
+```
+where MODE is any value from FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata,
+msata, focus, and mimf, and the ```-u``` flag is to update the file rather than creating a
+new one with the updated header.
 
 
 **THREE THINGS BEFORE STARTING**
@@ -128,7 +152,7 @@ conda env remove -n name_of_your_old_environment
 
 - Option A. For non-developers and without PTT source code. For the **latest stable tag** type: 
 ```bash
-pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.1.0
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.1.1
 ```
 where the numbers at the end represent the latest stable version of NPTT; for the most recent code, in the 
 terminal type:
@@ -622,7 +646,7 @@ a) ```cal_det1=skip``` then the code will jump directly to run the spec2 and/or 
 pipelines
 
 b) ```cal_det1=all``` then the code will assume that the prepare_data2run script was
-run and there will be files with names such as jwdata0010010_11010_0001_NRS1_uncal.fits. NPTT will 
+run and there will be files with names that contain ```_uncal.fits```. NPTT will
 expect to find one these files per ```PTT_config_NRS1.cfg```  file in each of the directores given in 
 the ```data_sets``` variable.
 

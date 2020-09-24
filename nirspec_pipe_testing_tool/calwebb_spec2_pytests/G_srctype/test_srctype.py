@@ -18,7 +18,6 @@ from .. import TESTSDIR
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 
 
-
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
 __version__ = "1.3"
@@ -86,101 +85,96 @@ def output_hdul(set_inandout_filenames, config):
     else:
         pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
 
-    if not core_utils.check_BOTS_true(inhdu):
-
-        if run_calwebb_spec2:
-            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-            return hdul, step_output_file, run_pytests, scihdul
-
-        else:
-            if run_pipe_step:
-
-                # Create the logfile for PTT, but erase the previous one if it exists
-                PTTcalspec2_log = os.path.join(output_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
-                if os.path.isfile(PTTcalspec2_log):
-                    os.remove(PTTcalspec2_log)
-                print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
-                for handler in logging.root.handlers[:]:
-                    logging.root.removeHandler(handler)
-                logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
-                # print pipeline version
-                import jwst
-                pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
-                print(pipeline_version)
-                logging.info(pipeline_version)
-                if change_filter_opaque:
-                    logging.info(filter_opaque_msg)
-
-                if os.path.isfile(step_input_file):
-                    msg = " *** Step "+step+" set to True"
-                    print(msg)
-                    logging.info(msg)
-                    stp = SourceTypeStep()
-
-                    # check that previous pipeline steps were run up to this point
-                    core_utils.check_completed_steps(step, step_input_file)
-
-                    # get the right configuration files to run the step
-                    local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
-                    # start the timer to compute the step running time
-                    start_time = time.time()
-                    if local_pipe_cfg_path == "pipe_source_tree_code":
-                        result = stp.call(step_input_file)
-                    else:
-                        result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/srctype.cfg')
-                    result.save(step_output_file)
-                    # end the timer to compute the step running time
-                    end_time = repr(time.time() - start_time)   # this is in seconds
-                    msg = "Step "+step+" took "+end_time+" seconds to finish"
-                    print(msg)
-                    logging.info(msg)
-
-                    step_completed = True
-                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                    scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-
-                    # rename and move the pipeline log file
-                    pipelog = "pipeline_" + detector + ".log"
-                    try:
-                        calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
-                        pytest_workdir = TESTSDIR
-                        logfile = glob(pytest_workdir + "/" + pipelog)[0]
-                        os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
-                    except IndexError:
-                        print("\n* WARNING: Something went wrong. Could not find a ", pipelog, " file \n")
-
-                    # add the running time for this step
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests, scihdul
-
-                else:
-                    msg = " The input file does not exist. Skipping step."
-                    print(msg)
-                    logging.info(msg)
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    pytest.skip("Skipping "+step+" because the input file does not exist.")
-
-            else:
-                msg = "Skipping running pipeline step "+step
-                print(msg)
-                logging.info(msg)
-                end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
-                if os.path.isfile(step_output_file):
-                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                    scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-                    step_completed = True
-                    # add the running time for this step
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests, scihdul
-                else:
-                    step_completed = False
-                    # add the running time for this step
-                    core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
+    if run_calwebb_spec2:
+        hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+        scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+        return hdul, step_output_file, run_pytests, scihdul
 
     else:
-        pytest.skip("Skipping "+step+" because data is BOTS.")
+        if run_pipe_step:
+
+            # Create the logfile for PTT, but erase the previous one if it exists
+            PTTcalspec2_log = os.path.join(output_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
+            if os.path.isfile(PTTcalspec2_log):
+                os.remove(PTTcalspec2_log)
+            print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
+            for handler in logging.root.handlers[:]:
+                logging.root.removeHandler(handler)
+            logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
+            # print pipeline version
+            import jwst
+            pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
+            print(pipeline_version)
+            logging.info(pipeline_version)
+            if change_filter_opaque:
+                logging.info(filter_opaque_msg)
+
+            if os.path.isfile(step_input_file):
+                msg = " *** Step "+step+" set to True"
+                print(msg)
+                logging.info(msg)
+                stp = SourceTypeStep()
+
+                # check that previous pipeline steps were run up to this point
+                core_utils.check_completed_steps(step, step_input_file)
+
+                # get the right configuration files to run the step
+                local_pipe_cfg_path = config.get("calwebb_spec2_input_file", "local_pipe_cfg_path")
+                # start the timer to compute the step running time
+                start_time = time.time()
+                if local_pipe_cfg_path == "pipe_source_tree_code":
+                    result = stp.call(step_input_file)
+                else:
+                    result = stp.call(step_input_file, config_file=local_pipe_cfg_path+'/srctype.cfg')
+                result.save(step_output_file)
+                # end the timer to compute the step running time
+                end_time = repr(time.time() - start_time)   # this is in seconds
+                msg = "Step "+step+" took "+end_time+" seconds to finish"
+                print(msg)
+                logging.info(msg)
+
+                step_completed = True
+                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+
+                # rename and move the pipeline log file
+                pipelog = "pipeline_" + detector + ".log"
+                try:
+                    calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
+                    pytest_workdir = TESTSDIR
+                    logfile = glob(pytest_workdir + "/" + pipelog)[0]
+                    os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
+                except IndexError:
+                    print("\n* WARNING: Something went wrong. Could not find a ", pipelog, " file \n")
+
+                # add the running time for this step
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                return hdul, step_output_file, run_pytests, scihdul
+
+            else:
+                msg = " The input file does not exist. Skipping step."
+                print(msg)
+                logging.info(msg)
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                pytest.skip("Skipping "+step+" because the input file does not exist.")
+
+        else:
+            msg = "Skipping running pipeline step "+step
+            print(msg)
+            logging.info(msg)
+            end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
+            if os.path.isfile(step_output_file):
+                hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+                step_completed = True
+                # add the running time for this step
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                return hdul, step_output_file, run_pytests, scihdul
+            else:
+                step_completed = False
+                # add the running time for this step
+                core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
+                pytest.skip("Test skipped because input file "+step_output_file+" does not exist.")
 
 
 # Unit tests

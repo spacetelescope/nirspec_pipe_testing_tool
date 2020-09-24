@@ -49,6 +49,11 @@ __version__ = "1.3"
 
 # Paths
 wit4_path = os.environ.get('WIT4_PATH')
+if wit4_path is None:
+    print("(hdr_keywd_check): The environment variable WIT4_PATH is not defined. To set it, follow the "
+          "instructions at: \n"
+          "                   https://github.com/spacetelescope/nirspec_pipe_testing_tool")
+    exit()
 nirspec_cdp3 = "/nirspec/CDP3/03_Instrument_model/3.1_Files/NIRS_FM2_05_CV3_FIT1/Description"
 path_to_tilt_files = os.path.join(wit4_path, nirspec_cdp3)
 
@@ -495,6 +500,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                         print("changing subarray keyword to ", subarrd_key)
                                         missing_keywds.append(key)
                                         # and make sure to change the primary slit keyword accordingly
+                                        if 'FULL' in subarrd_key:
+                                            subarrd_key = 'S200A1'
                                         specific_keys_dict['FXD_SLIT'] = subarrd_key
                                         print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
                                         missing_keywds.append('FXD_SLIT')
