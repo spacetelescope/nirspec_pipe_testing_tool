@@ -25,14 +25,15 @@ This script tests the IFU pipeline pathloss step output for a Point Source.
 """
 
 # HEADER
-__author__ = "T King"
-__version__ = "1.2"
+__author__ = "T King & M Pena-Guerrero"
+__version__ = "1.3"
 
 # HISTORY
 # Oct 19, 2019 - Version 1.0: initial version started
 # Feb 12, 2020 - Version 1.1: Tests pass for every slit
 # Feb 26, 2020 - Mostly pep8 compliant
 # June 11, 2020 - Version 1.2: Added changes to be able to run within NPTT
+# September 25, 2020 - Version 1.3: Added option to use either data model or fits file as input for the test
 
 
 def pathtest(step_input_filename, reffile, comparison_filename,
@@ -100,20 +101,23 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
     # get files
     print('Checking files exist & obtaining datamodels. Takes a few mins...')
-    if os.path.isfile(comparison_filename):
-        if debug:
-            print('Comparison file does exist.')
-    else:
-        result_msg = 'Comparison file does NOT exist. Skipping pathloss test.'
-        print(result_msg)
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
+    if isinstance(comparison_filename, str):
+        if os.path.isfile(comparison_filename):
+            if debug:
+                print('Comparison file does exist.')
+        else:
+            result_msg = 'Comparison file does NOT exist. Skipping pathloss test.'
+            print(result_msg)
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
 
-    # get the comparison data model
-    ifu_pipe_model = datamodels.open(comparison_filename)
-    if debug:
-        print('got comparison datamodel!')
+        # get the comparison data model
+        ifu_pipe_model = datamodels.open(comparison_filename)
+        if debug:
+            print('got comparison datamodel!')
+    else:
+        ifu_pipe_model = comparison_filename
 
     if os.path.isfile(step_input_filename):
         if debug:
@@ -143,7 +147,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
     # these are full 2048 * 2048 files:
     previous_sci = fits.getdata(step_input_filename, "SCI")
-    comp_sci = fits.getdata(comparison_filename, "SCI")
+    comp_sci = ifu_pipe_model.data
     pathloss_divided = comp_sci/previous_sci
 
     # Can manually test correction at nonzero point
@@ -165,9 +169,10 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     log_msgs.append(msg)
 
     slit_list = np.ndarray.tolist(np.arange(0, 30))
-    for slit, slit_num in zip(pl_ifu_slits, slit_list):
+    for slit, slit_num, pipeslit in zip(pl_ifu_slits, slit_list):
         print("working with slice {}".format(slit_num))
 
+        # NIRSpec implementation
         x, y = wcstools.grid_from_bounding_box(slit.bounding_box, step=(1, 1))
         ra, dec, wave = slit(x, y)
 

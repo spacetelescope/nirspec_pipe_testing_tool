@@ -26,13 +26,14 @@ This script tests the MSA pipeline pathloss step output for a Uniform Source.
 """
 
 # HEADER
-__author__ = "T King"
-__version__ = "1.2"
+__author__ = "T King & M Pena-Guerrero"
+__version__ = "1.3"
 
 # HISTORY
 # October 19, 2019 - Version 1.0: initial version started
 # January 14, 2020 - Version 1.1: passes tests
 # February 26, 2020 - Version 1.2: mostly pep8 compliant
+# September 25, 2020 - Version 1.3: Added option to use either data model or fits file as input for the test
 
 
 def get_mos_ps_uni_extensions(fits_file_name, is_point_source):
@@ -129,19 +130,23 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
     print("""Checking if files exist and obtaining datamodels.
              This takes a few minutes...""")
-    if os.path.isfile(comparison_filename):
-        if debug:
-            print('Comparison file does exist.')
-    else:
-        result_msg = 'Comparison file does NOT exist. Skipping pathloss test.'
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
+    if isinstance(comparison_filename, str):
+        if os.path.isfile(comparison_filename):
+            if debug:
+                print('Comparison file does exist.')
+        else:
+            result_msg = 'Comparison file does NOT exist. Skipping pathloss test.'
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
 
-    # get the comparison data model
-    pathloss_pipe = datamodels.open(comparison_filename)
-    if debug:
-        print('got comparison datamodel!')
+        # get the comparison data model
+        pathloss_pipe = datamodels.open(comparison_filename)
+        if debug:
+            print('got comparison datamodel!')
+
+    else:
+        pathloss_pipe = comparison_filename
 
     if os.path.isfile(step_input_filename):
         if debug:
