@@ -22,13 +22,14 @@ This script tests the MOS pipeline pathloss step output for a Point Source.
 """
 
 # HEADER
-__author__ = "T King"
-__version__ = "1.1"
+__author__ = "T King & M Pena-Guerrero"
+__version__ = "1.3"
 
 # HISTORY
 # October 19, 2019 - Version 1.0: initial version started
 # February 25, 2020 - Version 1.1: Updted for Pep8 compliancy
 # June 5, 2020 - Version 1.2: Included options to test additional interpolation methods
+# September 25, 2020 - Version 1.3: Added option to use either data model or fits file as input for the test
 
 
 def get_corr_val(lambda_val, wave_ref, ref_ext, ref_xy, slit_x, slit_y):
@@ -151,22 +152,26 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
     # get files
     print("""Checking if files exist & obtaining datamodels.
           This takes a few minutes...""")
-    if os.path.isfile(comparison_filename):
-        if debug:
-            msg = 'Comparison file does exist.'
-            print(msg)
-    else:
-        result_msg = """Comparison file does NOT exist.
-                     Pathloss test will be skipped."""
-        print(result_msg)
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
+    if isinstance(comparison_filename, str):
+        if os.path.isfile(comparison_filename):
+            if debug:
+                msg = 'Comparison file does exist.'
+                print(msg)
+        else:
+            result_msg = """Comparison file does NOT exist.
+                         Pathloss test will be skipped."""
+            print(result_msg)
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
 
-    # get the comparison data model
-    pathloss_pipe = datamodels.open(comparison_filename)
-    if debug:
-        print('Retrieved comparison datamodel.')
+        # get the comparison data model
+        pathloss_pipe = datamodels.open(comparison_filename)
+        if debug:
+            print('Retrieved comparison datamodel.')
+
+    else:
+        pathloss_pipe = comparison_filename
 
     if os.path.isfile(step_input_filename):
         if debug:

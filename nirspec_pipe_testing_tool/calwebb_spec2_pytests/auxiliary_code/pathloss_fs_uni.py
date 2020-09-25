@@ -23,14 +23,16 @@ This script tests the FS pipeline pathloss step output for a Uniform Source.
 """
 
 # HEADER
-__author__ = "T King"
-__version__ = "1.3"
+__author__ = "T King & M Pena-Guerrero"
+__version__ = "1.4"
 
 # HISTORY
 # Oct 19, 2019 - Version 1.0: initial version started
 # Dec 2019, - Version 1.1: initial version passes test
 # Feb 26 2020 - Version 1.2: mostly pep8 compliant
 # June 8, 2020 - Version 1.3: Added changes to be able to run within NPTT
+# September 25, 2020 - Version 1.4: Added option to use either data model or fits file as input for the test, and
+#                      the option to provide an extract_2d file to the function
 
 
 # put in auxiliary fxns
@@ -65,7 +67,7 @@ def get_ps_uni_extensions(fits_file_name, is_point_source):
     return ps_dict, uni_dict
 
 
-def pathtest(step_input_filename, reffile, comparison_filename,
+def pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=None,
              writefile=True, show_figs=False, save_figs=True,
              threshold_diff=1.0e-7, debug=False):
     """
@@ -75,6 +77,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         step_input_filename: str, full path name of sourcetype output fits file
         reffile: str, path to the pathloss FS reference fits file
         comparison_filename: str, path to pipeline-generated pathloss fits file
+        extract2d_file: str, name (full path) of the output file for extract_2d
         writefile: boolean, if True writes the fits files of
                    calculated flat and difference images
         show_figs: boolean, whether to show plots or not
@@ -110,7 +113,10 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     is_point_source = False
 
     # get the datamodel from the assign_wcs output file
-    extract2d_wcs_file = step_input_filename.replace("_srctype.fits", "_extract_2d.fits")
+    if extract2d_file is None:
+        extract2d_wcs_file = step_input_filename.replace("srctype.fits", "extract_2d.fits")
+    else:
+        extract2d_wcs_file = extract2d_file
     model = datamodels.MultiSlitModel(extract2d_wcs_file)
 
     if writefile:
@@ -128,17 +134,20 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     total_test_result = []
 
     print('Checking files exist & obtaining datamodels, takes a few mins...')
-    if os.path.isfile(comparison_filename):
-        if debug:
-            print('Comparison file does exist.')
-    else:
-        result_msg = 'Comparison file does NOT exist. Skipping pathloss test.'
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
-
     # get the comparison data model
-    pathloss_pipe = datamodels.open(comparison_filename)
+    if isinstance(comparison_filename, str):
+        if os.path.isfile(comparison_filename):
+            if debug:
+                print('Comparison file does exist.')
+        else:
+            result_msg = 'Comparison file does NOT exist. Skipping pathloss test.'
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
+
+        pathloss_pipe = datamodels.open(comparison_filename)
+    else:
+        pathloss_pipe = comparison_filename
     # For the moment, the pipeline is using the wrong reference file for slit 400A1, so read file that
     # re-processed with the right reference file and open corresponding data model
     if os.path.isfile(step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")):
@@ -170,7 +179,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         sltname_list.append("S200B1")
 
     # but check if data is BOTS
-    if fits.getval(step_input_filename, "EXP_TYPE", 0) == "NRS_BRIGHTOBJ":
+    if exptype == "NRS_BRIGHTOBJ":
         sltname_list = ["S1600A1"]
 
     # get all the science extensions
@@ -183,7 +192,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         #if slit_id == 'S400A1':
         #    continue
         continue_pathloss_test = False
-        if fits.getval(step_input_filename, "EXP_TYPE", 0) == "NRS_BRIGHTOBJ":
+        if exptype == "NRS_BRIGHTOBJ":
             slit = model
             continue_pathloss_test = True
         else:
@@ -513,6 +522,11 @@ def main():
                         action='store',
                         default=None,
                         help='Path and name the comparison file, i.e. the pathloss output file')
+    parser.add_argument("-e",
+                        dest="extract2d_file",
+                        action='store',
+                        default=None,
+                        help='Path and name the extract_2d file, i.e. the output of the extract_2d step')
     parser.add_argument("-w",
                         dest="writefile",
                         action='store_false',
@@ -545,6 +559,7 @@ def main():
     step_input_filename = args.step_input_filename
     reffile = args.reffile
     comparison_filename = args.comparison_filename
+    extract2d_file = args.extract2d_file
     writefile = args.writefile
     save_figs = args.save_figs
     show_figs = args.show_figs
@@ -555,7 +570,7 @@ def main():
     print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script
-    pathtest(step_input_filename, reffile, comparison_filename, writefile=writefile,
+    pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=extract2d_file, writefile=writefile,
              show_figs=show_figs, save_figs=save_figs, threshold_diff=threshold_diff,
              debug=debug)
 
