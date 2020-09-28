@@ -210,6 +210,7 @@ keywd_dict['PA_APER'] = [float]  # [deg] position angle of aperture used, e.g. -
 
 # WCS parameters, these will be added to the science extension
 keywd_dict['wcsinfo'] = {
+    'SRCTYPE': 'POINT',  # Source type used for calibration
     'WCSAXES': [int],  # number of World Coordinate System axes, e.g. 3
     'CRPIX1': [int, float],  # x-coordinate of the reference pixel, e.g. 1024.0
     'CRPIX2': [int, float],  # y-coordinate of the reference pixel, e.g. 128.0

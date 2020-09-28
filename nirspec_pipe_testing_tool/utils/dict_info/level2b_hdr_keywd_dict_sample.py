@@ -289,6 +289,7 @@ keywd_dict['VA_SCALE'] = 1.0  # velocity aberration scale factor, e.g. 1.0
 
 # WCS parameters in science extension
 keywd_dict['wcsinfo'] = {
+    'SRCTYPE': 'EXTENDED',  # Source type used for calibration
     'WCSAXES': 3,  # number of World Coordinate System axes, e.g. 3
     'CRPIX1': 1024,  # x-coordinate of the reference pixel, e.g. 1024.0
     'CRPIX2': 1024,  # y-coordinate of the reference pixel, e.g. 128.0

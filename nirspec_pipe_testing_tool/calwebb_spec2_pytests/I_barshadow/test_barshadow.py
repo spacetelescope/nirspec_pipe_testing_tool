@@ -201,9 +201,17 @@ def validate_barshadow(output_hdul):
         # Determine if the source is point or extended. If extended, unknown, or not present, correction
         # will be applied.
         if 'SRCTYPE' in hdu:
-            if hdu['SRCTYPE'] == 'POINT':
-                pytest.skip("Skipping pytest: The SRCTYPE keyword is set to POINT so barshadow correction is not "
-                            "applied.")
+            srctype = hdu['SRCTYPE']
+        else:
+            try:
+                srctype = fits.getval(output_hdul[1], "SRCTYPE", "SCI", 1)
+            except KeyError:
+                pytest.skip("Skipping pytest because source type keyword has not been defined either in the main"
+                            "header nor the science header.")
+
+        if srctype == 'POINT':
+            pytest.skip("Skipping pytest: The SRCTYPE keyword is set to POINT so barshadow correction is not "
+                        "applied.")
 
         plfile = output_hdul[1].replace('_barshadow', '_pathloss')
         bsfile = output_hdul[1]
@@ -214,7 +222,7 @@ def validate_barshadow(output_hdul):
                                                         show_final_figs=show_figs,
                                                         save_intermediary_figs=save_barshadow_intermediary_plots,
                                                         show_intermediary_figs=show_figs,
-                                                        write_barshadow_files = write_barshadow_files,
+                                                        write_barshadow_files=write_barshadow_files,
                                                         debug=False)
 
     else:
