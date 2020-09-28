@@ -28,13 +28,14 @@ jupyter notebook barshadow.ipynb written by James Muzerolle in August of 2019.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & J. Muzerolle"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Nov 2019 - Version 1.0: initial version completed
+# Sep 2020 - Version 1.1: Added option to take datamodel as barshadow output (i.e. bsfile)
 
 
-def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_final_figs=False, show_final_figs=False,
+def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_final_figs=False, show_final_figs=False,
                         save_intermediary_figs=False, show_intermediary_figs=False, write_barshadow_files=False,
                         ref_file=None, debug=False):
     """
@@ -43,8 +44,8 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         plfile: string, 2D spectra output prior to the bar shadow step (e.g., extract_2d or pathloss product)
         bsfile: string, read in 2D spectra output from the bar shadow step
         barshadow_threshold_diff: float, this value comes from the document ESA-JWST-SCI-NRS-TN-2016-016.pdf, it is
-                                    an arbitrary error of the reference file of 0.0025 absolute error or 5% relative
-                                    error (no justification provided)
+                                    an arbitrary error of the reference file of 0.0025 absolute error (5% relative
+                                    error), no justification provided
         save_final_figs: boolean, if True the final figures with corresponding histograms will be saved
         show_final_figs: boolean, if True the final figures with corresponding histograms will be shown
         save_intermediary_figs: boolean, if True the intermediary figures with corresponding histograms will be saved
@@ -83,16 +84,21 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         print('got extract_2d datamodel!')
 
     # read in 2D spectra output from the bar shadow step
-    if os.path.isfile(bsfile):
-        if debug:
-            print('Barshadow file does exist.')
-    else:
-        result_msg = 'Barshadow file does NOT exist. Barshadow test will be skipped.'
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
+    if isinstance(bsfile, str):
+        if os.path.isfile(bsfile):
+            if debug:
+                print('Barshadow file does exist.')
+        else:
+            result_msg = 'Barshadow file does NOT exist. Barshadow test will be skipped.'
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
 
-    bs = datamodels.open(bsfile)
+        bs = datamodels.open(bsfile)
+
+    else:
+        bs = bsfile
+
     if debug:
         print('got barshadow datamodel!')
 
@@ -152,8 +158,8 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         plt.imshow(bssci, norm=norm, aspect=10.0, origin='lower', cmap='viridis')
         plt.title('Normalized barshadow science data for slitlet '+slit_id)
         # Show and/or save figures
-        file_path = bsfile.replace(os.path.basename(bsfile), "")
-        file_basename = os.path.basename(bsfile.replace("_barshadow.fits", ""))
+        file_path = plfile.replace(os.path.basename(plfile), "")
+        file_basename = os.path.basename(plfile.replace("_pathloss.fits", ""))
         if save_intermediary_figs:
             t = (file_basename, "Barshadowtest_NormSciData_slitlet" + slit_id + ".png")
             plt_name = "_".join(t)
@@ -397,16 +403,16 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.05, save_fina
         log_msgs.append(msg)
 
         tested_quantity = "percentage_greater_3threshold"
-        result = auxfunc.does_median_pass_tes(percentages[1], 10)
-        slitlet_test_result_list.append({tested_quantity: result})
-        msg = " * Result of number of points greater than 3*threshold greater than 10%: "+result+"\n"
+        result_3xThreshold = auxfunc.does_median_pass_tes(percentages[1], 10)
+        # slitlet_test_result_list.append({tested_quantity: result_3xThreshold})
+        msg = " * Result of number of points greater than 3*threshold greater than 10%: "+result_3xThreshold+"\n"
         print(msg)
         log_msgs.append(msg)
 
         tested_quantity = "percentage_greater_5threshold"
-        result = auxfunc.does_median_pass_tes(percentages[2], 10)
-        slitlet_test_result_list.append({tested_quantity: result})
-        msg = " * Result of number of points greater than 5*threshold greater than 10%: "+result+"\n"
+        result_5xThreshold = auxfunc.does_median_pass_tes(percentages[2], 10)
+        # slitlet_test_result_list.append({tested_quantity: result_5xThreshold})
+        msg = " * Result of number of points greater than 5*threshold greater than 10%: "+result_5xThreshold+"\n"
         print(msg)
         log_msgs.append(msg)
 

@@ -229,7 +229,7 @@ keywd_dict['wcsinfo'] = {
     'BUNIT': 'DN/s',  # physical units of the array values
     'EXTNAME': 'SCI',  # extension name
     'EXTVER': 1,  # extension value
-    # 'SRCTYPE': 'POINT',  # Source type used for calibration - commented because it shows up after the source type step
+    'SRCTYPE': 'POINT',  # Source type used for calibration - commented because it shows up after the source type step
     # these only show up for Fixed slit - commented because they are filled out throughout the spec2 pipeline
     # 'SLTNAME': 'S200A1',  # Name of the slit
     # 'SLTSTRT1': 645,  # Starting pixel in x direction
