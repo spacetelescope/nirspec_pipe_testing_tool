@@ -264,6 +264,9 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
 
     truth_assign_wcs = rate_input_file.replace(".fits", "_assign_wcs_truth.fits")
     truth_extract_2d = rate_input_file.replace(".fits", "_extract_2d_truth.fits")
+    if 'rate' in truth_assign_wcs:
+        truth_assign_wcs = truth_assign_wcs.replace("_rate", "")
+        truth_extract_2d = truth_extract_2d.replace("_rate", "")
 
     crds_path = os.environ.get('CRDS_PATH')
     if wit4_path is None:
@@ -338,7 +341,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
 
     # spec3 variables
     if association is None:
-        run_calwebb_spec3 = True
+        run_calwebb_spec3 = 'skip'
     else:
         run_calwebb_spec3 = association
     calwebb_spec3_cfg = calwebb_spec2_cfg.replace("2", "3")

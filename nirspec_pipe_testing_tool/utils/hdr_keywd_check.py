@@ -54,7 +54,7 @@ if wit4_path is None:
           "instructions at: \n"
           "                   https://github.com/spacetelescope/nirspec_pipe_testing_tool")
     exit()
-nirspec_cdp3 = "/nirspec/CDP3/03_Instrument_model/3.1_Files/NIRS_FM2_05_CV3_FIT1/Description"
+nirspec_cdp3 = "nirspec/CDP3/03_Instrument_model/3.1_Files/NIRS_FM2_05_CV3_FIT1/Description"
 path_to_tilt_files = os.path.join(wit4_path, nirspec_cdp3)
 
 

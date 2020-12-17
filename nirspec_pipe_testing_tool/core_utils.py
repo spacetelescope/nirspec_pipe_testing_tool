@@ -211,9 +211,10 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
                                     if '_rate' in step_input_filename:
                                         print("File does not exist, checking without '_rate' suffix... ")
                                         step_input_filename = step_input_filename.replace('_rate', '')
-                                        # break and exit the while loop
-                                        exit_while_loop = True
-                                        break
+                                        # break and exit the while loop if the file exists
+                                        if os.path.isfile(step_input_filename):
+                                            exit_while_loop = True
+                                            break
                                     if debug:
                                         print("Step did not run to create product file.")
                                     j -= 1
@@ -241,11 +242,12 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
             step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix + ".fits")
             if '_rate' in step_output_basename:
                 step_output_basename = step_output_basename.replace('_rate', '')
-            # Special case for BOTS files after extract_1d
-            if "extract_1d" in stp:
-                inhdu = read_hdrfits(initial_input_file, info=False, show_hdr=False)
-                if check_BOTS_true(inhdu):
-                    step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix + "ints.fits")
+            # Special case for BOTS files after extract_1d  -  COMMENTED OUT BECAUSE NOT IN USE IN THE PIPELINE
+            #if "extract_1d" in stp:
+            #    inhdu = read_hdrfits(initial_input_file, info=False, show_hdr=False)
+            #    if check_BOTS_true(inhdu):
+            #        step_output_basename = initial_input_file_basename.replace(".fits",
+            #                                                                   "ints"+out_file_suffix+".fits")
             # remove the step name _gain_scale if it is still in the base name
             if "_gain_scale".lower() in step_output_basename.lower():
                 step_output_basename = step_output_basename.replace("_gain_scale", "")

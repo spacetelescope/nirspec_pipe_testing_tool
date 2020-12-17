@@ -224,6 +224,8 @@ def output_hdul(set_inandout_filenames, config):
         if detector.lower() not in input_file.lower():
             input_file = input_file.replace(".fits", "_" + detector + ".fits")
         final_output_name = input_file.replace(".fits", "_cal.fits")
+        if '_rate' in final_output_name:
+            final_output_name = final_output_name.replace('_rate', '')
         if core_utils.check_MOS_true(inhdu):
             # copy the MSA shutter configuration file into the pytest directory
             subprocess.run(["cp", msa_shutter_conf, "."])
@@ -270,7 +272,7 @@ def output_hdul(set_inandout_filenames, config):
 
         # add the detector string to the name of the files and move them to the working directory
         core_utils.add_detector2filename(output_directory, step_input_file)
-        final_output_name_msg = "\nThe final pipeline product was saved in: " + final_output_name
+        final_output_name_msg = "\nThe final pipeline product was saved as: " + final_output_name
         print(final_output_name_msg)
         logging.info(final_output_name_msg)
 
