@@ -27,7 +27,7 @@ __version__ = "3.6"
 # May 2018 - Version 2.0: Completely changed script to use the datamodel instead of the compute_world_coordinates
 #                         script, and added new routines for statistics calculations.
 # Jun 2018 - Version 2.1: Changed extension numbers for the name of the extension in the D-, F-, and S-flats.
-# Jun 2018 - Version 3.0: Change the loop over the pixels to go over both indeces instead of flattening arrays.
+# Jun 2018 - Version 3.0: Change the loop over the pixels to go over both indices instead of flattening arrays.
 # Jun 2018 - Version 3.1: Removed function reverse_cols because it was not behaving as expected.
 # Aug 2018 - Version 3.2: Fixed bugs per Phil Hodge recommendations.
 # Apr 2019 - Version 3.3: Implemented capability to return logging messages.
@@ -189,16 +189,21 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
             print("S-flat -> using ", keyword)
         try:
             sfimwave = np.append(sfimwave, fits.getval(sfile, keyword, "SCI"))
-        except:
-            KeyError
+        except KeyError:
+            continue
     sfv = fits.getdata(sfile, 5)
 
     # F-Flat
     if ".fits" not in fflat_path:
         fflat_ending = "01.01.fits"
         ffile = "_".join((fflat_path, filt, fflat_ending))
+        sci_ext = "SCI_Q1"
     else:
         ffile = fflat_path
+        sci_ext = "SCI"
+        dq_ext = "DQ"
+        err_ext = "ERR"
+        fast_var_ext = "FAST_VARIATION"
 
     if mode not in fflat_path:
         msg = "Wrong path in for mode F-flat. This script handles mode " + mode + "only."
@@ -211,11 +216,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     msg = "Using F-flat: "+ffile
     print(msg)
     log_msgs.append(msg)
-    ffsq1 = fits.getdata(ffile, "SCI_Q1")
-    naxis3 = fits.getval(ffile, "NAXIS3", "SCI_Q1")
+    ffsq1 = fits.getdata(ffile, sci_ext)
+    naxis3 = fits.getval(ffile, "NAXIS3", sci_ext)
     ffswaveq1 = np.array([])
     for i in range(0, naxis3):
-        if i <= 9 :
+        if i <= 9:
             suff = "".join(("0", str(i)))
         else:
             suff = str(i)
@@ -223,11 +228,17 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "_".join(t)
         if debug:
             print("1. F-flat -> ", keyword)
-        ffswaveq1 = np.append(ffswaveq1, fits.getval(ffile, keyword, "SCI_Q1"))
-    ffserrq1 = fits.getdata(ffile, "ERR_Q1")
-    ffsdqq1 = fits.getdata(ffile, "DQ_Q1")
-    ffvq1 = fits.getdata(ffile, "Q1")
-    ffsq2 = fits.getdata(ffile, "SCI_Q2")
+        ffswaveq1 = np.append(ffswaveq1, fits.getval(ffile, keyword, sci_ext))
+    if ".fits" not in fflat_path:
+        ffserrq1 = fits.getdata(ffile, "ERR_Q1")
+        ffsdqq1 = fits.getdata(ffile, "DQ_Q1")
+        ffvq1 = fits.getdata(ffile, "Q1")
+        ffsq2 = fits.getdata(ffile, "SCI_Q2")
+    else:
+        ffserrq1 = fits.getdata(ffile, err_ext)
+        ffsdqq1 = fits.getdata(ffile, dq_ext)
+        ffvq1 = fits.getdata(ffile, fast_var_ext)
+        ffsq2 = fits.getdata(ffile, sci_ext, 2)
     ffswaveq2 = np.array([])
     for i in range(0, naxis3):
         if i <= 9:
@@ -238,11 +249,20 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "_".join(t)
         if debug:
             print("2. F-flat -> using ", keyword)
-        ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, "SCI_Q2"))
-    ffserrq2 = fits.getdata(ffile, "ERR_Q2")
-    ffsdqq2 = fits.getdata(ffile, "DQ_Q2")
-    ffvq2 = fits.getdata(ffile, "Q2")
-    ffsq3 = fits.getdata(ffile, "SCI_Q3")
+        if ".fits" not in fflat_path:
+            ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, "SCI_Q2"))
+        else:
+            ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, sci_ext, 2))
+    if ".fits" not in fflat_path:
+        ffserrq2 = fits.getdata(ffile, "ERR_Q2")
+        ffsdqq2 = fits.getdata(ffile, "DQ_Q2")
+        ffvq2 = fits.getdata(ffile, "Q2")
+        ffsq3 = fits.getdata(ffile, "SCI_Q3")
+    else:
+        ffserrq2 = fits.getdata(ffile, err_ext, 2)
+        ffsdqq2 = fits.getdata(ffile, dq_ext, 2)
+        ffvq2 = fits.getdata(ffile, fast_var_ext, 2)
+        ffsq3 = fits.getdata(ffile, sci_ext, 3)
     ffswaveq3 = np.array([])
     for i in range(0, naxis3):
         if i <= 9:
@@ -253,11 +273,20 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "_".join(t)
         if debug:
             print("3. F-flat -> using ", keyword)
-        ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, "SCI_Q3"))
-    ffserrq3 = fits.getdata(ffile, "ERR_Q3")
-    ffsdqq3 = fits.getdata(ffile, "DQ_Q3")
-    ffvq3 = fits.getdata(ffile, "Q3")
-    ffsq4 = fits.getdata(ffile, "SCI_Q4")
+        if ".fits" not in fflat_path:
+            ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, "SCI_Q3"))
+        else:
+            ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, sci_ext, 3))
+    if ".fits" not in fflat_path:
+        ffserrq3 = fits.getdata(ffile, "ERR_Q3")
+        ffsdqq3 = fits.getdata(ffile, "DQ_Q3")
+        ffvq3 = fits.getdata(ffile, "Q3")
+        ffsq4 = fits.getdata(ffile, "SCI_Q4")
+    else:
+        ffserrq3 = fits.getdata(ffile, err_ext, 3)
+        ffsdqq3 = fits.getdata(ffile, dq_ext, 3)
+        ffvq3 = fits.getdata(ffile, fast_var_ext, 3)
+        ffsq4 = fits.getdata(ffile, sci_ext, 4)
     ffswaveq4 = np.array([])
     for i in range(0, naxis3):
         if i <= 9:
@@ -267,10 +296,18 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "FLAT_"+suff
         if debug:
             print("4. F-flat -> using ", keyword)
-        ffswaveq4 = np.append(ffswaveq4, fits.getval(ffile, keyword, "SCI_Q4"))
-    ffserrq4 = fits.getdata(ffile, "ERR_Q4")
-    ffsdqq4 = fits.getdata(ffile, "DQ_Q4")
-    ffvq4 = fits.getdata(ffile, "Q4")
+        if ".fits" not in fflat_path:
+            ffswaveq4 = np.append(ffswaveq4, fits.getval(ffile, keyword, "SCI_Q4"))
+        else:
+            ffswaveq4 = np.append(ffswaveq4, fits.getval(ffile, keyword, sci_ext, 4))
+    if ".fits" not in fflat_path:
+        ffserrq4 = fits.getdata(ffile, "ERR_Q4")
+        ffsdqq4 = fits.getdata(ffile, "DQ_Q4")
+        ffvq4 = fits.getdata(ffile, "Q4")
+    else:
+        ffserrq4 = fits.getdata(ffile, err_ext, 4)
+        ffsdqq4 = fits.getdata(ffile, dq_ext, 4)
+        ffvq4 = fits.getdata(ffile, fast_var_ext, 4)
 
     # now go through each pixel in the test data
 
@@ -315,7 +352,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         log_msgs.append(msg)
         n_p = np.shape(wave)
         nw = n_p[0]*n_p[1]
-        nw1, nw2 = n_p[1], n_p[0]   # remember that x=nw1 and y=nw2 are reversed  in Python
+        nw1, nw2 = n_p[1], n_p[0]   # remember that x=nw1 and y=nw2 are reversed in Python
         if debug:
             print("nw = ", nw)
 
@@ -372,7 +409,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         for j in range(nw1):   # in x
             for k in range(nw2):   # in y
                 if np.isfinite(wave[k, j]):   # skip if wavelength is NaN
-                    # get the pixel indeces
+                    # get the pixel indexes
                     jwav = wave[k, j]
                     pind = [k+py0-1, j+px0-1]
                     if debug:
@@ -400,9 +437,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     dfrqe_wav = dfrqe.field("WAVELENGTH")
                     dfrqe_rqe = dfrqe.field("RQE")
                     iw = np.where((dfrqe_wav >= wave[k, j]-delw/2.0) & (dfrqe_wav <= wave[k, j]+delw/2.0))
-                    if np.size(iw) == 0:
-                        dff = 1.0
-                    else:
+                    dff = 1.0
+                    if np.size(iw) >= 1:
                         int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw[0]], dfrqe_rqe[iw[0]])
                         first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
                         dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
@@ -424,35 +460,42 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     ibr = [iloc]
                     if iloc != len(dfwave)-1:
                         ibr.append(iloc+1)
-                    # get the values in the z-array at indeces ibr, and x=pind[1] and y=pind[0]
+                    # get the values in the z-array at indices ibr, and x=pind[1] and y=pind[0]
                     zz = dfim[:, pind[0], pind[1]][ibr]
                     # now determine the length of the array with only the finite numbers
                     zzwherenonan = np.where(np.isfinite(zz))
                     kk = np.size(zzwherenonan)
                     dfs = 1.0
+
                     if (wave[k, j] <= max(dfwave)) and (wave[k, j] >= min(dfwave)) and (kk == 2):
                         dfs = np.interp(wave[k, j], dfwave[ibr], zz[zzwherenonan])
 
                     # check DQ flags for d-flat
-                    if dfimdq[pind[0], pind[1]] != 0:
+                    if dfimdq[pind[0], pind[1]] == 1:
+                        # print("d-flat: DQ flag DO NOT USE forcing dfs=1.0")
                         dfs = 1.0
+
+                    # force d-flat to 1.0 for fixing flat field issue with pipeline
+                    #dff, dfs = 1.0, 1.0
 
                     # integrate over s-flat fast vector
                     sfv_wav = sfv.field("WAVELENGTH")
                     sfv_dat = sfv.field("DATA")
                     iw = np.where((sfv_wav >= wave[k, j]-delw/2.0) & (sfv_wav <= wave[k, j]+delw/2.0))
                     sff = 1.0
-                    if np.size(iw) > 2:
+                    if np.size(iw) >= 1:
                         int_tab = auxfunc.idl_tabulate(sfv_wav[iw], sfv_dat[iw])
                         first_sfv_wav, last_sfv_wav = sfv_wav[iw[0]][0], sfv_wav[iw[0]][-1]
                         sff = int_tab/(last_sfv_wav - first_sfv_wav)
 
                     # interpolate s-flat cube
                     iloc = auxfunc.idl_valuelocate(sfimwave, wave[k, j])[0]
+                    if sfimwave[iloc] > wave[k, j]:
+                        iloc -= 1
                     ibr = [iloc]
                     if iloc != len(sfimwave)-1:
                         ibr.append(iloc+1)
-                    # get the values in the z-array at indeces ibr, and x=pind[1] and y=pind[0]
+                    # get the values in the z-array at indices ibr, and x=pind[1] and y=pind[0]
                     zz = sfim[:, pind[0], pind[1]][ibr]
                     # now determine the length of the array with only the finite numbers
                     zzwherenonan = np.where(np.isfinite(zz))
@@ -462,9 +505,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         sfs = np.interp(wave[k, j], sfimwave[ibr], zz[zzwherenonan])
 
                     # check DQ flags for s-flat
-                    kk = np.where(sfimdq[:, pind[0], pind[1]][ibr] == 0)
-                    if np.size(kk) != 1:
+                    kk = np.where(sfimdq[:, pind[0], pind[1]][ibr] == 1)
+                    if np.size(kk) >= 1:
+                        # print("s-flat: DQ flag DO NOT USE forcing sfs=1.0")
                         sfs = 1.0
+
+                    # force s-flat to 1.0 for fixing flat field issue with pipeline
+                    #sff, sfs = 1.0, 1.0
 
                     # integrate over f-flat fast vector
                     # reference file wavelength range is from 0.6 to 5.206 microns, so need to force
@@ -483,16 +530,15 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     ffs = np.interp(wave[k, j], ffsallwave, ffsall[:, col-1, row-1])
 
                     # check DQ flags for f-flat
-                    kk = np.where(ffsalldq[:, col-1, row-1] == 0)
-                    if np.size(kk) != 1:
+                    kk = np.where(ffsalldq[:, col-1, row-1] == 1)
+                    if np.size(kk) >= 1:
                         ffs = 1.0
 
+                    # force f-flat to 1.0 for fixing flat field issue with pipeline
+                    #fff, ffs = 1.0, 1.0
+
                     # add correction
-                    # set to 1.0 if the dq flag of s-flat, d-flat and f-flat are all DO_NOT_USE
-                    if ffs == 1.0 and sfs == 1.0 and dfs == 1.0:
-                        flatcor[k, j] = 1.0
-                    else:
-                        flatcor[k, j] = dff * dfs * sff * sfs * fff * ffs
+                    flatcor[k, j] = dff * dfs * sff * sfs * fff * ffs
 
                     if (pind[1]-px0+1 == 9999) and (pind[0]-py0+1 == 9999):
                         if debug:
@@ -500,6 +546,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                             print("wave[k, j] = ", wave[k, j])
                             print("dfs, dff = ", dfs, dff)
                             print("sfs, sff = ", sfs, sff)
+                            print("fff, ffs = ", fff, ffs)
+                            print("flatcor[k, j] = ", flatcor[k, j])
 
                         msg = "Making the plot fot this slitlet..."
                         print(msg)
@@ -541,10 +589,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         return median_diff, result_msg, log_msgs
 
                     if debug:
-                        print("dfs = ", dfs)
-                        print("sff = ", sff)
-                        print("sfs = ", sfs)
-                        print("ffs = ", ffs)
+                        print("wave[k, j] = ", wave[k, j])
+                        print("dfs, dff = ", dfs, dff)
+                        print("sfs, sff = ", sfs, sff)
+                        print("fff, ffs = ", fff, ffs)
+                        print("flatcor[k, j] = ", flatcor[k, j])
 
                     # read the pipeline-calculated flat image
                     # there are four extensions in the flatfile: SCI, DQ, ERR, WAVELENGTH
@@ -631,7 +680,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         plt_name = "_".join(t)
                         plt_name = os.path.join(file_path, plt_name)
                         difference_img = (pipeflat - flatcor)#/flatcor
-                        in_slit = np.logical_and(difference_img<900.0, difference_img>-900.0) # ignore out of slitlet
+                        in_slit = np.logical_and(difference_img < 900.0, difference_img > -900.0)  # ignore out of slit
                         difference_img[~in_slit] = np.nan   # Set values outside the slit to NaN
                         nanind = np.isnan(difference_img)   # get all the nan indexes
                         difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan

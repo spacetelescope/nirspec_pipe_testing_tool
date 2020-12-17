@@ -399,7 +399,7 @@ def idl_valuelocate(arr, vals):
         vals: array, values that will be located in arr
 
     Returns:
-        idx: list, indeces of where the values would be located if placed in arr
+        idx: list, indices of where the values would be located if placed in arr
 
     """
 
@@ -443,9 +443,9 @@ def construct_reldiff_img(x_size, y_size, forced_nan_idxs, edy_not_restricted, r
     Args:
         x_size: integer, dimension of relative difference image in x-direction
         y_size: integer, dimension of relative difference image in y-direction
-        forced_nan_idxs: numpy array, indeces of all those values that have to be set to NaNs
-        edy_not_restricted: numpy array, indeces of values in the slit-y array that are outside of the restriction zone
-        restricted_ig: numpy array, indeces of values in the slit-y array that are inside of the restriction zone
+        forced_nan_idxs: numpy array, indices of all those values that have to be set to NaNs
+        edy_not_restricted: numpy array, indices of values in the slit-y array that are outside of the restriction zone
+        restricted_ig: numpy array, indices of values in the slit-y array that are inside of the restriction zone
         relative_diff_arr: numpy array, values of the relative differences (e.g. lambdas, msax1, etc.)
 
     Returns:

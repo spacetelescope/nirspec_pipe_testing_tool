@@ -73,12 +73,14 @@ def get_caldet1cfg_and_workingdir(detector):
         output_dir = config.get("calwebb_spec2_input_file", "output_directory")
         mode_used = config.get("calwebb_spec2_input_file", "mode_used")
         raw_data_root_file = config.get("calwebb_spec2_input_file", "raw_data_root_file")
+        stage2_pipe_input_file = config.get("calwebb_spec2_input_file", "input_file")
         print('Read the following PTT configuration file:')
         print(os.path.join(output_dir, ptt_config))
     else:
         print("No PTT found in the current directory. Unable to proceed, exiting script.")
         exit()
-    return calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, raw_data_root_file
+    return calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, raw_data_root_file, \
+           stage2_pipe_input_file
 
 
 def calculate_step_run_time(pipelog_file, pipe_steps):
@@ -182,7 +184,8 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
 
     # Get the cfg file
     cfg_info = get_caldet1cfg_and_workingdir(detector)
-    calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, rawdatrt = cfg_info
+    (calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, rawdatrt,
+     stage2_pipe_input_file) = cfg_info
     if mode_used != "BOTS" and mode_used.lower() != "dark":
         cfg_file = calwebb_detector1_cfg
     elif mode_used == "BOTS":
@@ -216,7 +219,7 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
     # copy the configuration file to create the pipeline log make sure that the handler has the correct name for the log
     set_pipe_log(calwebb_detector1_cfg, detector)
 
-    #final_output_caldet1 = "final_output_caldet1_"+detector+".fits"
+    #final_output_caldet1 = stage2_pipe_input_file
     if detector.lower() not in fits_input_uncal_file.lower():
         fits_input_uncal_file = fits_input_uncal_file.replace(".fits", "_" + detector + ".fits")
     final_output_caldet1 = fits_input_uncal_file.replace(".fits", "_rate.fits")
@@ -370,6 +373,10 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
     msg = "\n ** Calwebb_detector 1 took "+repr(tot_time)+" to complete **"
     print(msg)
     logging.info(msg)
+
+    # make sure the final file is name as expected
+    if not os.path.isfile(stage2_pipe_input_file):
+        subprocess.run(["cp", final_output_caldet1, stage2_pipe_input_file])
 
     # Move products to working dir
 
