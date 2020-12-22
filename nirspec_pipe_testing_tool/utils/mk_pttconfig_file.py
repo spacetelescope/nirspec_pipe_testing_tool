@@ -346,7 +346,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
         run_calwebb_spec3 = association
     calwebb_spec3_cfg = calwebb_spec2_cfg.replace("2", "3")
     s3_input_file = rate_input_file.replace("caldet1", "spec2")
-    s3_input_file = s3_input_file.replace(".fits", "_cal.fits")
+    s3_input_file = s3_input_file.replace("rate", "cal")
 
     # set the additional parameters section
     if wcs_threshold_diff is None:

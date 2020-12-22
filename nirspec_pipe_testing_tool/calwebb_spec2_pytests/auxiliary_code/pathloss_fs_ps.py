@@ -302,7 +302,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=N
         slitx_ref, slity_ref, wave_ref = w.all_pix2world(x1, y1, w1, 0)
 
         previous_sci = slit.data
-        pipe_correction = pipe_slit.pathloss
+        pipe_correction = pipe_slit.pathloss_point
         """
         if slit_id == "S400A1":
             for pipe_slit_400a1 in pathloss_pipe_400a1.slits:
