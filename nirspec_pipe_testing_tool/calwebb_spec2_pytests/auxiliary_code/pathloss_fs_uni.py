@@ -259,7 +259,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=N
                         continue
         else:
             comp_sci = pipe_slit.data
-            pipe_correction = pipe_slit.pathloss
+            pipe_correction = pipe_slit.pathloss_uniform
         if len(pipe_correction) == 0:
             print("Pipeline pathloss correction in datamodel is empty. Skipping testing this slit.")
             continue
