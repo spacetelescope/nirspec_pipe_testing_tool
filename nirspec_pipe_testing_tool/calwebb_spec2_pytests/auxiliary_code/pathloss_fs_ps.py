@@ -68,7 +68,7 @@ def get_ps_uni_extensions(fits_file_name, is_point_source):
     return ps_dict, uni_dict
 
 
-def pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=None,
+def pathtest(step_input_filename, reffile, comparison_filename,
              writefile=True, show_figs=False, save_figs=True, threshold_diff=1e-7,
              debug=False):
     """
@@ -80,7 +80,6 @@ def pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=N
         source type step (with full path) 
         reffile: str, path to the pathloss FS reference fits file
         comparison_filename: str, path to comparison pipeline pathloss file
-        extract2d_file: str, name (full path) of the output file for extract_2d
         writefile: boolean, if True writes the fits files of the calculated
         pathloss and difference image.
         show_figs: boolean, whether to show plots or not
@@ -102,27 +101,70 @@ def pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=N
     # start the timer
     pathtest_start_time = time.time()
 
-    # get info from the rate file header
-    det = fits.getval(step_input_filename, "DETECTOR", 0)
-    msg = 'step_input_filename='+step_input_filename
-    print(msg)
-    log_msgs.append(msg)
-    exptype = fits.getval(step_input_filename, "EXP_TYPE", 0)
-    grat = fits.getval(step_input_filename, "GRATING", 0)
-    filt = fits.getval(step_input_filename, "FILTER", 0)
+    # get info from the input previous pipeline step file/datamodel
+    print("Checking if files exist and obtaining datamodels. This takes a few minutes...")
+    if isinstance(step_input_filename, str):
+        if os.path.isfile(step_input_filename):
+            if debug:
+                print('Input file does exist.')
+            msg = 'step_input_filename='+step_input_filename
+            print(msg)
+            log_msgs.append(msg)
 
-    msg = "path_loss_file  -->  Grating:"+grat+"   Filter:"+filt+"   EXP_TYPE:"+exptype
-    print(msg)
-    log_msgs.append(msg)
-
-    is_point_source = True
-
-    # get the datamodel from the assign_wcs output file
-    if extract2d_file is None:
-        extract2d_wcs_file = step_input_filename.replace("srctype.fits", "extract_2d.fits")
+            # get the input data model
+            pl = datamodels.open(step_input_filename)
+            if debug:
+                print('got input datamodel!')
+        else:
+            result_msg = 'Input file does NOT exist. Skipping pathloss test.'
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
     else:
-        extract2d_wcs_file = extract2d_file
-    model = datamodels.MultiSlitModel(extract2d_wcs_file)
+        pl = step_input_filename
+
+    # get comparison data
+    # For the moment, the pipeline is using the wrong reference file for slit 400A1, so read file that
+    # re-processed with the right reference file and open corresponding data model
+    # BUT we are skipping this since this is not in the released candidate of the pipeline
+    """
+    pathloss_400a1 = step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")
+    pathloss_pipe_400a1 = datamodels.open(pathloss_400a1)
+    """
+    if debug:
+        print('got comparison datamodel!')
+    if isinstance(comparison_filename, str):
+        if os.path.isfile(comparison_filename):
+            if debug:
+                msg = 'Comparison file does exist.'
+                print(msg)
+        else:
+            result_msg = """Comparison file does NOT exist.
+                         Pathloss test will be skipped."""
+            print(result_msg)
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
+
+        # get the comparison data model
+        pathloss_pipe = datamodels.open(comparison_filename)
+        if debug:
+            print('Retrieved comparison datamodel.')
+
+    else:
+        pathloss_pipe = comparison_filename
+
+    # get info from data model
+    det = pl.meta.instrument.detector
+    lamp = pl.meta.instrument.lamp_state
+    grat = pl.meta.instrument.grating
+    filt = pl.meta.instrument.filter
+    exptype = pl.meta.exposure.type
+
+    msg = "from datamodel  -->     Detector: " + det + "   Grating: " + grat + "   Filter: " + \
+          filt + "   Lamp: " + lamp + "   EXP_TYPE: " + exptype
+    print(msg)
+    log_msgs.append(msg)
 
     if writefile:
         # create the fits list to hold the calculated pathloss values for
@@ -153,48 +195,8 @@ def pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=N
         sltname_list = ["S1600A1"]
 
     # get all the science extensions
+    is_point_source = True
     ps_uni_ext_list = get_ps_uni_extensions(reffile, is_point_source)
-
-    # get files
-    print("""Checking if files exist & obtaining datamodels.
-          This takes a few minutes...""")
-
-    # get the comparison data model
-    if isinstance(comparison_filename, str):
-        if os.path.isfile(comparison_filename):
-            if debug:
-                print('Comparison file does exist.')
-        else:
-            result_msg = 'Comparison file does NOT exist. Skipping pathloss test.'
-            print(result_msg)
-            log_msgs.append(result_msg)
-            result = 'skip'
-            return result, result_msg, log_msgs
-        pathloss_pipe = datamodels.open(comparison_filename)
-    else:
-        pathloss_pipe = comparison_filename
-    # For the moment, the pipeline is using the wrong reference file for slit 400A1, so read file that
-    # re-processed with the right reference file and open corresponding data model
-    # BUT we are skipping this since this is not in the released candidate of the pipeline
-    """
-    pathloss_400a1 = step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")
-    pathloss_pipe_400a1 = datamodels.open(pathloss_400a1)
-    """
-    if debug:
-        print('got comparison datamodel!')
-
-    if os.path.isfile(step_input_filename):
-        if debug:
-            print('Input file does exist.')
-    else:
-        result_msg = 'Input file does NOT exist. Skipping pathloss test.'
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
-    # get the input data model
-    pl = datamodels.open(step_input_filename)
-    if debug:
-        print('got input datamodel!')
 
     # loop through the wavelengths
     msg = "Looping through the wavelengths... "
@@ -233,6 +235,11 @@ def pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=N
 
         continue_pl_test = False
         if exptype == "NRS_BRIGHTOBJ":
+            if isinstance(step_input_filename, str):
+                extract2d_wcs_file = step_input_filename.replace("srctype.fits", "extract_2d.fits")
+                model = datamodels.MultiSlitModel(extract2d_wcs_file)
+            else:
+                model = pl
             slit = model
             continue_pl_test = True
         else:
@@ -365,7 +372,8 @@ def pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=N
         matplotlib.rc('font', **font)
 
         # Plots:
-        step_input_filepath = step_input_filename.replace(".fits", "")
+        if save_figs:
+            step_input_filepath = step_input_filename.replace(".fits", "")
         # my correction values
         fig = plt.figure()
         plt.subplot(221)

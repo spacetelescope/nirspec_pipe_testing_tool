@@ -23,7 +23,7 @@ This script tests the pipeline flat field step output for IFU data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.6"
+__version__ = "2.7"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -34,6 +34,7 @@ __version__ = "2.6"
 # Apr 2019 - Version 2.4: Implemented logging capability.
 # May 2019 - Version 2.5: Implemented plot of residuals as well as histogram.
 # Jun 2019 - Version 2.6: Updated name of interpolated flat to be the default pipeline name for this file.
+# Jan 2021 - Version 2.7: Implemented option to run with object instead of input fits file.
 
 
 def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name):
@@ -84,7 +85,7 @@ def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_f
 
 
 def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=False,
-             mk_all_slices_plt=False, show_figs=True, save_figs=False, plot_name=None,
+             mk_all_slices_plt=False, show_figs=True, save_figs=False, interpolated_flat=None,
              threshold_diff=1.0e-7, debug=False):
     """
     This function calculates the difference between the pipeline and the calculated flat field values.
@@ -99,9 +100,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         writefile: boolean, if True writes the fits files of the calculated flat and difference images
         show_figs: boolean, whether to show plots or not
         save_figs: boolean, save the plots (the 3 plots can be saved or not independently with the function call)
-        plot_name: string, desired name (if name is not given, the plot function will name the plot by
-                    default)
-        threshold_diff: float, threshold difference between pipeline output and ESA file
+        interpolated_flat: string, name of the on-the-fly interpolated pipeline flat
+        output_directory: None or string, path to the output_directory where to save the plots and output files
         debug: boolean, if true a series of print statements will show on-screen
 
     Returns:
@@ -117,18 +117,34 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     flattest_start_time = time.time()
 
     # get info from the flat field file
-    file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
-    det = fits.getval(step_input_filename, "DETECTOR", 0)
-    exptype = fits.getval(step_input_filename, "EXP_TYPE", 0)
-    grat = fits.getval(step_input_filename, "GRATING", 0)
-    filt = fits.getval(step_input_filename, "FILTER", 0)
-    file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
-    msg1 = 'step_input_filename='+step_input_filename
-    msg2 = "flat_field_file  -->     Grating:"+grat+"   Filter:"+filt+"   EXP_TYPE:"+exptype
-    print(msg1)
-    print(msg2)
-    log_msgs.append(msg1)
-    log_msgs.append(msg2)
+    if isinstance(step_input_filename, str):
+        file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
+        assign_wcs_file = step_input_filename.replace("_flat_field.fits", "_assign_wcs.fits")
+        file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
+        msg1 = 'step_input_filename='+step_input_filename
+        print(msg1)
+        log_msgs.append(msg1)
+    else:
+        assign_wcs_file = step_input_filename
+        file_basename = ''
+
+    if interpolated_flat is None:
+        flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
+    else:
+        flatfile = interpolated_flat
+
+    # get the datamodel from the assign_wcs output file
+    model = datamodels.ImageModel(assign_wcs_file)
+    ifu_slits = nirspec.nrs_ifu_wcs(model)
+    det = model.meta.instrument.detector
+    grat = model.meta.instrument.grating
+    filt = model.meta.instrument.filter
+    lamp = model.meta.instrument.lamp_state
+    exptype = model.meta.exposure.type.upper()
+
+    msg = "flat_field_file  -->     Grating:" + grat + "   Filter:" + filt + "   LAMP:" + lamp
+    print(msg)
+    log_msgs.append(msg)
 
     # define the mode
     if "ifu" in exptype.lower():
@@ -137,7 +153,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         mode = "not IFU data"
 
     # read in the on-the-fly flat image
-    flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
     pipeflat = fits.getdata(flatfile, "SCI")
 
     # get the reference files
@@ -264,11 +279,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         hdu0 = fits.PrimaryHDU()
         complfile = fits.HDUList()
         complfile.append(hdu0)
-
-    # get the datamodel from the assign_wcs output file
-    assign_wcs_file = step_input_filename.replace("_flat_field.fits", "_assign_wcs.fits")
-    model = datamodels.ImageModel(assign_wcs_file)
-    ifu_slits = nirspec.nrs_ifu_wcs(model)
 
     # loop over the slices
     all_delfg_mean, all_delfg_mean_arr, all_delfg_median, all_test_result = [], [], [], []

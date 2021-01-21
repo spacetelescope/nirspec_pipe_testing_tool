@@ -231,7 +231,7 @@ def validate_flat_field(output_hdul):
                                                                  sflat_path=sflat_path, fflat_path=fflat_path,
                                                                  writefile=write_flattest_files,
                                                                  show_figs=show_figs, save_figs=save_flattest_plot,
-                                                                 plot_name=None,
+                                                                 interpolated_flat=None,
                                                                  threshold_diff=flattest_threshold_diff,
                                                                  output_directory=None, debug=False)
 
@@ -241,7 +241,7 @@ def validate_flat_field(output_hdul):
                                                                   msa_shutter_conf=msa_shutter_conf,
                                                                   writefile=write_flattest_files,
                                                                   show_figs=show_figs, save_figs=save_flattest_plot,
-                                                                  plot_name=None,
+                                                                  interpolated_flat=None,
                                                                   threshold_diff=flattest_threshold_diff,
                                                                   debug=False)
 
@@ -250,7 +250,8 @@ def validate_flat_field(output_hdul):
                                                                   sflat_path=sflat_path, fflat_path=fflat_path,
                                                                   writefile=write_flattest_files,
                                                                   mk_all_slices_plt=False, show_figs=show_figs,
-                                                                  save_figs=save_flattest_plot, plot_name=None,
+                                                                  save_figs=save_flattest_plot,
+                                                                  interpolated_flat=None,
                                                                   threshold_diff=flattest_threshold_diff,
                                                                   debug=False)
 

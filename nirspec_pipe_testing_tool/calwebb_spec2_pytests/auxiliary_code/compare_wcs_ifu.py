@@ -245,7 +245,8 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
 
         # In different observing modes the WCS may have different coordinate frames. To see available frames
         # uncomment line below.
-        #print("Avalable frames: ", wcs_slice.available_frames)
+        available_frames = wcs_slice.available_frames
+        print("Avalable frames: ", available_frames)
 
         if debug:
             # To get specific pixel values use following syntax:
@@ -314,7 +315,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         total_test_result["slice"+pslice] = {tested_quantity: result}
 
         # V2 and V3
-        if not skipv2v3test:
+        if not skipv2v3test and 'v2v3' in available_frames:
             detector2v2v3 = wcs_slice.get_transform("detector", "v2v3")
             pv2, pv3, _ = detector2v2v3(truth_x, truth_y)
             # => RETURNS: v2, v3, LAMBDA (lam *= 10**-6 to convert to microns)
@@ -453,7 +454,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
 
-            if not skipv2v3test:
+            if not skipv2v3test and 'v2v3' in available_frames:
                 # V2
                 title = main_title+r"Relative V2 Difference = $\Delta$V2"+"\n"
                 info_img = [title, "x (pixels)", "y (pixels)"]

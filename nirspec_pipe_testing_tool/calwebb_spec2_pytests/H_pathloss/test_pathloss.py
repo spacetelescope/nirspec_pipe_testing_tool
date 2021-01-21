@@ -232,8 +232,8 @@ def validate_pathloss(output_hdul):
     debug = False
 
     # determine the type of source
-    srouce_type = fits.getval(comparison_filename, "SRCTYPE", "SCI", 1)
-    msg = "Source type is: "+srouce_type
+    source_type = fits.getval(comparison_filename, "SRCTYPE", "SCI", 1)
+    msg = "Source type is: "+source_type
     print(msg)
     logging.info(msg)
 
@@ -245,14 +245,14 @@ def validate_pathloss(output_hdul):
         urllib.request.urlretrieve(reffile_url, reffile)
 
     if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
-        if "point" in srouce_type.lower():
+        if "point" in source_type.lower():
             median_diff, result_msg, log_msgs = pathloss_fs_ps.pathtest(step_input_filename, reffile,
                                                                         comparison_filename,
                                                                         writefile=writefile, show_figs=show_figs,
                                                                         save_figs=save_figs,
                                                                         threshold_diff=threshold_diff,
                                                                         debug=debug)
-        elif "extend" in srouce_type.lower():
+        elif "extend" in source_type.lower():
             median_diff, result_msg, log_msgs = pathloss_fs_uni.pathtest(step_input_filename, reffile,
                                                                          comparison_filename,
                                                                          writefile=writefile, show_figs=show_figs,
@@ -261,14 +261,14 @@ def validate_pathloss(output_hdul):
                                                                          debug=debug)
 
     elif core_utils.check_MOS_true(hdu):
-        if "point" in srouce_type.lower():
+        if "point" in source_type.lower():
             median_diff, result_msg, log_msgs = pathloss_mos_ps.pathtest(step_input_filename, reffile,
                                                                          comparison_filename,
                                                                          writefile=writefile, show_figs=show_figs,
                                                                          save_figs=save_figs,
                                                                          threshold_diff=threshold_diff,
                                                                          debug=debug)
-        elif "extend" in srouce_type.lower():
+        elif "extend" in source_type.lower():
             median_diff, result_msg, log_msgs = pathloss_mos_uni.pathtest(step_input_filename, reffile,
                                                                           comparison_filename,
                                                                           writefile=writefile, show_figs=show_figs,
@@ -277,14 +277,14 @@ def validate_pathloss(output_hdul):
                                                                           debug=debug)
 
     elif core_utils.check_IFU_true(hdu):
-        if "point" in srouce_type.lower():
+        if "point" in source_type.lower():
             median_diff, result_msg, log_msgs = pathloss_ifu_ps.pathtest(step_input_filename, reffile,
                                                                          comparison_filename,
                                                                          writefile=writefile, show_figs=show_figs,
                                                                          save_figs=save_figs,
                                                                          threshold_diff=threshold_diff,
                                                                          debug=debug)
-        elif "extend" in srouce_type.lower():
+        elif "extend" in source_type.lower():
             median_diff, result_msg, log_msgs = pathloss_ifu_uni.pathtest(step_input_filename, reffile,
                                                                           comparison_filename,
                                                                           writefile=writefile, show_figs=show_figs,
