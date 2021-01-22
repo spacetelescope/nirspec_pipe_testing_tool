@@ -28,11 +28,12 @@ jupyter notebook barshadow.ipynb written by James Muzerolle in August of 2019.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & J. Muzerolle"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2019 - Version 1.0: initial version completed
 # Sep 2020 - Version 1.1: Added option to take datamodel as barshadow output (i.e. bsfile)
+# Jan 2021 - Version 1.2: Implemented option to use datamodels instead of fits files as input
 
 
 def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_final_figs=False, show_final_figs=False,

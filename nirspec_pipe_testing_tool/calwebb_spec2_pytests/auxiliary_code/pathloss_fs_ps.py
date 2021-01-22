@@ -24,7 +24,7 @@ This script tests the FS pipeline pathloss step output for a Point Source.
 
 # HEADER
 __author__ = "T King & M Pena-Guerrero"
-__version__ = "1.4"
+__version__ = "1.5"
 
 # HISTORY
 # October 19, 2019 - Version 1.0: initial version started
@@ -33,6 +33,7 @@ __version__ = "1.4"
 # June 8, 2020 - Version 1.3: Added changes to be able to run within NPTT
 # September 25, 2020 - Version 1.4: Added option to use either data model or fits file as input for the test, and
 #                      the option to provide an extract_2d file to the function
+# January 2021 - Version 1.5: Implemented option to use datamodels instead of fits files as input
 
 
 def get_ps_uni_extensions(fits_file_name, is_point_source):

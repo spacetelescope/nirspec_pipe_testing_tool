@@ -23,13 +23,14 @@ This script tests the MOS pipeline pathloss step output for a Point Source.
 
 # HEADER
 __author__ = "T King & M Pena-Guerrero"
-__version__ = "1.3"
+__version__ = "1.4"
 
 # HISTORY
 # October 19, 2019 - Version 1.0: initial version started
 # February 25, 2020 - Version 1.1: Updted for Pep8 compliancy
 # June 5, 2020 - Version 1.2: Included options to test additional interpolation methods
 # September 25, 2020 - Version 1.3: Added option to use either data model or fits file as input for the test
+# January 2021 - Version 1.4: Implemented option to use datamodels instead of fits files as input
 
 
 def get_corr_val(lambda_val, wave_ref, ref_ext, ref_xy, slit_x, slit_y):
