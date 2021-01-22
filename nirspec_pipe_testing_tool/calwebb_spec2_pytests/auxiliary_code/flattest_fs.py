@@ -17,7 +17,7 @@ This script tests the pipeline flat field step output for MOS data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.6"
+__version__ = "2.7"
 
 
 # HISTORY
@@ -29,11 +29,12 @@ __version__ = "2.6"
 # Apr 2019 - Version 2.3: Implemented logging capability.
 # May 2019 - Version 2.4: Implemented images of the residuals.
 # Jun 2019 - Version 2.5: Updated name of interpolated flat to be the default pipeline name for this file.
-# Sept 2019 - Version 2.6: Updated line to call model for SlitModel to work correctly with pipeline changes.
+# Sep 2019 - Version 2.6: Updated line to call model for SlitModel to work correctly with pipeline changes.
+# Jan 2021 - Version 2.7: Implemented option to run with object instead of input fits file.
 
 
 def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=True,
-             show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-7,
+             show_figs=True, save_figs=False, interpolated_flat=None, threshold_diff=1.0e-7,
              output_directory=None, debug=False):
     """
     This function calculates the difference between the pipeline and the calculated flat field values.
@@ -47,8 +48,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         writefile: boolean, if True writes the fits files of the calculated flat and difference images
         show_figs: boolean, whether to show plots or not
         save_figs: boolean, save the plots (the 3 plots can be saved or not independently with the function call)
-        plot_name: string, desired name (if name is not given, the plot function will name the plot by
-                    default)
+        interpolated_flat: string, name of the on-the-fly interpolated pipeline flat
         threshold_diff: float, threshold difference between pipeline output and ESA file
         output_directory: None or string, path to the output_directory where to save the plots and output files
         debug: boolean, if true a series of print statements will show on-screen
@@ -73,9 +73,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         if "extract_2d" not in step_input_filename:
             extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
 
-        # read in the on-the-fly flat image
-        flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
-
         # paths to save plots and files
         file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
         if output_directory is not None:
@@ -86,9 +83,15 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     else:
         file_path = output_directory
         extract2d_wcs_file = step_input_filename
-        flatfile = os.path.join(file_path, "interpolatedflat.fits")
         file_basename = ''
 
+    # read in the on-the-fly flat image
+    if interpolated_flat is None:
+        flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
+    else:
+        flatfile = interpolated_flat
+
+    # get basic info from model
     model = datamodels.MultiSlitModel(extract2d_wcs_file)
     det = model.meta.instrument.detector
     grat = model.meta.instrument.grating

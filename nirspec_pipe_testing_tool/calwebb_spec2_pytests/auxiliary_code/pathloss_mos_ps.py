@@ -23,13 +23,14 @@ This script tests the MOS pipeline pathloss step output for a Point Source.
 
 # HEADER
 __author__ = "T King & M Pena-Guerrero"
-__version__ = "1.3"
+__version__ = "1.4"
 
 # HISTORY
 # October 19, 2019 - Version 1.0: initial version started
 # February 25, 2020 - Version 1.1: Updted for Pep8 compliancy
 # June 5, 2020 - Version 1.2: Included options to test additional interpolation methods
 # September 25, 2020 - Version 1.3: Added option to use either data model or fits file as input for the test
+# January 2021 - Version 1.4: Implemented option to use datamodels instead of fits files as input
 
 
 def get_corr_val(lambda_val, wave_ref, ref_ext, ref_xy, slit_x, slit_y):
@@ -90,7 +91,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
     the compute_world_coordinates.py script.
     Args:
         step_input_filename: str, name of the output fits file from
-                             the sourcetype step (with full path)
+                             the previous pipeline step (with full path)
         reffile: str, path to the pathloss MOS reference fits file
         comparison_filename: str, path to comparison pipeline pathloss file
         writefile: boolean, if True writes the fits files of the calculated
@@ -114,15 +115,59 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
     # start the timer
     pathtest_start_time = time.time()
 
-    # get info from the input sourcetype file header
-    msg = 'step_input_filename='+step_input_filename
-    print(msg)
-    log_msgs.append(msg)
-    exptype = fits.getval(step_input_filename, "EXP_TYPE", 0)
-    grat = fits.getval(step_input_filename, "GRATING", 0)
-    filt = fits.getval(step_input_filename, "FILTER", 0)
+    # get info from the input previous pipeline step file/datamodel
+    print("Checking if files exist and obtaining datamodels. This takes a few minutes...")
+    if isinstance(step_input_filename, str):
+        if os.path.isfile(step_input_filename):
+            if debug:
+                print('Input file does exist.')
+            msg = 'step_input_filename='+step_input_filename
+            print(msg)
+            log_msgs.append(msg)
 
-    msg = "pathloss file:  Grating:"+grat+"  Filter:"+filt+" EXP_TYPE:"+exptype
+            # get the input data model
+            pl = datamodels.open(step_input_filename)
+            if debug:
+                print('got input datamodel!')
+        else:
+            result_msg = 'Input file does NOT exist. Skipping pathloss test.'
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
+    else:
+        pl = step_input_filename
+
+    # get comparison data
+    if isinstance(comparison_filename, str):
+        if os.path.isfile(comparison_filename):
+            if debug:
+                msg = 'Comparison file does exist.'
+                print(msg)
+        else:
+            result_msg = """Comparison file does NOT exist.
+                         Pathloss test will be skipped."""
+            print(result_msg)
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
+
+        # get the comparison data model
+        pathloss_pipe = datamodels.open(comparison_filename)
+        if debug:
+            print('Retrieved comparison datamodel.')
+
+    else:
+        pathloss_pipe = comparison_filename
+
+    # get info from data model
+    det = pl.meta.instrument.detector
+    lamp = pl.meta.instrument.lamp_state
+    grat = pl.meta.instrument.grating
+    filt = pl.meta.instrument.filter
+    exptype = pl.meta.exposure.type
+
+    msg = "from datamodel  -->     Detector: " + det + "   Grating: " + grat + "   Filter: " + \
+          filt + "   Lamp: " + lamp + "   EXP_TYPE: " + exptype
     print(msg)
     log_msgs.append(msg)
 
@@ -148,44 +193,6 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
     is_point_source = True
     print("Retrieving exensions")
     ps_uni_ext_list = get_mos_ps_uni_extensions(reffile, is_point_source)
-
-    # get files
-    print("""Checking if files exist & obtaining datamodels.
-          This takes a few minutes...""")
-    if isinstance(comparison_filename, str):
-        if os.path.isfile(comparison_filename):
-            if debug:
-                msg = 'Comparison file does exist.'
-                print(msg)
-        else:
-            result_msg = """Comparison file does NOT exist.
-                         Pathloss test will be skipped."""
-            print(result_msg)
-            log_msgs.append(result_msg)
-            result = 'skip'
-            return result, result_msg, log_msgs
-
-        # get the comparison data model
-        pathloss_pipe = datamodels.open(comparison_filename)
-        if debug:
-            print('Retrieved comparison datamodel.')
-
-    else:
-        pathloss_pipe = comparison_filename
-
-    if os.path.isfile(step_input_filename):
-        if debug:
-            print('Input file does exist.')
-    else:
-        result_msg = 'Input file does NOT exist. Skipping pathloss test.'
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
-
-    # get the input data model
-    pl = datamodels.open(step_input_filename)
-    if debug:
-        print('got input datamodel!')
 
     # loop through the slits
     msg = "Looping through the slits... "
@@ -260,7 +267,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
         comp_sci = pipe_slit.data
         previous_sci = slit.data
 
-        pipe_correction = pipe_slit.pathloss
+        pipe_correction = pipe_slit.pathloss_point
 
         # Set up source position manually to test correction at nonzero point:
         # pipe_x = -0.2
@@ -305,7 +312,6 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
         corrected_array = previous_sci/corr_vals
 
         # Plots:
-        step_input_filepath = step_input_filename.replace(".fits", "")
         # my correction values
         fig = plt.figure(figsize=(12, 10))
         plt.subplot(221)
@@ -358,6 +364,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
                      + str(slit_id))
 
         if save_figs:
+            step_input_filepath = step_input_filename.replace(".fits", "")
             plt_name = step_input_filepath + "_Pathloss_test_slitlet_" + str(mode) + "_" + str(slit_val) + ".png"
             plt.savefig(plt_name)
             print('Figure saved as: ', plt_name)

@@ -28,11 +28,12 @@ jupyter notebook barshadow.ipynb written by James Muzerolle in August of 2019.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & J. Muzerolle"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2019 - Version 1.0: initial version completed
 # Sep 2020 - Version 1.1: Added option to take datamodel as barshadow output (i.e. bsfile)
+# Jan 2021 - Version 1.2: Implemented option to use datamodels instead of fits files as input
 
 
 def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_final_figs=False, show_final_figs=False,
@@ -68,20 +69,23 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
     barshadow_test_start_time = time.time()
 
     # read in 2D spectra output prior to the bar shadow step (e.g., extract_2d or pathloss product)
-    print('Checking if files exist and obtaining datamodels, this takes a few minutes...')
-    if os.path.isfile(plfile):
+    if isinstance(plfile, str):
+        print('Checking if files exist and obtaining datamodels, this takes a few minutes...')
+        if os.path.isfile(plfile):
+            if debug:
+                print('Extract_2d file does exist.')
+        else:
+            result_msg = 'Extract_2d file does NOT exist. Barshadow test will be skipped.'
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
+        # get the data model
+        pl = datamodels.open(plfile)
         if debug:
-            print('Extract_2d file does exist.')
+            print('got extract_2d datamodel!')
     else:
-        result_msg = 'Extract_2d file does NOT exist. Barshadow test will be skipped.'
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
-
-    # get the data model
-    pl = datamodels.open(plfile)
-    if debug:
-        print('got extract_2d datamodel!')
+        # get the data model
+        pl = plfile
 
     # read in 2D spectra output from the bar shadow step
     if isinstance(bsfile, str):
@@ -118,6 +122,10 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
 
     # loop over the slitlets in both files
     print('Looping over open slitlets...')
+    if save_final_figs or save_intermediary_figs:
+        file_path = plfile.replace(os.path.basename(plfile), "")
+        file_basename = os.path.basename(plfile.replace("_pathloss.fits", ""))
+
     for plslit, bsslit in zip(pl.slits, bs.slits):
         # check that slitlet name of the data from the pathloss or extract_2d and the barshadow datamodels are the same
         slit_id = bsslit.name
@@ -129,6 +137,14 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         else:
             msg = '* Missmatch of slitlet names in fits file previous to barshadow and in barshadow output file. ' \
                   'Skipping test.'
+            result = 'skip'
+            log_msgs.append(msg)
+            return result, msg, log_msgs
+
+        # only continue if the source type is not POINT
+        srctype = plslit.source_type
+        if "point" in srctype.lower():
+            msg = 'The test is skipped for POINT sources, since the correction is not applied'
             result = 'skip'
             log_msgs.append(msg)
             return result, msg, log_msgs
@@ -158,8 +174,6 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         plt.imshow(bssci, norm=norm, aspect=10.0, origin='lower', cmap='viridis')
         plt.title('Normalized barshadow science data for slitlet '+slit_id)
         # Show and/or save figures
-        file_path = plfile.replace(os.path.basename(plfile), "")
-        file_basename = os.path.basename(plfile.replace("_pathloss.fits", ""))
         if save_intermediary_figs:
             t = (file_basename, "Barshadowtest_NormSciData_slitlet" + slit_id + ".png")
             plt_name = "_".join(t)

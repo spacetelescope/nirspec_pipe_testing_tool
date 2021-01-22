@@ -20,7 +20,7 @@ This script tests the pipeline flat field step output for MOS data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "3.6"
+__version__ = "3.7"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -36,10 +36,12 @@ __version__ = "3.6"
 # Sep 2020 - Version 3.6: Fixed code to match latest pipeline changes to fix MOS flat field: set flat-d, -s, -f to 1
 #                         if the data is Nan or 0, then DQ flag is set to DO_NOT_USE + NO_FLAT_FIELD. The code now
 #                         only looks at the flat DQ flag set to DO_NOT_USE in determining if the data should be used.
+# Jan 2021 - Version 3.7: Implemented option to run with object instead of input fits file.
 
 
 def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutter_conf,
-             writefile=False, show_figs=True, save_figs=False, plot_name=None, threshold_diff=1.0e-14, debug=False):
+             writefile=False, show_figs=True, save_figs=False, interpolated_flat=None,
+             threshold_diff=1.0e-14, debug=False):
     """
     This function does the WCS comparison from the world coordinates calculated using the
     compute_world_coordinates.py script with the ESA files. The function calls that script.
@@ -53,8 +55,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         writefile: boolean, if True writes the fits files of the calculated flat and difference images
         show_figs: boolean, whether to show plots or not
         save_figs: boolean, save the plots (the 3 plots can be saved or not independently with the function call)
-        plot_name: string, desired name (if name is not given, the plot function will name the plot by
-                    default)
+        interpolated_flat: string, name of the on-the-fly interpolated pipeline flat
         threshold_diff: float, threshold difference between pipeline output and ESA file
         debug: boolean, if true a series of print statements will show on-screen
 
@@ -71,15 +72,31 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     flattest_start_time = time.time()
 
     # get info from the rate file header
-    det = fits.getval(step_input_filename, "DETECTOR", 0)
-    msg = 'step_input_filename='+step_input_filename
-    print(msg)
-    log_msgs.append(msg)
-    lamp = fits.getval(step_input_filename, "LAMP", 0)
-    exptype = fits.getval(step_input_filename, "EXP_TYPE", 0)
-    grat = fits.getval(step_input_filename, "GRATING", 0)
-    filt = fits.getval(step_input_filename, "FILTER", 0)
-    msg = "rate_file  -->     Grating:"+grat+"   Filter:"+filt+"   Lamp:"+lamp+"   EXP_TYPE:"+exptype
+    if isinstance(step_input_filename, str):
+        msg = 'step_input_filename=' + step_input_filename
+        print(msg)
+        log_msgs.append(msg)
+        if "extract_2d" not in step_input_filename:
+            extract2d_file = step_input_filename.replace("_flat_field", "_extract_2d")
+
+    else:
+        extract2d_file = step_input_filename
+
+    # read in the on-the-fly flat image
+    if interpolated_flat is None:
+        flatfile = step_input_filename.replace("_flat_field", "interpolatedflat")
+    else:
+        flatfile = interpolated_flat
+
+    # get basic info from model
+    model = datamodels.MultiSlitModel(extract2d_file)
+    det = model.meta.instrument.detector
+    grat = model.meta.instrument.grating
+    filt = model.meta.instrument.filter
+    lamp = model.meta.instrument.lamp_state
+    exptype = model.meta.exposure.type.upper()
+
+    msg = "flat_field_file  -->     Grating:" + grat + "   Filter:" + filt + "   LAMP:" + lamp
     print(msg)
     log_msgs.append(msg)
 
@@ -88,9 +105,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         mode = "MOS"
     else:
         mode = "not MOS data"
-
-    # read in the on-the-fly flat image
-    flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
 
     # get the reference files
     # D-Flat
@@ -324,10 +338,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
     # list to determine if pytest is passed or not
     total_test_result = []
-
-    # get the datamodel from the assign_wcs output file
-    extract2d_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
-    model = datamodels.MultiSlitModel(extract2d_file)
 
     # get all the science extensions in the flatfile
     sci_ext_list = auxfunc.get_sci_extensions(flatfile)

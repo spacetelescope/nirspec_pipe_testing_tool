@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import time
 import argparse
 import sys
+import urllib.request
 
 from jwst.assign_wcs import nirspec
 from jwst import datamodels
@@ -20,10 +21,11 @@ jupyter notebook test_MSA_flagging.ipynb written by James Muzerolle in July of 2
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & J. Muzerolle"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Jul 2020 - Version 1.0: initial version completed
+# Jan 2021 - Version 1.1: Implemented option to use datamodels instead of fits files as input
 
 
 def create_metafile_fopens(outfile, allcols, allrows, quads, stellarity, failedopens,
@@ -158,12 +160,14 @@ def create_metafile_fopens(outfile, allcols, allrows, quads, stellarity, failedo
     hdu_all.writeto(outfile)
 
 
-def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, stellarity=None, operability_ref=None, 
-                             source_type=None, save_figs=False, show_figs=True, debug=False):
+def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=None,
+                             stellarity=None, operability_ref=None, source_type=None,
+                             save_figs=False, show_figs=True, debug=False):
     """
     This is the validation function for the msa flagging step.
     :param input_file: string, fits file output from the msa_flagging step
     :param msa_flagging_threshold: float, percentage for all slits with more than 100 pixels
+    :param rate_obj: object, the stage 1 pipeline output object
     :param stellarity: float, stellarity number fro 0.0 to 1.0
     :param operability_ref: string, msa failed open - operability - reference file
     :param source_type: string, options are point, extended, unknown
@@ -183,7 +187,11 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, stellarity
     msa_flagging_test_start_time = time.time()
 
     # get the data model
-    msaflag = datamodels.open(input_file)
+    if isinstance(input_file, str):
+        msaflag = datamodels.open(input_file)
+    else:
+        msaflag = input_file
+
     if debug:
         print('got MSA flagging datamodel!')
 
@@ -192,10 +200,11 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, stellarity
     norm = ImageNormalize(msaflag.data, vmin=0., vmax=50., stretch=AsinhStretch())
     plt.imshow(msaflag.data, norm=norm, aspect=1.0, origin='lower', cmap='viridis')
     # Show and/or save figures
-    file_basename = os.path.basename(input_file.replace("_msa_flagging.fits", ""))
-    datadir = os.path.dirname(input_file)
-    detector = fits.getval(input_file, 'DETECTOR')
+    detector = msaflag.meta.instrument.detector
+    datadir = None
     if save_figs:
+        file_basename = os.path.basename(input_file.replace("_msa_flagging.fits", ""))
+        datadir = os.path.dirname(input_file)
         t = (file_basename, "MSA_flagging_full_detector.png")
         plt_name = "_".join(t)
         plt_name = os.path.join(datadir, plt_name)
@@ -216,25 +225,31 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, stellarity
 
     # execute script that creates an MSA metafile for the failed open shutters
     # read operability reference file
+    """
     crds_path = os.environ.get('CRDS_PATH')
     if crds_path is None:
         print("(msa_flagging_testing): The environment variable CRDS_PATH is not defined. To set it, follow the "
               "instructions at: \n"
               "                        https://github.com/spacetelescope/nirspec_pipe_testing_tool")
         exit()
-    references_json_file = "references/jwst/jwst_nirspec_msaoper_0001.json"
+        """
+
+    crds_path = "https://jwst-crds.stsci.edu/unchecked_get/references/jwst/"
+    op_ref_file = "jwst_nirspec_msaoper_0001.json"
 
     if operability_ref is None:
-        op_ref_file = os.path.join(crds_path, references_json_file)
+        ref_file = os.path.join(crds_path, op_ref_file)
+        urllib.request.urlretrieve(ref_file, op_ref_file)
     else:
         op_ref_file = operability_ref
 
-    if not os.path.isfile(op_ref_file):
-        result_msg = "Skipping msa_flagging test because the operability reference file does not exist: " + op_ref_file
-        print(result_msg)
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
+    if "http" not in op_ref_file:
+        if not os.path.isfile(op_ref_file):
+            result_msg = "Skipping msa_flagging test because the operability reference file does not exist: " + op_ref_file
+            print(result_msg)
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
 
     if debug:
         print("Using this operability reference file: ", op_ref_file)
@@ -254,7 +269,8 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, stellarity
     # stellarity -- internal lamps are uniform illumination, so set to 0
     # ** if considering a point source, need to change this to 1, or actual value if known
     if source_type is None:
-        srctyapt = fits.getval(input_file, 'SRCTYAPT')
+        #srctyapt = fits.getval(input_file, 'SRCTYAPT')
+        srctyapt = msaflag.meta.target.source_type_apt
     else:
         srctyapt = source_type.upper()
     if stellarity is None:
@@ -266,31 +282,40 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, stellarity
         stellarity = float(stellarity)
 
     # create MSA metafile with F/O shutters
-    fometafile = os.path.join(datadir, 'fopens_metafile_msa.fits')
+    if datadir is not None:
+        fometafile = os.path.join(datadir, 'fopens_metafile_msa.fits')
+    else:
+        fometafile = 'fopens_metafile_msa.fits'
     if not os.path.isfile(fometafile):
         create_metafile_fopens(fometafile, allcols, allrows, quads, stellarity, failedopens,
                                save_fig=save_figs, show_fig=show_figs, debug=debug)
 
     # run assign_wcs on the science exposure using F/O metafile
     # change MSA metafile name in header to match the F/O metafile name
-    rate_file = input_file.replace("msa_flagging", "rate")
-    if not os.path.isfile(rate_file):
-        # if a _rate.fits file does not exist try the usual name
-        rate_file = os.path.join(datadir, 'final_output_caldet1_'+detector+'.fits')
+    if isinstance(input_file, str):
+        rate_file = input_file.replace("msa_flagging", "rate")
         if not os.path.isfile(rate_file):
-            result_msg = "Skipping msa_flagging test because no rate fits file was found in directory: " + datadir
-            print(result_msg)
-            log_msgs.append(result_msg)
-            result = 'skip'
-            return result, result_msg, log_msgs
-    if debug:
-        print("Will run assign_wcs with new Failed Open fits file on this file: ", rate_file)
-    rate_mdl = datamodels.ImageModel(rate_file)
+            # if a _rate.fits file does not exist try the usual name
+            rate_file = os.path.join(datadir, 'final_output_caldet1_'+detector+'.fits')
+            if not os.path.isfile(rate_file):
+                result_msg = "Skipping msa_flagging test because no rate fits file was found in directory: " + datadir
+                print(result_msg)
+                log_msgs.append(result_msg)
+                result = 'skip'
+                return result, result_msg, log_msgs
+        if debug:
+            print("Will run assign_wcs with new Failed Open fits file on this file: ", rate_file)
+        rate_mdl = datamodels.ImageModel(rate_file)
+    else:
+        rate_mdl = rate_obj
+
     if debug:
         print("MSA metadata file in initial rate file: ", rate_mdl.meta.instrument.msa_metadata_file)
+
     rate_mdl.meta.instrument.msa_metadata_file = fometafile
     if debug:
         print("New MSA metadata file in rate file: ", rate_mdl.meta.instrument.msa_metadata_file)
+
     # run assign_wcs; use +/-0.45 for the y-limits because the default is too big (0.6 including buffer)
     stp = AssignWcsStep()
     awcs_fo = stp.call(rate_mdl, slit_y_low=-0.45, slit_y_high=0.45)
