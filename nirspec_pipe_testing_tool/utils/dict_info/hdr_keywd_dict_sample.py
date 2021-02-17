@@ -92,6 +92,7 @@ keywd_dict['EXP_TYPE'] = 'NRS_MSASPEC'  # type of data in exposure, options are:
 #                         'NRS_TASLIT', 'NRS_TACQ', 'NRS_TACONFIRM', 'NRS_CONFIRM', 'NRS_FIXEDSLIT', 'NRS_AUTOWAVE',
 #                         'NRS_IFU', 'NRS_MSASPEC', ' NRS_AUTOFLAT', ' NRS_IMAGE', ' NRS_FOCUS', ' NRS_DARK',
 #                         'NRS_LAMP', 'NRS_BOTA', 'NRS_BRIGHTOBJ'
+keywd_dict['SRCTYAPT'] = 'UNKNOWN'  # SRCTYPE shows up after the source type step
 
 # Target information
 keywd_dict['TARGPROP'] = 'UNKNOWN'  # proposer's name for the target
@@ -229,7 +230,6 @@ keywd_dict['wcsinfo'] = {
     'BUNIT': 'DN/s',  # physical units of the array values
     'EXTNAME': 'SCI',  # extension name
     'EXTVER': 1,  # extension value
-    'SRCTYPE': 'POINT',  # Source type used for calibration - commented because it shows up after the source type step
     # these only show up for Fixed slit - commented because they are filled out throughout the spec2 pipeline
     # 'SLTNAME': 'S200A1',  # Name of the slit
     # 'SLTSTRT1': 645,  # Starting pixel in x direction

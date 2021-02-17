@@ -39,7 +39,7 @@ will crash if this config file does not exist.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.5"
+__version__ = "1.6"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -48,6 +48,7 @@ __version__ = "1.5"
 # Dec 2019 - Version 1.3: added logic for image processing
 # Jul 2020 - Version 1.4: changed default value of SUBARRAY according to CRDS rules
 # Aug 2020 - Version 1.5: fixed bug with set_exp_type_value function
+# Feb 2021 - Version 1.6: implemented adding the MSA metafile name to the header
 
 
 # Paths
@@ -71,7 +72,7 @@ def read_hdrfits(fits_file_name):
     #  Read the fits file
     hdulist = fits.open(fits_file_name)
     # print on screen what extensions are in the file
-    print ('File contents')
+    print('File contents')
     hdulist.info()
     # get and print header
     # print ('\n FILE HEADER: \n')
@@ -192,7 +193,7 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
             if char.isalpha():
                 no_letters_in_string = False
         if no_letters_in_string:
-            if (count == 0) and (':' not in val) and (neg_in_value):
+            if (count == 0) and (':' not in val) and neg_in_value:
                 if val == '':
                     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
                     print(warning)
@@ -205,12 +206,12 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
             valtype = type(val)
 
     if (valtype in hkwd_val) or (val in hkwd_val) or (valtype == dict_type):
-        print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Allowed value type'))
+        print('{:<15} {:<9} {:<25}'.format(key, ext, 'Allowed value type'))
         warning = None
     else:
         warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value type. Expected e.g. ' + repr(hkwd_val[0])
                                                + ', got: '+repr(val))
-        print (warning)
+        print(warning)
         # if the gotten value contains letters then chenge it for the dictionary value, otherwise just return the type
         # of value that it should be changed to
         if re.search('[a-zA-Z]', str(val)):
@@ -364,15 +365,18 @@ def set_exp_type_value(mode_used):
     Returns:
         val: string, expected pipeline value
     """
+    # make sure there are no white spaces
+    if " " in mode_used:
+        mode_used = mode_used.replace(" ", "")
     print('   * MODE_USED  = ', mode_used)
     val = None
-    if mode_used.lower() == "fs":
+    if "fs" in mode_used.lower():
         val = 'NRS_FIXEDSLIT'
-    if mode_used.lower() == "ifu":
+    if "ifu" in mode_used.lower():
         val = 'NRS_IFU'
-    if "mos" in mode_used.lower():
+    if "mos" in mode_used.lower() or mode_used.lower() == "msa":
         val = 'NRS_MSASPEC'
-    if mode_used.lower() == "bots":
+    if "bots" in mode_used.lower():
         val = 'NRS_BRIGHTOBJ'
     if mode_used.lower() == "dark":
         val = 'NRS_DARK'
@@ -399,7 +403,7 @@ def set_exp_type_value(mode_used):
 
 
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used, detector=None,
-                 subarray=None):
+                 subarray=None, msa_metafile=None):
     """
     This function will check keywords against those in hdr_keywod_dict.py
     Args:
@@ -411,6 +415,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     is expected to exist and contain a variable named mode_used)
         detector: string, expects NRS1, NRS2, or None (in this case it will be read from the header)
         subarray: None or string, name of the subarray to use
+        msa_metafile: None or string, name of the MSA metafile
 
     Returns:
         specific_keys_dict: dictionary with specific keys and values that need to be changed
@@ -508,7 +513,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # specific check for SUBARRAY
                 if key == 'SUBARRAY':
-                    if 'IFU' in mode_used or "MOS" in mode_used:
+                    if 'ifu' in mode_used.lower() or "mos" in mode_used.lower():
                         if val != lev2bdict_val:
                             print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for N/A")
                             specific_keys_dict[key] = 'N/A'
@@ -532,9 +537,9 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             # and make sure to change the primary slit keyword accordingly
                             if mode_used.lower() == "fs":
                                 subarrd_key = 'S200A1'
-                            specific_keys_dict['FXD_SLIT'] = subarrd_key
-                            print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
-                            missing_keywds.append('FXD_SLIT')
+                                specific_keys_dict['FXD_SLIT'] = subarrd_key
+                                print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
+                                missing_keywds.append('FXD_SLIT')
                             # set the subarray sizes and start keywords accordingly
                             if subarray in subdict.subarray_dict:
                                 ssz1 = subdict.subarray_dict[subarray]["subsize1"]
@@ -638,10 +643,18 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # make sure the MSASTATE keyword is set correctly
                 if key == 'MSASTATE':
-                    if (mode_used == 'FS') or (mode_used == 'IFU'):
+                    if (mode_used.lower() == 'fs') or (mode_used.lower() == 'ifu'):
                         val = 'PRIMARYPARK_ALLCLOSED'
                         specific_keys_dict[key] = val
                         missing_keywds.append(key)
+
+                # make sure the MSA metafile is pointing to the right place
+                if key == 'MSAMETFL':
+                    if (mode_used.lower() == 'mos') or ("msa" in mode_used.lower()):
+                        val = msa_metafile
+                        specific_keys_dict[key] = val
+                        missing_keywds.append(key)
+                        print('     Setting value of ', key, ' to ', val)
 
                 # only modify these keywords if present
                 if key == 'GWA_XP_V':
@@ -727,7 +740,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
         if key != 'wcsinfo':
             # the DATAMODL keyword will only be modified if mode is IFU
             if key == 'DATAMODL':
-                if 'IFU' in mode_used:
+                if 'ifu' in mode_used.lower():
                     new_value = 'IFUImageModel'
                 else:
                     new_value = 'ImageModel'
@@ -782,16 +795,17 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
     return updated_fitsfile
 
 
-def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None, subarray=None):
+def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None, subarray=None, msa_metafile=None):
     """
     This is the function that does all the work in this script (i.e. uses all other functions) to update the header
     Args:
         fits_file: string, name of the input file to be checked
         only_update: boolean, if False a new file will be created; True will only update
-        mode_used: str or None, observation mode used FS, MOS, or IFU (if None then a configuration file
+        mode_used: string, observation mode used FS, MOS, or IFU (if None then a configuration file
                     is expected to exist and contain a variable named mode_used)
         detector: string, expects NRS1, NRS2, or None (in this case it will be read from the header)
         subarray: None or string, name of subarray to use
+        msa_metafile: None or string, name of the MSA metafile
 
     Returns:
         updated_fitsfile: string, path and name of the outputs are a text file with all the added keywords and the
@@ -809,7 +823,7 @@ def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None, suba
     print('\n   Starting keyword check...')
     warnings_list, missing_keywds = [], []
     specific_keys_dict = check_keywds(file_keywd_dict, addedkeywds_file_name, warnings_list, missing_keywds, mode_used,
-                                      detector, subarray)
+                                      detector, subarray, msa_metafile)
 
     # if warnings text file is empty erase it
     check_addedkeywds_file(addedkeywds_file_name)
@@ -842,6 +856,11 @@ def main():
                         action='store',
                         default=None,
                         help='Use -d to provide the detector: -d=NRS1 or -d=NRS2.')
+    parser.add_argument("-m",
+                        dest="msa_metafile",
+                        action='store',
+                        default=None,
+                        help='Use -m to provide the msa metafile name, e.g. -m=V9621500100101_msa.fits.')
     args = parser.parse_args()
 
     # Set the variables
@@ -849,9 +868,10 @@ def main():
     mode_used = args.mode_used
     only_update = args.only_update
     detector = args.detector
+    msa_metafile = args.msa_metafile
 
     # Perform the keyword check
-    check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector)
+    check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=detector, msa_metafile=msa_metafile)
 
     print('\n * Script  level2b_hdr_keywd_check.py  finished * \n')
 
