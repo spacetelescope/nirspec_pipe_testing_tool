@@ -125,6 +125,7 @@ keywd_dict['EXP_TYPE'] = 'NRS_MSASPEC'  # type of data in exposure, options are:
 #                         'NRS_TASLIT', 'NRS_TACQ', 'NRS_TACONFIRM', 'NRS_CONFIRM', 'NRS_FIXEDSLIT', 'NRS_AUTOWAVE',
 #                         'NRS_IFU', 'NRS_MSASPEC', ' NRS_AUTOFLAT', ' NRS_IMAGE', ' NRS_FOCUS', ' NRS_DARK',
 #                         'NRS_LAMP', 'NRS_BOTA', 'NRS_BRIGHTOBJ'
+keywd_dict['SRCTYAPT'] = 'UNKNOWN'  # SRCTYPE shows up after the source type step
 keywd_dict['EXPSTART'] = 57404.72892391204  # UTC exposure start time (MJD), e.g. 56311.76636840278
 keywd_dict['EXPMID'] = 57404.72892391204  # UTC exposure mid time (MJD), e.g. 56311.76636840278
 keywd_dict['EXPEND'] = 57404.72979378473  # UTC exposure end time (MJD), e.g. 56311.76763953704
@@ -289,7 +290,6 @@ keywd_dict['VA_SCALE'] = 1.0  # velocity aberration scale factor, e.g. 1.0
 
 # WCS parameters in science extension
 keywd_dict['wcsinfo'] = {
-    'SRCTYPE': 'EXTENDED',  # Source type used for calibration
     'WCSAXES': 3,  # number of World Coordinate System axes, e.g. 3
     'CRPIX1': 1024,  # x-coordinate of the reference pixel, e.g. 1024.0
     'CRPIX2': 1024,  # y-coordinate of the reference pixel, e.g. 128.0

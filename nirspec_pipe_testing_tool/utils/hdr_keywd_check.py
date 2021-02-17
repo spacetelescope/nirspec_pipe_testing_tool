@@ -39,13 +39,15 @@ will crash if this config file does not exist.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.3"
+__version__ = "1.4"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Apr 2019 - Version 1.1: added dictionary to choose right GWA_XTIL keyword value according to GRATING
 # May 2019 - Version 1.2: added logic for dark processing
 # Jul 2020 - Version 1.3: changed default value of SUBARRAY according to CRDS rules
+# Feb 2021 - Version 1.4: implemented adding the MSA metafile name to the header
+
 
 # Paths
 wit4_path = os.environ.get('WIT4_PATH')
@@ -64,7 +66,7 @@ def get_modeused_PTT_cfg_file(detector):
     # get script directory and config name
     ptt_cfg_file = "PTT_config.cfg"
     get_mode = False
-    mode_used = 'N/A'
+    mode_used, msa_metafile = 'N/A', 'N/A'
     if os.path.isfile(ptt_cfg_file):
         get_mode = True
     else:
@@ -78,7 +80,10 @@ def get_modeused_PTT_cfg_file(detector):
             for i, line in enumerate(cfg.readlines()):
                 if "mode_used" in line:
                     mode_used = line.split()[2]
-    return mode_used
+                if "msa_conf_name" in line:
+                    msa_metafile = line.split()[2]
+                    msa_metafile = os.path.basename(msa_metafile)
+    return mode_used, msa_metafile
 
 
 def read_hdrfits(fits_file_name):
@@ -383,8 +388,9 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
     grating = fits.getval(ff, "GRATING", 0)
 
     # get the instrument mode used either from the input of the script or from the configuration file
+    mode, msa_metafile = get_modeused_PTT_cfg_file(detector)
     if mode_used is None:
-        mode_used = get_modeused_PTT_cfg_file(detector)
+        mode_used = mode
 
     # initialize the dictionary to hold keyword values that will be changed and written to the file
     specific_keys_dict = {}
@@ -439,7 +445,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     """ THIS ISSUE SEEMS TO HAVE BEEN SOLVED FOR NOW, BUT REMAINS HERE IN CASE IT RESURFACES
                     # check that for IFU data date is later than 2016-5-11, this is so that the latest IFU_post
                     # file is used, otherwise assign_wcs will crash 
-                    if mode_used == "IFU":
+                    if mode_used.lower() == "ifu":
                         yr = val.split("-")[0]
                         mo = val.split("-")[1]
                         if int(yr) < 2016:
@@ -466,7 +472,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # specific check for SUBARRAY
                 if key == 'SUBARRAY':
-                    if 'IFU' in mode_used or "MOS" in mode_used:
+                    if 'ifu' in mode_used.lower() or "mos" in mode_used.lower():
                         if val not in hkwd_val:
                             print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for N/A")
                             specific_keys_dict[key] = 'N/A'
@@ -502,9 +508,9 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                         # and make sure to change the primary slit keyword accordingly
                                         if mode_used.lower() == "fs":
                                             subarrd_key = 'S200A1'
-                                        specific_keys_dict['FXD_SLIT'] = subarrd_key
-                                        print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
-                                        missing_keywds.append('FXD_SLIT')
+                                            specific_keys_dict['FXD_SLIT'] = subarrd_key
+                                            print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
+                                            missing_keywds.append('FXD_SLIT')
                                         # this part is simply to check that the subarray values are correct
                                         # but no values will be changed in the input file
                                         if "1" in detector:
@@ -520,6 +526,9 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
+                    # make sure there are no white spaces
+                    if " " in mode_used:
+                        mode_used = mode_used.replace(" ", "")
                     print('   * MODE_USED  = ', mode_used)
                     if mode_used.lower() == "fs":
                         val = 'NRS_FIXEDSLIT'
@@ -531,7 +540,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         # set the lamp mode to the correct value
                         specific_keys_dict['LAMPMODE'] = 'IFU'
                         missing_keywds.append('LAMPMODE')
-                    if mode_used.lower() == "mos":
+                    if mode_used.lower() == "mos" or mode_used.lower() == "msa":
                         val = 'NRS_MSASPEC'
                         # set the lamp mode to the correct value
                         specific_keys_dict['LAMPMODE'] = 'MSASPEC'
@@ -563,10 +572,18 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # make sure the MSASTATE keyword is set correctly
                 if key == 'MSASTATE':
-                    if (mode_used == 'FS') or (mode_used == 'IFU'):
+                    if (mode_used.lower() == 'fs') or (mode_used.lower() == 'ifu'):
                         val = 'PRIMARYPARK_ALLCLOSED'
                         specific_keys_dict[key] = val
                         missing_keywds.append(key)
+
+                # make sure the MSA metafile is pointing to the right place
+                if key == 'MSAMETFL':
+                    if (mode_used.lower() == 'mos') or ("msa" in mode_used.lower()):
+                        val = msa_metafile
+                        specific_keys_dict[key] = val
+                        missing_keywds.append(key)
+                        print('     Setting value of ', key, ' to ', val)
 
                 # only modify these keywords if present
                 if key == 'GWA_XP_V':

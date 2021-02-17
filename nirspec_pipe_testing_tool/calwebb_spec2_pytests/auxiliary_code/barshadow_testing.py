@@ -11,7 +11,7 @@ from jwst import datamodels
 
 from astropy.visualization import (ImageNormalize, AsinhStretch)
 import matplotlib
-matplotlib.use("TkAgg")
+# matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 from scipy.interpolate import griddata

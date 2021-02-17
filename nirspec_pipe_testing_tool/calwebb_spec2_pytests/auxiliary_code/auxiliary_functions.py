@@ -5,8 +5,7 @@ from scipy import interpolate
 from astropy.io import fits
 from glob import glob
 import matplotlib
-
-matplotlib.use("TkAgg")
+# matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from decimal import Decimal

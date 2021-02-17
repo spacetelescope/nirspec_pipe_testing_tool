@@ -6,11 +6,14 @@ import datetime
 import argparse
 import sys
 import os
+import urllib
+import json
 
 """
 This script will create the shutter configuration file for MOS data, while the pipeline is not automatically doing so.
 
  Usage:
+  - Terminal
     CREATE NEW MSA SUTTER CONFIGURATION FILES
     In a terminal, in the directory where the testing tool lives, and within the pipeline environment, type:
     $ nptt_create_metafile CB10-GD-B.msa.fits  
@@ -26,10 +29,31 @@ This script will create the shutter configuration file for MOS data, while the p
     
     CREATE A SHUTTER CONFIGURATION FILE FROM SIMULATIONS OR DITHERS  
     In a terminal, in the directory where the testing tool lives, and within the pipeline environment, type the command
-    with the dithers flag, -d, equal to the list of pointings (use a comma and no spaces bewteen file names):
-    $ nptt_create_metafile V9621500100101.msa.fits -d=obs1.csv,obs2.csv,obs3.csv
+    with the dithers flag, -d, equal to the list of pointings (use a comma and no spaces bewteen file names), AND
+    provide the number of shutters per slitlet with the flag -s:
+    $ nptt_create_metafile V9621500100101.msa.fits -d=obs1.csv,obs2.csv,obs3.csv -s=3
     Output will be:
         V9621500100101_metafile_msa.fits
+ 
+ - As a module
+    # imports
+    import nirspec_pipe_testing_tool as nptt
+    
+    # set the required variables 
+    config_binary_file = something_msa.fits
+    fix_old_config_file = False  # Only to be used if an older version of the file exists
+    targ_file_list = ['something1.csv', 'something2.csv', 'something3.csv'] 
+    shutters_in_slitlet = 5
+    
+    # set optional variables
+    operability_ref = '/path_to_new/operability_ref.json' 
+    verbose = False
+    
+    # Run the function
+    outfile = nptt.calwebb_spec2_pytests.auxiliary_code.create_metafile.run_create_metafile(config_binary_file, 
+                                    fix_old_config_file, targ_file_list, shutters_in_slitlet, 
+                                    operability_ref=operability_ref, verbose=verbose)
+    
 """
 
 # HEADER
@@ -50,7 +74,7 @@ def create_metafile(config_binary_file):
         config_binary_file: string, MSA configuration fits binary table
 
     Returns:
-        The msa shutter configuration file with the right format for the pipeline
+        outfile = string, the msa shutter configuration file with the right format for the pipeline
     """
     # read in configuration (binary fits format)
     hdul = fits.open(config_binary_file)
@@ -184,6 +208,7 @@ def create_metafile(config_binary_file):
     hdu1 = fits.ImageHDU(image, name='SHUTTER_IMAGE')
     hdu_all = fits.HDUList([hdu0, hdu1, hdu2, hdu3])
     hdu_all.writeto(outfile)
+    return outfile
 
 
 def fix_metafile(infile):
@@ -193,7 +218,7 @@ def fix_metafile(infile):
         infile: string, old MSA configuration fits
 
     Returns:
-        The msa shutter configuration file with the right format for the pipeline
+        outfile = string, the msa shutter configuration file with the right format for the pipeline
     """
     # read in old metafile and set output file name
     hdul1 = fits.open(infile)
@@ -229,238 +254,57 @@ def fix_metafile(infile):
     hdu1 = fits.ImageHDU(hdul1[1].data, name='SHUTTER_IMAGE')
     hdu_all = fits.HDUList([hdu0, hdu1, hdu2, hdu3])
     hdu_all.writeto(outfile)
+    return outfile
 
 
-def create_metafile_sim(config_binary_file, targ_file_list):
-    """
-    This function creates the shutter configuration file for the simulations, using the nod set csv files
-    Args:
-        config_binary_file: string, MSA configuration fits binary table
-        targ_file_list: string, dither file or list of dither files
-
-    Returns:
-        The msa shutter configuration file with the right format for the pipeline
-    """
-    # read in configuration (binary fits format)
-    hdul = fits.open(config_binary_file)
-    # name of output metafile
-    if '.msa.fits' in config_binary_file:
-        outfile = config_binary_file.replace('.msa.fits', '') + '_metafile_msa.fits'
-    else:
-        outfile = config_binary_file[:-5] + '_metafile_msa.fits'
-    # check if outfile already exists, delete if it does
-    if os.path.isfile(outfile):
-        os.remove(outfile)
-
-    # get number of nods from the number of input target files
-    targ_files = targ_file_list.split(',')
-    nnods = len(targ_files)
-    print('# nods =', nnods)
-
-    # read in the csv target files
-    targ_files = targ_file_list.split(',')
-    iter = True
-    for targfile in targ_files:
-        print('extracting target info from:', targfile)
-        targinfo = ascii.read(targfile)
-        if iter:
-            source_id = targinfo['ID'].data
-            source_ra = targinfo['Source RA (Degrees)'].data
-            source_dec = targinfo['Source Dec (Degrees)'].data
-            source_quad = targinfo['Quadrant'].data
-            source_row = targinfo['Row'].data
-            source_col = targinfo['Column'].data
-            source_xpos = targinfo['Offset (x)'].data
-            source_ypos = targinfo['Offset (y)'].data
-            iter = False
-        else:
-            source_id = np.concatenate(([source_id, targinfo['ID'].data]))
-            source_ra = np.concatenate(([source_ra, targinfo['Source RA (Degrees)'].data]))
-            source_dec = np.concatenate(([source_dec, targinfo['Source Dec (Degrees)'].data]))
-            source_quad = np.concatenate(([source_quad, targinfo['Quadrant'].data]))
-            source_row = np.concatenate(([source_row, targinfo['Row'].data]))
-            source_col = np.concatenate(([source_col, targinfo['Column'].data]))
-            source_xpos = np.concatenate(([source_xpos, targinfo['Offset (x)'].data]))
-            source_ypos = np.concatenate(([source_ypos, targinfo['Offset (y)'].data]))
-
-    # create image for first extension
-    q1all = hdul['Q1'].data.field('STATUS').reshape((171, 365))
-    q2all = hdul['Q2'].data.field('STATUS').reshape((171, 365))
-    q3all = hdul['Q3'].data.field('STATUS').reshape((171, 365))
-    q4all = hdul['Q4'].data.field('STATUS').reshape((171, 365))
-    # put quads together
-    im1 = np.concatenate((q2all, q1all))
-    im2 = np.concatenate((q3all, q4all))
-    image = np.concatenate((im2, im1), axis=1)
-
-    # find the open shutters (where status=1)
-    # quad 1
-    q1 = hdul['Q1'].data
-    q1open = np.array(np.nonzero(q1.field('STATUS')))
-    # convert to rows/cols
-    q1col = (q1open - 1) // 365 + 1
-    q1row = q1open - (q1col - 1) * 365 + 1
-    # quad 2
-    q2 = hdul['Q2'].data
-    q2open = np.array(np.nonzero(q2.field('STATUS')))
-    # convert to rows/cols
-    q2col = (q2open - 1) // 365 + 1
-    q2row = q2open - (q2col - 1) * 365 + 1
-    # quad 3
-    q3 = hdul['Q3'].data
-    q3open = np.array(np.nonzero(q3.field('STATUS')))
-    # convert to rows/cols
-    q3col = (q3open - 1) // 365 + 1
-    q3row = q3open - (q3col - 1) * 365 + 1
-    # quad 4
-    q4 = hdul['Q4'].data
-    q4open = np.array(np.nonzero(q4.field('STATUS')))
-    # convert to rows/cols
-    q4col = (q4open - 1) // 365 + 1
-    q4row = q4open - (q4col - 1) * 365 + 1
-
-    hdul.close()
-
-    # set up metafile table structure and fill
-
-    # SHUTTER_INFO table
-    # combine quadrants and copy rows of each shutter location array to account for nods
-    allcols = np.repeat(np.squeeze(np.concatenate((q1col, q2col, q3col, q4col), axis=1)), nnods)
-    allrows = np.repeat(np.squeeze(np.concatenate((q1row, q2row, q3row, q4row), axis=1)), nnods)
-    quads = np.repeat(np.squeeze(
-        np.concatenate((np.full_like(q1col, 1), np.full_like(q2col, 2), np.full_like(q3col, 3),
-                        np.full_like(q4col, 4)), axis=1)), nnods)
-
-    # initialize arrays for table columns
-    # slitlet IDs - arbitrary numbering
-    tab_slitlet_id = np.full(allcols.size, 0)
-    # metadata ID (arbitrary)
-    tab_metadata_id = np.full(allcols.size, 1)
-    # source IDs - from target file (based on original MPT catalog)
-    tab_source_id = np.full(allcols.size, 0)
-    # background shutter status
-    tab_background = np.full(allcols.size, 'Y', dtype=str)
-    # shutter state - "OPEN", by definition
-    tab_shutter_state = np.full(allcols.size, 'OPEN', dtype="<U8")
-    # source position in shutter (NaN for all except shutters containing the source
-    tab_source_xpos = np.full(allcols.size, np.nan, dtype=float)
-    tab_source_ypos = np.full(allcols.size, np.nan, dtype=float)
-    tab_ditherpoint_index = np.full(allcols.size, 1)
-    tab_primary_source = np.full(allcols.size, 'N', dtype="<U2")
-
-    # loop over open shutters
-
-    nsources = len(source_id)
-    nshut = len(quads)
-    # nod pattern - table rows that contain the source
-    if nnods == 1:
-        nod = [0]
-    if nnods == 2:
-        nod = [0, 3]
-    if nnods == 3:
-        nod = [1, 3, 8]
-    if nnods > 3:
-        print("nods > 3 not currently supported")
-        sys.exit()
-
-    for i in range(nshut):
-        # print(quads[i],allrows[i],allcols[i])
-        match = np.intersect1d(np.where(quads[i] == source_quad),
-                               np.intersect1d(np.where(allrows[i] == source_row), np.where(allcols[i] == source_col)))
-        if match.size != 0:
-            # print(source_quad[match],source_row[match],source_col[match],source_id[match],source_xpos[match])
-            tab_slitlet_id[i] = int(i / nnods / nnods) + 1
-            # print(tab_slitlet_id[i])
-            tab_source_id[i] = source_id[match]
-            pos = np.mod(i, nnods * nnods)
-            if pos in nod:
-                # some values only get filled if the source is in that shutter for that nod
-                tab_background[i] = 'N'
-                tab_source_xpos[i] = source_xpos[match]
-                tab_source_ypos[i] = source_ypos[match]
-                tab_primary_source[i] = 'Y'
-            tab_ditherpoint_index[i] = np.mod(i, nnods) + 1
-        else:
-            print("no source corresponding to shutter:", quads[i], allrows[i], allcols[i])
-    # make a mask to ignore slitlets without sources (shouldn't normally happen)
-    mask = tab_slitlet_id != 0
-    # create and fill in fits table columns
-    tabcol1 = fits.Column(name='SLITLET_ID', format='I', array=tab_slitlet_id[mask])
-    tabcol2 = fits.Column(name='MSA_METADATA_ID', format='I', array=tab_metadata_id[mask])
-    tabcol3 = fits.Column(name='SHUTTER_QUADRANT', format='I', array=quads[mask])
-    tabcol4 = fits.Column(name='SHUTTER_ROW', format='I', array=allrows[mask])
-    tabcol5 = fits.Column(name='SHUTTER_COLUMN', format='I', array=allcols[mask])
-    tabcol6 = fits.Column(name='SOURCE_ID', format='J', array=tab_source_id[mask])
-    tabcol7 = fits.Column(name='BACKGROUND', format='A', array=tab_background[mask])
-    tabcol8 = fits.Column(name='SHUTTER_STATE', format='4A', array=tab_shutter_state[mask])
-    tabcol9 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_X', format='E', array=tab_source_xpos[mask])
-    tabcol10 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_Y', format='E', array=tab_source_ypos[mask])
-    tabcol11 = fits.Column(name='DITHER_POINT_INDEX', format='I', array=tab_ditherpoint_index[mask])
-    tabcol12 = fits.Column(name='PRIMARY_SOURCE', format='1A', array=tab_primary_source[mask])
-    hdu2 = fits.BinTableHDU.from_columns(
-        [tabcol1, tabcol2, tabcol3, tabcol4, tabcol5, tabcol6, tabcol7, tabcol8, tabcol9, tabcol10, tabcol11, tabcol12],
-        name='SHUTTER_INFO')
-
-    # SOURCE_INFO table
-    # collect all unique instances of the sources
-    unique_source_id, match, match2 = np.intersect1d(source_id, tab_source_id[mask], return_indices=True)
-    nsources = len(unique_source_id)
-    # program ID - arbitrary
-    program = np.full(nsources, '111', dtype="<U8")
-    # source name - arbitrary
-    source_name = np.core.defchararray.add('111_', unique_source_id.astype(str))
-    # source alias - arbitrary
-    alias = np.full(nsources, 'foo', dtype="<U8")
-    # RA, DEC
-    ra = source_ra[match]
-    dec = source_dec[match]
-    # preimage file name - arbitrary
-    preim = np.full(nsources, 'foo_pre-image.fits', dtype="<U18")
-    # stellarity -- assuming perfect point sources, so set to 1
-    # ** if considering an extended source, need to change this to 0, or actual value if known
-    stellarity = np.full(nsources, 1.)
-    tabcol1 = fits.Column(name='PROGRAM', format='J', array=program)
-    tabcol2 = fits.Column(name='SOURCE_ID', format='J', array=unique_source_id)
-    tabcol3 = fits.Column(name='SOURCE_NAME', format='11A', array=source_name)
-    tabcol4 = fits.Column(name='ALIAS', format='5A', array=alias)
-    tabcol5 = fits.Column(name='RA', format='D', array=ra)
-    tabcol6 = fits.Column(name='DEC', format='D', array=dec)
-    tabcol7 = fits.Column(name='PREIMAGE_ID', format='18A', array=preim)
-    tabcol8 = fits.Column(name='STELLARITY', format='E', array=stellarity)
-    hdu3 = fits.BinTableHDU.from_columns([tabcol1, tabcol2, tabcol3, tabcol4, tabcol5, tabcol6, tabcol7, tabcol8],
-                                         name='SOURCE_INFO')
-
-    # create fits file
-    hdu0 = fits.PrimaryHDU()
-    # add necessary keywords to primary header
-    hdr = hdu0.header
-    hdr.set('ORIGIN', 'STScI', 'institution responsible for creating FITS file')
-    hdr.set('TELESCOP', 'JWST', 'telescope used to acquire data')
-    hdr.set('INSTRUME', 'NIRSPEC', 'identifier for instrument used to acquire data')
-    hdr.set('DATE', now.isoformat())
-    hdr.set('FILENAME', outfile, 'name of file')
-    hdr.set('PPSDBVER', 'PPSDB999', 'version of PPS database used')  # using arbitrary number
-    hdr.set('PROGRAM', '111', 'program number')  # arbitrary
-    hdr.set('VISIT', '1', 'visit number')  # arbitrary
-    hdr.set('OBSERVTN', '1', 'observation number')  # arbitrary
-    hdr.set('VISIT_ID', '1', 'visit identifier')  # arbitrary
-    hdr.set('MSACFG10', 1, 'base 10 nirspec msa_at_pointing.msa_config_id')  # arbitrary
-    hdr.set('MSACFG36', '01', 'base 36 version of MSACFG10')  # arbitrary
-    hdu1 = fits.ImageHDU(image.T, name='SHUTTER_IMAGE')
-    hdu_all = fits.HDUList([hdu0, hdu1, hdu2, hdu3])
-    hdu_all.writeto(outfile)
-
-
-def create_metafile_dither(config_binary_file, targ_file_list):
+def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitlet, operability_ref=None,
+                           output_dir=None, verbose=False):
     """
     This function creates the shutter configuration file for dithers, using the csv files
     Args:
         config_binary_file: string, MSA configuration fits binary table
         targ_file_list: string, dither file or list of dither files
+        shutters_in_slitlet: integer, number of shutters per slitlet
+        operability_ref: string, MSA operability file
+        output_dir: string, path to place the output file - if None output will be in same dir as input
+        verbose: boolean
 
     Returns:
-        The msa shutter configuration file with the right format for the pipeline
+        outfile = string, the msa shutter configuration file with the right format for the pipeline
     """
+    if shutters_in_slitlet is None:
+        print('(create_metafile.create_metafile_dither:) Variable shutters_in_slitlet was not defined. Re-run the '
+              'script with the flag -s set to the number of shutters per slitlet, e.g. -s=3.')
+        print('                                          Exiting script.')
+        exit()
+
+    # get the MSA operability file
+    crds_path = "https://jwst-crds.stsci.edu/unchecked_get/references/jwst/"
+    op_ref_file = "jwst_nirspec_msaoper_0001.json"
+    if operability_ref is None:
+        ref_file = os.path.join(crds_path, op_ref_file)
+        urllib.request.urlretrieve(ref_file, op_ref_file)
+    else:
+        op_ref_file = operability_ref
+    if "https:" not in op_ref_file:
+        if not os.path.isfile(op_ref_file):
+            print("(create_metafile.create_metafile_dither:) WARNING! operability reference file does not exist: ",
+                  op_ref_file)
+            print('                                          Exiting script.')
+            exit()
+    print("(create_metafile.create_metafile_dither:) Using this operability reference file: ", op_ref_file)
+    with open(op_ref_file) as f:
+        msaoper_dict = json.load(f)
+    msaoper = msaoper_dict["msaoper"]
+    # find the failed open shutters
+    failedopens = [(c["Q"], c["x"], c["y"]) for c in msaoper if c["state"] == 'open']
+    if verbose:
+        print("(create_metafile.create_metafile_dither:) Failed Open shutters: ", failedopens)
+    # erase the local copy of the reference operability file
+    dir_name = os.path.dirname(config_binary_file)
+    if os.path.isfile(os.path.join(dir_name, op_ref_file)):
+        os.remove(os.path.join(dir_name, op_ref_file))
+
     # read in configuration (binary fits format)
     hdul = fits.open(config_binary_file)
     # name of output metafile
@@ -468,20 +312,24 @@ def create_metafile_dither(config_binary_file, targ_file_list):
         outfile = config_binary_file.replace('.msa.fits', '') + '_metafile_msa.fits'
     else:
         outfile = config_binary_file[:-5] + '_metafile_msa.fits'
+    if output_dir is not None:
+        outfile = os.path.join(output_dir, os.path.basename(outfile))
     # check if outfile already exists, delete if it does
     if os.path.isfile(outfile):
         os.remove(outfile)
 
     # get number of nods from the number of input target files
-    targ_files = targ_file_list.split(',')
+    if isinstance(targ_file_list, str):
+        targ_files = targ_file_list.split(',')
+    else:
+        targ_files = targ_file_list
     nnods = len(targ_files)
-    print('# nods =', nnods)
+    print('(create_metafile.create_metafile_dither:) Number of nods =', nnods)
 
     # read in the csv target files
-    targ_files = targ_file_list.split(',')
     iter = True
     for targfile in targ_files:
-        print('extracting target info from:', targfile)
+        print('(create_metafile.create_metafile_dither:) extracting target info from:', targfile)
         targinfo = ascii.read(targfile)
         if iter:
             source_id = targinfo['ID'].data
@@ -538,7 +386,6 @@ def create_metafile_dither(config_binary_file, targ_file_list):
     # convert to rows/cols
     q4col = (q4open - 1) // 365 + 1
     q4row = q4open - (q4col - 1) * 365 + 1
-
     hdul.close()
 
     # set up metafile table structure and fill
@@ -570,7 +417,6 @@ def create_metafile_dither(config_binary_file, targ_file_list):
 
     # loop over open shutters
 
-    nsources = len(source_id)
     nshut = len(quads)
     # nod pattern - table rows that contain the source
     if nnods == 1:
@@ -580,18 +426,49 @@ def create_metafile_dither(config_binary_file, targ_file_list):
     if nnods == 3:
         nod = [1, 3, 8]
     if nnods > 3:
-        print("nods > 3 not currently supported")
+        print("(create_metafile.create_metafile_dither:) WARNING! nods > 3 not currently supported")
+        print("                                          Exiting script.")
         sys.exit()
 
+    sourceid_repetitions = nnods * shutters_in_slitlet
+    count_repetitions, keep_tab_slitlet_id = 1, True
+    obs_failedopen = 0
     for i in range(nshut):
-        # print(quads[i],allrows[i],allcols[i])
+        for fail_open_id in failedopens:
+            # check if this is a failed open shutter
+            if quads[i] == fail_open_id[0] and allrows[i] == fail_open_id[1] and allcols[i] == fail_open_id[2]:
+                if verbose:
+                    print('(create_metafile.create_metafile_dither:) Failed open shutter at ',
+                          quads[i], allrows[i], allcols[i])
+                obs_failedopen += 1
+                break
+
         match = np.intersect1d(np.where(quads[i] == source_quad),
-                               np.intersect1d(np.where(allrows[i] == source_row), np.where(allcols[i] == source_col)))
+                               np.intersect1d(np.where(allrows[i] == source_row),
+                                              np.where(allcols[i] == source_col)))
+
         if match.size != 0:
-            # print(source_quad[match],source_row[match],source_col[match],source_id[match],source_xpos[match])
-            tab_slitlet_id[i] = int(i / nnods / nnods) + 1
-            # print(tab_slitlet_id[i])
+            # if there was a match AND this is not a failed open shutter, add source to the table
             tab_source_id[i] = source_id[match]
+            # initialize the repetitions for source ID in the shutter configuration file
+            if count_repetitions == 1:
+                source_tsid = int(i / nnods / shutters_in_slitlet) + 1
+                keep_tab_slitlet_id = True
+            if keep_tab_slitlet_id:
+                tab_slitlet_id[i] = source_tsid
+            if count_repetitions != sourceid_repetitions:
+                keep_tab_slitlet_id = True
+                count_repetitions += 1
+            else:
+                keep_tab_slitlet_id = False
+                count_repetitions = 1
+            if verbose:
+                print('(create_metafile.create_metafile_dither:) Found target, adding ID shutter ',
+                      tab_slitlet_id[i])
+                print('        Additional information:  shtter ID = ', tab_source_id[i],
+                      'quadrant = ', source_quad[match], '  row = ', source_row[match],
+                      '  column = ', source_col[match], '  source ID = ', source_id[match],
+                      '  source xpos = ', source_xpos[match])
             pos = np.mod(i, nnods * nnods)
             if pos in nod:
                 # some values only get filled if the source is in that shutter for that nod
@@ -601,9 +478,35 @@ def create_metafile_dither(config_binary_file, targ_file_list):
                 tab_primary_source[i] = 'Y'
             tab_ditherpoint_index[i] = np.mod(i, nnods) + 1
         else:
-            print("no source corresponding to shutter:", quads[i], allrows[i], allcols[i])
+            if verbose:
+                print("(create_metafile.create_metafile_dither:) No source corresponding to shutter: ",
+                      quads[i], allrows[i], allcols[i])
     # make a mask to ignore slitlets without sources (shouldn't normally happen)
     mask = tab_slitlet_id != 0
+
+    # obtain the background slitlets
+    remaining_open_shutters = len(tab_slitlet_id[mask]) / sourceid_repetitions
+    obs_total_open = nshut - obs_failedopen
+    #print(nshut, obs_failedopen, obs_total_open, remaining_open_shutters,
+    # len(tab_slitlet_id[mask]), tab_slitlet_id[mask])
+    """
+    # Potential code to add background slits
+    background_id_starting_point = 900
+    for bi in range(backgrounds):
+        # assuming there should be 3 lines per background shutter
+        for _ in range(3):
+            tab_slitlet_id.append(background_id_starting_point+bi)
+            tab_metadata_id.append(????)
+            * determine location in quads, allrows, allcols
+            tab_source_id.append(????)
+            tab_background.append('Y')
+            tab_shutter_state.append(???)
+            tab_source_xpos.append('NULL')
+            tab_source_ypos.append('NULL')
+            tab_ditherpoint_index.append(1,2,3)   # representing the number of nods
+            tab_primary_source.append('N')
+    """
+
     # create and fill in fits table columns
     tabcol1 = fits.Column(name='SLITLET_ID', format='I', array=tab_slitlet_id[mask])
     tabcol2 = fits.Column(name='MSA_METADATA_ID', format='I', array=tab_metadata_id[mask])
@@ -669,26 +572,34 @@ def create_metafile_dither(config_binary_file, targ_file_list):
     hdu1 = fits.ImageHDU(image.T, name='SHUTTER_IMAGE')
     hdu_all = fits.HDUList([hdu0, hdu1, hdu2, hdu3])
     hdu_all.writeto(outfile)
+    return outfile
 
 
-def run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list):
+def run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list, shutters_in_slitlet,
+                        operability_ref=None, output_dir=None, verbose=False):
     """
     This function is a wrapper for all cases.
     Args:
         config_binary_file: string, MSA configuration fits binary table
         fix_old_config_file: boolean
         targ_file_list: string, nod set of .csv files divided by commas (no spaces)
+        shutters_in_slitlet: integer, number of shutters per slitlet
+        operability_ref: string, MSA operability file
+        output_dir: string, path to place the output file - if None output will be in same dir as input
+        verbose: boolean
 
     Returns:
-        The msa shutter configuration file with the right format for the pipeline
+        outfile = string, the msa shutter configuration file with the right format for the pipeline
     """
     if targ_file_list is None:
         if not fix_old_config_file:
-            create_metafile(config_binary_file)
+            outfile = create_metafile(config_binary_file)
         else:
-            fix_metafile(config_binary_file)
+            outfile = fix_metafile(config_binary_file)
     else:
-        create_metafile_dither(config_binary_file, targ_file_list)
+        outfile = create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitlet,
+                                         operability_ref=operability_ref, output_dir=output_dir, verbose=verbose)
+    return outfile
 
 
 def main():
@@ -710,15 +621,38 @@ def main():
                         default=False,
                         help='If an old version of the shutter configuration file exists, use the -f flag '
                              'to fix it. In this case, the input to the script is the old config file.fits.')
+    parser.add_argument("-s",
+                        dest="shutters_in_slitlet",
+                        action='store',
+                        default=None,
+                        help='Use the flag -s to provide the number of shutters per slitlet, e.g. -s=3.')
+    parser.add_argument("-o",
+                        dest="operability_ref",
+                        action='store',
+                        default=None,
+                        help='Use the flag -o to provide the MSA operability file to use, '
+                             'e.g. -o=jwst_nirspec_msaoper_0001.json. If None, the default in CRDS will be used.')
+    parser.add_argument("-v",
+                        dest="verbose",
+                        action='store_true',
+                        default=False,
+                        help='Use the flag -v to print a series of messages throughout the script.')
     args = parser.parse_args()
 
     # Set the variables
     config_binary_file = args.config_binary_file
     targ_file_list = args.targ_file_list
     fix_old_config_file = args.fix_old_config_file
+    shutters_in_slitlet = args.shutters_in_slitlet
+    operability_ref = args.operability_ref
+    verbose = args.verbose
+
+    if shutters_in_slitlet is not None:
+        shutters_in_slitlet = int(shutters_in_slitlet)
 
     # Run the function
-    run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list)
+    run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list, shutters_in_slitlet,
+                        operability_ref=operability_ref, output_dir=output_dir, verbose=verbose)
 
     print("\nScript create_metafile.py done.\n")
 

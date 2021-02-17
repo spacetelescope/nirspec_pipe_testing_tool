@@ -1,9 +1,8 @@
 import argparse
 import numpy as np
 import sys
+import os
 from astropy.io import fits
-
-
 
 '''
 This script moves the science data to extension 1.
@@ -23,61 +22,66 @@ Example usage:
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.1"
+__version__ = "1.2"
+
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Apr 2019 - Version 1.1: implemented option to add reference pixels
+# Feb 2021 - Version 1.2: implemented option for output directory
+
+# General functions
 
 
-### General functions
-
-def move_data(input_fits_file, detector='NRS1', add_ref_pix=False):
+def move_data(input_fits_file, detector='NRS1', add_ref_pix=False, output_dir=None):
     """
     This function does the move of the data to the science extension.
     Args:
         input_fits_file: string, name of the input file
         detector: string, expects either NRS1 or NRS2
         add_ref_pix: boolean, if True the code will add the reference pixels
+        output_dir: string, path to place the output file - if None output will be in same dir as input
     Output:
         Nothing. The function creates a new fits file with the primary and science data extensions
     """
 
     # create the fits list to hold the calculated flat values for each slit
     original_hdulist = fits.open(input_fits_file)
-    #print(original_hdulist.info())
     outfile = fits.HDUList()
     outfile.append(original_hdulist[0])
 
     # move the the data to extension corresponding to de detector indicated in the function arguments
-    det = 1   # default for NRS1=491
+    det = 1  # default for NRS1=491
     if len(fits.open(input_fits_file)) > 5:
         if '2' in detector:
             det = 4
     input_fits_file_data = fits.getdata(input_fits_file, det)
     if add_ref_pix:
-        print(" * Reference pixels will be added.")
+        print("(move_data2ext1.move_data:) Reference pixels will be added.")
         input_fits_file_data = add_ref_pixels(input_fits_file_data)
     outfile_ext = fits.ImageHDU(input_fits_file_data, name="SCI")
     outfile.append(outfile_ext)
 
     # do the same for the error extension
-    input_fits_file_data = fits.getdata(input_fits_file, det+1)
+    input_fits_file_data = fits.getdata(input_fits_file, det + 1)
     if add_ref_pix:
         input_fits_file_data = add_ref_pixels(input_fits_file_data)
     outfile_ext = fits.ImageHDU(input_fits_file_data, name="ERR")
     outfile.append(outfile_ext)
 
     # do the same for the data quality extension
-    input_fits_file_data = fits.getdata(input_fits_file, det+2)
+    input_fits_file_data = fits.getdata(input_fits_file, det + 2)
     if add_ref_pix:
         input_fits_file_data = add_ref_pixels(input_fits_file_data)
     outfile_ext = fits.ImageHDU(input_fits_file_data, name="DQ")
     outfile.append(outfile_ext)
 
     # write the new output file
-    outfile_name = input_fits_file.replace(".fits", "_"+detector+"_modified.fits")
+    outfile_name = input_fits_file.replace(".fits", "_" + detector + "_modified.fits")
+    if output_dir is not None:
+        outfile_name = os.path.join(output_dir, os.path.basename(outfile_name))
     outfile.writeto(outfile_name, overwrite=True)
+    return outfile_name
 
 
 def add_ref_pixels(data):
@@ -95,7 +99,7 @@ def add_ref_pixels(data):
     # add the reference pixels
     for i in range(2040):
         for j in range(2040):
-            data_out[j+4, i+1] = data[j, i]
+            data_out[j + 4, i + 1] = data[j, i]
 
     return data_out
 

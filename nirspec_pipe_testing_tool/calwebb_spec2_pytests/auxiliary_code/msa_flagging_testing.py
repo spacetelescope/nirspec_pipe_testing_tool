@@ -245,7 +245,8 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
 
     if "http" not in op_ref_file:
         if not os.path.isfile(op_ref_file):
-            result_msg = "Skipping msa_flagging test because the operability reference file does not exist: " + op_ref_file
+            result_msg = "Skipping msa_flagging test because the operability reference file does not exist: " + \
+                         op_ref_file
             print(result_msg)
             log_msgs.append(result_msg)
             result = 'skip'
@@ -269,7 +270,7 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
     # stellarity -- internal lamps are uniform illumination, so set to 0
     # ** if considering a point source, need to change this to 1, or actual value if known
     if source_type is None:
-        #srctyapt = fits.getval(input_file, 'SRCTYAPT')
+        # srctyapt = fits.getval(input_file, 'SRCTYAPT')  # previously used
         srctyapt = msaflag.meta.target.source_type_apt
     else:
         srctyapt = source_type.upper()

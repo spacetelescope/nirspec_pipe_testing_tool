@@ -93,6 +93,7 @@ keywd_dict['EXP_TYPE'] = ['NRS_WATA', 'NRS_MSATA', 'NRS_TACONFIRM', 'NRS_CONFIRM
                           'NRS_LAMP', 'NRS_BOTA', 'NRS_BRIGHTOBJ']
 # type of data in exposure was taken from the pipeline repo:
 # https://github.com/spacetelescope/jwst/blob/aec6a2a6132386d614dfaeea8754558b979cc3b2/jwst/datamodels/schemas/keyword_pexptype.schema.yaml
+keywd_dict['SRCTYAPT'] = 'UNKNOWN'  # SRCTYPE shows up after the source type step
 
 # Target information
 keywd_dict['TARGPROP'] = [str]  # proposer's name for the target
@@ -210,7 +211,6 @@ keywd_dict['PA_APER'] = [float]  # [deg] position angle of aperture used, e.g. -
 
 # WCS parameters, these will be added to the science extension
 keywd_dict['wcsinfo'] = {
-    'SRCTYPE': 'POINT',  # Source type used for calibration
     'WCSAXES': [int],  # number of World Coordinate System axes, e.g. 3
     'CRPIX1': [int, float],  # x-coordinate of the reference pixel, e.g. 1024.0
     'CRPIX2': [int, float],  # y-coordinate of the reference pixel, e.g. 128.0

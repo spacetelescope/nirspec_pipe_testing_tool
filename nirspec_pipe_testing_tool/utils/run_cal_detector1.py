@@ -219,7 +219,6 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
     # copy the configuration file to create the pipeline log make sure that the handler has the correct name for the log
     set_pipe_log(calwebb_detector1_cfg, detector)
 
-    #final_output_caldet1 = stage2_pipe_input_file
     if detector.lower() not in fits_input_uncal_file.lower():
         fits_input_uncal_file = fits_input_uncal_file.replace(".fits", "_" + detector + ".fits")
     final_output_caldet1 = fits_input_uncal_file.replace(".fits", "_rate.fits")
