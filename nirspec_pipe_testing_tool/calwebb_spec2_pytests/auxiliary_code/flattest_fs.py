@@ -72,6 +72,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         log_msgs.append(msg)
         if "extract_2d" not in step_input_filename:
             extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
+        else:
+            extract2d_wcs_file = step_input_filename
+        model = datamodels.MultiSlitModel(extract2d_wcs_file)
 
         # paths to save plots and files
         file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
@@ -82,7 +85,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
     else:
         file_path = output_directory
-        extract2d_wcs_file = step_input_filename
+        model = step_input_filename
         file_basename = ''
 
     # read in the on-the-fly flat image
@@ -90,9 +93,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
     else:
         flatfile = interpolated_flat
+    # get all the science extensions in the flatfile
+    sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
     # get basic info from model
-    model = datamodels.MultiSlitModel(extract2d_wcs_file)
     det = model.meta.instrument.detector
     grat = model.meta.instrument.grating
     filt = model.meta.instrument.filter
@@ -200,6 +204,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         print("np.shape(sfimdq) = ", np.shape(sfimdq))
         sf = fits.open(sfile)
         print(sf.info())
+        sf.close()
     try:
         sfv_a2001 = fits.getdata(sfile, "SLIT_A_200_1")
         sfv_a2002 = fits.getdata(sfile, "SLIT_A_200_2")
@@ -257,9 +262,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     # but check if data is BOTS
     if exp_type == "NRS_BRIGHTOBJ":
         sltname_list = ["S1600A1"]
-
-    # get all the science extensions from the interpolated flat file
-    sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
     # do the loop over the slits
     for slit_id in sltname_list:

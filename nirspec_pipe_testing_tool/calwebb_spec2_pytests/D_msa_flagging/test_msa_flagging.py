@@ -187,12 +187,10 @@ def validate_msa_flagging(output_hdul):
     msg = "\n Performing MSA flagging validation test... "
     print(msg)
     logging.info(msg)
-    result, result_msg, log_msgs = msa_flagging_testing.run_msa_flagging_testing(step_output_file,
-                                                                     msa_flagging_threshold=msa_flagging_threshold,
-                                                                     stellarity=stellarity,
-                                                                     operability_ref=msa_flagging_operability_ref,
-                                                                     save_figs=save_msa_flagging_figs,
-                                                                     show_figs=False, debug=False)
+    result, result_msg, log_msgs = msa_flagging_testing.run_msa_flagging_testing(
+        step_output_file, msa_flagging_threshold=msa_flagging_threshold, stellarity=stellarity,
+        operability_ref=msa_flagging_operability_ref, save_figs=save_msa_flagging_figs,
+        show_figs=False, debug=False)
     for msg in log_msgs:
         logging.info(msg)
 

@@ -49,7 +49,7 @@ def getlist(option, sep=',', chars=None):
 
 
 def read_hdrfits(fits_file_name, info=False, show_hdr=False, ext=0):
-    '''
+    """
     This function reads the header fits file and returns a dictionary of the keywords with
     corresponding values. Keywords will be stored in the order they are read.
     Args:
@@ -60,7 +60,7 @@ def read_hdrfits(fits_file_name, info=False, show_hdr=False, ext=0):
 
     Returns:
         hdrl: The header of the fits file
-    '''
+    """
     #  Read the fits file
     hdulist = fits.open(fits_file_name)
     # print on screen what extensions are in the file
@@ -125,6 +125,7 @@ def get_sci_extensions(fits_file_name):
     for ext, hdu in enumerate(hdulist):
         if hdu.name == "SCI":
             sci_dicts[hdu.header['SLTNAME']] = ext
+    hdulist.close()
     return sci_dicts
 
 

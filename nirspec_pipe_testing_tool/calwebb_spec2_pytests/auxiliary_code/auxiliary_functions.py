@@ -60,7 +60,7 @@ def get_sci_extensions(fits_file_name):
             except KeyError:
                 sltname = "Slit_" + repr(s + 1)
                 sci_dict[sltname] = ext
-
+    hdulist.close()
     return sci_dict
 
 

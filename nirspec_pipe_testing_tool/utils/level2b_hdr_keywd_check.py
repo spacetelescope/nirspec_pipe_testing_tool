@@ -72,7 +72,7 @@ def read_hdrfits(fits_file_name):
     #  Read the fits file
     hdulist = fits.open(fits_file_name)
     # print on screen what extensions are in the file
-    print('File contents')
+    print('(level2b_hdr_keword_check.read_hdrfits:) File contents')
     hdulist.info()
     # get and print header
     # print ('\n FILE HEADER: \n')
@@ -116,7 +116,7 @@ def read_hdrtxt(hdr_txt_file):
     return keywd_dict
 
 
-def create_addedkeywds_file(fits_file):
+def create_addedkeywds_file(fits_file, mktxt=True):
     """
     This function create text file to log added keywords.
     Args:
@@ -126,7 +126,8 @@ def create_addedkeywds_file(fits_file):
         addedkeywds_file_name: string, the file name where all added keywords were saved
     """
     addedkeywds_file_name = fits_file.replace(".fits", "_addedkeywds.txt")
-    print('Name of text file containing all keywords added:  ', addedkeywds_file_name)
+    if mktxt:
+        print('Name of text file containing all keywords added:  ', addedkeywds_file_name)
     tf = open(addedkeywds_file_name, 'w')
     tf.write('### The following keywords were added or have the wrong format: \n')
     tf.write('# {:<12} {:<10} {:<25} \n'.format('Keyword', 'Extension', 'Comments'))
@@ -221,7 +222,7 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
     return warning, val_and_valtype
 
 
-def check3numbers(key, val, ext='primary'):
+def check3numbers(key, val, ext='primary', verbose=False):
     """
     Check if this keyword value has a format like: 0.1.1
     Args:
@@ -236,13 +237,15 @@ def check3numbers(key, val, ext='primary'):
     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect value format. Expected: 0.0.0, got: '+str(val))
     r = re.compile('\d.\d.\d')  # check that the string has a structure like 0.1.1
     if r.match(val) is None:
-        print(warning)
+        if verbose:
+            print(warning)
         return warning
     else:
-        print('{:<15} {:<9} {:<25}'.format(key, ext, 'Matches expected format'))
+        if verbose:
+            print('{:<15} {:<9} {:<25}'.format(key, ext, 'Matches expected format'))
 
 
-def check_len(key, val, val_len=2, ext='primary'):
+def check_len(key, val, val_len=2, ext='primary', verbose=False):
     """
     Check if the length of the keyword value has a a given length, default value for the length check is 2.
     Args:
@@ -262,13 +265,15 @@ def check_len(key, val, val_len=2, ext='primary'):
     warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'Incorrect length of value. Expected: ' + repr(val_len) +
                                            ', got ' + repr(string_length))
     if string_length == val_len:
-        print('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct format'))
+        if verbose:
+            print('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct format'))
     else:
-        print(warning)
+        if verbose:
+            print(warning)
         return warning
 
 
-def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='primary'):
+def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='primary', verbose=False):
     """
     Check if the date and/or time has the expected format.
     Args:
@@ -295,13 +300,15 @@ def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='
     if check_datetime:
         val = datetime.strptime(val, '%Y-%m-%dT%H:%M:%S')
     if isinstance(val, datetime):
-        print ('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct value format'))
+        if verbose:
+            print('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct value format'))
     else:
-        print (warning)
+        if verbose:
+            print(warning)
         return warning
 
 
-def get_gwa_Xtil_val(grating, path_to_tilt_files):
+def get_gwa_Xtil_val(grating, path_to_tilt_files, verbose=False):
     """
     This function gets the right GWA_XTIL value according to the grating given. The reference file has a different
     reference frame, where X and Y are inverted with respect to the pipeline.
@@ -315,7 +322,8 @@ def get_gwa_Xtil_val(grating, path_to_tilt_files):
     gwa_xtil_found = False
     for dispersion_file in dispersion_files_list:
         if grating in dispersion_file:
-            print("Using this file for setting the GWA_XTIL keyword: \n", dispersion_file)
+            if verbose:
+                print("Using this file for setting the GWA_XTIL keyword: \n", dispersion_file)
             with open(dispersion_file, "r") as df:
                 for line in df.readlines():
                     if "*Zeroreadings 1" in line:
@@ -328,7 +336,7 @@ def get_gwa_Xtil_val(grating, path_to_tilt_files):
     return gwa_xtil
 
 
-def get_gwa_Ytil_val(grating, path_to_tilt_files):
+def get_gwa_Ytil_val(grating, path_to_tilt_files, verbose=False):
     """
     This function gets the right GWA_YTIL value according to the grating given. The reference file has a different
     reference frame, where X and Y are inverted with respect to the pipeline.
@@ -342,7 +350,8 @@ def get_gwa_Ytil_val(grating, path_to_tilt_files):
     gwa_ytil_found = False
     for dispersion_file in dispersion_files_list:
         if grating in dispersion_file:
-            print("Using this file for setting the GWA_YTIL keyword: \n", dispersion_file)
+            if verbose:
+                print("Using this file for setting the GWA_YTIL keyword: \n", dispersion_file)
             with open(dispersion_file, "r") as df:
                 for line in df.readlines():
                     if "*Zeroreadings 1" in line:
@@ -399,11 +408,12 @@ def set_exp_type_value(mode_used):
               "         dark, image, confirm, taconfirm, wata, msata, focus, mimf")
         print("         Exiting script level2b_hdr_keywd_check. \n")
         exit()
+    print('     corresponds to EXP_TYPE =', val)
     return val
 
 
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used, detector=None,
-                 subarray=None, msa_metafile=None):
+                 subarray=None, msa_metafile=None, verbose=False):
     """
     This function will check keywords against those in hdr_keywod_dict.py
     Args:
@@ -416,6 +426,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         detector: string, expects NRS1, NRS2, or None (in this case it will be read from the header)
         subarray: None or string, name of the subarray to use
         msa_metafile: None or string, name of the MSA metafile
+        verbose: boolean
 
     Returns:
         specific_keys_dict: dictionary with specific keys and values that need to be changed
@@ -447,6 +458,13 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         if key != 'wcsinfo':
             ext = 'primary'
             if key not in file_keywd_dict:
+                # make sure the MSA metafile is pointing to the right place
+                if key == 'MSAMETFL':
+                    if ('mos' in mode_used.lower()) or ("msa" in mode_used.lower()):
+                        val = msa_metafile
+                        specific_keys_dict[key] = val
+                        if verbose:
+                            print('     Setting value of ', key, ' to ', val)
                 missing_keywds.append(key)
                 warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'New keyword added to header')
                 warnings_list.append(warning)
@@ -465,7 +483,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
                 # Check simple standard keyword values
                 if type(val) == type(lev2bdict_val):
-                    print('{:<15} {:<9} {:<25}'.format(key, ext, 'Has correct format'))
+                    if verbose:
+                        print('{:<15} {:<9} {:<25}'.format(key, ext, 'Has correct format'))
                     warning = None
                 else:
                     if not isinstance(lev2bdict_val, list):
@@ -481,41 +500,52 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             val = str(val)
                         specific_keys_dict[key] = val
                         missing_keywds.append(key)
-                        print('     Setting value of ', key, ' to type ', dict_type, ' and value ', val)
+                        if verbose:
+                            print('     Setting value of ', key, ' to type ', dict_type, ' and value ', val)
                         warning = None
 
                 # Check for specific keywords
                 if key == 'DPSW_VER':
-                    warning = check3numbers(key, val)
+                    warning = check3numbers(key, val, verbose)
                 elif (key == 'VISITGRP') or (key == 'ACT_ID'):
-                    warning = check_len(key, val, val_len=2)
+                    warning = check_len(key, val, val_len=2, verbose=verbose)
                 elif (key == 'OBSERVTN') or (key == 'VISIT'):
-                    warning = check_len(key, val, val_len=3)
+                    warning = check_len(key, val, val_len=3, verbose=verbose)
                 elif key == 'EXPOSURE':
-                    warning = check_len(key, val, val_len=5)
+                    warning = check_len(key, val, val_len=5, verbose=verbose)
                 elif (key == 'DATE') or (key == 'VSTSTART'):
                     warning = check_datetimeformat(key, val, check_date=False, check_datetime=True,
-                                                   check_time=False)
+                                                   check_time=False, verbose=verbose)
                 elif key == 'DATE-OBS':
                     warning = check_datetimeformat(key, val, check_date=True, check_datetime=False,
-                                                   check_time=False)
+                                                   check_time=False, verbose=verbose)
                 elif key == 'TIME-OBS':
                     warning = check_datetimeformat(key, val, check_date=False, check_datetime=False,
-                                                   check_time=True)
+                                                   check_time=True, verbose=verbose)
 
                 # specific check for VISITYPE, set to GENERIC
                 if key == 'VISITYPE':
                     if val != lev2bdict_val:
                         # for now always set this keyword to generic
-                        print("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
+                        if verbose:
+                            print("Replacing ", key, fits.getval(ff, "VISITYPE", 0), "for GENERIC")
                         specific_keys_dict[key] = 'GENERIC'
                         missing_keywds.append(key)
 
+                # make sure the MSA metafile is pointing to the right place
+                if key == 'MSAMETFL':
+                    if ('mos' in mode_used.lower()) or ("msa" in mode_used.lower()):
+                        val = msa_metafile
+                        specific_keys_dict[key] = val
+                        missing_keywds.append(key)
+                        if verbose:
+                            print('     Setting value of ', key, ' to ', val)
                 # specific check for SUBARRAY
                 if key == 'SUBARRAY':
                     if 'ifu' in mode_used.lower() or "mos" in mode_used.lower():
                         if val != lev2bdict_val:
-                            print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for N/A")
+                            if verbose:
+                                print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for N/A")
                             specific_keys_dict[key] = 'N/A'
                             missing_keywds.append(key)
                     else:  # set SUBARRAY for anything else other than IFU or MOS
@@ -532,13 +562,15 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             elif '400A1' in subarray:
                                 pipe_subarr_val = 'SUBS400A1'
                             specific_keys_dict[key] = pipe_subarr_val
-                            print("changing subarray keyword to ", pipe_subarr_val)
+                            if verbose:
+                                print("changing subarray keyword to ", pipe_subarr_val)
                             missing_keywds.append(key)
                             # and make sure to change the primary slit keyword accordingly
                             if mode_used.lower() == "fs":
                                 subarrd_key = 'S200A1'
                                 specific_keys_dict['FXD_SLIT'] = subarrd_key
-                                print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
+                                if verbose:
+                                    print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
                                 missing_keywds.append('FXD_SLIT')
                             # set the subarray sizes and start keywords accordingly
                             if subarray in subdict.subarray_dict:
@@ -561,8 +593,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                 missing_keywds.append('SUBSIZE1')
                                 missing_keywds.append('SUBSTRT2')
                                 missing_keywds.append('SUBSIZE2')
-                                print("Subarray size and start keywords now set to: \n", )
-                                print("   substrt1=", sst1, " substrt2=", sst2, " subsize1=", ssz1, " subsize2=", ssz2)
+                                if verbose:
+                                    print("Subarray size and start keywords now set to: \n", )
+                                    print("   substrt1=", sst1, " substrt2=", sst2, " subsize1=",
+                                          ssz1, " subsize2=", ssz2)
                         else:
                             try:
                                 # set the subarray according to size
@@ -591,13 +625,15 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                                 elif '1600A1' in subarrd_key:
                                                     subarrd_key = 'SUBS1600A1'
                                                 specific_keys_dict[key] = subarrd_key
-                                                print("changing subarray keyword to ", subarrd_key)
+                                                if verbose:
+                                                    print("changing subarray keyword to ", subarrd_key)
                                                 missing_keywds.append(key)
                                                 # and make sure to change the primary slit keyword accordingly
                                                 if 'FULL' in subarrd_key:
                                                     subarrd_key = 'S200A1'
                                                 specific_keys_dict['FXD_SLIT'] = subarrd_key
-                                                print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
+                                                if verbose:
+                                                    print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
                                                 missing_keywds.append('FXD_SLIT')
                                                 # this part is simply to check that the subarray values are correct
                                                 # but no values will be changed in the input file
@@ -605,16 +641,18 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                                     sst2 = sst2_tuple[0]
                                                 elif "2" in detector:
                                                     sst2 = sst2_tuple[1]
-                                                print("Subarray values in input file: \n", )
-                                                print("substrt1=", substrt1, " substrt2=", substrt2,  " subsize1=",
-                                                      subsize1, " subsize2=", subsize2)
-                                                print("Subarray values in PTT dictionary: \n", )
-                                                print("   substrt1=", sst1, " substrt2=", sst2,  " subsize1=", ssz1,
-                                                      " subsize2=", ssz2)
+                                                if verbose:
+                                                    print("Subarray values in input file: \n", )
+                                                    print("substrt1=", substrt1, " substrt2=", substrt2,  " subsize1=",
+                                                          subsize1, " subsize2=", subsize2)
+                                                    print("Subarray values in PTT dictionary: \n", )
+                                                    print("   substrt1=", sst1, " substrt2=", sst2,  " subsize1=", ssz1,
+                                                          " subsize2=", ssz2)
                             except KeyError:
                                 pipe_subarr_val = "N/A"
                                 specific_keys_dict[key] = pipe_subarr_val
-                                print("changing subarray keyword to ", pipe_subarr_val)
+                                if verbose:
+                                    print("changing subarray keyword to ", pipe_subarr_val)
                                 missing_keywds.append(key)
                                 specific_keys_dict['SUBSTRT1'] = 1
                                 specific_keys_dict['SUBSIZE1'] = 2048
@@ -628,8 +666,9 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                 missing_keywds.append('SUBSIZE2')
                                 missing_keywds.append('FASTAXIS')
                                 missing_keywds.append('SLOWAXIS')
-                                print("Subarray size and start keywords now set to: \n", )
-                                print("   SUBSTRT1=1", " SUBSTRT2=1", " SUBSIZE1=2048", " SUBSIZE2=2048")
+                                if verbose:
+                                    print("Subarray size and start keywords now set to: \n", )
+                                    print("   SUBSTRT1=1", " SUBSTRT2=1", " SUBSIZE1=2048", " SUBSIZE2=2048")
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
@@ -639,7 +678,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         missing_keywds.append('DATAMODL')
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
-                    print('     Setting value of ', key, ' to ', val)
+                    if verbose:
+                        print('     Setting value of ', key, ' to ', val)
 
                 # make sure the MSASTATE keyword is set correctly
                 if key == 'MSASTATE':
@@ -647,14 +687,6 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = 'PRIMARYPARK_ALLCLOSED'
                         specific_keys_dict[key] = val
                         missing_keywds.append(key)
-
-                # make sure the MSA metafile is pointing to the right place
-                if key == 'MSAMETFL':
-                    if (mode_used.lower() == 'mos') or ("msa" in mode_used.lower()):
-                        val = msa_metafile
-                        specific_keys_dict[key] = val
-                        missing_keywds.append(key)
-                        print('     Setting value of ', key, ' to ', val)
 
                 # only modify these keywords if present
                 if key == 'GWA_XP_V':
@@ -693,11 +725,12 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 with open(warnings_file_name, "a") as tf:
                     tf.write(warning+'\n')
 
-    print("keywords to be modified: ", list(OrderedDict.fromkeys(missing_keywds)))
+    if verbose:
+        print("keywords to be modified: ", list(OrderedDict.fromkeys(missing_keywds)))
     return specific_keys_dict
 
 
-def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_used):
+def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_used, verbose=False):
     """
     This function adds the missing keywords from the hdr_keywords_dictionary.py (hkwd) file and gives
     the fake values taken from the dictionary sample_hdr_keywd_vals_dict.py (shkvd).
@@ -708,6 +741,7 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
         specific_keys_dict: dictionary with specific keys and values that need to be changed
         mode_used: str or None, observation mode used FS, MOS, or IFU (if None then a configuration file
                     is expected to exist and contain a variable named mode_used)
+        verbose: boolean
     """
     missing_keywds = list(OrderedDict.fromkeys(missing_keywds))
     # create name for updated fits file
@@ -716,7 +750,8 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
         updated_fitsfile = fits_file.replace('.fits', '_updatedHDR.fits')
         subprocess.run(["cp", fits_file, updated_fitsfile])
     # add missimg keywords
-    print('Saving keyword values in file: ', updated_fitsfile)
+    if verbose:
+        print('Saving keyword values in file: ', updated_fitsfile)
     ext = 0
     for i, key in enumerate(missing_keywds):
         if key in specific_keys_dict:
@@ -754,16 +789,19 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
                 new_value = fits.getval(updated_fitsfile, 'FWA_POS', 0)
             # choose right value for GWA_XTIL according to the grating
             if key == "GWA_XTIL":
-                new_value = get_gwa_Xtil_val(grating, path_to_tilt_files)
-                print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
+                new_value = get_gwa_Xtil_val(grating, path_to_tilt_files, verbose=verbose)
+                if verbose:
+                    print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
             # choose right value for GWA_YTIL according to the grating
             if key == "GWA_YTIL":
-                new_value = get_gwa_Ytil_val(grating, path_to_tilt_files)
-                print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
+                new_value = get_gwa_Ytil_val(grating, path_to_tilt_files, verbose=verbose)
+                if verbose:
+                    print("Replacing value of keyword ", key, " corresponding to GRATING=", grating, "and value ", new_value)
             if key == "EXP_TYPE":
                 new_value = set_exp_type_value(mode_used)
             fits.setval(updated_fitsfile, key, 0, value=new_value, after=after_key)
-            print("adding keyword: ", key, " in extension: PRIMARY    after: ", after_key, "   value: ", new_value)
+            if verbose:
+                print("adding keyword: ", key, " in extension: PRIMARY    after: ", after_key, "   value: ", new_value)
         else:
             # go into the sub-dictionary for WCS keywords
             extname = 'sci'
@@ -782,7 +820,8 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
                 # uncomment this line if wanting to use the original keyword value given by create_data
                 # new_value = wcs_keywds_from_main_hdr[subkey]
                 if subkey not in sci_hdr:
-                    print("adding keyword: ", subkey, " in extension: ", extname, " with value: ", new_value)
+                    if verbose:
+                        print("adding keyword: ", subkey, " in extension: ", extname, " with value: ", new_value)
                     fits.setval(updated_fitsfile, subkey, 1, value=new_value, after='EXTNAME')
     # if the keyword is not in the sample dictionary then remove it
     for key in lev2bdict.keywd_dict:
@@ -791,11 +830,13 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
                 fits.delval(updated_fitsfile, key, 1)
             except:
                 KeyError
-    print("Main and science headers have been updated.")
+    if verbose:
+        print("Main and science headers have been updated.")
     return updated_fitsfile
 
 
-def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None, subarray=None, msa_metafile=None):
+def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None, subarray=None, msa_metafile=None,
+                          mktxt=True, verbose=True):
     """
     This is the function that does all the work in this script (i.e. uses all other functions) to update the header
     Args:
@@ -806,6 +847,8 @@ def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None, suba
         detector: string, expects NRS1, NRS2, or None (in this case it will be read from the header)
         subarray: None or string, name of subarray to use
         msa_metafile: None or string, name of the MSA metafile
+        mktxt: boolean, create a text file with all keywords added
+        verbose: boolean
 
     Returns:
         updated_fitsfile: string, path and name of the outputs are a text file with all the added keywords and the
@@ -816,21 +859,24 @@ def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None, suba
     file_keywd_dict = read_hdrfits(fits_file)
 
     # create text file to log warnings
-    print()
-    addedkeywds_file_name = create_addedkeywds_file(fits_file)
+    addedkeywds_file_name = create_addedkeywds_file(fits_file, mktxt=mktxt)
 
     # check the keywords
-    print('\n   Starting keyword check...')
+    print('\n(level2b_hdr_keywd_check.check_lev2b_hdr_keywd:) Starting keyword check...')
     warnings_list, missing_keywds = [], []
     specific_keys_dict = check_keywds(file_keywd_dict, addedkeywds_file_name, warnings_list, missing_keywds, mode_used,
-                                      detector, subarray, msa_metafile)
+                                      detector, subarray, msa_metafile, verbose=verbose)
 
     # if warnings text file is empty erase it
     check_addedkeywds_file(addedkeywds_file_name)
 
     # create new file with updated header or simply update the input fits file
-    print('\n   Adding keywords...')
-    updated_fitsfile = add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_used)
+    print('\n(level2b_hdr_keywd_check.check_lev2b_hdr_keywd:) Adding and/or changing keywords...')
+    updated_fitsfile = add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_used,
+                                  verbose=verbose)
+    if not mktxt:
+        os.system('rm ' + addedkeywds_file_name)
+
     return updated_fitsfile
 
 
@@ -861,6 +907,11 @@ def main():
                         action='store',
                         default=None,
                         help='Use -m to provide the msa metafile name, e.g. -m=V9621500100101_msa.fits.')
+    parser.add_argument("-v",
+                        dest="verbose",
+                        action='store_true',
+                        default=False,
+                        help='Use -v to print on-screen keywords and values.')
     args = parser.parse_args()
 
     # Set the variables
@@ -869,9 +920,11 @@ def main():
     only_update = args.only_update
     detector = args.detector
     msa_metafile = args.msa_metafile
+    verbose = args.verbose
 
     # Perform the keyword check
-    check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=detector, msa_metafile=msa_metafile)
+    check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=detector, msa_metafile=msa_metafile,
+                          verbose=verbose)
 
     print('\n * Script  level2b_hdr_keywd_check.py  finished * \n')
 

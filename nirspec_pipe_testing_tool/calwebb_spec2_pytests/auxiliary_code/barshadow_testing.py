@@ -482,6 +482,11 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         # store tests results in the total dictionary
         total_test_result[slit_id] = slitlet_test_result_list
 
+        # close files
+        hdul.close()
+        bs.close()
+        pl.close()
+
         # create fits file to hold the calculated correction for each slitlet
         if write_barshadow_files:
             # this is the file to hold the image of the correction values

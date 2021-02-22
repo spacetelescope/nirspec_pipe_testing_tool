@@ -382,6 +382,10 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     log_msgs.append(msg)
     total_test_result.append(test_result)
 
+    hdul.close()
+    ifu_pipe_model.close()
+    ifu_input_model.close()
+
     if writefile:
         outfile_name = step_input_filename.replace("srctype", "_calcuated_pathloss")
         compfile_name = step_input_filename.replace("srctype", "_comparison_pathloss")

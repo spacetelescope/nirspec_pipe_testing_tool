@@ -77,19 +77,23 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         print(msg)
         log_msgs.append(msg)
         if "extract_2d" not in step_input_filename:
-            extract2d_file = step_input_filename.replace("_flat_field", "_extract_2d")
+            extract2d_wcs_file = step_input_filename.replace("_flat_field", "_extract_2d")
+        else:
+            extract2d_wcs_file = step_input_filename
+        model = datamodels.MultiSlitModel(extract2d_wcs_file)
 
     else:
-        extract2d_file = step_input_filename
+        model = step_input_filename
 
     # read in the on-the-fly flat image
     if interpolated_flat is None:
-        flatfile = step_input_filename.replace("_flat_field", "interpolatedflat")
+        flatfile = step_input_filename.replace("_flat_field", "_interpolatedflat")
     else:
         flatfile = interpolated_flat
+    # get all the science extensions in the flatfile
+    sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
     # get basic info from model
-    model = datamodels.MultiSlitModel(extract2d_file)
     det = model.meta.instrument.detector
     grat = model.meta.instrument.grating
     filt = model.meta.instrument.filter
@@ -338,9 +342,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
     # list to determine if pytest is passed or not
     total_test_result = []
-
-    # get all the science extensions in the flatfile
-    sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
     # loop over the 2D subwindows and read in the WCS values
     for slit in model.slits:

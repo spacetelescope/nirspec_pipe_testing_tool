@@ -430,6 +430,10 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
     print(msa_flagging_test_tot_time)
     log_msgs.append(msa_flagging_test_tot_time)
 
+    # close the datamodel
+    msaflag.close()
+    rate_mdl.close()
+
     return FINAL_TEST_RESULT, result_msg, log_msgs
 
 

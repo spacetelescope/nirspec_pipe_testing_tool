@@ -337,9 +337,10 @@ stsci2ips_dict['wcsinfo'] = {
 '''
 
 
-### Functions
+# Functions
 
-def change_keyword2ips_value(ips_keywd_dict, st_pipe_ready_dict, ips_keywd, st_pipe_ready_keywd, st_pipe_ready_file):
+def change_keyword2ips_value(ips_keywd_dict, st_pipe_ready_dict, ips_keywd, st_pipe_ready_keywd, st_pipe_ready_file,
+                             verbose=False):
     """
     Function changes the keyword value to match IPS value.
     :param ips_keywd_dict: dictionary, IPS header
@@ -347,20 +348,23 @@ def change_keyword2ips_value(ips_keywd_dict, st_pipe_ready_dict, ips_keywd, st_p
     :param st_pipe_ready_keywd: string, keyword with STScI spelling
     :param ips_key: string, keyword with IPS spelling
     :param st_pipe_ready_file: string, path and name of the fits file that is STScI pipeline-ready
+    :param verbose: boolean
     :return: nothing
     """
     for key, val in st_pipe_ready_dict.items():
         if key == st_pipe_ready_keywd:
             if ips_keywd in ips_keywd_dict:
-                print('Modified keyword: ', key, '   old_value=', val, '   new_value=', ips_keywd_dict[ips_keywd])
+                if verbose:
+                    print('Modified keyword: ', key, '   old_value=', val, '   new_value=', ips_keywd_dict[ips_keywd])
                 fits.setval(st_pipe_ready_file, st_pipe_ready_keywd, value=ips_keywd_dict[ips_keywd])
             else:
-                print('IPS keyword ', ips_keywd, ', corresponding to ', st_pipe_ready_keywd,
-                      'in STScI pipeline, not found in header of IPS file.')
+                if verbose:
+                    print('IPS keyword ', ips_keywd, ', corresponding to ', st_pipe_ready_keywd,
+                          'in STScI pipeline, not found in header of IPS file.')
             break
 
 
-def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_ready_file):
+def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_ready_file, verbose=False):
     """
     Set the subarray keyword to one of the values that the STScI pipeline excepts, with the corresponding size keywords.
     :param ips_keywd_dict: dictionary, IPS header
@@ -375,11 +379,15 @@ def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_rea
 
     # set the subarray keyword to a value the STScI pipeline can process
     if 'MSA' in exp_type_keywd_value or 'IFU' in exp_type_keywd_value:
-        print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'], '   new_value= GENERIC')
+        if verbose:
+            print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
+                  '   new_value= GENERIC')
         st_pipe_ready_dict['SUBARRAY'] = 'GENERIC'
     else:
         if ips_keywd_dict['SUBARRAY'] == 'F':
-            print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'], '   new_value= FULL')
+            if verbose:
+                print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
+                      '   new_value= FULL')
             st_pipe_ready_dict['SUBARRAY'] = 'FULL'
         else:
             # match the subarray used to the sizes keywords
@@ -401,29 +409,31 @@ def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_rea
                         pos = 0
                     else:
                         pos = 1
-                    print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
-                          '   new_value=', stpipe_key)
-                    print('Modified keyword: SUBSTRT1', '   old_value=', st_pipe_ready_dict['SUBSTRT1'],
-                          '   new_value=', subarray_sizes_dict['SUBSTRT1'])
-                    print('Modified keyword: SUBSTRT2', '   old_value=', st_pipe_ready_dict['SUBSTRT2'],
-                          '   new_value=', subarray_sizes_dict['SUBSTRT2'][grating][pos])
-                    print('Modified keyword: SUBSIZE1', '   old_value=', st_pipe_ready_dict['SUBSIZE1'],
-                          '   new_value=', subarray_sizes_dict['SUBSIZE1'])
-                    print('Modified keyword: SUBSIZE2', '   old_value=', st_pipe_ready_dict['SUBSIZE2'],
-                          '   new_value=', subarray_sizes_dict['SUBSIZE2'])
+                    if verbose:
+                        print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
+                              '   new_value=', stpipe_key)
+                        print('Modified keyword: SUBSTRT1', '   old_value=', st_pipe_ready_dict['SUBSTRT1'],
+                              '   new_value=', subarray_sizes_dict['SUBSTRT1'])
+                        print('Modified keyword: SUBSTRT2', '   old_value=', st_pipe_ready_dict['SUBSTRT2'],
+                              '   new_value=', subarray_sizes_dict['SUBSTRT2'][grating][pos])
+                        print('Modified keyword: SUBSIZE1', '   old_value=', st_pipe_ready_dict['SUBSIZE1'],
+                              '   new_value=', subarray_sizes_dict['SUBSIZE1'])
+                        print('Modified keyword: SUBSIZE2', '   old_value=', st_pipe_ready_dict['SUBSIZE2'],
+                              '   new_value=', subarray_sizes_dict['SUBSIZE2'])
                     fits.setval(st_pipe_ready_file, 'SUBSTRT1', value=subarray_sizes_dict['SUBSTRT1'])
                     fits.setval(st_pipe_ready_file, 'SUBSTRT2', value=subarray_sizes_dict['SUBSTRT2'][grating][pos])
                     fits.setval(st_pipe_ready_file, 'SUBSIZE1', value=subarray_sizes_dict['SUBSIZE1'])
                     fits.setval(st_pipe_ready_file, 'SUBSIZE2', value=subarray_sizes_dict['SUBSIZE2'])
 
 
-def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=None):
+def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=None, verbose=False):
     """
     This function performs the change of keyword values for the STScI pipeline-ready file to match the values in the
     IPS file.
     :param stsci_pipe_ready_file: string, path and name of the STScI pipeline-ready file
     :param ips_file: string, path and name of the IPS file
     :param additional_args_dict: dictionary, keywords and corresponding values indicated in the command line
+    :param verbose: boolean
     :return: nothing; the input fits file with the modified keyword values
     """
     # get the headers from the IPS file
@@ -443,16 +453,17 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
             # look for the same keyword in IPS file in the primary extension header
             ips_key = val2modify.split(':')[-1]
             if 'SUBARRAY' in key2modify:
-                set_subarray_and_size_keywds(primary_ext_ips_keywd_dict, st_pipe_ready_dict, stsci_pipe_ready_file)
+                set_subarray_and_size_keywds(primary_ext_ips_keywd_dict, st_pipe_ready_dict, stsci_pipe_ready_file,
+                                             verbose=verbose)
             else:
                 change_keyword2ips_value(primary_ext_ips_keywd_dict, st_pipe_ready_dict, ips_key, key2modify,
-                                         stsci_pipe_ready_file)
+                                         stsci_pipe_ready_file, verbose=verbose)
 
         if 'header_ext' in val2modify:
             # look for the same keyword in IPS file in the header extension
             ips_key = val2modify.split(':')[-1]
             change_keyword2ips_value(header_ext_ips_keywd_dict, st_pipe_ready_dict, ips_key, key2modify,
-                                     stsci_pipe_ready_file)
+                                     stsci_pipe_ready_file, verbose=verbose)
 
         if 'set_to_given_string' in val2modify:
             # change the keyword value to that given in the command line - this is optional
@@ -460,15 +471,18 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
                 continue
             else:
                 if key2modify in additional_args_dict:
-                    print('Modified keyword: ', key2modify, '   old_value=', st_pipe_ready_dict[key2modify],
-                          '   new_value=', additional_args_dict[key2modify])
+                    if verbose:
+                        print('Modified keyword: ', key2modify, '   old_value=', st_pipe_ready_dict[key2modify],
+                              '   new_value=', additional_args_dict[key2modify])
                     fits.setval(stsci_pipe_ready_file, key2modify, value=additional_args_dict[key2modify])
                 else:
-                    print('Value for keyword=', key2modify, ' not provided with line command.')
+                    if verbose:
+                        print('Value for keyword=', key2modify, ' not provided with line command.')
                     continue
 
         if 'calculation' in val2modify:
-            print('Value for keyword ', key2modify, ' will be calculated...')
+            if verbose:
+                print('Value for keyword ', key2modify, ' will be calculated...')
             if key2modify == 'EXPSTART':
                 # put the dates/times values into the time stamp format to do operations
                 dateobs_string = st_pipe_ready_dict['DATE-OBS'].replace('T', ' ')
@@ -536,18 +550,19 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
                 # change value in dictionary for use within the script
                 st_pipe_ready_dict['TGROUP'] = new_val
 
-            print('Modified keyword: ', key2modify, '   old_value=', st_pipe_ready_dict[key2modify], '   new_value=',
-                  new_val)
-            print('    * WARNING: This calculation needs to be verified ')
+            if verbose:
+                print('Modified keyword: ', key2modify, '   old_value=', st_pipe_ready_dict[key2modify],
+                      '   new_value=', new_val)
+                print('    * WARNING: This calculation needs to be verified ')
             fits.setval(stsci_pipe_ready_file, key2modify, value=new_val)
-
 
         elif 'specific_string' in val2modify:
             # now set all the other keyword whose string value will not change from simulation from simulation, this
             # is the case for the 'specific_string' in the map of STScI to IPS keywords dictionary
             new_val = val2modify.split(':')[-1]
-            print('Modified keyword: ', key2modify, '   old_value=', st_pipe_ready_dict[key2modify], '   new_value=',
-                  new_val)
+            if verbose:
+                print('Modified keyword: ', key2modify, '   old_value=', st_pipe_ready_dict[key2modify],
+                      '   new_value=', new_val)
             fits.setval(stsci_pipe_ready_file, key2modify, value=val2modify)
 
 
@@ -579,6 +594,11 @@ def main():
                         default=True,
                         help='Use -n if wanting to create a new file with updated header. Default is to '
                              'update header without creating a new file')
+    parser.add_argument("-v",
+                        dest="verbose",
+                        action='store_true',
+                        default=True,
+                        help='Use -v to print keywords values and script messages.')
     args = parser.parse_args()
 
     # Set the variables
@@ -587,6 +607,7 @@ def main():
     proposal_title = args.proposal_title
     target_name = args.target_name
     new_file = args.new_file
+    verbose = args.verbose
 
     # create dictionary of command-line arguments
     additional_args_dict = {'TITLE': proposal_title,
@@ -595,7 +616,8 @@ def main():
                             }
 
     # modify the keyword values to match IPS information
-    match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=additional_args_dict)
+    match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=additional_args_dict,
+                       verbose=verbose)
 
     print('\n * Script  level2b_hdr_keywd_dict_map2sim.py  finished * \n')
 

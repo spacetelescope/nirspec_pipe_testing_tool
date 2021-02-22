@@ -182,6 +182,7 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     detector = fits.getval(calwebb_spec2_input_file[5], "DETECTOR")
     ptt_config = os.path.join(calwebb_spec2_input_file[0], "PTT_config_"+detector+".cfg")
     config.write(open(ptt_config, "w"))
+    ptt_config.close()
 
 
 def set_ptt_immutable_paths():
