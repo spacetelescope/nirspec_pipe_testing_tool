@@ -215,15 +215,14 @@ def validate_barshadow(output_hdul):
 
         plfile = output_hdul[1].replace('_barshadow', '_pathloss')
         bsfile = output_hdul[1]
-        barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots, write_barshadow_files = output_hdul[2]
-        barshadow_testresult, result_msg, log_msgs = barshadow_testing.run_barshadow_tests(plfile, bsfile,
-                                                        barshadow_threshold_diff=float(barshadow_threshold_diff),
-                                                        save_final_figs=save_barshadow_final_plot,
-                                                        show_final_figs=show_figs,
-                                                        save_intermediary_figs=save_barshadow_intermediary_plots,
-                                                        show_intermediary_figs=show_figs,
-                                                        write_barshadow_files=write_barshadow_files,
-                                                        debug=False)
+        (barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots,
+         write_barshadow_files) = output_hdul[2]
+        barshadow_testresult, result_msg, log_msgs = barshadow_testing.run_barshadow_tests(
+            plfile, bsfile, barshadow_threshold_diff=float(barshadow_threshold_diff),
+            save_final_figs=save_barshadow_final_plot, show_final_figs=show_figs,
+            save_intermediary_figs=save_barshadow_intermediary_plots,
+            show_intermediary_figs=show_figs, write_barshadow_files=write_barshadow_files,
+            debug=False)
 
     else:
         pytest.skip("Skipping pytest: The input fits file is not MOS.")

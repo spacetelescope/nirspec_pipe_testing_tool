@@ -65,6 +65,7 @@ def get_ps_uni_extensions(fits_file_name, is_point_source):
             except KeyError:
                 sltname = "Slit_"+repr(s+1)
                 uni_dict[sltname] = ext
+    hdulist.close()
     return ps_dict, uni_dict
 
 
@@ -127,8 +128,6 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     pathloss_400a1 = step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")
     pathloss_pipe_400a1 = datamodels.open(pathloss_400a1)
     """
-    if debug:
-        print('got comparison datamodel!')
     if isinstance(comparison_filename, str):
         if os.path.isfile(comparison_filename):
             if debug:
@@ -144,11 +143,12 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
         # get the comparison data model
         pathloss_pipe = datamodels.open(comparison_filename)
-        if debug:
-            print('Retrieved comparison datamodel.')
 
     else:
         pathloss_pipe = comparison_filename
+
+    if debug:
+        print('got comparison datamodel!')
 
     # get info from data model
     det = pl.meta.instrument.detector
@@ -176,21 +176,6 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     # list to determine if pytest is passed or not
     total_test_result = []
 
-    print('Checking files exist & obtaining datamodels, takes a few mins...')
-    # get the comparison data model
-    if isinstance(comparison_filename, str):
-        if os.path.isfile(comparison_filename):
-            if debug:
-                print('Comparison file does exist.')
-        else:
-            result_msg = 'Comparison file does NOT exist. Skipping pathloss test.'
-            log_msgs.append(result_msg)
-            result = 'skip'
-            return result, result_msg, log_msgs
-
-        pathloss_pipe = datamodels.open(comparison_filename)
-    else:
-        pathloss_pipe = comparison_filename
     # For the moment, the pipeline is using the wrong reference file for slit 400A1, so read file that
     # re-processed with the right reference file and open corresponding data model
     if os.path.isfile(step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")):
@@ -489,6 +474,10 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                     print(msg)
                 log_msgs.append(msg)
                 total_test_result.append(test_result)
+
+    # close datamodels
+    pl.close()
+    pathloss_pipe.close()
 
     if writefile:
         outfile_name = step_input_filename.replace("srctype", det+"_calcuated_pathloss")

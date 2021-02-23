@@ -63,7 +63,7 @@ __version__ = "1.2"
 
 
 def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, msa_metafile='N/A',
-             output_dir=None):
+             output_dir=None, verbose=False):
     """
     This function is the wrapper for the scripts needed to convert a crm file to a pipeline ready product.
     Args:
@@ -74,6 +74,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         subarray: None or string, name of subarray to use
         msa_metafile: string, name of the MSA metafile
         output_dir: string, path to place the output file - if None output will be in same dir as input
+        verbose: boolean
 
     Returns:
         out_fits: string, path and name of the final product is the file that is pipeline ready.
@@ -84,10 +85,12 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         only_update = False
 
     if 'mos' in mode_used.lower() or mode_used.lower() == 'msa':
-        if msa_metafile == 'N/A':
-            print('(crm2STpipeline.crm2pipe:) WARNING! MSA metafile not specified, will be set to N/A')
+        if msa_metafile != 'N/A':
+            if verbose:
+                print('(crm2STpipeline.crm2pipe:) MSA metafile will be set to ', msa_metafile)
         else:
-            print('(crm2STpipeline.crm2pipe:) MSA metafile will be set to ', msa_metafile)
+            if verbose:
+                print('(crm2STpipeline.crm2pipe:) WARNING! MSA metafile not specified, will be set to N/A')
 
     # set the subarray value to what the code expects
     if subarray is not None:
@@ -124,7 +127,8 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
 
     # Perform data move to the science extension if needed, i.e. if there is only 1 data extension
     hdulist = fits.open(input_fits_file)
-    print("(crm2STpipeline.crm2pipe:) Contents of the input file ")
+    if verbose:
+        print("(crm2STpipeline.crm2pipe:) Contents of the input file ")
     hdulist.info()
     sci_ext, dq_ext, err_ext = False, False, False
     data_ext, var_ext, quality_ext, header_ext = True, True, True, True
@@ -161,6 +165,8 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
     if len(hdulist) == 5:
         detectors = [fits.getval(input_fits_file, "DET", 0)]
 
+    hdulist.close()
+
     if not data_ext and not var_ext and not quality_ext:
         print("(crm2STpipeline.crm2pipe:) ERROR! The extension names do not match the expected: DATA, VAR, QUALITY or "
               "SCI, DQ, ERR.")
@@ -171,17 +177,19 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         print("(crm2STpipeline.crm2pipe:) Renaming extensions for ST pipeline...")
         for det in detectors:
             # rename extensions in the file to match expected names in the pipeline
+            print("(crm2STpipeline.crm2pipe:) Renaming extensions and moving data for ST pipeline ingestion...")
             st_pipe_file = move_data2ext1.move_data(input_fits_file, det, add_ref_pix=add_ref_pix,
                                                     output_dir=output_dir)
 
             # perform rotations expected in the pipeline
-            print("(crm2STpipeline.crm2pipe:) Rotating data for ST pipeline ingestion.")
-            st_pipe_file = rm_extra_exts_and_rotate(st_pipe_file, det)
+            print("(crm2STpipeline.crm2pipe:) Rotating data for ST pipeline ingestion...")
+            st_pipe_file = rm_extra_exts_and_rotate(st_pipe_file, det, output_dir=output_dir)
 
             # Perform the keyword check on the file with the right number of extensions
             print("(crm2STpipeline.crm2pipe:) Fixing the header keywords for detector ", det)
             out_fits = lev2bcheck.check_lev2b_hdr_keywd(st_pipe_file, only_update, mode_used, detector=det,
-                                                        subarray=subarray, msa_metafile=msa_metafile)
+                                                        subarray=subarray, msa_metafile=msa_metafile,
+                                                        mktxt=False, verbose=verbose)
 
             print("(crm2STpipeline.crm2pipe:) Done with detector", det, "\n")
 
@@ -196,13 +204,25 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
                 # Perform the keyword check on the file with the right number of extensions
                 print("(crm2STpipeline.crm2pipe:) Fixing the header keywords")
                 out_fits = lev2bcheck.check_lev2b_hdr_keywd(outfile_name, only_update, mode_used, detector=det,
-                                                            subarray=subarray, msa_metafile=msa_metafile)
+                                                            subarray=subarray, msa_metafile=msa_metafile,
+                                                            mktxt=False, verbose=verbose)
 
         else:
             print("(crm2STpipeline.crm2pipe:) No need to rename or modify file for ST pipeline ingestion. "
                   "Exiting script.")
             exit()
 
+    rename = False
+    if det not in out_fits:
+        outfile = out_fits.replace(".fits", "_" + det + ".fits")
+        rename = True
+    else:
+        outfile = out_fits
+    if 'modified' not in outfile:
+        outfile = outfile.replace(".fits", "_modified.fits")
+        rename = True
+    if rename:
+        os.rename(out_fits, outfile)
     return out_fits
 
 
@@ -247,19 +267,22 @@ def rm_extra_exts_and_rotate(input_fits_file, detector, output_dir=None):
     outfile.append(fits.ImageHDU(transposed_array, name="DQ"))
 
     # write the new output file
-    if detector not in input_fits_file and 'modified' not in input_fits_file:
-        outfile_name = input_fits_file.replace(".fits", "_" + detector + "_modified.fits")
-    else:
-        outfile_name = input_fits_file
+    outfile_name = input_fits_file
+    if detector not in outfile_name:
+        outfile_name = outfile_name.replace(".fits", "_" + detector + ".fits")
+    if 'modified' not in outfile_name:
+        outfile_name = outfile_name.replace(".fits", "_modified.fits")
     if output_dir is not None:
         outfile_name = os.path.join(output_dir, os.path.basename(outfile_name))
+        if '.fits' in output_dir:
+            outfile_name = output_dir
     outfile.writeto(outfile_name, overwrite=True)
-
+    original_hdulist.close()
     return outfile_name
 
 
 def crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name, subarray=None, new_file=False,
-                   msa_metafile='N/A', output_dir=None):
+                   msa_metafile='N/A', output_dir=None, verbose=False):
     """
     This function is the wrapper for the scripts needed to convert a crm file to a pipeline ready product.
     :param ips_file: string, full path to IPS crm fits file
@@ -272,11 +295,12 @@ def crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name
                      header without creating a new file
     :param msa_metafile: string, name of the MSA metafile
     :param output_dir: string, path to place the output file - if None output will be in same dir as input
+    :param verbose: boolean
     :return:
     """
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
     stsci_pipe_ready_file = crm2pipe(ips_file, mode_used, add_ref_pix, new_file, subarray=subarray,
-                                     msa_metafile=msa_metafile, output_dir=output_dir)
+                                     msa_metafile=msa_metafile, output_dir=output_dir, verbose=verbose)
 
     # create dictionary of command-line arguments
     additional_args_dict = {'TITLE': proposal_title,
@@ -285,8 +309,9 @@ def crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name
                             }
 
     # modify the keyword values to match IPS information
-    print('(crm2STpipeline:) Matching IPS keyword values to corresponding STScI pipeline keywords...')
-    map2sim.match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=additional_args_dict)
+    map2sim.match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=additional_args_dict,
+                               verbose=verbose)
+    return stsci_pipe_ready_file
 
 
 def main():
@@ -336,6 +361,11 @@ def main():
                         action='store',
                         default=None,
                         help='Use -o to provide a path to place the output fits file.')
+    parser.add_argument("-v",
+                        dest="verbose",
+                        action='store_true',
+                        default=False,
+                        help='Use -v to print on-screen keywords and values.')
     args = parser.parse_args()
 
     # Set the variables
@@ -348,10 +378,11 @@ def main():
     subarray = args.subarray
     msa_metafile = args.msa_metafile
     output_dir = args.output_dir
+    verbose = args.verbose
 
     # Run wrapper function
     crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name, subarray=subarray,
-                   new_file=new_file, msa_metafile=msa_metafile, output_dir=output_dir)
+                   new_file=new_file, msa_metafile=msa_metafile, output_dir=output_dir, verbose=verbose)
 
     print('\n * Script  crm2STpipeline.py  finished * \n')
 

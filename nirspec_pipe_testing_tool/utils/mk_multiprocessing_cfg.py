@@ -36,6 +36,7 @@ def write_ptt_multiprocessing_cfg():
 
     ptt_m_config = os.path.join(os.getcwd(), "multiprocessing_PTT_config.cfg")
     config.write(open(ptt_m_config, "w"))
+    ptt_m_config.close()
 
 
 def main():

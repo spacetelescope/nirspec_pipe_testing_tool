@@ -66,6 +66,7 @@ def get_mos_ps_uni_extensions(fits_file_name, is_point_source):
             except KeyError:
                 sltname = "Slit_"+repr(s+1)
                 uni_dict[sltname] = ext
+    hdulist.close()
     return ps_dict, uni_dict
 
 
@@ -389,6 +390,10 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             print(msg)
             log_msgs.append(msg)
             total_test_result.append(test_result)
+
+    # close datamodels
+    pl.close()
+    pathloss_pipe.cloae()
 
     if writefile:
         outfile_name = step_input_filename.replace("srctype", det+"_calcuated_pathloss")

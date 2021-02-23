@@ -23,6 +23,8 @@ from jwst.jump.jump_step import JumpStep
 from jwst.ramp_fitting.ramp_fit_step import RampFitStep
 from jwst.gain_scale.gain_scale_step import GainScaleStep
 
+from .level2b_hdr_keywd_check import check_lev2b_hdr_keywd
+
 
 """
 This script will perform calwebb_detector1 in one single run, outputing intermediary files named:
@@ -74,13 +76,16 @@ def get_caldet1cfg_and_workingdir(detector):
         mode_used = config.get("calwebb_spec2_input_file", "mode_used")
         raw_data_root_file = config.get("calwebb_spec2_input_file", "raw_data_root_file")
         stage2_pipe_input_file = config.get("calwebb_spec2_input_file", "input_file")
+        msa_metafile = 'N/A'
+        if 'mos' in mode_used.lower():
+            msa_metafile = config.get("benchmark_intermediary_products", "msa_conf_name")
         print('Read the following PTT configuration file:')
         print(os.path.join(output_dir, ptt_config))
     else:
         print("No PTT found in the current directory. Unable to proceed, exiting script.")
         exit()
     return calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, raw_data_root_file, \
-           stage2_pipe_input_file
+           stage2_pipe_input_file, msa_metafile
 
 
 def calculate_step_run_time(pipelog_file, pipe_steps):
@@ -185,7 +190,7 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
     # Get the cfg file
     cfg_info = get_caldet1cfg_and_workingdir(detector)
     (calwebb_detector1_cfg, calwebb_tso1_cfg, calwebb_dark_cfg, output_dir, mode_used, rawdatrt,
-     stage2_pipe_input_file) = cfg_info
+     stage2_pipe_input_file, msa_metafile) = cfg_info
     if mode_used != "BOTS" and mode_used.lower() != "dark":
         cfg_file = calwebb_detector1_cfg
     elif mode_used == "BOTS":
@@ -372,6 +377,10 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
     msg = "\n ** Calwebb_detector 1 took "+repr(tot_time)+" to complete **"
     print(msg)
     logging.info(msg)
+
+    # Make sure the rate file has all the keywords for the stage 2, including the metafile for MOS data
+    only_update = True
+    check_lev2b_hdr_keywd(final_output_caldet1, only_update, mode_used, detector=detector, msa_metafile=msa_metafile)
 
     # make sure the final file is name as expected
     if not os.path.isfile(stage2_pipe_input_file):

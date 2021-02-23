@@ -124,8 +124,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         msg1 = 'step_input_filename='+step_input_filename
         print(msg1)
         log_msgs.append(msg1)
+        model = datamodels.ImageModel(assign_wcs_file)
     else:
-        assign_wcs_file = step_input_filename
+        model = step_input_filename
         file_basename = ''
 
     if interpolated_flat is None:
@@ -134,7 +135,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         flatfile = interpolated_flat
 
     # get the datamodel from the assign_wcs output file
-    model = datamodels.ImageModel(assign_wcs_file)
     ifu_slits = nirspec.nrs_ifu_wcs(model)
     det = model.meta.instrument.detector
     grat = model.meta.instrument.grating
