@@ -8,6 +8,7 @@ import sys
 import os
 import urllib
 import json
+import tempfile
 
 """
 This script will create the shutter configuration file for MOS data, while the pipeline is not automatically doing so.
@@ -281,8 +282,11 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
     # get the MSA operability file
     crds_path = "https://jwst-crds.stsci.edu/unchecked_get/references/jwst/"
     op_ref_file = "jwst_nirspec_msaoper_0001.json"
+    temp_dir = None
     if operability_ref is None:
         ref_file = os.path.join(crds_path, op_ref_file)
+        temp_dir = tempfile.TemporaryDirectory()
+        op_ref_file = os.path.join(temp_dir.name, op_ref_file)
         urllib.request.urlretrieve(ref_file, op_ref_file)
     else:
         op_ref_file = operability_ref
@@ -301,9 +305,8 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
     if verbose:
         print("(create_metafile.create_metafile_dither:) Failed Open shutters: ", failedopens)
     # erase the local copy of the reference operability file
-    dir_name = os.path.dirname(config_binary_file)
-    if os.path.isfile(os.path.join(dir_name, op_ref_file)):
-        os.remove(os.path.join(dir_name, op_ref_file))
+    if temp_dir is not None:
+        temp_dir.cleanup()
 
     # read in configuration (binary fits format)
     hdul = fits.open(config_binary_file)
