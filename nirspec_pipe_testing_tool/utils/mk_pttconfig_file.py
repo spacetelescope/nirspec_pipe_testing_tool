@@ -116,8 +116,8 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     config.set("run_pipe_steps", "imprint_subtract", run_pipe_steps[2])
     config.set("run_pipe_steps", "msa_flagging", run_pipe_steps[3])
     config.set("run_pipe_steps", "extract_2d", run_pipe_steps[4])
-    config.set("run_pipe_steps", "flat_field", run_pipe_steps[5])
     config.set("run_pipe_steps", "srctype", run_pipe_steps[6])
+    config.set("run_pipe_steps", "flat_field", run_pipe_steps[5])
     config.set("run_pipe_steps", "pathloss", run_pipe_steps[7])
     config.set("run_pipe_steps", "barshadow", run_pipe_steps[8])
     config.set("run_pipe_steps", "photom", run_pipe_steps[9])
@@ -140,10 +140,10 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     config.set("run_pytest", "msa_flagging_validation_tests", run_pytest[8])
     config.set("run_pytest", "extract_2d_completion_tests", run_pytest[9])
     config.set("run_pytest", "extract_2d_validation_tests", run_pytest[10])
+    config.set("run_pytest", "srctype_completion_tests", run_pytest[14])
     config.set("run_pytest", "flat_field_completion_tests", run_pytest[11])
     config.set("run_pytest", "flat_field_reffile_tests", run_pytest[12])
     config.set("run_pytest", "flat_field_validation_tests", run_pytest[13])
-    config.set("run_pytest", "srctype_completion_tests", run_pytest[14])
     config.set("run_pytest", "pathloss_completion_tests", run_pytest[15])
     config.set("run_pytest", "pathloss_reffile_tests", run_pytest[16])
     config.set("run_pytest", "pathloss_validation_tests", run_pytest[17])
@@ -254,14 +254,17 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
         exit()
     if dflat_path is None:
         dflat_path = os.path.join(wit4_path, 'nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat')
+    mu = mode_used
+    if 'bots' in mode_used.lower():
+        mu = 'FS'
     if sflat_path is None:
         sflat = os.path.join(wit4_path, 'nirspec/CDP3/04_Flat_field/4.3_S_Flat/')
-        sflat_path = "".join([sflat, mode_used, '/nirspec_',
-                              mode_used, '_sflat'])
+        sflat_path = "".join([sflat, mu, '/nirspec_',
+                              mu, '_sflat'])
     if fflat_path is None:
         fflat = os.path.join(wit4_path, 'nirspec/CDP3/04_Flat_field/4.1_F_Flat/')
-        fflat_path = "".join([fflat, mode_used, '/nirspec_',
-                              mode_used, '_fflat'])
+        fflat_path = "".join([fflat, mu, '/nirspec_',
+                              mu, '_fflat'])
 
     truth_assign_wcs = rate_input_file.replace(".fits", "_assign_wcs_truth.fits")
     truth_extract_2d = rate_input_file.replace(".fits", "_extract_2d_truth.fits")
@@ -278,8 +281,9 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     if msa_flag_opref is None:
         msa_flag_opref = os.path.join(crds_path, 'references/jwst/jwst_nirspec_msaoper_0001.json')
 
-    pipe_steps = ['assign_wcs', 'bkg_subtract', 'imprint_subtract', 'msa_flagging', 'extract_2d', 'flat_field',
-                  'srctype', 'pathloss', 'barshadow', 'photom', 'resample_spec', 'cube_build', 'extract_1d',  # spec2
+    #              spec2
+    pipe_steps = ['assign_wcs', 'bkg_subtract', 'imprint_subtract', 'msa_flagging', 'extract_2d', 'srctype',
+                  'flat_field', 'pathloss', 'barshadow', 'photom', 'resample_spec', 'cube_build', 'extract_1d',
                   # spec3
                   'master_background']
 
@@ -288,8 +292,8 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
                    'imprint_subtract_completion_tests', 'imprint_subtract_numerical_tests',
                    'msa_flagging_completion_tests', 'msa_flagging_validation_tests',
                    'extract_2d_completion_tests', 'extract_2d_validation_tests',
-                   'flat_field_completion_tests', 'flat_field_reffile_tests', 'flat_field_validation_tests',
                    'srctype_completion_tests',
+                   'flat_field_completion_tests', 'flat_field_reffile_tests', 'flat_field_validation_tests',
                    'pathloss_completion_tests', 'pathloss_reffile_tests', 'pathloss_validation_tests',
                    'barshadow_completion_tests', 'barshadow_validation_tests',
                    'photom_completion_tests',
@@ -334,8 +338,8 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     # set the full ESA path to compare the data
     if comparison_file_path is None:
         esa_files_full_path = "".join([esa_files_path, mode_used, "_CV3/ESA_Int_products"])
-        if "F" in mode_used and "S" in mode_used:
-            if fits.getval(raw_data_root_file, "SUBARRAY"):
+        if "fs" in mode_used.lower():
+            if "F" in fits.getval(raw_data_root_file, "SUBARRAY"):
                 esa_files_full_path = "".join([esa_files_path, mode_used, "_CV3_cutouts/ESA_Int_products"])
     else:
         esa_files_full_path = comparison_file_path
@@ -347,7 +351,8 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
         run_calwebb_spec3 = association
     calwebb_spec3_cfg = calwebb_spec2_cfg.replace("2", "3")
     s3_input_file = rate_input_file.replace("caldet1", "spec2")
-    s3_input_file = s3_input_file.replace("rate", "cal")
+    if 'rate' in rate_input_file:
+        s3_input_file = rate_input_file.replace("rate", "cal")
 
     # set the additional parameters section
     if wcs_threshold_diff is None:
