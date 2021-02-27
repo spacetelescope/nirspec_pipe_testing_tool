@@ -779,6 +779,9 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
                     new_value = 'IFUImageModel'
                 else:
                     new_value = 'ImageModel'
+            # for crm simulation files, get keywords from ESA file
+            if 'NRSV' not in updated_fitsfile:
+                continue
             if key == 'DETECTOR':
                 new_value = fits.getval(updated_fitsfile, 'DET', 0)
                 grating = new_value
