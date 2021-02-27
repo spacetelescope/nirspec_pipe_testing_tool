@@ -104,6 +104,14 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     print(msg)
     log_msgs.append(msg)
 
+    if isinstance(step_input_filename, str):
+        file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
+        file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
+    else:
+        model = step_input_filename
+        file_path = os.path.dirname(os.path.realpath(__file__))
+        file_basename = grat + "_" + filt + "_" + det
+
     # define the mode
     if "msa" in exptype.lower():
         mode = "MOS"
@@ -215,13 +223,12 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     if ".fits" not in fflat_path:
         fflat_ending = "01.01.fits"
         ffile = "_".join((fflat_path, filt, fflat_ending))
-        sci_ext = "SCI_Q1"
     else:
         ffile = fflat_path
-        sci_ext = "SCI"
-        dq_ext = "DQ"
-        err_ext = "ERR"
-        fast_var_ext = "FAST_VARIATION"
+    sci_ext = "SCI"
+    dq_ext = "DQ"
+    err_ext = "ERR"
+    fast_var_ext = "FAST_VARIATION"
 
     if mode not in fflat_path:
         msg = "Wrong path in for mode F-flat. This script handles mode " + mode + "only."
@@ -234,7 +241,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     msg = "Using F-flat: "+ffile
     print(msg)
     log_msgs.append(msg)
-    ffsq1 = fits.getdata(ffile, sci_ext)
+    Q_in_ext = False
+    try:
+        ffsq1 = fits.getdata(ffile, sci_ext)
+    except KeyError:
+        sci_ext = "SCI_Q1"
+        ffsq1 = fits.getdata(ffile, sci_ext)
+        Q_in_ext = True
     naxis3 = fits.getval(ffile, "NAXIS3", sci_ext)
     ffswaveq1 = np.array([])
     for i in range(0, naxis3):
@@ -247,7 +260,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         if debug:
             print("1. F-flat -> ", keyword)
         ffswaveq1 = np.append(ffswaveq1, fits.getval(ffile, keyword, sci_ext))
-    if ".fits" not in fflat_path:
+    if Q_in_ext:
         ffserrq1 = fits.getdata(ffile, "ERR_Q1")
         ffsdqq1 = fits.getdata(ffile, "DQ_Q1")
         ffvq1 = fits.getdata(ffile, "Q1")
@@ -267,11 +280,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "_".join(t)
         if debug:
             print("2. F-flat -> using ", keyword)
-        if ".fits" not in fflat_path:
+        if Q_in_ext:
             ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, "SCI_Q2"))
         else:
             ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, sci_ext, 2))
-    if ".fits" not in fflat_path:
+    if Q_in_ext:
         ffserrq2 = fits.getdata(ffile, "ERR_Q2")
         ffsdqq2 = fits.getdata(ffile, "DQ_Q2")
         ffvq2 = fits.getdata(ffile, "Q2")
@@ -291,11 +304,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "_".join(t)
         if debug:
             print("3. F-flat -> using ", keyword)
-        if ".fits" not in fflat_path:
+        if Q_in_ext:
             ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, "SCI_Q3"))
         else:
             ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, sci_ext, 3))
-    if ".fits" not in fflat_path:
+    if Q_in_ext:
         ffserrq3 = fits.getdata(ffile, "ERR_Q3")
         ffsdqq3 = fits.getdata(ffile, "DQ_Q3")
         ffvq3 = fits.getdata(ffile, "Q3")
@@ -314,11 +327,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "FLAT_"+suff
         if debug:
             print("4. F-flat -> using ", keyword)
-        if ".fits" not in fflat_path:
+        if Q_in_ext:
             ffswaveq4 = np.append(ffswaveq4, fits.getval(ffile, keyword, "SCI_Q4"))
         else:
             ffswaveq4 = np.append(ffswaveq4, fits.getval(ffile, keyword, sci_ext, 4))
-    if ".fits" not in fflat_path:
+    if Q_in_ext:
         ffserrq4 = fits.getdata(ffile, "ERR_Q4")
         ffsdqq4 = fits.getdata(ffile, "DQ_Q4")
         ffvq4 = fits.getdata(ffile, "Q4")
@@ -685,8 +698,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         print(msg)
                         log_msgs.append(msg)
                     else:
-                        file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
-                        file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
                         t = (file_basename, "MOS_flattest_"+slitlet_id+"_histogram.png")
                         plt_name = "_".join(t)
                         plt_name = os.path.join(file_path, plt_name)
@@ -849,13 +860,10 @@ def main():
     threshold_diff = args.threshold_diff
     debug = args.debug
 
-    # set the names of the resulting plots
-    plot_name = None
-
     # Run the principal function of the script
     flattest(step_input_filename, dflat_path=dflat_path, sflat_path=sflat_path, fflat_path=fflat_path,
              msa_shutter_conf=msa_shutter_conf, writefile=writefile, show_figs=show_figs, save_figs=save_figs,
-             plot_name=plot_name, threshold_diff=threshold_diff, debug=debug)
+             threshold_diff=threshold_diff, debug=debug)
 
 
 if __name__ == '__main__':
