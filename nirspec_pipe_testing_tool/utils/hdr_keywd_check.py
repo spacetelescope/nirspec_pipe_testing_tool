@@ -404,6 +404,12 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         if key != 'wcsinfo':
             ext = 'primary'
             if key not in file_keywd_dict:
+                # make sure the MSA metafile is pointing to the right place
+                if key == 'MSAMETFL':
+                    if ('mos' in mode_used.lower()) or ("msa" in mode_used.lower()):
+                        val = msa_metafile
+                        specific_keys_dict[key] = val
+                        print('     Setting value of ', key, ' to ', val)
                 missing_keywds.append(key)
                 warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'New keyword added to header')
                 warnings_list.append(warning)
