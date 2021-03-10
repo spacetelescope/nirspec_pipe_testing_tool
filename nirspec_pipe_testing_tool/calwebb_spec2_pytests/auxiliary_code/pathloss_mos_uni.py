@@ -393,7 +393,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
     # close datamodels
     pl.close()
-    pathloss_pipe.cloae()
+    pathloss_pipe.close()
 
     if writefile:
         outfile_name = step_input_filename.replace("srctype", det+"_calcuated_pathloss")
