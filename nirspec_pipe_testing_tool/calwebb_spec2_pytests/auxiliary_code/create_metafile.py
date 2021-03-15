@@ -629,12 +629,17 @@ def main():
                         action='store',
                         default=None,
                         help='Use the flag -s to provide the number of shutters per slitlet, e.g. -s=3.')
-    parser.add_argument("-o",
+    parser.add_argument("-r",
                         dest="operability_ref",
                         action='store',
                         default=None,
-                        help='Use the flag -o to provide the MSA operability file to use, '
+                        help='Use the flag -r to provide the MSA operability file to use, '
                              'e.g. -o=jwst_nirspec_msaoper_0001.json. If None, the default in CRDS will be used.')
+    parser.add_argument("-o",
+                        dest="output_dir",
+                        action='store',
+                        default=None,
+                        help='Use the flag -o to provide the output directory.')
     parser.add_argument("-v",
                         dest="verbose",
                         action='store_true',
@@ -648,6 +653,7 @@ def main():
     fix_old_config_file = args.fix_old_config_file
     shutters_in_slitlet = args.shutters_in_slitlet
     operability_ref = args.operability_ref
+    output_dir = args.output_dir
     verbose = args.verbose
 
     if shutters_in_slitlet is not None:

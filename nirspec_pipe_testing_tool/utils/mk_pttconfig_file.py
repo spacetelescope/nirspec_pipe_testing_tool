@@ -182,7 +182,6 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     detector = fits.getval(calwebb_spec2_input_file[5], "DETECTOR")
     ptt_config = os.path.join(calwebb_spec2_input_file[0], "PTT_config_"+detector+".cfg")
     config.write(open(ptt_config, "w"))
-    ptt_config.close()
 
 
 def set_ptt_immutable_paths():
@@ -254,9 +253,14 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
         exit()
     if dflat_path is None:
         dflat_path = os.path.join(wit4_path, 'nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat')
+    mode_used = mode_used.upper()
     mu = mode_used
     if 'bots' in mode_used.lower():
         mu = 'FS'
+    elif 'mos' in mode_used or 'msa' in mode_used:
+        mu = 'MOS'
+    elif 'ifu' in mode_used or 'ifs' in mode_used:
+        mu = 'IFU'
     if sflat_path is None:
         sflat = os.path.join(wit4_path, 'nirspec/CDP3/04_Flat_field/4.3_S_Flat/')
         sflat_path = "".join([sflat, mu, '/nirspec_',

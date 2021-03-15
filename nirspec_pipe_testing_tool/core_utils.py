@@ -482,7 +482,7 @@ def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_c
         end_time_min = float(end_time) / 60.  # this is in minutes
         if end_time_min > 60.0:
             end_time_hr = end_time_min / 60.  # this is in hours
-            end_time = end_time + "  =" + repr(round(end_time_hr, 1)) + "hr"
+            end_time = repr(end_time) + "  =" + repr(round(end_time_hr, 1)) + "hr"
         else:
             end_time = repr(end_time) + "  =" + repr(round(end_time_min, 1)) + "min"
     line2write = "{:<20} {:<20} {:<20} {:<20}".format(step, outstep_file_suffix, str(step_completed), end_time)
