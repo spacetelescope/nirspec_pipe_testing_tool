@@ -204,6 +204,8 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
     for slit, pipe_slit in zip(pl.slits, pathloss_pipe.slits):
         try:
             nshutters = util.get_num_msa_open_shutters(slit.shutter_state)
+            print('nshutters=', nshutters)
+            input()
             if is_point_source:
                 if nshutters == 3:
                     shutter_key = "MOS1x3"
