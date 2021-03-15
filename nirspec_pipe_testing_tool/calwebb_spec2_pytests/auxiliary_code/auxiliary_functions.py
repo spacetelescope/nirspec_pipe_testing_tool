@@ -646,6 +646,9 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
     Returns:
         Nothing.
     """
+    if save_figs:
+        matplotlib.use("Agg")
+        
     # set up generals
     font = {'weight': 'normal',
             'size': 16}
