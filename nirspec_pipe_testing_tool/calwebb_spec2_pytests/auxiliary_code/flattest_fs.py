@@ -120,8 +120,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     msg = "Using D-flat: " + dfile
     print(msg)
     log_msgs.append(msg)
-    dfim = fits.getdata(dfile, "SCI")
-    dfimdq = fits.getdata(dfile, "DQ")
+    with fits.open(dfile) as dfile_hdu:
+        dfim = dfile_hdu["SCI"].data
+        dfimdq = dfile_hdu["DQ"].data
+        dfrqe = dfile_hdu["RQE"].data
+        dfhdr_sci = dfile_hdu["SCI"].header
     # need to flip/rotate the image into science orientation
     ns = np.shape(dfim)
     dfim = np.transpose(dfim, (0, 2, 1))  # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
@@ -130,7 +133,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         # rotate science data by 180 degrees for NRS2
         dfim = dfim[..., ::-1, ::-1]
         dfimdq = dfimdq[..., ::-1, ::-1]
-    naxis3 = fits.getval(dfile, "NAXIS3", 1)
+    naxis3 = dfhdr_sci["NAXIS3"]
     if debug:
         print('np.shape(dfim) =', np.shape(dfim))
         print('np.shape(dfimdq) =', np.shape(dfimdq))
@@ -141,7 +144,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         t = ("PFLAT", str(i + 1))
         keyword = "_".join(t)
         dfwave = np.append(dfwave, fits.getval(dfile, keyword, 1))
-    dfrqe = fits.getdata(dfile, 2)
 
     # S-flat
     mode = "FS"
@@ -189,8 +191,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     msg = "Using S-flat: " + sfile
     print(msg)
     log_msgs.append(msg)
-    sfim = fits.getdata(sfile, "SCI")  # 1)
-    sfimdq = fits.getdata(sfile, "DQ")  # 3)
+    with fits.open(sfile) as sfile_hdu:
+        sfim = sfile_hdu["SCI"].data
+        sfimdq = sfile_hdu["DQ"].data
+        sfv = sfile_hdu["VECTOR"].data
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim)
@@ -233,7 +237,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     msg = "Using F-flat: " + ffile
     print(msg)
     log_msgs.append(msg)
-    ffv = fits.getdata(ffile, 1)
+    ffv = fits.getdata(ffile, "FAST_VARIATION")  # extension 1
 
     # now go through each pixel in the test data
 
@@ -250,6 +254,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
     # list to determine if pytest is passed or not
     total_test_result = []
+
+    # open the flatfile
+    flatfile_hdu = fits.open(flatfile)
 
     # loop over the slits
     sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1"]
@@ -328,7 +335,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             flatcor = np.zeros([nw2, nw1]) + 999.0
 
             # read the pipeline-calculated flat image, using the corresponding SCI extension number
-            pipeflat = fits.getdata(flatfile, "SCI", ext)
+            pipeflat = flatfile_hdu["SCI", ext].data
 
             # make sure the two arrays are the same shape
             if np.shape(flatcor) != np.shape(pipeflat):
