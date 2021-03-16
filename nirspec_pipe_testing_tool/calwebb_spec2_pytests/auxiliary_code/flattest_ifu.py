@@ -171,8 +171,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     msg = "Using D-flat: " + dfile
     print(msg)
     log_msgs.append(msg)
-    dfim = fits.getdata(dfile,  "SCI")#1)
-    dfimdq = fits.getdata(dfile, "DQ")#4)
+    with fits.open(dfile) as dfile_hdu:
+        dfim = dfile_hdu["SCI"].data
+        dfimdq = dfile_hdu["DQ"].data
+        dfrqe = dfile_hdu["RQE"].data
+        dfile_scihdr = dfile_hdu["SCI"].header
     # need to flip/rotate the image into science orientation
     ns = np.shape(dfim)
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
@@ -181,14 +184,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         # rotate science data by 180 degrees for NRS2
         dfim = dfim[..., ::-1, ::-1]
         dfimdq = dfimdq[..., ::-1, ::-1]
-    naxis3 = fits.getval(dfile, "NAXIS3", "SCI")#1)
+    naxis3 = dfile_scihdr["NAXIS3"]
 
     # get the wavelength values
     dfwave = np.array([])
     for i in range(naxis3):
         keyword = "PFLAT_"+str(i+1)
-        dfwave = np.append(dfwave, fits.getval(dfile, keyword, "SCI"))#1))
-    dfrqe = fits.getdata(dfile, 2)
+        dfwave = np.append(dfwave, dfile_scihdr[keyword])
 
     # S-flat
     if filt == "F070LP":
@@ -235,8 +237,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     msg = "Using S-flat: "+sfile
     print(msg)
     log_msgs.append(msg)
-    sfim = fits.getdata(sfile, "SCI")#1)
-    sfimdq = fits.getdata(sfile, "DQ")#3)
+    with fits.open(sfile) as sfile_hdu:
+        sfim = sfile_hdu["SCI"].data
+        sfimdq = sfile_hdu["DQ"].data
+        sfv = sfile_hdu["VECTOR"].data
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim)
@@ -245,7 +249,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         # rotate science data by 180 degrees for NRS2
         sfim = sfim[..., ::-1, ::-1]
         sfimdq = sfimdq[..., ::-1, ::-1]
-    sfv = fits.getdata(sfile, 5)
 
     # F-Flat
     if ".fits" not in fflat_path:
@@ -265,7 +268,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     msg = "Using F-flat: "+ffile
     print(msg)
     log_msgs.append(msg)
-    ffv = fits.getdata(ffile, "IFU")#1)
+    ffv = fits.getdata(ffile, "IFU")
 
     # now go through each pixel in the test data
 
@@ -321,7 +324,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         calc_flat = np.zeros([2048, 2048]) + 999.0
 
         # loop through the wavelengths
-        msg = " Looping through the wavelngth, this may take a little time ... "
+        msg = " Looping through the wavelength, this may take a little time ... "
         print(msg)
         log_msgs.append(msg)
         flat_wave = wave.flatten()
@@ -330,7 +333,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             if np.isfinite(flat_wave[j]):   # skip if wavelength is NaN
                 # get the pixel indeces
                 jwav = flat_wave[j]
-                t=np.where(wave == jwav)
+                t = np.where(wave == jwav)
                 pind = [t[0][0]+py0-1, t[1][0]+px0-1]   # pind =[pixel_y, pixe_x] in python, [x, y] in IDL
                 if debug:
                     print('j, jwav, px0, py0 : ', j, jwav, px0, py0)
@@ -338,17 +341,15 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
                 # get the pixel bandwidth **this needs to be modified for prism, since the dispersion is not linear!**
                 delw = 0.0
-                if (j!=0) and (int((j-1)/nx)==int(j/nx)) and (int((j+1)/nx)==int(j/nx)) and np.isfinite(flat_wave[j+1]) and np.isfinite(flat_wave[j-1]):
+                if (j != 0) and (int((j-1)/nx) == int(j/nx)) and (int((j+1)/nx) == int(j/nx)) and \
+                        np.isfinite(flat_wave[j+1]) and np.isfinite(flat_wave[j-1]):
                     delw = 0.5 * (flat_wave[j+1] - flat_wave[j-1])
-                if (j==0) or not np.isfinite(flat_wave[j-1]) or (int((j-1)/nx) != int(j/nx)):
+                if (j == 0) or not np.isfinite(flat_wave[j-1]) or (int((j-1)/nx) != int(j/nx)):
                     delw = 0.5 * (flat_wave[j+1] - flat_wave[j])
-                if (j==nw-1) or not np.isfinite(flat_wave[j+1]) or (int((j+1)/nx) != int(j/nx)):
+                if (j == nw-1) or not np.isfinite(flat_wave[j+1]) or (int((j+1)/nx) != int(j/nx)):
                     delw = 0.5 * (flat_wave[j] - flat_wave[j-1])
 
                 if debug:
-                    #print("(j, (j-1), nx, (j-1)/nx, (j+1), (j+1)/nx)", j, (j-1), nx, int((j-1)/nx), (j+1), int((j+1)/nx))
-                    #print("np.isfinite(flat_wave[j+1]), np.isfinite(flat_wave[j-1])", np.isfinite(flat_wave[j+1]), np.isfinite(flat_wave[j-1]))
-                    #print("flat_wave[j+1], flat_wave[j-1] : ", np.isfinite(flat_wave[j+1]), flat_wave[j+1], flat_wave[j-1])
                     print("delw = ", delw)
 
                 # integrate over D-flat fast vector
@@ -366,13 +367,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
 
                 if debug:
-                    #print("np.shape(dfrqe_wav) : ", np.shape(dfrqe_wav))
-                    #print("np.shape(dfrqe_rqe) : ", np.shape(dfrqe_rqe))
-                    #print("dfimdq[pind[0]][pind[1]] : ", dfimdq[pind[0]][pind[1]])
-                    #print("np.shape(iw) =", np.shape(iw))
-                    #print("np.shape(dfrqe_wav[iw[0]]) = ", np.shape(dfrqe_wav[iw[0]]))
-                    #print("np.shape(dfrqe_rqe[iw[0]]) = ", np.shape(dfrqe_rqe[iw[0]]))
-                    #print("int_tab=", int_tab)
                     print("np.shape(iw) = ", np.shape(iw))
                     print("iw = ", iw)
                     print("dff = ", dff)
@@ -456,11 +450,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
         # ignore outliers for calculating median
         delfg = delf[np.where(delf != 999.0)]
-        #delfg_median, delfg_std = np.median(delfg), np.std(delfg)
         msg = "Flat value differences for slice number: "+pslice
         print(msg)
         log_msgs.append(msg)
-        #print(" median = ", delfg_median, "    stdev =", delfg_std)
         stats_and_strings= auxfunc.print_stats(delfg, "Flat Difference", float(threshold_diff), absolute=True)
         stats, stats_print_strings = stats_and_strings
         delfg_mean, delfg_median, delfg_std = stats
@@ -482,9 +474,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 log_msgs.append(msg)
                 # create histogram
                 t = (file_basename, det, pslice, "IFUflatcomp_histogram")
-                title =  filt+"   "+grat+"   SLICE="+pslice+"\n"
+                title = filt+"   "+grat+"   SLICE="+pslice+"\n"
                 plot_name = "".join((file_path, ("_".join(t))+".png"))
-                #mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name=plot_name)
                 bins = None   # binning for the histograms, if None the function will select them automatically
                 title = title+"Residuals"
                 info_img = [title, "x (pixels)", "y (pixels)"]
@@ -496,16 +487,19 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     log_msgs.append(msg)
                 else:
                     plt_name = os.path.join(file_path, plot_name)
-                    difference_img = (pipeflat - calc_flat)#/calc_flat
-                    in_slit = np.logical_and(difference_img<900.0, difference_img>-900.0) # ignore points out of the slit,
+                    difference_img = (pipeflat - calc_flat) #/calc_flat
+                    # ignore points out of the slit
+                    in_slit = np.logical_and(difference_img < 900.0, difference_img > -900.0)
                     difference_img[~in_slit] = np.nan   # Set values outside the slit to NaN
                     nanind = np.isnan(difference_img)   # get all the nan indexes
                     difference_img[nanind] = np.nan   # set all nan indexes to have a value of nan
                     plt_origin = None
                     limits = [px0-5, px0+1500, py0-5, py0+55]
-                    vminmax = [-5*delfg_std, 5*delfg_std]   # set the range of values to be shown in the image, will affect color scale
-                    auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name, limits=limits,
-                                                 vminmax=vminmax, plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+                    # set the range of values to be shown in the image, will affect color scale
+                    vminmax = [-5*delfg_std, 5*delfg_std]
+                    auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
+                                                 limits=limits, vminmax=vminmax, plt_origin=plt_origin,
+                                                 show_figs=show_figs, save_figs=save_figs)
 
             elif not save_figs and not show_figs:
                 msg = "Not making plots because both show_figs and save_figs were set to False."

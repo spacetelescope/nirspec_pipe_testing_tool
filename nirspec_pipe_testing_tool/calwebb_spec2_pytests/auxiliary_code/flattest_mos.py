@@ -131,8 +131,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     msg = "".join(["Using D-flat: ", dfile])
     print(msg)
     log_msgs.append(msg)
-    dfim = fits.getdata(dfile, "SCI")
-    dfimdq = fits.getdata(dfile, "DQ")
+    with fits.open(dfile) as dfhdu:
+        dfhdr_sci = dfhdu["SCI"].header
+        dfim = dfhdu["SCI"].data
+        dfimdq = dfhdu["DQ"].data
+        dfrqe = dfhdu["RQE"].data
     # need to flip/rotate the image into science orientation
     ns = np.shape(dfim)
     dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
@@ -141,14 +144,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         # rotate science data by 180 degrees for NRS2
         dfim = dfim[..., ::-1, ::-1]
         dfimdq = dfimdq[..., ::-1, ::-1]
-    naxis3 = fits.getval(dfile, "NAXIS3", "SCI")
+    naxis3 = dfhdr_sci["NAXIS3"]
 
     # get the wavelength values
     dfwave = np.array([])
     for i in range(naxis3):
         keyword = "_".join(("PFLAT", str(i+1)))
-        dfwave = np.append(dfwave, fits.getval(dfile, keyword, "SCI"))
-    dfrqe = fits.getdata(dfile, 2)
+        dfwave = np.append(dfwave, dfhdr_sci[keyword])
 
     # S-flat
     if filt == "F070LP":
@@ -192,8 +194,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
 
-    sfim = fits.getdata(sfile, "SCI")#1)
-    sfimdq = fits.getdata(sfile, "DQ")#3)
+    with fits.open(sfile) as sfhdu:
+        sfim = sfhdu["SCI"].data
+        sfimdq = sfhdu["DQ"].data
+        sfv = sfhdu["VECTOR"].data
+        sfhdu_sci = sfhdu["SCI"].header
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim, (0, 2, 1))
@@ -205,7 +210,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
     # get the wavelength values for sflat cube
     sfimwave = np.array([])
-    naxis3 = fits.getval(sfile, "NAXIS3", "SCI")
+    naxis3 = sfhdu_sci["NAXIS3"]
     for i in range(0, naxis3):
         if i+1 < 10:
             keyword = "".join(("FLAT_0", str(i+1)))
@@ -214,10 +219,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         if debug:
             print("S-flat -> using ", keyword)
         try:
-            sfimwave = np.append(sfimwave, fits.getval(sfile, keyword, "SCI"))
+            sfimwave = np.append(sfimwave, sfhdu_sci[keyword])
         except KeyError:
             continue
-    sfv = fits.getdata(sfile, 5)
 
     # F-Flat
     if ".fits" not in fflat_path:
@@ -242,13 +246,15 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     print(msg)
     log_msgs.append(msg)
     Q_in_ext = False
+    ffhdu = fits.open(ffile)
     try:
-        ffsq1 = fits.getdata(ffile, sci_ext)
+        ffsq1 = ffhdu[sci_ext].data
     except KeyError:
         sci_ext = "SCI_Q1"
-        ffsq1 = fits.getdata(ffile, sci_ext)
+        ffsq1 = ffhdu[sci_ext].data
         Q_in_ext = True
-    naxis3 = fits.getval(ffile, "NAXIS3", sci_ext)
+    ffhdr_sci = ffhdu[sci_ext].header
+    naxis3 = ffhdr_sci["NAXIS3"]
     ffswaveq1 = np.array([])
     for i in range(0, naxis3):
         if i <= 9:
@@ -259,18 +265,22 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "_".join(t)
         if debug:
             print("1. F-flat -> ", keyword)
-        ffswaveq1 = np.append(ffswaveq1, fits.getval(ffile, keyword, sci_ext))
+        ffswaveq1 = np.append(ffswaveq1, ffhdr_sci[keyword])
     if Q_in_ext:
-        ffserrq1 = fits.getdata(ffile, "ERR_Q1")
-        ffsdqq1 = fits.getdata(ffile, "DQ_Q1")
-        ffvq1 = fits.getdata(ffile, "Q1")
-        ffsq2 = fits.getdata(ffile, "SCI_Q2")
+        ffserrq1 = ffhdu["ERR_Q1"].data
+        ffsdqq1 = ffhdu["DQ_Q1"].data
+        ffvq1 = ffhdu["Q1"].data
+        ffsq2 = ffhdu["SCI_Q2"].data
     else:
-        ffserrq1 = fits.getdata(ffile, err_ext)
-        ffsdqq1 = fits.getdata(ffile, dq_ext)
-        ffvq1 = fits.getdata(ffile, fast_var_ext)
-        ffsq2 = fits.getdata(ffile, sci_ext, 2)
+        ffserrq1 = ffhdu[err_ext].data
+        ffsdqq1 = ffhdu[dq_ext].data
+        ffvq1 = ffhdu[fast_var_ext].data
+        ffsq2 = ffhdu[sci_ext, 2].data
     ffswaveq2 = np.array([])
+    if Q_in_ext:
+        ffhdr_sci = ffhdu["SCI_Q2"].header
+    else:
+        ffhdr_sci = ffhdu[sci_ext, 2].header
     for i in range(0, naxis3):
         if i <= 9:
             suff = "".join(("0", str(i)))
@@ -280,21 +290,22 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "_".join(t)
         if debug:
             print("2. F-flat -> using ", keyword)
-        if Q_in_ext:
-            ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, "SCI_Q2"))
-        else:
-            ffswaveq2 = np.append(ffswaveq2, fits.getval(ffile, keyword, sci_ext, 2))
+        ffswaveq2 = np.append(ffswaveq2, ffhdr_sci[keyword])
     if Q_in_ext:
-        ffserrq2 = fits.getdata(ffile, "ERR_Q2")
-        ffsdqq2 = fits.getdata(ffile, "DQ_Q2")
-        ffvq2 = fits.getdata(ffile, "Q2")
-        ffsq3 = fits.getdata(ffile, "SCI_Q3")
+        ffserrq2 = ffhdu["ERR_Q2"].data
+        ffsdqq2 = ffhdu["DQ_Q2"].data
+        ffvq2 = ffhdu["Q2"].data
+        ffsq3 = ffhdu["SCI_Q3"].data
     else:
-        ffserrq2 = fits.getdata(ffile, err_ext, 2)
-        ffsdqq2 = fits.getdata(ffile, dq_ext, 2)
-        ffvq2 = fits.getdata(ffile, fast_var_ext, 2)
-        ffsq3 = fits.getdata(ffile, sci_ext, 3)
+        ffserrq2 = ffhdu[err_ext, 2].data
+        ffsdqq2 = ffhdu[dq_ext, 2].data
+        ffvq2 = ffhdu[fast_var_ext, 2].data
+        ffsq3 = ffhdu[sci_ext, 3].data
     ffswaveq3 = np.array([])
+    if Q_in_ext:
+        ffhdr_sci = ffhdu["SCI_Q3"].header
+    else:
+        ffhdr_sci = ffhdu[sci_ext, 3].header
     for i in range(0, naxis3):
         if i <= 9:
             suff = "".join(("0", str(i)))
@@ -304,21 +315,22 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "_".join(t)
         if debug:
             print("3. F-flat -> using ", keyword)
-        if Q_in_ext:
-            ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, "SCI_Q3"))
-        else:
-            ffswaveq3 = np.append(ffswaveq3, fits.getval(ffile, keyword, sci_ext, 3))
+        ffswaveq3 = np.append(ffswaveq3, ffhdr_sci[keyword])
     if Q_in_ext:
-        ffserrq3 = fits.getdata(ffile, "ERR_Q3")
-        ffsdqq3 = fits.getdata(ffile, "DQ_Q3")
-        ffvq3 = fits.getdata(ffile, "Q3")
-        ffsq4 = fits.getdata(ffile, "SCI_Q4")
+        ffserrq3 = ffhdu["ERR_Q3"].data
+        ffsdqq3 = ffhdu["DQ_Q3"].data
+        ffvq3 = ffhdu["Q3"].data
+        ffsq4 = ffhdu["SCI_Q4"].data
     else:
-        ffserrq3 = fits.getdata(ffile, err_ext, 3)
-        ffsdqq3 = fits.getdata(ffile, dq_ext, 3)
-        ffvq3 = fits.getdata(ffile, fast_var_ext, 3)
-        ffsq4 = fits.getdata(ffile, sci_ext, 4)
+        ffserrq3 = ffhdu[err_ext, 3].data
+        ffsdqq3 = ffhdu[dq_ext, 3].data
+        ffvq3 = ffhdu[fast_var_ext, 3].data
+        ffsq4 = ffhdu[sci_ext, 4].data
     ffswaveq4 = np.array([])
+    if Q_in_ext:
+        ffhdr_sci = ffhdu["SCI_Q4"].header
+    else:
+        ffhdr_sci = ffhdu[sci_ext, 4].header
     for i in range(0, naxis3):
         if i <= 9:
             suff = "0"+str(i)
@@ -327,18 +339,16 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         keyword = "FLAT_"+suff
         if debug:
             print("4. F-flat -> using ", keyword)
-        if Q_in_ext:
-            ffswaveq4 = np.append(ffswaveq4, fits.getval(ffile, keyword, "SCI_Q4"))
-        else:
-            ffswaveq4 = np.append(ffswaveq4, fits.getval(ffile, keyword, sci_ext, 4))
+        ffswaveq4 = np.append(ffswaveq4, ffhdr_sci[keyword])
     if Q_in_ext:
-        ffserrq4 = fits.getdata(ffile, "ERR_Q4")
-        ffsdqq4 = fits.getdata(ffile, "DQ_Q4")
-        ffvq4 = fits.getdata(ffile, "Q4")
+        ffserrq4 = ffhdu["ERR_Q4"].data
+        ffsdqq4 = ffhdu["DQ_Q4"].data
+        ffvq4 = ffhdu["Q4"].data
     else:
-        ffserrq4 = fits.getdata(ffile, err_ext, 4)
-        ffsdqq4 = fits.getdata(ffile, dq_ext, 4)
-        ffvq4 = fits.getdata(ffile, fast_var_ext, 4)
+        ffserrq4 = ffhdu[err_ext, 3].data
+        ffsdqq4 = ffhdu[dq_ext, 3].data
+        ffvq4 = ffhdu[fast_var_ext, 4].data
+    ffhdu.close()
 
     # now go through each pixel in the test data
 
@@ -355,6 +365,14 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
     # list to determine if pytest is passed or not
     total_test_result = []
+
+    # get the slitlet info, needed for the F-Flat
+    ext_shutter_info = "SHUTTER_INFO"  # this is extension 2 of the msa file, that has the shutter info
+    slitlet_info = fits.getdata(msa_shutter_conf, ext_shutter_info)
+    sltid = slitlet_info.field("SLITLET_ID")
+
+    # open the flatfile
+    flatfile_hdu = fits.open(flatfile)
 
     # loop over the 2D subwindows and read in the WCS values
     for slit in model.slits:
@@ -383,10 +401,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         delf = np.zeros([nw2, nw1]) + 999.0
         flatcor = np.zeros([nw2, nw1]) + 999.0
 
-        # get the slitlet info, needed for the F-Flat
-        ext_shutter_info = "SHUTTER_INFO"   # this is extension 2 of the msa file, that has the shutter info
-        slitlet_info = fits.getdata(msa_shutter_conf, ext_shutter_info)
-        sltid = slitlet_info.field("SLITLET_ID")
         for j, s in enumerate(sltid):
             if s == int(slit_id):
                 im = j
@@ -394,9 +408,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                 if slitlet_info.field("BACKGROUND")[im] == "N":
                     isrc = j
         # changes suggested by Phil Hodge
-        quad = slit.quadrant  #slitlet_info.field("SHUTTER_QUADRANT")[isrc]
-        row = slit.xcen  #slitlet_info.field("SHUTTER_ROW")[isrc]
-        col = slit.ycen  #slitlet_info.field("SHUTTER_COLUMN")[isrc]
+        quad = slit.quadrant  # slitlet_info.field("SHUTTER_QUADRANT")[isrc]
+        row = slit.xcen  # slitlet_info.field("SHUTTER_ROW")[isrc]
+        col = slit.ycen  # slitlet_info.field("SHUTTER_COLUMN")[isrc]
         slitlet_id = repr(row)+"_"+repr(col)
         msg = 'silt_id='+repr(slit_id)+"   quad="+repr(quad)+"   row="+repr(row)+"   col="+repr(col)+\
               "   slitlet_id="+repr(slitlet_id)
@@ -621,7 +635,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
                     # read the pipeline-calculated flat image
                     # there are four extensions in the flatfile: SCI, DQ, ERR, WAVELENGTH
-                    pipeflat = fits.getdata(flatfile, ext)
+                    pipeflat = flatfile_hdu[ext].data
 
                     try:
                         # Difference between pipeline and calculated values
@@ -741,6 +755,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                                                                    "and comparison fits files."
             print(msg)
             log_msgs.append(msg)
+
+    flatfile_hdu.close()
 
     if writefile:
         outfile_name = flatfile.replace("interpolatedflat.fits", "_flat_calc.fits")
