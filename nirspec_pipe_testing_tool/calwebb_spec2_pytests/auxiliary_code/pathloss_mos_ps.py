@@ -38,8 +38,7 @@ def get_corr_val(lambda_val, wave_ref, ref_ext, ref_xy, slit_x, slit_y):
     index = np.where(wave_ref[:, 0, 0] == lambda_val)
     plcor_slice = ref_ext[index[0][0]].reshape(ref_ext[index[0][0]].size)
     corr_val = scipy.interpolate.griddata(ref_xy[:plcor_slice.size], plcor_slice,
-                                          np.asarray([slit_x, slit_y]),
-                                          method='linear')
+                                          np.asarray([slit_x, slit_y]), method='linear')
     return corr_val[0]
 
 
@@ -47,7 +46,8 @@ def get_corr_val_cubic(lambda_val, wave_ref, ref_ext, ref_xy, slit_x, slit_y, fi
     """Perofrm an alternative interpolation in order to compare interpolation methods."""
     index = np.where(wave_ref[:, 0, 0] == lambda_val)
     plcor_slice = ref_ext[index[0][0]].reshape(ref_ext[index[0][0]].size)
-    f = scipy.interpolate.interp2d(ref_xy[:plcor_slice.size][:,0], ref_xy[:plcor_slice.size][:,1], plcor_slice, kind='linear')
+    f = scipy.interpolate.interp2d(ref_xy[:plcor_slice.size][:, 0], ref_xy[:plcor_slice.size][:, 1],
+                                   plcor_slice, kind='linear')
     corr_val = f(slit_x, slit_y)
     return corr_val[0]
 
@@ -122,11 +122,12 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
         if os.path.isfile(step_input_filename):
             if debug:
                 print('Input file does exist.')
-            msg = 'step_input_filename='+step_input_filename
+            msg = 'step_input_filename = '+step_input_filename
             print(msg)
             log_msgs.append(msg)
 
             # get the input data model
+            print('Opening input datamodel. This takes about a couple of minutes...')
             pl = datamodels.open(step_input_filename)
             if debug:
                 print('got input datamodel!')
@@ -201,6 +202,9 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
     log_msgs.append(msg)
 
     slit_val = 1
+    reffile_hdu = fits.open(reffile)
+    plcor_ref = reffile_hdu[1].data
+    w = wcs.WCS(reffile_hdu[1].header)
     for slit, pipe_slit in zip(pl.slits, pathloss_pipe.slits):
         try:
             nshutters = util.get_num_msa_open_shutters(slit.shutter_state)
@@ -209,8 +213,6 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
                     shutter_key = "MOS1x3"
                 elif nshutters == 1:
                     shutter_key = "MOS1x1"
-                #print(ps_uni_ext_list[0])
-                #input()
                 ext = ps_uni_ext_list[0][shutter_key]
                 print("Retrieved point source extension {}".format(ext))
             if is_point_source is False:
@@ -230,13 +232,12 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
         print('Working with slitlet ', slit_id)
 
         if slit.name == slit_id:
-            msg = """Slitlet name in fits file previous to pathloss
-                   and in pathloss output file are the same."""
+            msg = "   Slitlet name in fits file previous to pathloss and in pathloss output file are the same."
             log_msgs.append(msg)
             print(msg)
         else:
-            msg = """* Missmatch of slitlet names in fits file previous
-                  to pathloss and in pathloss output file. Skipping test."""
+            msg = "   WARNING: Missmatch of slitlet names in fits file previous to pathloss and in pathloss " \
+                  "output file. Skipping test."
             result = 'skip'
             log_msgs.append(msg)
             return result, msg, log_msgs
@@ -250,27 +251,21 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
 
         # get positions of source in file:
         slit_x = slit.source_xpos
-        slit_y = slit.source_ypos*(-1)  # Scaling introduced for time being because error in assign_wcs transformation
-        if debug:
-            print("slit_x, slit_y (" + str(slit_x) + ", " + str(slit_y) + ")")
+        slit_y = slit.source_ypos
+        print("   slit_x, slit_y (" + str(slit_x) + ", " + str(slit_y) + ")")
 
-        ref_ext = fits.getdata(reffile, ext)
-        hdul = fits.open(reffile)
-
-        # plcor_ref = hdul[1].data
+        ref_ext = reffile_hdu[ext].data
         if debug:
-            print("ref_ext.shape", ref_ext.shape)
-        w = wcs.WCS(hdul[1].header)
-        hdul.close()
+            print("   ref_ext.shape", ref_ext.shape)
 
         # make cube
-        w1, y1, x1 = np.mgrid[:ref_ext.shape[0], :ref_ext.shape[1],
-                              :ref_ext.shape[2]]
+        if debug:
+            print('   making cube')
+        w1, y1, x1 = np.mgrid[:plcor_ref.shape[0], :plcor_ref.shape[1],
+                              :plcor_ref.shape[2]]
         slitx_ref, slity_ref, wave_ref = w.all_pix2world(x1, y1, w1, 0)
 
-        comp_sci = pipe_slit.data
         previous_sci = slit.data
-
         pipe_correction = pipe_slit.pathloss_point
 
         # Set up source position manually to test correction at nonzero point:
@@ -283,32 +278,47 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
         #       The pipeline correction will not use manually set values
         #       and thus the residuals will change""".format(slit_x, slit_y))
 
-        wave_sci = wave * 10**(-6)  # microns --> meters
+        wave_sci = wave * 1.0e-6  # microns --> meters
         wave_sci_flat = wave_sci.reshape(wave_sci.size)
         wave_ref_flat = wave_ref.reshape(wave_ref.size)
+        if debug:
+            print('wave_sci.size=', wave_sci.size, '  wave_ref.size=', wave_ref.size)
 
         ref_xy = np.column_stack((slitx_ref.reshape(slitx_ref.size),
                                  slity_ref.reshape(slitx_ref.size)))
 
-        correction_list = [(get_corr_val(lambda_val, wave_ref, ref_ext,
-                           ref_xy, slit_x, slit_y)) for
-                           lambda_val in wave_ref_flat]
+        if debug:
+            print('   Extending reference pathloss correction array - looping through wavelength total of ',
+                  len(wave_ref_flat))
+        correction_list = []
+        previous_lamval = wave_ref_flat[0]
+
+        corr_val = get_corr_val(previous_lamval, wave_ref, ref_ext, ref_xy, slit_x, slit_y)
+        for lambda_val in wave_ref_flat:
+            if previous_lamval == lambda_val:
+                correction_list.append(corr_val)
+            else:
+                corr_val = get_corr_val(lambda_val, wave_ref, ref_ext, ref_xy, slit_x, slit_y)
+                correction_list.append(corr_val)
+            previous_lamval = lambda_val
         correction_array = np.asarray(correction_list)
 
         # Option to test alternative interpolation method:
         # first_interp_method='linear'
         # second_interp_method = 'linear'
-        
+
         # if first_interp_method == 'linear':
         #     correction_array_cubic = correction_array
         # else:
         #     correction_list_cubic = [(get_corr_val_cubic(lambda_val, wave_ref, ref_ext,
         #                              ref_xy, slit_x, slit_y, first_interp_method)) for lambda_val in wave_ref_flat]
         #     correction_array_cubic = np.asarray(correction_list_cubic)
-        
+
         lambda_array = wave_ref_flat
 
         # get correction value for each pixel
+        if debug:
+            print('  interpolating wavelength')
         corr_vals = np.interp(wave_sci_flat, lambda_array, correction_array)
         # corr_vals_cubic = np.interp(wave_sci_flat, lambda_array, correction_array_cubic)
         corr_vals = corr_vals.reshape(wave_sci.shape)
@@ -316,6 +326,8 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
         corrected_array = previous_sci/corr_vals
 
         # Plots:
+        if debug:
+            print('   making plots')
         # my correction values
         fig = plt.figure(figsize=(12, 10))
         plt.subplot(221)
@@ -363,7 +375,8 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
         # plt.ylabel('y in pixels')
         # plt.title('corr_vals_1+'+first_interp_method+'2'+second_interp_method+'-corr_vals_linear')
         # plt.colorbar()
-        
+
+        fig.tight_layout(pad=3.0)
         fig.suptitle("MOS PS at ({}, {}) Pathloss Correction Testing Slit ".format(slit_x, slit_y)
                      + str(slit_id))
 
@@ -371,16 +384,16 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
             step_input_filepath = step_input_filename.replace(".fits", "")
             plt_name = step_input_filepath + "_Pathloss_test_slitlet_" + str(mode) + "_" + str(slit_val) + ".png"
             plt.savefig(plt_name)
-            print('Figure saved as: ', plt_name)
+            print('   Figure saved as: ', plt_name)
         if show_figs:
             plt.show()
         elif not save_figs and not show_figs:
-            msg = "Not making plots because both show_figs and save_figs were set to False."
+            msg = "   Not making plots because both show_figs and save_figs were set to False."
             if debug:
                 print(msg)
             log_msgs.append(msg)
         elif not save_figs:
-            msg = "Not saving plots because save_figs was set to False."
+            msg = "   Not saving plots because save_figs was set to False."
             if debug:  
                 print(msg)
             log_msgs.append(msg)
@@ -391,7 +404,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
 
         # create fits file to hold the calculated pathloss for each slit
         if writefile:
-            msg = "Saving the fits files with the calculated pathloss for each slit..."
+            msg = "   Saving the fits files with the calculated pathloss for each slit..."
             print(msg)
             log_msgs.append(msg)
 
@@ -404,7 +417,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
             compfile.append(compfile_ext)
 
         if corr_residuals[~np.isnan(corr_residuals)].size == 0:
-            msg1 = """Unable to calculate statistics because difference
+            msg1 = """   Unable to calculate statistics because difference
                    array has all values as NaN. Test will be set to FAILED.
                    """
             print(msg1)
@@ -413,7 +426,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
             # delfg_mean, delfg_median, delfg_std = np.nan, np.nan, np.nan
             # stats = [delfg_mean, delfg_median, delfg_std]
         else:
-            msg = "Calculating statistics... "
+            msg = "   Calculating statistics... "
             print(msg)
             log_msgs.append(msg)
             # ignore outliers:
@@ -422,7 +435,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
                                             & (corr_residuals > -0.1)
                                             & ~np.isnan(corr_residuals))]
             if corr_residuals.size == 0:
-                msg1 = """Unable to calculate statistics because
+                msg1 = """   Unable to calculate statistics because
                           difference array has all outlier values.
                           Test will be set to FAILED."""
                 print(msg1)
@@ -449,9 +462,10 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True,
         log_msgs.append(msg)
         total_test_result.append(test_result)
 
-    # close datamodels
+    # close datamodels and files
     pl.close()
     pathloss_pipe.close()
+    reffile_hdu.close()
 
     if writefile:
         outfile_name = step_input_filename.replace("srctype", "_calcuated_pathloss")

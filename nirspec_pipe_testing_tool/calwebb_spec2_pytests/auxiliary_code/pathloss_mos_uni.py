@@ -216,7 +216,8 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         wave_sci = wave * 10**(-6)   # microns --> meters
 
         plcor_ref_ext = fits.getdata(reffile, ext)
-        print("plcor_ref_ext.shape", plcor_ref_ext.shape)
+        if debug:
+            print("plcor_ref_ext.shape", plcor_ref_ext.shape)
 
         hdul = fits.open(reffile)
 
@@ -227,7 +228,6 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                               :plcor_ref.shape[2]]
         slitx_ref, slity_ref, wave_ref = w.all_pix2world(x1, y1, w1, 0)
 
-        comp_sci = pipe_slit.data
         previous_sci = slit.data
 
         pipe_correction = pipe_slit.pathloss_uniform
@@ -285,6 +285,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         plt.ylabel('y in pixels')
         plt.colorbar()
         fig.suptitle("MOS UNI Pathloss Calibration Testing")
+        fig.tight_layout(pad=3.0)
 
         if show_figs:
             plt.show()
