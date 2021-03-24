@@ -357,6 +357,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         plt.ylabel('y in pixels')
         plt.colorbar()
         fig.suptitle("IFU PS Pathloss Correction Testing" + str(corrected_array.shape))
+        fig.tight_layout(pad=3.0)
 
         if show_figs:
             plt.show()

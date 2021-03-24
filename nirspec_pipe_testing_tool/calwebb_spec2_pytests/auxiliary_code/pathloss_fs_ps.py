@@ -410,6 +410,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         plt.xlabel('dispersion in pixels')
         plt.ylabel('y in pixels')
         plt.colorbar()
+        fig.tight_layout(pad=3.0)
         fig.suptitle("FS PS Pathloss Correction Test for slit " + str(slit_id))
 
         if save_figs:

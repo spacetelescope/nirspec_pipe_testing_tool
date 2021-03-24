@@ -360,6 +360,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
         # add space between the subplots
         fig.subplots_adjust(wspace=0.9)
+        fig.tight_layout(pad=3.0)
 
         # Show and/or save figures
         if show_figs:
