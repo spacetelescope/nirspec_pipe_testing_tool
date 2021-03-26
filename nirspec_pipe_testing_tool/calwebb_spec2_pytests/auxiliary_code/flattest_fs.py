@@ -194,7 +194,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     with fits.open(sfile) as sfile_hdu:
         sfim = sfile_hdu["SCI"].data
         sfimdq = sfile_hdu["DQ"].data
-        sfv = sfile_hdu["VECTOR"].data
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim)
