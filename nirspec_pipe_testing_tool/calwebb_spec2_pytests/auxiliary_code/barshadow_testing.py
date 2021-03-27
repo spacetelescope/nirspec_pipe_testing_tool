@@ -484,8 +484,6 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
 
         # close files
         hdul.close()
-        bs.close()
-        pl.close()
 
         # create fits file to hold the calculated correction for each slitlet
         if write_barshadow_files:
@@ -505,6 +503,10 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
 
     if debug:
         print('total_test_result = ', total_test_result)
+
+    # close datamodels
+    bs.close()
+    pl.close()
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = False
