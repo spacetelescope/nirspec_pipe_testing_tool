@@ -70,11 +70,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         msg = 'step_input_filename=' + step_input_filename
         print(msg)
         log_msgs.append(msg)
-        if "extract_2d" not in step_input_filename:
-            extract2d_wcs_file = step_input_filename.replace("_flat_field.fits", "_extract_2d.fits")
+        if "wavecorr" not in step_input_filename:
+            wcs_file = step_input_filename.replace("_flat_field.fits", "_wavecorr.fits")
         else:
-            extract2d_wcs_file = step_input_filename
-        model = datamodels.MultiSlitModel(extract2d_wcs_file)
+            wcs_file = step_input_filename
+        model = datamodels.MultiSlitModel(wcs_file)
 
         # paths to save plots and files
         file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
@@ -194,6 +194,16 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     with fits.open(sfile) as sfile_hdu:
         sfim = sfile_hdu["SCI"].data
         sfimdq = sfile_hdu["DQ"].data
+        try:
+            sfv_a2001 = sfile_hdu["SLIT_A_200_1"].data
+            sfv_a2002 = sfile_hdu["SLIT_A_200_2"].data
+            sfv_a400 = sfile_hdu["SLIT_A_400"].data
+            sfv_a1600 = sfile_hdu["SLIT_A_1600"].data
+        except KeyError:
+            print(" * S-Flat-Field file does not have extensions for slits 200A1, 200A2, 400A, or "
+                  "1600A, trying with 200B")
+        if det == "NRS2":
+            sfv_b200 = sfile_hdu["SLIT_B_200"].data
 
     # need to flip/rotate image into science orientation
     sfim = np.transpose(sfim)
@@ -208,15 +218,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         sf = fits.open(sfile)
         print(sf.info())
         sf.close()
-    try:
-        sfv_a2001 = fits.getdata(sfile, "SLIT_A_200_1")
-        sfv_a2002 = fits.getdata(sfile, "SLIT_A_200_2")
-        sfv_a400 = fits.getdata(sfile, "SLIT_A_400")
-        sfv_a1600 = fits.getdata(sfile, "SLIT_A_1600")
-    except KeyError:
-        print(" * S-Flat-Field file does not have extensions for slits 200A1, 200A2, 400A, or 1600A, trying with 200B")
-    if det == "NRS2":
-        sfv_b200 = fits.getdata(sfile, "SLIT_B_200")
 
     # F-Flat
     if ".fits" not in fflat_path:
@@ -236,7 +237,12 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     msg = "Using F-flat: " + ffile
     print(msg)
     log_msgs.append(msg)
-    ffv = fits.getdata(ffile, "FAST_VARIATION")  # extension 1
+    with fits.open(ffile) as ffile_hdu:
+        ffv_200a1 = ffile_hdu["SLIT_A_200_1"].data  # extension 1
+        ffv_200a2 = ffile_hdu["SLIT_A_200_2"].data  # extension 2
+        ffv_a400 = ffile_hdu["SLIT_A_400"].data  # extension 3
+        ffv_b200 = ffile_hdu["SLIT_B_200"].data  # extension 4
+        ffv_a1600 = ffile_hdu["SLIT_A_1600"].data  # extension 5
 
     # now go through each pixel in the test data
 
@@ -288,14 +294,19 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             # select the appropriate S-flat fast vector
             if slit_id == "S200A1":
                 sfv = sfv_a2001
+                ffv = ffv_200a1
             if slit_id == "S200A2":
                 sfv = sfv_a2002
+                ffv = ffv_200a2
             if slit_id == "S400A1":
                 sfv = sfv_a400
+                ffv = ffv_a400
             if slit_id == "S1600A1":
                 sfv = sfv_a1600
+                ffv = ffv_a1600
             if slit_id == "S200B1":
                 sfv = sfv_b200
+                ffv = ffv_b200
 
             msg = "\nWorking with slit: " + slit_id
             print(msg)
@@ -746,7 +757,7 @@ def main():
     # Run the principal function of the script
     flattest(step_input_filename, dflat_path=dflat_path, sflat_path=sflat_path,
              fflat_path=fflat_path, writefile=writefile, show_figs=show_figs, save_figs=save_figs,
-             plot_name=None, threshold_diff=threshold_diff, output_directory=output_directory, debug=debug)
+             threshold_diff=threshold_diff, output_directory=output_directory, debug=debug)
 
 
 if __name__ == '__main__':

@@ -198,13 +198,13 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
         # In case we are NOT comparing to ESA data
         if not compare_to_esa_data:
             # determine if the current open slit is also open in the truth file
-            continue_with_wcs_test = False
+            slit_in_truth_file = False
             for truth_slit in truth_img.slits:
                 if truth_slit.name == pipeslit:
-                    continue_with_wcs_test = True
+                    slit_in_truth_file = True
                     break
 
-            if not continue_with_wcs_test:
+            if not slit_in_truth_file:
                 msg1 = "\n * Script check_corners_extract_2d.py is exiting because open slit " + pipeslit + \
                        " is not open in truth file."
                 msg2 = "   -> The extract_2d test is now set to FAILED. \n"
@@ -212,7 +212,7 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
                 print(msg2)
                 log_msgs.append(msg1)
                 log_msgs.append(msg2)
-                FINAL_TEST_RESULT = "FAILED"
+                FINAL_TEST_RESULT = False
                 return FINAL_TEST_RESULT, log_msgs
 
             else:
