@@ -757,7 +757,7 @@ def main():
     # Run the principal function of the script
     flattest(step_input_filename, dflat_path=dflat_path, sflat_path=sflat_path,
              fflat_path=fflat_path, writefile=writefile, show_figs=show_figs, save_figs=save_figs,
-             plot_name=None, threshold_diff=threshold_diff, output_directory=output_directory, debug=debug)
+             threshold_diff=threshold_diff, output_directory=output_directory, debug=debug)
 
 
 if __name__ == '__main__':

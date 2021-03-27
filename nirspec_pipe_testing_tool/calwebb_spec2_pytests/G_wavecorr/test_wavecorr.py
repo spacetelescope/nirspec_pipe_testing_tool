@@ -26,6 +26,7 @@ __version__ = "1.0"
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
+
 # Default names of pipeline input and output files
 @pytest.fixture(scope="module")
 def set_inandout_filenames(config):

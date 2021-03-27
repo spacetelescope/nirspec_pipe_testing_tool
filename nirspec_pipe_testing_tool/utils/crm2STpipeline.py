@@ -45,8 +45,8 @@ Example usage:
         msa_metafile = 'V962150_msa.fits'
           
         # run the script
-        nptt.utils.crm2STpipeline.crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name, 
-                                                 subarray=subarray, new_file=new_file, msa_metafile=msa_metafile)
+        nptt.utils.crm2STpipeline.crm2pipe(ips_file, mode_used, add_ref_pix, proposal_title, target_name, 
+                                           subarray=subarray, new_file=new_file, msa_metafile=msa_metafile)
 
     * NOTE: In all cases the MODE can be any of the following: FS, MOS, IFU, BOTS
 

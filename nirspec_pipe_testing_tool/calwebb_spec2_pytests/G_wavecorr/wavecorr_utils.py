@@ -1,7 +1,7 @@
 from .. auxiliary_code.reffile_test import create_rfile_test
 
 """
-This file contains the functions which will be used to test the extract_1d step of the JWST Calibration Pipeline.
+This file contains the functions which will be used to test the wavecor step of the JWST Calibration Pipeline.
 
 """
 

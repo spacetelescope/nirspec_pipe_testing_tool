@@ -475,6 +475,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 # create histogram
                 t = (file_basename, det, pslice, "IFUflatcomp_histogram")
                 title = filt+"   "+grat+"   SLICE="+pslice+"\n"
+                if not isinstance(step_input_filename, str):
+                    file_path = ""
                 plot_name = "".join((file_path, ("_".join(t))+".png"))
                 bins = None   # binning for the histograms, if None the function will select them automatically
                 title = title+"Residuals"

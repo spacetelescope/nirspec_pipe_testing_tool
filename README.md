@@ -441,25 +441,27 @@ associated parameters automatically).
 This module can also be called from a script in the following way:
 ```bash
 # set the variables
-input_fits_file = 'blah.fits'
-mode = 'FS'
-add_ref_pix = True
-only_update = True
-proposal_title = 'my_title'
-target_name = 'my_target'
-new_file = 'a_new_name'  # this is only used if only_update=False
-subarray = "200a1"   # this will force the script to use this subarray
+# set the variables
+ips_file = '/path_to_crm_file/crm.fits'
+mode_used = 'MOS'  # One of FS, MOS, IFU, or BOTS
+add_ref_pix = False  # Add the reference pixels for IFU - old simulations (<2020) needed this
+proposal_title = 'some cool title'
+target_name = 'some target name'
+subarray = 'FULL-FRAME'  # name of the subarray to use
+new_file = False  # create a new file with the modified/fixed header
+msa_metafile = 'V962150_msa.fits'
+output_dir = None  # path to place the output file - if None output will be in same dir as input
 
 # create the pipeline-ready count rate file
-stsci_pipe_ready_file = nptt.utils.crm2STpipeline.crm2pipe(input_fits_file, mode_used,
-                                                           add_ref_pix, only_update, subarray)
+stsci_pipe_ready_file = nptt.utils.crm2STpipeline.crm2pipe(ips_file, mode_used, 
+                                                           add_ref_pix,
+                                                           proposal_title, 
+                                                           target_name, 
+                                                           subarray=subarray, 
+                                                           new_file=new_file, msa_metafile=msa_metafile,
+                                                           output_dir=output_dir, 
+                                                           verbose=False)
 
-# create the dictionary of special arguments
-additional_args_dict = {'TITLE': proposal_title, 'TARGNAME': target_name, 'new_file': new_file}
-
-# modify the keyword values to match IPS information
-nptt.utils.level2b_hdr_keywd_dict_map2sim.match_IPS_keywords(stsci_pipe_ready_file, input_fits_file,
-                                                             additional_args_dict=additional_args_dict)
 ```
 
 The conversion from simulations.erm to simulations.crm, can be done with the script
