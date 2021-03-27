@@ -32,7 +32,7 @@ __version__ = "1.5"
 # February 26, 2020 - Version 1.2: Mostly pep8 compliant
 # June 8, 2020 - Version 1.3: Added changes to be able to run within NPTT
 # September 25, 2020 - Version 1.4: Added option to use either data model or fits file as input for the test, and
-#                      the option to provide an extract_2d file to the function
+#                      the option to provide an wavecorr file to the function
 # January 2021 - Version 1.5: Implemented option to use datamodels instead of fits files as input
 
 
@@ -238,8 +238,8 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         continue_pl_test = False
         if exptype == "NRS_BRIGHTOBJ":
             if isinstance(step_input_filename, str):
-                extract2d_wcs_file = step_input_filename.replace("srctype.fits", "extract_2d.fits")
-                model = datamodels.MultiSlitModel(extract2d_wcs_file)
+                wcs_file = step_input_filename.replace("srctype.fits", "wavecorr.fits")
+                model = datamodels.MultiSlitModel(wcs_file)
             else:
                 model = pl
             slit = model
@@ -563,11 +563,6 @@ def main():
                         action='store',
                         default=None,
                         help='Path and name the comparison file, i.e. the pathloss output file')
-    parser.add_argument("-e",
-                        dest="extract2d_file",
-                        action='store',
-                        default=None,
-                        help='Path and name the extract_2d file, i.e. the output of the extract_2d step')
     parser.add_argument("-w",
                         dest="writefile",
                         action='store_false',
@@ -600,7 +595,6 @@ def main():
     step_input_filename = args.step_input_filename
     reffile = args.reffile
     comparison_filename = args.comparison_filename
-    extract2d_file = args.extract2d_file
     writefile = args.writefile
     save_figs = args.save_figs
     show_figs = args.show_figs
@@ -611,7 +605,7 @@ def main():
     print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script
-    pathtest(step_input_filename, reffile, comparison_filename, extract2d_file=extract2d_file, writefile=writefile,
+    pathtest(step_input_filename, reffile, comparison_filename, writefile=writefile,
              show_figs=show_figs, save_figs=save_figs, threshold_diff=threshold_diff,
              debug=debug)
 

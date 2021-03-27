@@ -116,16 +116,17 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     config.set("run_pipe_steps", "imprint_subtract", run_pipe_steps[2])
     config.set("run_pipe_steps", "msa_flagging", run_pipe_steps[3])
     config.set("run_pipe_steps", "extract_2d", run_pipe_steps[4])
-    config.set("run_pipe_steps", "srctype", run_pipe_steps[6])
-    config.set("run_pipe_steps", "flat_field", run_pipe_steps[5])
-    config.set("run_pipe_steps", "pathloss", run_pipe_steps[7])
-    config.set("run_pipe_steps", "barshadow", run_pipe_steps[8])
-    config.set("run_pipe_steps", "photom", run_pipe_steps[9])
-    config.set("run_pipe_steps", "resample_spec", run_pipe_steps[10])
-    config.set("run_pipe_steps", "cube_build", run_pipe_steps[11])
-    config.set("run_pipe_steps", "extract_1d", run_pipe_steps[12])
+    config.set("run_pipe_steps", "srctype", run_pipe_steps[5])
+    config.set("run_pipe_steps", "wavecorr", run_pipe_steps[6])
+    config.set("run_pipe_steps", "flat_field", run_pipe_steps[7])
+    config.set("run_pipe_steps", "pathloss", run_pipe_steps[8])
+    config.set("run_pipe_steps", "barshadow", run_pipe_steps[9])
+    config.set("run_pipe_steps", "photom", run_pipe_steps[10])
+    config.set("run_pipe_steps", "resample_spec", run_pipe_steps[11])
+    config.set("run_pipe_steps", "cube_build", run_pipe_steps[12])
+    config.set("run_pipe_steps", "extract_1d", run_pipe_steps[13])
     config.set("run_pipe_steps", "# Spec3 steps", None)
-    config.set("run_pipe_steps", "master_background", run_pipe_steps[13])
+    config.set("run_pipe_steps", "master_background", run_pipe_steps[14])
 
     config.add_section("run_pytest")
     config.set("run_pytest", "# Spec2 tests", None)
@@ -140,24 +141,26 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     config.set("run_pytest", "msa_flagging_validation_tests", run_pytest[8])
     config.set("run_pytest", "extract_2d_completion_tests", run_pytest[9])
     config.set("run_pytest", "extract_2d_validation_tests", run_pytest[10])
-    config.set("run_pytest", "srctype_completion_tests", run_pytest[14])
-    config.set("run_pytest", "flat_field_completion_tests", run_pytest[11])
-    config.set("run_pytest", "flat_field_reffile_tests", run_pytest[12])
-    config.set("run_pytest", "flat_field_validation_tests", run_pytest[13])
-    config.set("run_pytest", "pathloss_completion_tests", run_pytest[15])
-    config.set("run_pytest", "pathloss_reffile_tests", run_pytest[16])
-    config.set("run_pytest", "pathloss_validation_tests", run_pytest[17])
-    config.set("run_pytest", "barshadow_completion_tests", run_pytest[18])
-    config.set("run_pytest", "barshadow_validation_tests", run_pytest[19])
-    config.set("run_pytest", "photom_completion_tests", run_pytest[20])
-    config.set("run_pytest", "resample_spec_completion_tests", run_pytest[21])
-    config.set("run_pytest", "cube_build_completion_tests", run_pytest[22])
-    config.set("run_pytest", "extract_1d_completion_tests", run_pytest[23])
-    config.set("run_pytest", "extract_1d_reffile_tests", run_pytest[24])
+    config.set("run_pytest", "srctype_completion_tests", run_pytest[11])
+    config.set("run_pytest", "wavecorr_completion_tests", run_pytest[12])
+    config.set("run_pytest", "wavecorr_reffile_tests", run_pytest[13])
+    config.set("run_pytest", "flat_field_completion_tests", run_pytest[14])
+    config.set("run_pytest", "flat_field_reffile_tests", run_pytest[15])
+    config.set("run_pytest", "flat_field_validation_tests", run_pytest[16])
+    config.set("run_pytest", "pathloss_completion_tests", run_pytest[17])
+    config.set("run_pytest", "pathloss_reffile_tests", run_pytest[18])
+    config.set("run_pytest", "pathloss_validation_tests", run_pytest[19])
+    config.set("run_pytest", "barshadow_completion_tests", run_pytest[20])
+    config.set("run_pytest", "barshadow_validation_tests", run_pytest[21])
+    config.set("run_pytest", "photom_completion_tests", run_pytest[22])
+    config.set("run_pytest", "resample_spec_completion_tests", run_pytest[23])
+    config.set("run_pytest", "cube_build_completion_tests", run_pytest[24])
+    config.set("run_pytest", "extract_1d_completion_tests", run_pytest[25])
+    config.set("run_pytest", "extract_1d_reffile_tests", run_pytest[26])
     config.set("run_pytest", "# Spec3 tests", None)
-    config.set("run_pytest", "master_background_completion_tests", run_pytest[25])
-    config.set("run_pytest", "master_background_reffile_tests", run_pytest[26])
-    config.set("run_pytest", "master_background_validation_tests", run_pytest[27])
+    config.set("run_pytest", "master_background_completion_tests", run_pytest[27])
+    config.set("run_pytest", "master_background_reffile_tests", run_pytest[28])
+    config.set("run_pytest", "master_background_validation_tests", run_pytest[29])
 
     config.add_section("additional_arguments")
     config.set("additional_arguments", "wcs_threshold_diff", additional_arguments[0])
@@ -287,7 +290,8 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
 
     #              spec2
     pipe_steps = ['assign_wcs', 'bkg_subtract', 'imprint_subtract', 'msa_flagging', 'extract_2d', 'srctype',
-                  'flat_field', 'pathloss', 'barshadow', 'photom', 'resample_spec', 'cube_build', 'extract_1d',
+                  'wavecorr', 'flat_field', 'pathloss', 'barshadow', 'photom', 'resample_spec', 'cube_build',
+                  'extract_1d',
                   # spec3
                   'master_background']
 
@@ -297,6 +301,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
                    'msa_flagging_completion_tests', 'msa_flagging_validation_tests',
                    'extract_2d_completion_tests', 'extract_2d_validation_tests',
                    'srctype_completion_tests',
+                   'wavecorr_completion_tests', 'wavecorr_reffile_tests',
                    'flat_field_completion_tests', 'flat_field_reffile_tests', 'flat_field_validation_tests',
                    'pathloss_completion_tests', 'pathloss_reffile_tests', 'pathloss_validation_tests',
                    'barshadow_completion_tests', 'barshadow_validation_tests',
@@ -342,8 +347,15 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     # set the full ESA path to compare the data
     if comparison_file_path is None:
         esa_files_full_path = "".join([esa_files_path, mode_used, "_CV3/ESA_Int_products"])
+        cutout = False
         if "fs" in mode_used.lower():
-            if "F" in fits.getval(raw_data_root_file, "SUBARRAY"):
+            esa_subarray = fits.getval(raw_data_root_file, "SUBARRAY")
+            if isinstance(esa_subarray, bool):
+                if esa_subarray:
+                    cutout = True
+            elif 'full' not in esa_subarray.lower():
+                cutout = True
+            if cutout:
                 esa_files_full_path = "".join([esa_files_path, mode_used, "_CV3_cutouts/ESA_Int_products"])
     else:
         esa_files_full_path = comparison_file_path

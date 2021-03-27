@@ -76,11 +76,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         msg = 'step_input_filename=' + step_input_filename
         print(msg)
         log_msgs.append(msg)
-        if "extract_2d" not in step_input_filename:
-            extract2d_wcs_file = step_input_filename.replace("_flat_field", "_extract_2d")
+        if "wavecorr" not in step_input_filename:
+            wcs_file = step_input_filename.replace("_flat_field", "_wavecorr")
         else:
-            extract2d_wcs_file = step_input_filename
-        model = datamodels.MultiSlitModel(extract2d_wcs_file)
+            wcs_file = step_input_filename
+        model = datamodels.MultiSlitModel(wcs_file)
 
     else:
         model = step_input_filename

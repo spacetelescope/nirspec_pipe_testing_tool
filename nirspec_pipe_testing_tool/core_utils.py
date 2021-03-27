@@ -29,6 +29,7 @@ step_string_dict["imprint_subtract"] = {"outfile": True, "suffix": "_imprint"}
 step_string_dict["msa_flagging"] = {"outfile": True, "suffix": "_msa_flagging"}
 step_string_dict["extract_2d"] = {"outfile": True, "suffix": "_extract_2d"}
 step_string_dict["srctype"] = {"outfile": True, "suffix": "_srctype"}
+step_string_dict["wavecorr"] = {"outfile": True, "suffix": "_wavecorr"}
 step_string_dict["flat_field"] = {"outfile": True, "suffix": "_flat_field"}
 # step_string_dict["straylight"]       = {"outfile" : True, "suffix" : "_stray"}   # MIRI only
 # step_string_dict["fringe"]           = {"outfile" : True, "suffix" : "_fringe"}   # MIRI only

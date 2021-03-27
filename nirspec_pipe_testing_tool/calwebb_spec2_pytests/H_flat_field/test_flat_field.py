@@ -329,7 +329,7 @@ def test_fflat_rfile(output_hdul):
         assert not result[0], result[0]
 
 
-def test_sflat_sfile(output_hdul):
+def test_sflat_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[4] = flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests
     run_pytests = output_hdul[4][1]
@@ -349,7 +349,7 @@ def test_sflat_sfile(output_hdul):
         assert not result[0], result[0]
 
 
-def test_dflat_dfile(output_hdul):
+def test_dflat_rfile(output_hdul):
     # want to run this pytest?
     # output_hdul[4] = flat_field_completion_tests, flat_field_reffile_tests, flat_field_validation_tests
     run_pytests = output_hdul[4][1]
