@@ -27,10 +27,10 @@ __version__ = "1.2"
 keywd_dict = collections.OrderedDict()
 
 # Standard parameters
-keywd_dict['SIMPLE'] = ['T', 'F']  # Written by IDL
+keywd_dict['SIMPLE'] = [bool]  # Written by IDL
 keywd_dict['BITPIX'] = [int]  # Bits per data value, e.g. 8
 keywd_dict['NAXIS'] = [int]  # Number of data array dimensions,  e.g. 0
-keywd_dict['EXTEND'] = ['T', 'F']  # File may contain standard extensions
+keywd_dict['EXTEND'] = [bool]  # File may contain standard extensions
 keywd_dict['NEXTEND'] = [int]  # Number of standard extensions, e.g. 3
 
 keywd_dict['DATAMODL'] = ['Level1bModel', 'RampModel']  # Type of data model
@@ -61,9 +61,9 @@ keywd_dict['EXPOSURE'] = [str]  # exposure request number, e.g. 00001
 keywd_dict['DETECTOR'] = [str]  # name of detector used to acquire data, e.g. 'NRS1'
 keywd_dict['NINTS'] = [int]  # number of integrations within exposure, e.g. 1
 keywd_dict['NGROUPS'] = [int]  # number of groups within integration, e.g. 20
-keywd_dict['ZEROFRAM'] = ['T', 'F']  # boolean represented with string, T if a zero frame was read separately
+keywd_dict['ZEROFRAM'] = [bool]  # boolean represented with string, T if a zero frame was read separately
 keywd_dict['READPATT'] = [str]  # readout pattern, e.g. 'NRSRAPID'
-keywd_dict['DATAPROB'] = ['T', 'F']  # boolean represented with string, T if science telemetry indicated any problems
+keywd_dict['DATAPROB'] = [bool]  # boolean represented with string, T if science telemetry indicated any problems
 
 # Program information
 keywd_dict['TITLE'] = [str]  # proposal title
@@ -81,8 +81,8 @@ keywd_dict['OBSLABEL'] = [str]  # proposer label for observation, e.g. #TODO
 keywd_dict['VISITYPE'] = ['PRIME', 'PARALLEL', 'GENERIC']  # type of visit (prime or parallel)
 keywd_dict['VSTSTART'] = [str]  # UTC visit start time, e.g. 2013-01-19T18:27:22
 keywd_dict['NEXPOSUR'] = [int]  # total number of exposures in visit, e.g. 1
-keywd_dict['INTARGET'] = ['T', 'F']  # boolean represented with string, T if at least one exposure in visit is internal
-keywd_dict['TARGOOPP'] = ['T', 'F']  # boolean represented with string, visit scheduled as target of opportunity
+keywd_dict['INTARGET'] = [bool]  # boolean represented with string, T if at least one exposure in visit is internal
+keywd_dict['TARGOOPP'] = [bool]  # boolean represented with string, visit scheduled as target of opportunity
 
 # Exposure information
 keywd_dict['PNTG_SEQ'] = [int]  # pointing sequence number, e.g. 1

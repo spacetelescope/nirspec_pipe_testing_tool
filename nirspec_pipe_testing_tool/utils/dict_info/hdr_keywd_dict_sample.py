@@ -27,10 +27,10 @@ __version__ = "1.2"
 keywd_dict = collections.OrderedDict()
 
 # Standard parameters
-keywd_dict['SIMPLE'] = 'T'  # Written by IDL
+keywd_dict['SIMPLE'] = True  # Written by IDL
 keywd_dict['BITPIX'] = 8  # Bits per data value, e.g. 8
 keywd_dict['NAXIS'] = 0  # Number of data array dimensions,  e.g. 0
-keywd_dict['EXTEND'] = 'T'  # File may contain standard extensions
+keywd_dict['EXTEND'] = True  # File may contain standard extensions
 keywd_dict['NEXTEND'] = 3  # Number of standard extensions, e.g. 3
 
 keywd_dict['DATAMODL'] = 'Level1bModel'  # Type of data model
