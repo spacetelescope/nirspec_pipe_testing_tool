@@ -554,25 +554,26 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             if 'FULL' in subarray:
                                 pipe_subarr_val = 'FULL'
                             elif '200A1' in subarray:
-                                pipe_subarr_val = 'SUBS200A1'
+                                pipe_subarr_val = 'S200A1'
                             elif '200A2' in subarray:
-                                pipe_subarr_val = 'SUBS200A2'
+                                pipe_subarr_val = 'S200A2'
                             elif '200B1' in subarray:
-                                pipe_subarr_val = 'SUBS200B1'
+                                pipe_subarr_val = 'S200B1'
                             elif '400A1' in subarray:
-                                pipe_subarr_val = 'SUBS400A1'
+                                pipe_subarr_val = 'S400A1'
                             elif '1600' in subarray:
-                                pipe_subarr_val = 'SUBS1600A1'
+                                pipe_subarr_val = 'S1600A1'
                             specific_keys_dict[key] = pipe_subarr_val
                             if verbose:
                                 print("changing subarray keyword to ", pipe_subarr_val)
                             missing_keywds.append(key)
                             # and make sure to change the primary slit keyword accordingly
                             if mode_used.lower() == "fs":
-                                subarrd_key = 'S200A1'
-                                specific_keys_dict['FXD_SLIT'] = subarrd_key
+                                if not pipe_subarr_val:
+                                    pipe_subarr_val = 'S200A1'
+                                specific_keys_dict['FXD_SLIT'] = pipe_subarr_val
                                 if verbose:
-                                    print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
+                                    print("changing primary slit keyword to FXD_SLIT=", pipe_subarr_val)
                                 missing_keywds.append('FXD_SLIT')
                             # set the subarray sizes and start keywords accordingly
                             if subarray in subdict.subarray_dict:

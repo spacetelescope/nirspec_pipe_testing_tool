@@ -396,13 +396,13 @@ def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_rea
                 if subarray_name_dict == subarray_used:
                     # set the expected STScI pipeline subarray name
                     if '200A1' in subarray_used:
-                        stpipe_key = 'SUBS200A1'
+                        stpipe_key = 'S200A1'
                     elif '200A2' in subarray_used:
-                        stpipe_key = 'SUBS200A2'
+                        stpipe_key = 'S200A2'
                     elif '200B1' in subarray_used:
-                        stpipe_key = 'SUBS200B1'
+                        stpipe_key = 'S200B1'
                     elif '400A1' in subarray_used:
-                        stpipe_key = 'SUBS400A1'
+                        stpipe_key = 'S400A1'
                     fits.setval(st_pipe_ready_file, 'SUBARRAY', value=stpipe_key)
                     # set the size keywords
                     if '1' in detector:
@@ -485,9 +485,17 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
                 print('Value for keyword ', key2modify, ' will be calculated...')
             if key2modify == 'EXPSTART':
                 # put the dates/times values into the time stamp format to do operations
-                dateobs_string = st_pipe_ready_dict['DATE-OBS'].replace('T', ' ')
+                try:
+                    dateobs_string = st_pipe_ready_dict['DATE-OBS'].replace('T', ' ')
+                except KeyError:
+                    dateobs_string = st_pipe_ready_dict['DATE'].split('T')[0]
+                    fits.setval(stsci_pipe_ready_file, 'DATE-OBS', 0, value=dateobs_string)
                 dateobs = datetime.timestamp(datetime.fromisoformat(dateobs_string))
-                timeobs_string = st_pipe_ready_dict['TIME-OBS']
+                try:
+                    timeobs_string = st_pipe_ready_dict['TIME-OBS']
+                except KeyError:
+                    timeobs_string = st_pipe_ready_dict['DATE'].split('T')[1]
+                    fits.setval(stsci_pipe_ready_file, 'TIME-OBS', 0, value=timeobs_string)
                 timeobs_string = dateobs_string + ' ' + timeobs_string
                 timeobs = datetime.timestamp(datetime.fromisoformat(timeobs_string))
                 visitstart_string = st_pipe_ready_dict['VSTSTART'].replace('T', ' ')
