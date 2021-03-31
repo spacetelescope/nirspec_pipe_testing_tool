@@ -175,7 +175,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         print("                           Please make sure you are using the correct file. Exiting script.")
         exit()
 
-    if not sci_ext and not dq_ext and not err_ext:
+    if not sci_ext:   # and not dq_ext and not err_ext:
         print("(crm2STpipeline.crm2pipe:) Renaming extensions for ST pipeline...")
         for det in detectors:
             # rename extensions in the file to match expected names in the pipeline
