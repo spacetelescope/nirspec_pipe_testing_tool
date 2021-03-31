@@ -45,8 +45,8 @@ Example usage:
         msa_metafile = 'V962150_msa.fits'
           
         # run the script
-        nptt.utils.crm2STpipeline.crm2pipe(ips_file, mode_used, add_ref_pix, proposal_title, target_name, 
-                                           subarray=subarray, new_file=new_file, msa_metafile=msa_metafile)
+        nptt.utils.crm2STpipeline.crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name, 
+                                                 subarray=subarray, new_file=new_file, msa_metafile=msa_metafile)
 
     * NOTE: In all cases the MODE can be any of the following: FS, MOS, IFU, BOTS
 
@@ -118,6 +118,8 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
             subarray = "SUB512"
         elif "512s" in subarray.lower():
             subarray = "SUB512S"
+        elif "1600" in subarray.lower():
+            subarray = "SUB1600"
         else:
             print("(crm2STpipeline.crm2pipe:) WARNING! Uh oh, subarray {} is not a recognized value.".format(subarray))
             print("                           Recognized values: FULL, 200A1, 200A2, 400, 1600, 1024A, 1024B, 2048, "
