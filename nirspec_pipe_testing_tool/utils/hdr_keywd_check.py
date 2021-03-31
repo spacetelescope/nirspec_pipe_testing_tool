@@ -91,7 +91,7 @@ def read_hdrfits(fits_file_name):
     This function reads the header fits file and returns a dictionary of the keywords with
     corresponding values. Keywords will be stored in the order they are read.
     Args:
-        hdr_txt_file: full path with name of the header text file
+        fits_file_name: full path with name of the fits file
 
     Returns:
         A dictionary of keywords with corresponding values
@@ -103,42 +103,9 @@ def read_hdrfits(fits_file_name):
     hdulist.info()
     # get and print header
     hdr = hdulist[0].header
-    return hdr  # this is really what we should be using...
     # close the fits file
     hdulist.close()
-    # set the name of the text file and save the header
-    text_file_name = fits_file_name.replace('.fits', '_header.txt')
-    tf = open(text_file_name, 'w')
-    tf.write(repr(hdr))
-    tf.close()
-    # read the text file
-    keywd_dict = read_hdrtxt(text_file_name)
-    # remove the text file
-    os.system("rm " + text_file_name)
-    return keywd_dict
-
-
-def read_hdrtxt(hdr_txt_file):
-    """
-    This function reads the header text file and returns a dictionary of the keywords with
-    corresponding values. Keywords will be stored in the order they are read.
-    Args:
-        hdr_txt_file: full path with name of the header text file
-
-    Returns:
-        A dictionary of keywords with corresponding values
-    """
-    keywd_dict = collections.OrderedDict()
-    with open(hdr_txt_file, 'r') as htf:
-        for line in htf.readlines():  # identify keywords by lines containing a =
-            if '=' in line:
-                line_list = line.split('=')
-                keywd = line_list[0].split()[0]  # remove the white spaces from the keyword
-                keywd_val = line_list[1].split()[0]  # remove the white spaces from the keyword value
-                if "'" in keywd_val:
-                    keywd_val = keywd_val.replace("'", "")  # remove the extra '
-                keywd_dict[keywd] = keywd_val  # add dictionary entry
-    return keywd_dict
+    return hdr  # this is really what we should be using...
 
 
 def create_addedkeywds_file(fits_file):
@@ -508,6 +475,20 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                             subarrd_key = 'SUBS200B1'
                                         elif '400A1' in subarrd_key:
                                             subarrd_key = 'SUBS400A1'
+                                        elif '1600' in subarrd_key:
+                                            if mode_used.lower() == "fs":
+                                                subarrd_key = 'SUB2048'
+                                            elif mode_used.lower() == "bots":
+                                                # determine which 1600 subarray is it
+                                                data = fits.getdata(ff, 1)
+                                                subsize1, subsize2 = np.shape(data)
+                                                for sa in subdict.subarray_dict:
+                                                    ssz1 = subdict.subarray_dict[sa]["subsize1"]
+                                                    ssz2 = subdict.subarray_dict[sa]["subsize2"]
+                                                    if subsize1 == ssz1:
+                                                        if subsize2 == ssz2:
+                                                            subarrd_key = sa
+                                                            break
                                         specific_keys_dict[key] = subarrd_key
                                         print("changing subarray keyword to ", subarrd_key)
                                         missing_keywds.append(key)

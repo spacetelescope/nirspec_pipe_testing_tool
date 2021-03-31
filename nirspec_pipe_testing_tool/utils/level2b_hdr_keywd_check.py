@@ -64,7 +64,7 @@ def read_hdrfits(fits_file_name):
     This function reads the header fits file and returns a dictionary of the keywords with
     corresponding values. Keywords will be stored in the order they are read.
     Args:
-        hdr_txt_file: full path with name of the header text file
+        fits_file_name: full path with name of the fits file
 
     Returns:
         A dictionary of keywords with corresponding values
@@ -75,45 +75,9 @@ def read_hdrfits(fits_file_name):
     print('(level2b_hdr_keword_check.read_hdrfits:) File contents')
     hdulist.info()
     # get and print header
-    # print ('\n FILE HEADER: \n')
     hdr = hdulist[0].header
-    sci_hdr = hdulist[1].header
-    # print (repr(hdr))
-    # close the fits file
     hdulist.close()
-    # set the name of the text file and save the header
-    text_file_name = fits_file_name.replace('.fits', '_header.txt')
-    tf = open(text_file_name, 'w')
-    tf.write(repr(hdr))
-    tf.close()
-    # read the text file
-    keywd_dict = read_hdrtxt(text_file_name)
-    # remove the text file
-    os.system("rm "+text_file_name)
-    return keywd_dict
-
-
-def read_hdrtxt(hdr_txt_file):
-    """
-    This function reads the header text file and returns a dictionary of the keywords with
-    corresponding values. Keywords will be stored in the order they are read.
-    Args:
-        hdr_txt_file: full path with name of the header text file
-
-    Returns:
-        A dictionary of keywords with corresponding values
-    """
-    keywd_dict = collections.OrderedDict()
-    with open(hdr_txt_file, 'r') as htf:
-        for line in htf.readlines():   # identify keywords by lines containing a =
-            if '=' in line:
-                line_list = line.split('=')
-                keywd = line_list[0].split()[0]   # remove the white spaces from the keyword
-                keywd_val = line_list[1].split()[0]  # remove the white spaces from the keyword value
-                if "'" in keywd_val:
-                    keywd_val = keywd_val.replace("'", "")   # remove the extra '
-                keywd_dict[keywd] = keywd_val   # add dictionary entry
-    return keywd_dict
+    return hdr
 
 
 def create_addedkeywds_file(fits_file, mktxt=True):
@@ -174,12 +138,22 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
     dict_type = type(hkwd_val[0])
 
     # Check if type of value correspond to what is given, else change it
+    count = 0
     if val is not None:
-        count = 0
-        for v in val:
-            # check if value is a float
-            if v == '.':
-                count += 1
+        if isinstance(val, bool):
+            if valtype == dict_type:
+                warning = None
+            else:
+                warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword is boolean but not expected to be.')
+            print(warning)
+            val_and_valtype = [val, dict_type]
+            return warning, val_and_valtype
+
+        else:
+            for v in val:
+                # check if value is a float
+                if v == '.':
+                    count += 1
 
         # check if value has a negative sign
         neg_in_value = False
@@ -442,29 +416,42 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
     # get the detector and grating from the input file
     try:
         if detector is None:
-            detector = fits.getval(ff, "DETECTOR", 0)
-        grating = fits.getval(ff, "GRATING", 0)
+            detector = file_keywd_dict["DETECTOR"]
+        grating = file_keywd_dict["GRATING"]
     except KeyError:
         if detector is None:
-            detector = fits.getval(ff, "DET", 0)
-        grating = fits.getval(ff, "GWA_POS", 0)
+            detector = file_keywd_dict["DET"]
+        grating = file_keywd_dict["GWA_POS"]
+    try:
+        dateobs = file_keywd_dict["DATE-OBS"]
+        timeobs = file_keywd_dict["TIME-OBS"]
+    except KeyError:
+        dateobs = file_keywd_dict["DATE"].split("T")[0]
+        timeobs = file_keywd_dict["DATE"].split("T")[1]
 
     # loop through the keywords and values of the PTT dictionary and add keywords that are not in input file
     for lev2bdict_key, lev2bdict_val in lev2bdict.keywd_dict.items():
         # start by making the warning for each keyword None and assigning key and val
         key = lev2bdict_key
+        val = lev2bdict_val
 
         # Check if keyword is in the file, expect for wcs info (these go in the science extension)
         if key != 'wcsinfo':
             ext = 'primary'
             if key not in file_keywd_dict:
                 # make sure the MSA metafile is pointing to the right place
-                if key == 'MSAMETFL':
-                    if ('mos' in mode_used.lower()) or ("msa" in mode_used.lower()):
-                        val = msa_metafile
-                        specific_keys_dict[key] = val
-                        if verbose:
-                            print('     Setting value of ', key, ' to ', val)
+                if ('mos' in mode_used.lower()) or ("msa" in mode_used.lower()):
+                    if key == 'MSAMETFL':
+                            val = msa_metafile
+                            if verbose:
+                                print('     Setting value of ', key, ' to ', val)
+                if key == 'EXP_TYPE':
+                    val = set_exp_type_value(mode_used)
+                if key == 'DATE-OBS':
+                    val = dateobs
+                if key == 'TIME-OBS':
+                    val = timeobs
+                specific_keys_dict[key] = val
                 missing_keywds.append(key)
                 warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'New keyword added to header')
                 warnings_list.append(warning)
@@ -562,7 +549,19 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             elif '400A1' in subarray:
                                 pipe_subarr_val = 'S400A1'
                             elif '1600' in subarray:
-                                pipe_subarr_val = 'S1600A1'
+                                if mode_used.lower() == "fs":
+                                    pipe_subarr_val = 'SUB2048'
+                                elif mode_used.lower() == "bots":
+                                    # determine which 1600 subarray is it
+                                    data = fits.getdata(ff, 1)
+                                    subsize1, subsize2 = np.shape(data)
+                                    for sa in subdict.subarray_dict:
+                                        ssz1 = subdict.subarray_dict[sa]["subsize1"]
+                                        ssz2 = subdict.subarray_dict[sa]["subsize2"]
+                                        if subsize1 == ssz1:
+                                            if subsize2 == ssz2:
+                                                pipe_subarr_val = sa
+                                                break
                             specific_keys_dict[key] = pipe_subarr_val
                             if verbose:
                                 print("changing subarray keyword to ", pipe_subarr_val)
@@ -575,6 +574,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                 if verbose:
                                     print("changing primary slit keyword to FXD_SLIT=", pipe_subarr_val)
                                 missing_keywds.append('FXD_SLIT')
+                                specific_keys_dict[key] = pipe_subarr_val
                             # set the subarray sizes and start keywords accordingly
                             if subarray in subdict.subarray_dict:
                                 ssz1 = subdict.subarray_dict[subarray]["subsize1"]
@@ -601,77 +601,35 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                     print("   substrt1=", sst1, " substrt2=", sst2, " subsize1=",
                                           ssz1, " subsize2=", ssz2)
                         else:
-                            try:
-                                # set the subarray according to size
-                                substrt1 = fits.getval(ff, "SUBSTRT1", 0)
-                                substrt2 = fits.getval(ff, "SUBSTRT2", 0)
-                                subsize1 = fits.getval(ff, "SUBSIZE1", 0)
-                                subsize2 = fits.getval(ff, "SUBSIZE2", 0)
-                                for subarrd_key, subarrd_vals_dir in subdict.subarray_dict.items():
-                                    sst1 = subarrd_vals_dir["substrt1"]
-                                    sst2_dict = subarrd_vals_dir["substrt2"]
-                                    ssz1 = subarrd_vals_dir["subsize1"]
-                                    ssz2 = subarrd_vals_dir["subsize2"]
-                                    if substrt1 == sst1 and subsize1 == ssz1 and subsize2 == ssz2:
+                            # determine subarray from size
+                            data = fits.getdata(ff, 1)
+                            subsize1, subsize2 = np.shape(data)
+                            for sa in subdict.subarray_dict:
+                                ssz1 = subdict.subarray_dict[sa]["subsize1"]
+                                ssz2 = subdict.subarray_dict[sa]["subsize2"]
+                                if subsize1 == ssz1:
+                                    if subsize2 == ssz2:
+                                        pipe_subarr_val = sa
+                                        sst1 = subdict.subarray_dict[sa]["substrt1"]
+                                        sst2_dict = subdict.subarray_dict[sa]["substrt2"]
                                         for grat, sst2_tuple in sst2_dict.items():
                                             if grat.lower() == grating.lower():
-                                                if 'FULL' in subarrd_key:
-                                                    subarrd_key = 'FULL'
-                                                elif '200A1' in subarrd_key:
-                                                    subarrd_key = 'SUBS200A1'
-                                                elif '200A2' in subarrd_key:
-                                                    subarrd_key = 'SUBS200A2'
-                                                elif '200B1' in subarrd_key:
-                                                    subarrd_key = 'SUBS200B1'
-                                                elif '400A1' in subarrd_key:
-                                                    subarrd_key = 'SUBS400A1'
-                                                elif '1600A1' in subarrd_key:
-                                                    subarrd_key = 'SUBS1600A1'
-                                                specific_keys_dict[key] = subarrd_key
-                                                if verbose:
-                                                    print("changing subarray keyword to ", subarrd_key)
-                                                missing_keywds.append(key)
-                                                # and make sure to change the primary slit keyword accordingly
-                                                if 'FULL' in subarrd_key:
-                                                    subarrd_key = 'S200A1'
-                                                specific_keys_dict['FXD_SLIT'] = subarrd_key
-                                                if verbose:
-                                                    print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
-                                                missing_keywds.append('FXD_SLIT')
-                                                # this part is simply to check that the subarray values are correct
-                                                # but no values will be changed in the input file
                                                 if "1" in detector:
                                                     sst2 = sst2_tuple[0]
                                                 elif "2" in detector:
                                                     sst2 = sst2_tuple[1]
-                                                if verbose:
-                                                    print("Subarray values in input file: \n", )
-                                                    print("substrt1=", substrt1, " substrt2=", substrt2,  " subsize1=",
-                                                          subsize1, " subsize2=", subsize2)
-                                                    print("Subarray values in PTT dictionary: \n", )
-                                                    print("   substrt1=", sst1, " substrt2=", sst2,  " subsize1=", ssz1,
-                                                          " subsize2=", ssz2)
-                            except KeyError:
-                                pipe_subarr_val = "N/A"
+                                                break
+                            if pipe_subarr_val:
                                 specific_keys_dict[key] = pipe_subarr_val
-                                if verbose:
-                                    print("changing subarray keyword to ", pipe_subarr_val)
+                                specific_keys_dict['SUBSTRT1'] = sst1
+                                specific_keys_dict['SUBSIZE1'] = ssz1
+                                specific_keys_dict['SUBSTRT2'] = sst2
+                                specific_keys_dict['SUBSIZE2'] = ssz2
                                 missing_keywds.append(key)
-                                specific_keys_dict['SUBSTRT1'] = 1
-                                specific_keys_dict['SUBSIZE1'] = 2048
-                                specific_keys_dict['SUBSTRT2'] = 1
-                                specific_keys_dict['SUBSIZE2'] = 2048
-                                specific_keys_dict['FASTAXIS'] = 2
-                                specific_keys_dict['SLOWAXIS'] = 1
                                 missing_keywds.append('SUBSTRT1')
                                 missing_keywds.append('SUBSIZE1')
                                 missing_keywds.append('SUBSTRT2')
                                 missing_keywds.append('SUBSIZE2')
-                                missing_keywds.append('FASTAXIS')
-                                missing_keywds.append('SLOWAXIS')
-                                if verbose:
-                                    print("Subarray size and start keywords now set to: \n", )
-                                    print("   SUBSTRT1=1", " SUBSTRT2=1", " SUBSIZE1=2048", " SUBSIZE2=2048")
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
@@ -721,6 +679,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         else:
             # add the WCS keywords to science extension
             missing_keywds.append(key)
+            specific_keys_dict[key] = val
             for subkey, _ in lev2bdict_val.items():
                 # now add the keyword to in the list to be added into the science extension
                 warning = '{:<15} {:<9} {:<25}'.format(subkey, 'sci', 'New keyword added to header')
@@ -730,7 +689,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
 
     if verbose:
         print("keywords to be modified: ", list(OrderedDict.fromkeys(missing_keywds)))
-    return specific_keys_dict
+    return specific_keys_dict, missing_keywds
 
 
 def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_used, verbose=False):
@@ -757,17 +716,19 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
         print('Saving keyword values in file: ', updated_fitsfile)
     ext = 0
     for i, key in enumerate(missing_keywds):
-        if key in specific_keys_dict:
-            if specific_keys_dict[key] == 'remove':
-                # keyword to be deleted
-                try:
-                    fits.delval(updated_fitsfile, key, ext)
-                except:
-                    KeyError
-            else:
-                # change the keyword to specified value
-                fits.setval(updated_fitsfile, key, value=specific_keys_dict[key])
-            continue
+        if key != 'wcsinfo':
+            if key in specific_keys_dict:
+                if specific_keys_dict[key] == 'remove':
+                    # keyword to be deleted
+                    try:
+                        fits.delval(updated_fitsfile, key, ext)
+                    except:
+                        KeyError
+                else:
+                    # change the keyword to specified value
+                    fits.setval(updated_fitsfile, key, value=specific_keys_dict[key])
+                continue
+
         # get the index of the keyword previous to the one you want to add
         prev_key_idx = list(lev2bdict.keywd_dict.keys()).index(key) - 1
         # add the keyword in the right place from the right dictionary
@@ -870,8 +831,9 @@ def check_lev2b_hdr_keywd(fits_file, only_update, mode_used, detector=None, suba
     # check the keywords
     print('\n(level2b_hdr_keywd_check.check_lev2b_hdr_keywd:) Starting keyword check...')
     warnings_list, missing_keywds = [], []
-    specific_keys_dict = check_keywds(file_keywd_dict, addedkeywds_file_name, warnings_list, missing_keywds, mode_used,
-                                      detector, subarray, msa_metafile, verbose=verbose)
+    specific_keys_dict, missing_keywds = check_keywds(file_keywd_dict, addedkeywds_file_name, warnings_list,
+                                                      missing_keywds, mode_used, detector, subarray,
+                                                      msa_metafile, verbose=verbose)
 
     # if warnings text file is empty erase it
     check_addedkeywds_file(addedkeywds_file_name)

@@ -485,17 +485,9 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
                 print('Value for keyword ', key2modify, ' will be calculated...')
             if key2modify == 'EXPSTART':
                 # put the dates/times values into the time stamp format to do operations
-                try:
-                    dateobs_string = st_pipe_ready_dict['DATE-OBS'].replace('T', ' ')
-                except KeyError:
-                    dateobs_string = st_pipe_ready_dict['DATE'].split('T')[0]
-                    fits.setval(stsci_pipe_ready_file, 'DATE-OBS', 0, value=dateobs_string)
+                dateobs_string = st_pipe_ready_dict['DATE-OBS'].replace('T', ' ')
                 dateobs = datetime.timestamp(datetime.fromisoformat(dateobs_string))
-                try:
-                    timeobs_string = st_pipe_ready_dict['TIME-OBS']
-                except KeyError:
-                    timeobs_string = st_pipe_ready_dict['DATE'].split('T')[1]
-                    fits.setval(stsci_pipe_ready_file, 'TIME-OBS', 0, value=timeobs_string)
+                timeobs_string = st_pipe_ready_dict['TIME-OBS']
                 timeobs_string = dateobs_string + ' ' + timeobs_string
                 timeobs = datetime.timestamp(datetime.fromisoformat(timeobs_string))
                 visitstart_string = st_pipe_ready_dict['VSTSTART'].replace('T', ' ')
