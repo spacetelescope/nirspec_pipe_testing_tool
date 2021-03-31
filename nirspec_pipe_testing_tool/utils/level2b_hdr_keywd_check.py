@@ -561,6 +561,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                 pipe_subarr_val = 'SUBS200B1'
                             elif '400A1' in subarray:
                                 pipe_subarr_val = 'SUBS400A1'
+                            elif '1600' in subarray:
+                                pipe_subarr_val = 'SUBS1600A1'
                             specific_keys_dict[key] = pipe_subarr_val
                             if verbose:
                                 print("changing subarray keyword to ", pipe_subarr_val)
