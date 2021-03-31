@@ -119,7 +119,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         elif "512s" in subarray.lower():
             subarray = "SUB512S"
         elif "1600" in subarray.lower():
-            subarray = "SUB1600"
+            subarray = "S1600A1"
         else:
             print("(crm2STpipeline.crm2pipe:) WARNING! Uh oh, subarray {} is not a recognized value.".format(subarray))
             print("                           Recognized values: FULL, 200A1, 200A2, 400, 1600, 1024A, 1024B, 2048, "
