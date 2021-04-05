@@ -150,35 +150,41 @@ def check_value_type(key, val, hkwd_val, ext='primary'):
             return warning, val_and_valtype
 
         else:
-            for v in val:
-                # check if value is a float
-                if v == '.':
-                    count += 1
+            if isinstance(val, float):
+                valtype = type(val)
+                is_float = True
+            else:   # maybe a float disguised as a string?
+                is_float = False
+                for v in val:
+                    # check if value is a float
+                    if v == '.':
+                        count += 1
 
-        # check if value has a negative sign
-        neg_in_value = False
-        if (count == 0) and ('-' in val):
-            val_list = val.split("-")
-            if len(val_list) == 2:
-                neg_in_value = True
+        if not is_float:
+            # check if value has a negative sign
+            neg_in_value = False
+            if (count == 0) and ('-' in val):
+                val_list = val.split("-")
+                if len(val_list) == 2:
+                    neg_in_value = True
 
-        # check for letters in value
-        no_letters_in_string = True
-        for char in val:
-            if char.isalpha():
-                no_letters_in_string = False
-        if no_letters_in_string:
-            if (count == 0) and (':' not in val) and neg_in_value:
-                if val == '':
-                    warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
-                    print(warning)
-                    val_and_valtype = [val, dict_type]
-                    return warning, val_and_valtype
+            # check for letters in value
+            no_letters_in_string = True
+            for char in val:
+                if char.isalpha():
+                    no_letters_in_string = False
+            if no_letters_in_string:
+                if (count == 0) and (':' not in val) and neg_in_value:
+                    if val == '':
+                        warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'This keyword has an empty value')
+                        print(warning)
+                        val_and_valtype = [val, dict_type]
+                        return warning, val_and_valtype
 
-                val = int(val)
-            if (count == 1) and (':' not in val):
-                val = float(val)
-            valtype = type(val)
+                    val = int(val)
+                if (count == 1) and (':' not in val):
+                    val = float(val)
+                valtype = type(val)
 
     if (valtype in hkwd_val) or (val in hkwd_val) or (valtype == dict_type):
         print('{:<15} {:<9} {:<25}'.format(key, ext, 'Allowed value type'))
@@ -619,6 +625,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                                 elif "2" in detector:
                                                     sst2 = sst2_tuple[1]
                                                 break
+                                    else:
+                                        pipe_subarr_val = False
                             if pipe_subarr_val:
                                 specific_keys_dict[key] = pipe_subarr_val
                                 specific_keys_dict['SUBSTRT1'] = sst1
