@@ -468,13 +468,13 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                         if 'FULL' in subarrd_key:
                                             subarrd_key = 'FULL'
                                         elif '200A1' in subarrd_key:
-                                            subarrd_key = 'SUBS200A1'
+                                            subarrd_key = 'S200A1'
                                         elif '200A2' in subarrd_key:
-                                            subarrd_key = 'SUBS200A2'
+                                            subarrd_key = 'S200A2'
                                         elif '200B1' in subarrd_key:
-                                            subarrd_key = 'SUBS200B1'
+                                            subarrd_key = 'S200B1'
                                         elif '400A1' in subarrd_key:
-                                            subarrd_key = 'SUBS400A1'
+                                            subarrd_key = 'S400A1'
                                         elif '1600' in subarrd_key:
                                             if mode_used.lower() == "fs":
                                                 subarrd_key = 'SUB2048'
@@ -494,8 +494,10 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                         missing_keywds.append(key)
                                         # and make sure to change the primary slit keyword accordingly
                                         if mode_used.lower() == "fs":
-                                            subarrd_key = 'S200A1'
-                                            specific_keys_dict['FXD_SLIT'] = subarrd_key
+                                            FXD_SLIT = subarrd_key
+                                            if '2048' or '1024' or '512' or '32' in subarrd_key:
+                                                FXD_SLIT = 'S1600A1'
+                                            specific_keys_dict['FXD_SLIT'] = FXD_SLIT
                                             print("changing primary slit keyword to FXD_SLIT=", subarrd_key)
                                             missing_keywds.append('FXD_SLIT')
                                         # this part is simply to check that the subarray values are correct
@@ -556,6 +558,14 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     specific_keys_dict[key] = val
                     missing_keywds.append(key)
                     print('     Setting value of ', key, ' to ', val)
+
+                if key == 'TSOVISIT':
+                    if mode_used.lower() == 'bots':
+                        val = True
+                    else:
+                        val = False
+                    specific_keys_dict[key] = val
+                    missing_keywds.append(key)
 
                 # make sure the MSASTATE keyword is set correctly
                 if key == 'MSASTATE':

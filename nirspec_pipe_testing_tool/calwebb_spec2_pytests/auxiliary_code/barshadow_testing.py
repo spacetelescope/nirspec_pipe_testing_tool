@@ -28,12 +28,13 @@ jupyter notebook barshadow.ipynb written by James Muzerolle in August of 2019.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & J. Muzerolle"
-__version__ = "1.2"
+__version__ = "1.3"
 
 # HISTORY
 # Nov 2019 - Version 1.0: initial version completed
 # Sep 2020 - Version 1.1: Added option to take datamodel as barshadow output (i.e. bsfile)
 # Jan 2021 - Version 1.2: Implemented option to use datamodels instead of fits files as input
+# Apr 2021 - Version 1.3: Modified the test to not stop and exit if the source type of 1 slit is POINT
 
 
 def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_final_figs=False, show_final_figs=False,
@@ -144,10 +145,14 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         # only continue if the source type is not POINT
         srctype = plslit.source_type
         if "point" in srctype.lower():
-            msg = 'The test is skipped for POINT sources, since the correction is not applied'
+            msg = 'Test for this slit is skipped since source is POINT and hence, the correction is not applied.'
             result = 'skip'
             log_msgs.append(msg)
-            return result, msg, log_msgs
+            slitlet_test_result_list = [{"barshadow_correction": result}, {"percentage_greater_3threshold": result},
+                                        {"percentage_greater_5threshold": result}]
+            # store tests results in the total dictionary
+            total_test_result[slit_id] = slitlet_test_result_list
+            continue
 
         # obtain the data from the pathloss or extract_2d and the barshadow datamodels
         plsci = plslit.data
@@ -515,12 +520,17 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
             for t, tr in tdict.items():
                 if tr == "FAILED":
                     FINAL_TEST_RESULT = False
-                    msg = "\n * The test of " + t + " for slitlet " + sl + "  FAILED."
+                    msg = "\n * Test of " + t + " for slitlet " + sl + "  FAILED."
+                    print(msg)
+                    log_msgs.append(msg)
+                elif tr == "skip":
+                    FINAL_TEST_RESULT = False
+                    msg = "\n * Test of " + t + " for slitlet " + sl + "  SKIPPED since source is POINT."
                     print(msg)
                     log_msgs.append(msg)
                 else:
                     FINAL_TEST_RESULT = True
-                    msg = "\n * The test of " + t + " for slitlet " + sl + "  PASSED."
+                    msg = "\n * Test of " + t + " for slitlet " + sl + "  PASSED."
                     print(msg)
                     log_msgs.append(msg)
 

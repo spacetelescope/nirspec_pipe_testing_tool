@@ -89,6 +89,7 @@ keywd_dict[
 keywd_dict['PROP_RA'] = 0.0  # proposer specified RA for the target, e.g. 0.0
 keywd_dict['PROP_DEC'] = 0.0  # proposer specified Dec for the target, e.g. 0.0
 keywd_dict['SRCTYAPT'] = 'UNKNOWN'  # source type as defined by user in APT, other values: 'POINT', 'EXTENDED'
+keywd_dict['TSOVISIT'] = False  # True if NRS_BRIGHTOBJ
 
 # Instrument configuration information
 keywd_dict['INSTRUME'] = 'NIRSPEC'  # Identifier for instrument used to acquire data

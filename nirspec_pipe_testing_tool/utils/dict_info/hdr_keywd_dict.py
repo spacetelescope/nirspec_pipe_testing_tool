@@ -94,6 +94,7 @@ keywd_dict['EXP_TYPE'] = ['NRS_WATA', 'NRS_MSATA', 'NRS_TACONFIRM', 'NRS_CONFIRM
 # type of data in exposure was taken from the pipeline repo:
 # https://github.com/spacetelescope/jwst/blob/aec6a2a6132386d614dfaeea8754558b979cc3b2/jwst/datamodels/schemas/keyword_pexptype.schema.yaml
 keywd_dict['SRCTYAPT'] = 'UNKNOWN'  # SRCTYPE shows up after the source type step
+keywd_dict['TSOVISIT'] = [bool]  # True if NRS_BRIGHTOBJ
 
 # Target information
 keywd_dict['TARGPROP'] = [str]  # proposer's name for the target

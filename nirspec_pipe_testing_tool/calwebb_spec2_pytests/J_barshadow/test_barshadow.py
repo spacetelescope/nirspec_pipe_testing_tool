@@ -198,21 +198,6 @@ def validate_barshadow(output_hdul):
 
     # Determine if data is MOS
     if core_utils.check_MOS_true(hdu):
-        # Determine if the source is point or extended. If extended, unknown, or not present, correction
-        # will be applied.
-        if 'SRCTYPE' in hdu:
-            srctype = hdu['SRCTYPE']
-        else:
-            try:
-                srctype = fits.getval(output_hdul[1], "SRCTYPE", "SCI", 1)
-            except KeyError:
-                pytest.skip("Skipping pytest because source type keyword has not been defined either in the main"
-                            "header nor the science header.")
-
-        if srctype == 'POINT':
-            pytest.skip("Skipping pytest: The SRCTYPE keyword is set to POINT so barshadow correction is not "
-                        "applied.")
-
         plfile = output_hdul[1].replace('_barshadow', '_pathloss')
         bsfile = output_hdul[1]
         (barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots,
@@ -232,6 +217,7 @@ def validate_barshadow(output_hdul):
             logging.info(msg)
 
     if barshadow_testresult == "skip":
+        print(result_msg)
         logging.info(result_msg)
         pytest.skip(result_msg)
     else:
