@@ -62,9 +62,9 @@ keywd_dict['EXPOSURE'] = '00001'  # exposure request number, e.g. 00001
 keywd_dict['DETECTOR'] = 'NRS1'  # name of detector used to acquire data
 keywd_dict['NINTS'] = 1  # number of integrations within exposure, e.g. 1
 keywd_dict['NGROUPS'] = 6  # number of groups within integration, e.g. 20
-keywd_dict['ZEROFRAM'] = "F"  # boolean represented with string, T if a zero frame was read separately
+keywd_dict['ZEROFRAM'] = False  # boolean represented with string, T if a zero frame was read separately
 keywd_dict['READPATT'] = 'NRSRAPID'  # readout pattern
-keywd_dict['DATAPROB'] = "F"  # boolean represented with string, T if science telemetry indicated any problems
+keywd_dict['DATAPROB'] = False  # boolean represented with string, T if science telemetry indicated any problems
 
 # Program information
 keywd_dict['TITLE'] = 'proposal_title1'  # proposal title
@@ -82,8 +82,8 @@ keywd_dict['OBSLABEL'] = '#TODO'  # proposer label for observation, e.g. #TODO
 keywd_dict['VISITYPE'] = 'GENERIC'  # type of visit (prime or parallel)
 keywd_dict['VSTSTART'] = '2016-01-17T17:34:57'  # UTC visit start time, e.g. 2013-01-19T18:27:22
 keywd_dict['NEXPOSUR'] = 1  # total number of exposures in visit, e.g. 1
-keywd_dict['INTARGET'] = "T"  # boolean represented with string, T if at least one exposure in visit is internal
-keywd_dict['TARGOOPP'] = "F"  # boolean represented with string, visit scheduled as target of opportunity
+keywd_dict['INTARGET'] = True  # boolean represented with string, T if at least one exposure in visit is internal
+keywd_dict['TARGOOPP'] = False  # boolean represented with string, visit scheduled as target of opportunity
 
 # Exposure information
 keywd_dict['PNTG_SEQ'] = 1  # pointing sequence number, e.g. 1
@@ -93,6 +93,7 @@ keywd_dict['EXP_TYPE'] = 'NRS_MSASPEC'  # type of data in exposure, options are:
 #                         'NRS_IFU', 'NRS_MSASPEC', ' NRS_AUTOFLAT', ' NRS_IMAGE', ' NRS_FOCUS', ' NRS_DARK',
 #                         'NRS_LAMP', 'NRS_BOTA', 'NRS_BRIGHTOBJ'
 keywd_dict['SRCTYAPT'] = 'UNKNOWN'  # SRCTYPE shows up after the source type step
+keywd_dict['TSOVISIT'] = False  # True if NRS_BRIGHTOBJ
 
 # Target information
 keywd_dict['TARGPROP'] = 'UNKNOWN'  # proposer's name for the target

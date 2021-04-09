@@ -392,6 +392,40 @@ def set_exp_type_value(mode_used):
     return val
 
 
+def determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_keywds):
+    data = fits.getdata(ff, 1)
+    subsize1, subsize2 = np.shape(data)
+    pipe_subarr_val = None
+    for sa in subdict.subarray_dict:
+        ssz1 = subdict.subarray_dict[sa]["subsize1"]
+        ssz2 = subdict.subarray_dict[sa]["subsize2"]
+        if subsize1 == ssz1:
+            if subsize2 == ssz2:
+                pipe_subarr_val = sa
+                sst1 = subdict.subarray_dict[sa]["substrt1"]
+                sst2_dict = subdict.subarray_dict[sa]["substrt2"]
+                for grat, sst2_tuple in sst2_dict.items():
+                    if grat.lower() == grating.lower():
+                        if "1" in detector:
+                            sst2 = sst2_tuple[0]
+                        elif "2" in detector:
+                            sst2 = sst2_tuple[1]
+                        break
+
+    if pipe_subarr_val is not None:
+        specific_keys_dict[key] = pipe_subarr_val
+        specific_keys_dict['SUBSTRT1'] = sst1
+        specific_keys_dict['SUBSIZE1'] = ssz1
+        specific_keys_dict['SUBSTRT2'] = sst2
+        specific_keys_dict['SUBSIZE2'] = ssz2
+        missing_keywds.append(key)
+        missing_keywds.append('SUBSTRT1')
+        missing_keywds.append('SUBSIZE1')
+        missing_keywds.append('SUBSTRT2')
+        missing_keywds.append('SUBSIZE2')
+    return specific_keys_dict, missing_keywds
+
+
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used, detector=None,
                  subarray=None, msa_metafile=None, verbose=False):
     """
@@ -453,14 +487,34 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                 print('     Setting value of ', key, ' to ', val)
                 if key == 'EXP_TYPE':
                     val = set_exp_type_value(mode_used)
+                if key == 'TSOVISIT':
+                    if mode_used.lower() == 'bots':
+                        val = True
+                    else:
+                        val = False
+                if key == 'FXD_SLIT':
+                    val = 'S200A1'
+                    if mode_used.lower() == 'bots':
+                        val = 'S1600A1'
                 if key == 'DATE-OBS':
                     val = dateobs
                 if key == 'TIME-OBS':
                     val = timeobs
+                if key == 'SUBARRAY':
+                    subar_data = determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_keywds)
+                    subarr_specific_keys_dict, subarr_missing_keywds = subar_data
+                    specific_keys_dict.update(subarr_specific_keys_dict)
+                    for item in subarr_missing_keywds:
+                        missing_keywds.append(item)
+
+                if key == 'SUBSTRT1' or key == 'SUBSTRT2' or key == 'SUBSIZE1' or key == 'SUBSIZE2':
+                    continue
+
                 specific_keys_dict[key] = val
                 missing_keywds.append(key)
                 warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'New keyword added to header')
                 warnings_list.append(warning)
+
             else:
                 # check if the keyword exists in the science header
                 orig_val = None
@@ -569,14 +623,17 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                                 pipe_subarr_val = sa
                                                 break
                             specific_keys_dict[key] = pipe_subarr_val
+                            subarray = pipe_subarr_val
                             if verbose:
                                 print("changing subarray keyword to ", pipe_subarr_val)
                             missing_keywds.append(key)
                             # and make sure to change the primary slit keyword accordingly
-                            if mode_used.lower() == "fs":
+                            if mode_used.lower() == "fs" or mode_used.lower() == "bots":
                                 if not pipe_subarr_val:
-                                    pipe_subarr_val = 'S200A1'
-                                specific_keys_dict['FXD_SLIT'] = pipe_subarr_val
+                                    FXD_SLIT = 'S200A1'
+                                if '2048' or '1024' or '512' or '32' in pipe_subarr_val:
+                                    FXD_SLIT = 'S1600A1'
+                                specific_keys_dict['FXD_SLIT'] = FXD_SLIT
                                 if verbose:
                                     print("changing primary slit keyword to FXD_SLIT=", pipe_subarr_val)
                                 missing_keywds.append('FXD_SLIT')
@@ -608,36 +665,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                           ssz1, " subsize2=", ssz2)
                         else:
                             # determine subarray from size
-                            data = fits.getdata(ff, 1)
-                            subsize1, subsize2 = np.shape(data)
-                            for sa in subdict.subarray_dict:
-                                ssz1 = subdict.subarray_dict[sa]["subsize1"]
-                                ssz2 = subdict.subarray_dict[sa]["subsize2"]
-                                if subsize1 == ssz1:
-                                    if subsize2 == ssz2:
-                                        pipe_subarr_val = sa
-                                        sst1 = subdict.subarray_dict[sa]["substrt1"]
-                                        sst2_dict = subdict.subarray_dict[sa]["substrt2"]
-                                        for grat, sst2_tuple in sst2_dict.items():
-                                            if grat.lower() == grating.lower():
-                                                if "1" in detector:
-                                                    sst2 = sst2_tuple[0]
-                                                elif "2" in detector:
-                                                    sst2 = sst2_tuple[1]
-                                                break
-                                    else:
-                                        pipe_subarr_val = False
-                            if pipe_subarr_val:
-                                specific_keys_dict[key] = pipe_subarr_val
-                                specific_keys_dict['SUBSTRT1'] = sst1
-                                specific_keys_dict['SUBSIZE1'] = ssz1
-                                specific_keys_dict['SUBSTRT2'] = sst2
-                                specific_keys_dict['SUBSIZE2'] = ssz2
-                                missing_keywds.append(key)
-                                missing_keywds.append('SUBSTRT1')
-                                missing_keywds.append('SUBSIZE1')
-                                missing_keywds.append('SUBSTRT2')
-                                missing_keywds.append('SUBSIZE2')
+                            specific_keys_dict, missing_keywds = determine_subarray(key, ff, detector, grating,
+                                                                                    specific_keys_dict, missing_keywds)
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
@@ -649,6 +678,14 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     missing_keywds.append(key)
                     if verbose:
                         print('     Setting value of ', key, ' to ', val)
+
+                if key == 'TSOVISIT':
+                    if mode_used.lower() == 'bots':
+                        val = True
+                    else:
+                        val = False
+                    specific_keys_dict[key] = val
+                    missing_keywds.append(key)
 
                 # make sure the MSASTATE keyword is set correctly
                 if key == 'MSASTATE':
@@ -734,8 +771,10 @@ def add_keywds(fits_file, only_update, missing_keywds, specific_keys_dict, mode_
                         KeyError
                 else:
                     # change the keyword to specified value
+                    if verbose:
+                        print('setting key ', key, ' to ', specific_keys_dict[key])
                     fits.setval(updated_fitsfile, key, value=specific_keys_dict[key])
-                continue
+            continue
 
         # get the index of the keyword previous to the one you want to add
         prev_key_idx = list(lev2bdict.keywd_dict.keys()).index(key) - 1
