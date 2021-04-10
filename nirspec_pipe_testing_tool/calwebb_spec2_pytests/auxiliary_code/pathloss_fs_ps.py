@@ -370,14 +370,14 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
         # set up generals for all the plots
         font = {'weight': 'normal',
-                'size': 7}
+                'size': 12}
         matplotlib.rc('font', **font)
 
         # Plots:
         if save_figs:
             step_input_filepath = step_input_filename.replace(".fits", "")
         # my correction values
-        fig = plt.figure()
+        fig = plt.figure(figsize=(12, 10))
         plt.subplot(221)
         norm = ImageNormalize(corr_vals)
         plt.imshow(corr_vals, norm=norm, aspect=10.0, origin='lower', cmap='viridis')
@@ -406,7 +406,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         plt.subplot(224)
         norm = ImageNormalize(corrected_array)
         plt.imshow(corrected_array, norm=norm, aspect=10.0, origin='lower', cmap='viridis')
-        plt.title('My science data after pathloss')
+        plt.title('Corrected Data After Pathloss')
         plt.xlabel('dispersion in pixels')
         plt.ylabel('y in pixels')
         plt.colorbar()

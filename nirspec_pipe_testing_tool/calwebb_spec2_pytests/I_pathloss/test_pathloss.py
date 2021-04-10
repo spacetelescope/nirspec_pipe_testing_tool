@@ -21,19 +21,18 @@ from .. auxiliary_code import pathloss_fs_ps
 from .. auxiliary_code import pathloss_fs_uni
 from .. auxiliary_code import pathloss_ifu_ps
 from .. auxiliary_code import pathloss_ifu_uni
-from .. auxiliary_code import pathloss_mos_ps
-from .. auxiliary_code import pathloss_mos_uni
-
+from .. auxiliary_code import pathloss_mos
 
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.1"
+__version__ = "2.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # May 2018 - Version 2.0: Gray added routine to generalize reference file check
 # Mar 2019 - Version 2.1: Maria separated completion from validation tests
+# Apr 2021 - Version 2.2: combined point-uniform pathloss test for MOS data
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -232,10 +231,13 @@ def validate_pathloss(output_hdul):
     debug = False
 
     # determine the type of source
-    source_type = fits.getval(comparison_filename, "SRCTYPE", "SCI", 1)
-    msg = "Source type is: "+source_type
-    print(msg)
-    logging.info(msg)
+    is_mos = True
+    if not core_utils.check_MOS_true(hdu):
+        is_mos = False
+        source_type = fits.getval(comparison_filename, "SRCTYPE", "SCI", 1)
+        msg = "Source type is: "+source_type
+        print(msg)
+        logging.info(msg)
 
     # get the corresponding reference file
     reffile = hdu["R_PTHLOS"].replace("crds://", "")
@@ -244,57 +246,49 @@ def validate_pathloss(output_hdul):
         reffile_url = "https://jwst-crds.stsci.edu/unchecked_get/references/jwst/" + reffile
         urllib.request.urlretrieve(reffile_url, reffile)
 
-    if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
-        if "point" in source_type.lower():
-            median_diff, result_msg, log_msgs = pathloss_fs_ps.pathtest(step_input_filename, reffile,
-                                                                        comparison_filename,
-                                                                        writefile=writefile, show_figs=show_figs,
-                                                                        save_figs=save_figs,
-                                                                        threshold_diff=threshold_diff,
-                                                                        debug=debug)
-        elif "extend" in source_type.lower():
-            median_diff, result_msg, log_msgs = pathloss_fs_uni.pathtest(step_input_filename, reffile,
-                                                                         comparison_filename,
-                                                                         writefile=writefile, show_figs=show_figs,
-                                                                         save_figs=save_figs,
-                                                                         threshold_diff=threshold_diff,
-                                                                         debug=debug)
-
-    elif core_utils.check_MOS_true(hdu):
-        if "point" in source_type.lower():
-            median_diff, result_msg, log_msgs = pathloss_mos_ps.pathtest(step_input_filename, reffile,
-                                                                         comparison_filename,
-                                                                         writefile=writefile, show_figs=show_figs,
-                                                                         save_figs=save_figs,
-                                                                         threshold_diff=threshold_diff,
-                                                                         debug=debug)
-        elif "extend" in source_type.lower():
-            median_diff, result_msg, log_msgs = pathloss_mos_uni.pathtest(step_input_filename, reffile,
-                                                                          comparison_filename,
-                                                                          writefile=writefile, show_figs=show_figs,
-                                                                          save_figs=save_figs,
-                                                                          threshold_diff=threshold_diff,
-                                                                          debug=debug)
-
-    elif core_utils.check_IFU_true(hdu):
-        if "point" in source_type.lower():
-            median_diff, result_msg, log_msgs = pathloss_ifu_ps.pathtest(step_input_filename, reffile,
-                                                                         comparison_filename,
-                                                                         writefile=writefile, show_figs=show_figs,
-                                                                         save_figs=save_figs,
-                                                                         threshold_diff=threshold_diff,
-                                                                         debug=debug)
-        elif "extend" in source_type.lower():
-            median_diff, result_msg, log_msgs = pathloss_ifu_uni.pathtest(step_input_filename, reffile,
-                                                                          comparison_filename,
-                                                                          writefile=writefile, show_figs=show_figs,
-                                                                          save_figs=save_figs,
-                                                                          threshold_diff=threshold_diff,
-                                                                          debug=debug)
+    if is_mos:
+        median_diff, result_msg, log_msgs = pathloss_mos.pathtest(step_input_filename, reffile,
+                                                                  comparison_filename,
+                                                                  writefile=writefile, show_figs=show_figs,
+                                                                  save_figs=save_figs,
+                                                                  threshold_diff=threshold_diff,
+                                                                  debug=debug)
 
     else:
-        pytest.skip("Skipping pytest: The input fits file is not FS, MOS, or IFU. This tool does not yet include the "
-                    "routine to verify this kind of file.")
+        if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
+            if "point" in source_type.lower():
+                median_diff, result_msg, log_msgs = pathloss_fs_ps.pathtest(step_input_filename, reffile,
+                                                                            comparison_filename,
+                                                                            writefile=writefile, show_figs=show_figs,
+                                                                            save_figs=save_figs,
+                                                                            threshold_diff=threshold_diff,
+                                                                            debug=debug)
+            elif "extend" in source_type.lower():
+                median_diff, result_msg, log_msgs = pathloss_fs_uni.pathtest(step_input_filename, reffile,
+                                                                             comparison_filename,
+                                                                             writefile=writefile, show_figs=show_figs,
+                                                                             save_figs=save_figs,
+                                                                             threshold_diff=threshold_diff,
+                                                                             debug=debug)
+        elif core_utils.check_IFU_true(hdu):
+            if "point" in source_type.lower():
+                median_diff, result_msg, log_msgs = pathloss_ifu_ps.pathtest(step_input_filename, reffile,
+                                                                             comparison_filename,
+                                                                             writefile=writefile, show_figs=show_figs,
+                                                                             save_figs=save_figs,
+                                                                             threshold_diff=threshold_diff,
+                                                                             debug=debug)
+            elif "extend" in source_type.lower():
+                median_diff, result_msg, log_msgs = pathloss_ifu_uni.pathtest(step_input_filename, reffile,
+                                                                              comparison_filename,
+                                                                              writefile=writefile, show_figs=show_figs,
+                                                                              save_figs=save_figs,
+                                                                              threshold_diff=threshold_diff,
+                                                                              debug=debug)
+
+        else:
+            pytest.skip("Skipping pytest: The input fits file is not FS, MOS, or IFU. This tool does not include the "
+                        "routine to verify this kind of file.")
 
     if log_msgs is not None:
         for msg in log_msgs:
