@@ -148,6 +148,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
             msg = 'Test for this slit is skipped since source is POINT and hence, the correction is not applied.'
             result = 'skip'
             log_msgs.append(msg)
+            print(msg + "\n")
             slitlet_test_result_list = [{"barshadow_correction": result}, {"percentage_greater_3threshold": result},
                                         {"percentage_greater_5threshold": result}]
             # store tests results in the total dictionary
@@ -524,8 +525,9 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
                     print(msg)
                     log_msgs.append(msg)
                 elif tr == "skip":
-                    FINAL_TEST_RESULT = False
-                    msg = "\n * Test of " + t + " for slitlet " + sl + "  SKIPPED since source is POINT."
+                    FINAL_TEST_RESULT = True
+                    msg = "\n * Test of "+t+" for slitlet "+sl+"  SKIPPED due to source=POINT. \n" \
+                                                               "   Reported as PASSED since behavior is as expected."
                     print(msg)
                     log_msgs.append(msg)
                 else:

@@ -4,7 +4,6 @@ from astropy import wcs
 import numpy as np
 from astropy.io import fits
 import scipy
-import pdb
 import argparse
 import sys
 
@@ -15,19 +14,19 @@ from jwst.assign_wcs import util
 
 from . import auxiliary_functions as auxfunc
 
-from astropy.visualization import (ImageNormalize, AsinhStretch)
+from astropy.visualization import ImageNormalize
 from scipy.interpolate import interp1d
 
 import matplotlib
 import matplotlib.pyplot as plt
 
 """
-This script tests the MSA pipeline pathloss step output for a Uniform Source.
+This script tests the MSA pipeline pathloss step output for POINT and UNIFORM source type.
 """
 
 # HEADER
 __author__ = "T King & M Pena-Guerrero"
-__version__ = "1.4"
+__version__ = "1.5"
 
 # HISTORY
 # October 19, 2019 - Version 1.0: initial version started
@@ -35,15 +34,15 @@ __version__ = "1.4"
 # February 26, 2020 - Version 1.2: mostly pep8 compliant
 # September 25, 2020 - Version 1.3: Added option to use either data model or fits file as input for the test
 # January 2021 - Version 1.4: Implemented option to use datamodels instead of fits files as input
+# April 2021 - Version 1.5: Combined point and uniform sources since MOS data does not have 1 singe source type
 
 
-def get_mos_ps_uni_extensions(fits_file_name, is_point_source):
+def get_mos_ps_uni_extensions(fits_file_name):
     """
     This functions obtains all the point source or extended source extensions
     in the given file
     Args:
         fits_file_name: str, name of the fits file of interest
-        is_point_source: boolean, true if point source; false if extended source
     Returns:
         ps_dict, uni_dict: list of the numbers of the science extensions
     """
@@ -68,6 +67,57 @@ def get_mos_ps_uni_extensions(fits_file_name, is_point_source):
                 uni_dict[sltname] = ext
     hdulist.close()
     return ps_dict, uni_dict
+
+
+def get_corr_val(lambda_val, wave_ref, ref_ext, ref_xy, slit_x, slit_y):
+    """Perform interpolation to get the correction value."""
+    index = np.where(wave_ref[:, 0, 0] == lambda_val)
+    plcor_slice = ref_ext[index[0][0]].reshape(ref_ext[index[0][0]].size)
+    corr_val = scipy.interpolate.griddata(ref_xy[:plcor_slice.size], plcor_slice,
+                                          np.asarray([slit_x, slit_y]), method='linear')
+    return corr_val[0]
+
+
+def pointsourcetest(previous_sci, wave_sci, slit_x, slit_y, wave_ref, slitx_ref, slity_ref, ref_ext, debug):
+    wave_sci_flat = wave_sci.reshape(wave_sci.size)
+    wave_ref_flat = wave_ref.reshape(wave_ref.size)
+    if debug:
+        print('wave_sci.size=', wave_sci.size, '  wave_ref.size=', wave_ref.size)
+
+    ref_xy = np.column_stack((slitx_ref.reshape(slitx_ref.size),
+                              slity_ref.reshape(slitx_ref.size)))
+
+    if debug:
+        print('   Extending reference pathloss correction array - looping through wavelength total of ',
+              len(wave_ref_flat))
+    correction_list = []
+    previous_lamval = wave_ref_flat[0]
+
+    corr_val = get_corr_val(previous_lamval, wave_ref, ref_ext, ref_xy, slit_x, slit_y)
+    for lambda_val in wave_ref_flat:
+        if previous_lamval == lambda_val:
+            correction_list.append(corr_val)
+        else:
+            corr_val = get_corr_val(lambda_val, wave_ref, ref_ext, ref_xy, slit_x, slit_y)
+            correction_list.append(corr_val)
+        previous_lamval = lambda_val
+    correction_array = np.asarray(correction_list)
+
+    lambda_array = wave_ref_flat
+
+    # get correction value for each pixel
+    if debug:
+        print('  interpolating wavelength')
+    corr_vals = np.interp(wave_sci_flat, lambda_array, correction_array)
+    corr_vals = corr_vals.reshape(wave_sci.shape)
+    corrected_array = previous_sci / corr_vals
+    return corr_vals, corrected_array
+
+
+def uniformsourcetest(previous_sci, wave_sci, wave_ref, plcor_ref_ext):
+    corr_vals = np.interp(wave_sci, wave_ref[:, 0, 0], plcor_ref_ext)
+    corrected_array = previous_sci / corr_vals
+    return corr_vals, corrected_array
 
 
 def pathtest(step_input_filename, reffile, comparison_filename,
@@ -126,8 +176,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                 msg = 'Comparison file does exist.'
                 print(msg)
         else:
-            result_msg = """Comparison file does NOT exist.
-                         Pathloss test will be skipped."""
+            result_msg = "Comparison file does NOT exist. Skipping pathloss test."
             print(result_msg)
             log_msgs.append(result_msg)
             result = 'skip'
@@ -177,18 +226,35 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     print(msg)
     log_msgs.append(msg)
 
-    slit_val = 0
+    # get the reference file data
+    print("   Retrieving reference file extensions")
+    ps_uni_ext_list = get_mos_ps_uni_extensions(reffile)
+    hdul = fits.open(reffile)
+    plcor_ref = hdul[1].data
+    w = wcs.WCS(hdul[1].header)
+
     for slit, pipe_slit in zip(pl.slits, pathloss_pipe.slits):
-        slit_val = slit_val+1
-
-        mode = "MOS"
-
+        # determine source type
+        source_type = slit.source_type.lower()
         is_point_source = False
-
-        print("Retrieving extensions")
-        ps_uni_ext_list = get_mos_ps_uni_extensions(reffile, is_point_source)
+        if 'point' in source_type:
+            is_point_source = True
 
         slit_id = slit.name
+        print('Working with slitlet ', slit_id)
+
+        if pipe_slit.name == slit_id:
+            msg = "   Slitlet name in input file and in pathloss output file are the same."
+            log_msgs.append(msg)
+            print(msg)
+        else:
+            msg = "   ERROR: Missmatch of slitlet names in input file and in pathloss " \
+                  "output file. Exiting script and skipping test."
+            result = 'skip'
+            log_msgs.append(msg)
+            return result, msg, log_msgs
+
+        # get the reference file wavelength and data
         try:
             nshutters = util.get_num_msa_open_shutters(slit.shutter_state)
             if is_point_source:
@@ -197,52 +263,58 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                 elif nshutters == 1:
                     shutter_key = "MOS1x1"
                 ext = ps_uni_ext_list[0][shutter_key]
-                print("Retrieved point source extension")
+                print("   Retrieved point source extension")
             if is_point_source is False:
                 if nshutters == 1:
                     shutter_key = "MOS1x1"
                 elif nshutters == 3:
                     shutter_key = "MOS1x3"
                 ext = ps_uni_ext_list[1][shutter_key]
-                print("Retrieved extended source extension {}".format(ext))
+                print("   Retrieved extended/uniform source extension {}".format(ext))
         except KeyError:
-            print("Unable to retrieve extension. Using ext 3, but may be 7")
+            print("   Unable to retrieve extension. Using ext 3, but may be 7")
             ext = 3
-
-        wcs_obj = slit.meta.wcs
-
-        x, y = wcstools.grid_from_bounding_box(wcs_obj.bounding_box, step=(1, 1), center=True)
-        ra, dec, wave = slit.meta.wcs(x, y)
-        wave_sci = wave * 10**(-6)   # microns --> meters
-
-        plcor_ref_ext = fits.getdata(reffile, ext)
+        plcor_ref_ext = hdul[ext].data
         if debug:
-            print("plcor_ref_ext.shape", plcor_ref_ext.shape)
-
-        hdul = fits.open(reffile)
-
-        plcor_ref = hdul[1].data
-        w = wcs.WCS(hdul[1].header)
-
+            print("   plcor_ref_ext.shape", plcor_ref_ext.shape)
         w1, y1, x1 = np.mgrid[:plcor_ref.shape[0], : plcor_ref.shape[1],
                               :plcor_ref.shape[2]]
         slitx_ref, slity_ref, wave_ref = w.all_pix2world(x1, y1, w1, 0)
 
-        previous_sci = slit.data
+        # get the wavelength from the input model
+        wcs_obj = slit.meta.wcs
+        x, y = wcstools.grid_from_bounding_box(wcs_obj.bounding_box, step=(1, 1), center=True)
+        ra, dec, wave = slit.meta.wcs(x, y)
+        wave_sci = wave * 1.0e-6  # microns --> meters
+        if debug:
+            print('   wave_sci.size=', wave_sci.size, '  wave_ref.size=', wave_ref.size)
 
+        # get positions of source in input model
+        slit_x = slit.source_xpos
+        slit_y = slit.source_ypos
+        print("   slit_x, slit_y (" + str(slit_x) + ", " + str(slit_y) + ")")
+
+        # get the data from the input and comparison models
+        previous_sci = slit.data
         pipe_correction = pipe_slit.pathloss_uniform
+
+        # calculate correction according to source type
+        if is_point_source:
+            print('   Running test for POINT source...')
+            corr_vals, corrected_array = pointsourcetest(previous_sci, wave_sci, slit_x, slit_y,
+                                                         wave_ref, slitx_ref, slity_ref, plcor_ref_ext, debug)
+        else:
+            print('   Running test for UNIFORM source...')
+            corr_vals, corrected_array = uniformsourcetest(previous_sci, wave_sci, wave_ref, plcor_ref_ext)
 
         # set up generals for all the plots
         font = {'weight': 'normal',
-                'size': 10}
+                'size': 12}
         matplotlib.rc('font', **font)
-
-        corr_vals = np.interp(wave_sci, wave_ref[:, 0, 0], plcor_ref_ext)
-        corrected_array = previous_sci/corr_vals
 
         # plots:
         # my correction values
-        fig = plt.figure()
+        fig = plt.figure(figsize=(12, 10))
         ax = plt.gca()
         ax.get_xaxis().get_major_formatter().set_useOffset(False)
         ax.get_xaxis().get_major_formatter().set_scientific(False)
@@ -284,16 +356,16 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         plt.xlabel('x in pixels')
         plt.ylabel('y in pixels')
         plt.colorbar()
-        fig.suptitle("MOS UNI Pathloss Calibration Testing")
+        fig.suptitle("MOS Pathloss Calibration Testing")
         fig.tight_layout(pad=3.0)
 
         if show_figs:
             plt.show()
         if save_figs:
             step_input_filepath = step_input_filename.replace(".fits", "")
-            plt_name = step_input_filepath+"Pathloss_test_slitlet_" + str(mode) + "_UNI_" + str(slit_id) + ".png"
+            plt_name = step_input_filepath+"Pathloss_test_MOS_slitlet_" + str(slit_id) + ".png"
             plt.savefig(plt_name)
-            print('Figure saved as: ', plt_name)
+            print('   Figure saved as: ', plt_name)
         plt.close()
 
         ax = plt.subplot(212)
@@ -312,15 +384,15 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                     linestyle="-.", color="b")
         str_arr_stddev = "stddev = {:0.3e}".format(arr_stddev)
         ax.text(0.73, 0.67, str_arr_stddev, transform=ax.transAxes,
-                fontsize=16)
+                fontsize=12)
         plt.legend()
         plt.minorticks_on()
 
         # Show and/or save figures
         if save_figs:
-            plt_name = step_input_filepath + "Pathlosstest_MOS_UNI_slitlet_" + slit_id + ".png"
+            plt_name = step_input_filepath + "Pathloss_test_MOS_histogram_slitlet_" + slit_id + ".png"
             plt.savefig(plt_name)
-            print('Figure saved as: ', plt_name)
+            print('   Figure saved as: ', plt_name)
         if show_figs:
             plt.show()
         elif not save_figs and not show_figs:
@@ -330,7 +402,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             log_msgs.append(msg)
         elif not save_figs:
             msg = "Not saving plots because save_figs was set to False."
-            if debug:  
+            if debug:
                 print(msg)
             log_msgs.append(msg)
         plt.close()
@@ -356,6 +428,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             print(msg1)
             log_msgs.append(msg1)
             test_result = "FAILED"
+            total_test_result.append(test_result)
         else:
             msg = "Calculating statistics... "
             print(msg)
@@ -442,12 +515,12 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     pathloss_end_time = time.time() - pathtest_start_time
     if pathloss_end_time > 60.0:
         pathloss_end_time = pathloss_end_time/60.0  # in minutes
-        pathloss_tot_time = "* Script msa_uni.py took ", repr(pathloss_end_time)+" minutes to finish."
+        pathloss_tot_time = "* Script pathloss_mos.py took ", repr(pathloss_end_time)+" minutes to finish."
         if pathloss_end_time > 60.0:
             pathloss_end_time = pathloss_end_time/60.  # in hours
-            pathloss_tot_time = "* Script msa_uni.py took ", repr(pathloss_end_time)+" hours to finish."
+            pathloss_tot_time = "* Script pathloss_mos.py took ", repr(pathloss_end_time)+" hours to finish."
     else:
-        pathloss_tot_time = "* Script msa_uni.py took ", repr(pathloss_end_time)+" seconds to finish."
+        pathloss_tot_time = "* Script pathloss_mos.py took ", repr(pathloss_end_time)+" seconds to finish."
     print(pathloss_tot_time)
     log_msgs.append(pathloss_tot_time)
 

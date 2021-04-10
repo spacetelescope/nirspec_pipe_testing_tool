@@ -64,15 +64,58 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     # start the timer
     pathtest_start_time = time.time()
 
-    # get info from the rate file header
-    msg = 'step_input_filename='+step_input_filename
-    print(msg)
-    log_msgs.append(msg)
-    exptype = fits.getval(step_input_filename, "EXP_TYPE", 0)
-    grat = fits.getval(step_input_filename, "GRATING", 0)
-    filt = fits.getval(step_input_filename, "FILTER", 0)
+    # get info from the input previous pipeline step file/datamodel
+    print("Checking if files exist and obtaining datamodels. This takes a few minutes...")
+    if isinstance(step_input_filename, str):
+        if os.path.isfile(step_input_filename):
+            if debug:
+                print('Input file does exist.')
+            msg = 'step_input_filename='+step_input_filename
+            print(msg)
+            log_msgs.append(msg)
 
-    msg = "pathloss file: Grating:"+grat+" Filter:"+filt+" EXP_TYPE:"+exptype
+            # get the input data model
+            ifu_input_model = datamodels.open(step_input_filename)
+            if debug:
+                print('got input datamodel!')
+        else:
+            result_msg = 'Input file does NOT exist. Skipping pathloss test.'
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
+    else:
+        ifu_input_model = step_input_filename
+
+    # get comparison data
+    if isinstance(comparison_filename, str):
+        if os.path.isfile(comparison_filename):
+            if debug:
+                msg = 'Comparison file does exist.'
+                print(msg)
+        else:
+            result_msg = "Comparison file does NOT exist. Skipping pathloss test."
+            print(result_msg)
+            log_msgs.append(result_msg)
+            result = 'skip'
+            return result, result_msg, log_msgs
+
+        # get the comparison data model
+        ifu_pipe_model = datamodels.open(comparison_filename)
+        if debug:
+            print('Retrieved comparison datamodel.')
+
+    else:
+        ifu_pipe_model = comparison_filename
+
+    # get info from data model
+    det = ifu_input_model.meta.instrument.detector
+    lamp = ifu_input_model.meta.instrument.lamp_state
+    grat = ifu_input_model.meta.instrument.grating
+    filt = ifu_input_model.meta.instrument.filter
+    exptype = ifu_input_model.meta.exposure.type
+
+    msg = "from datamodel  -->     Detector: " + det + "   Grating: " + grat + "   Filter: " + \
+          filt + "   Lamp: " + lamp + "   EXP_TYPE: " + exptype
     print(msg)
     log_msgs.append(msg)
 
@@ -100,40 +143,6 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     if is_point_source:
         ext = 1  # for all PS IFU
 
-    # get files
-    print('Checking files exist & obtaining datamodels. Takes a few mins...')
-    if isinstance(comparison_filename, str):
-        if os.path.isfile(comparison_filename):
-            if debug:
-                print('Comparison file does exist.')
-        else:
-            result_msg = 'Comparison file does NOT exist. Skipping pathloss test.'
-            print(result_msg)
-            log_msgs.append(result_msg)
-            result = 'skip'
-            return result, result_msg, log_msgs
-
-        # get the comparison data model
-        ifu_pipe_model = datamodels.open(comparison_filename)
-        if debug:
-            print('got comparison datamodel!')
-    else:
-        ifu_pipe_model = comparison_filename
-
-    if os.path.isfile(step_input_filename):
-        if debug:
-            print('Input file does exist.')
-    else:
-        result_msg = 'Input file does NOT exist. Skipping pathloss test.'
-        log_msgs.append(result_msg)
-        result = 'skip'
-        return result, result_msg, log_msgs
-
-    # get the input data model
-    ifu_input_model = datamodels.open(step_input_filename)
-    if debug:
-        print('got input datamodel!')
-
     # get slices (instead of using .slit)
     pl_ifu_slits = nirspec.nrs_ifu_wcs(ifu_input_model)
     print("got input slices")
@@ -147,21 +156,13 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     slitx_ref, slity_ref, wave_ref = w.all_pix2world(x1, y1, w1, 0)
 
     # these are full 2048 * 2048 files:
-    previous_sci = fits.getdata(step_input_filename, "SCI")
+    previous_sci = ifu_input_model.data
     comp_sci = ifu_pipe_model.data
     pathloss_divided = comp_sci/previous_sci
 
-    # Can manually test correction at nonzero point
-    # slit_x = -0.3
-    # slit_y = 0.3
-    # if debug:
-    #     print("""WARNING: Using manually set slit_x and slit_y! 
-    #           The pipeline correction will not use manually set values 
-    #           and thus the residuals will change""")
-
     # set up generals for all plots
     font = {'weight': 'normal',
-            'size': 10}
+            'size': 12}
     matplotlib.rc('font', **font)
 
     # loop through the slices
@@ -316,7 +317,6 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             continue
 
         # Plots:
-        step_input_filepath = step_input_filename.replace(".fits", "")
         # my correction values
         fig = plt.figure(figsize=(15, 15))
         plt.subplot(221)
@@ -352,7 +352,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         norm = ImageNormalize(corrected_array)
         plt.imshow(corrected_array, vmin=0, vmax=300, aspect=10.0,
                    origin='lower', cmap='viridis')
-        plt.title('My slit science data after pathloss')
+        plt.title('Corrected Data After Pathloss')
         plt.xlabel('dispersion in pixels')
         plt.ylabel('y in pixels')
         plt.colorbar()
@@ -362,6 +362,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         if show_figs:
             plt.show()
         if save_figs:
+            step_input_filepath = step_input_filename.replace(".fits", "")
             plt_name = step_input_filepath + "_Pathloss_test_slitlet_IFU_PS_" + str(slit_num) + ".png"
             plt.savefig(plt_name)
             print('Figure saved as: ', plt_name)
