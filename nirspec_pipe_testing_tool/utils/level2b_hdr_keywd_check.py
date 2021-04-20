@@ -1,5 +1,5 @@
 import argparse
-import collections
+import pysiaf
 import os
 import re
 import subprocess
@@ -426,6 +426,29 @@ def determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_k
     return specific_keys_dict, missing_keywds
 
 
+def set_pysiaf_keywords(input_fits_file, mode, FXD_SLIT, detector):
+    # set up these keywords from SIAF
+    NIRSpec_SIAF = pysiaf.Siaf('NIRSpec')
+    if 'ifu' in mode.lower():
+        aperture_name = detector + '_FULL_IFU'
+        return aperture_name
+    if 'full' in FXD_SLIT.lower():
+        aperture_name = detector + '_FULL'
+    elif '200' in FXD_SLIT or '400' in FXD_SLIT:
+        aperture_name = 'NRS_' + FXD_SLIT + '_SLIT'
+    else:
+        aperture_name = 'NRS_S1600A1_SLIT'
+    print('PySIAF aperture name: ', aperture_name)
+    refpoint = NIRSpec_SIAF[aperture_name].reference_point('tel')
+    V2_REF, V3_REF = refpoint[0], refpoint[1]
+    V3IdlYAngle = NIRSpec_SIAF[aperture_name].V3IdlYAngle
+    VIdlParity = NIRSpec_SIAF[aperture_name].VIdlParity
+    fits.setval(input_fits_file, 'V2_REF', value=V2_REF, extname='SCI')
+    fits.setval(input_fits_file, 'V3_REF', value=V3_REF, extname='SCI')
+    fits.setval(input_fits_file, 'V3I_YANG', value=V3IdlYAngle, extname='SCI')
+    fits.setval(input_fits_file, 'VPARITY', value=VIdlParity, extname='SCI')
+
+
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used, detector=None,
                  subarray=None, msa_metafile=None, verbose=False):
     """
@@ -723,9 +746,14 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     tf.write(warning+'\n')
         else:
             # add the WCS keywords to science extension
-            missing_keywds.append(key)
-            specific_keys_dict[key] = val
             for subkey, _ in lev2bdict_val.items():
+                if subkey == 'V2_REF':
+                    set_pysiaf_keywords(ff, mode_used, specific_keys_dict['FXD_SLIT'], detector)
+                elif subkey == 'V3_REF' or subkey == 'V3I_YANG' or subkey == 'VPARITY':
+                    continue
+                else:
+                    missing_keywds.append(key)
+                    specific_keys_dict[key] = val
                 # now add the keyword to in the list to be added into the science extension
                 warning = '{:<15} {:<9} {:<25}'.format(subkey, 'sci', 'New keyword added to header')
                 warnings_list.append(warning)
