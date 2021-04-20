@@ -226,7 +226,21 @@ def validate_flat_field(output_hdul):
 
     log_msgs = None
 
+    # determine the testing mode
+    do_fs_flattest = False
     if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
+        do_fs_flattest = True
+    elif 'bots' in step_output_file.lower() or 'fs' in step_output_file.lower():
+        do_fs_flattest = True
+    do_mos_flattest = False
+    if core_utils.check_MOS_true(hdu) or 'mos' in step_output_file.lower():
+        do_mos_flattest = True
+    do_ifu_flattest = False
+    if core_utils.check_IFU_true(hdu) or 'ifu' in step_output_file.lower():
+        do_ifu_flattest = True
+
+    # run the test
+    if do_fs_flattest:
         median_diff, result_msg, log_msgs = flattest_fs.flattest(step_output_file, dflat_path=dflat_path,
                                                                  sflat_path=sflat_path, fflat_path=fflat_path,
                                                                  writefile=write_flattest_files,
@@ -235,7 +249,7 @@ def validate_flat_field(output_hdul):
                                                                  threshold_diff=flattest_threshold_diff,
                                                                  output_directory=None, debug=False)
 
-    elif core_utils.check_MOS_true(hdu):
+    elif do_mos_flattest:
         median_diff, result_msg, log_msgs = flattest_mos.flattest(step_output_file, dflat_path=dflat_path,
                                                                   sflat_path=sflat_path, fflat_path=fflat_path,
                                                                   msa_shutter_conf=msa_shutter_conf,
@@ -245,7 +259,7 @@ def validate_flat_field(output_hdul):
                                                                   threshold_diff=flattest_threshold_diff,
                                                                   debug=False)
 
-    elif core_utils.check_IFU_true(hdu):
+    elif do_ifu_flattest:
         median_diff, result_msg, log_msgs = flattest_ifu.flattest(step_output_file, dflat_path=dflat_path,
                                                                   sflat_path=sflat_path, fflat_path=fflat_path,
                                                                   writefile=write_flattest_files,

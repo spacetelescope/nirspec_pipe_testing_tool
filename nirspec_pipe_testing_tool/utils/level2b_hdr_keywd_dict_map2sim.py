@@ -1,6 +1,8 @@
 import argparse
 import collections
 import sys
+import pysiaf
+import numpy as np
 from astropy.io import fits
 from datetime import datetime
 
@@ -120,8 +122,8 @@ stsci2ips_dict['LAMP'] = 'primary_ext:CAA_LAMP'  # internal lamp state, e.g. 'AR
 # F070LP FLAT4
 # stsci2ips_dict['LAMPMODE']= 'NULL' # NIRSpec internal lamp exposures, possible values: BRIGHTOBJ, FIXEDSLIT,
 # GRATING-ONLY, IFU, MSASPEC, NULL
-# stsci2ips_dict['GWA_XTIL']= 0.3622055649757385 # grating y tilt, e.g. 0.3622055649757385
-# stsci2ips_dict['GWA_YTIL']= 0.1346436440944672 # grating y tilt, e.g. 0.1346436440944672
+stsci2ips_dict['GWA_XTIL'] = 'header_ext:GWA_XTIL'  # grating y tilt, e.g. 0.3622055649757385
+stsci2ips_dict['GWA_YTIL'] = 'header_ext:GWA_YTIL'  # grating y tilt, e.g. 0.1346436440944672
 # stsci2ips_dict['GWA_TILT']= 4.028447479156018e+01 # GWA temperature ave [K], e.g. 4.028447479156018e+01
 
 # Exposure parameters
@@ -287,54 +289,50 @@ R_SUPERB= 'crds://jwst_nirspec_superbias_0113.fits' / Superbias reference file n
 # stsci2ips_dict['GSUDEC']   = 0.0 # guide star declination uncertainty
 # stsci2ips_dict['GSUMAG']   = 0.0 # guide star magnitude uncertainty
 # stsci2ips_dict['COORDSYS'] = 'N/A' # ephemeris coordinate system
-stsci2ips_dict['PA_V3'] = 'primary_ext:ROLL_REF'  # [deg] position angle of V3-axis of JWST, e.g. 'N/A'
-stsci2ips_dict['RA_V1'] = 'primary_ext:V2_REF'  # [deg] RA of telescope V1 axis, e.g. 'N/A'
-stsci2ips_dict['DEC_V1'] = 'primary_ext:V2_REF'  # [deg] Dec of telescope V1 axis, e.g. 'N/A'
+# stsci2ips_dict['PA_V3'] = 'primary_ext:ROLL_REF'  # [deg] position angle of V3-axis of JWST, e.g. 'N/A'
+# stsci2ips_dict['RA_V1'] = 0.0  # [deg] RA of telescope V1 axis, e.g. 'N/A'
+# stsci2ips_dict['DEC_V1'] = 0.0  # [deg] Dec of telescope V1 axis, e.g. 'N/A'
 # stsci2ips_dict['PA_APER'] = -999.0 # [deg] position angle of aperture used, e.g. -999.0
 # stsci2ips_dict['VA_SCALE']=  1.0 # velocity aberration scale factor, e.g. 1.0
 
-'''
-# This next section is commented out because there are no corresponding keywords in IPS
-
 # WCS parameters in science extension
 stsci2ips_dict['wcsinfo'] = {
-                            'WCSAXES' : 3, # number of World Coordinate System axes, e.g. 3
-                            'CRPIX1' : 1024, # x-coordinate of the reference pixel, e.g. 1024.0
-                            'CRPIX2' : 1024, # y-coordinate of the reference pixel, e.g. 128.0
-                            'CRPIX3' : 1024, # z-coordinate of the reference pixel
-                            'CRVAL1' : 5.3196, # RA at the reference pixel (degrees), e.g. 5.3196
-                            'CRVAL2' : -72.98605000000001, # Dec at reference pixel (degrees), e.g. -72.98605000000001
-                            'CRVAL3' : 2.5, # Wavelength at the reference pixel (microns), e.g. 2.5
-                            'CTYPE1' : 'RA---TAN', # first axis coordinate type
-                            'CTYPE2' : 'DEC--TAN', # second axis coordinate type
-                            'CTYPE3' : 'WAVE', # third axis coordinate type, e.g. WAVE
-                            'CUNIT1' : 'deg', # units for first axis
-                            'CUNIT2' : 'deg', # units for seconds axis
-                            'CUNIT3' : 'um', # units for third axis, e.g. 'micron'
-                            'CDELT1' : 8.69045277777777E-06, # increment per pixel, axis 1, e.g. 0.0000012
-                            'CDELT2' : 8.73766666666665E-06, # increment per pixel, axis 2, e.g. 0.0000012
-                            'CDELT3' : 0.00000672, # increment per pixel, axis 3, e.g. 0.000672
-                            'PC1_1' : -1.0, # linear transformation matrix element, e.g. 1.0
-                            'PC1_2' : 0.0, # linear transformation matrix element, e.g. 0.0
-                            'PC1_3' : 0.0, # linear transformation matrix element, e.g. 0.0
-                            'PC2_1' : 0.0, # linear transformation matrix element, e.g. 0.0
-                            'PC2_2' : 1.0, # linear transformation matrix element, e.g. 1.0
-                            'PC3_1' : 1.0, # linear transformation matrix element, e.g. 1.0
-                            'PC3_2' : 1.0, # linear transformation matrix element, e.g. 0.0
-                            'PC3_3' : 0.0, # linear transformation matrix element, e.g. 0.0
-                            'S_REGION' : 'N/A', # spatial extent of the observation, e.g. 'N/A'
-                            'WAVSTART' : 1.0, # lower bound of the default wavelength range
-                            'WAVEND' : 2.0, # upper bound of the default wavelength range
-                            'SPORDER' : 1, # default spectral order
-                            'V2_REF' : 101.1, # aperture location of reference V2 point (arcsec): 100-400 arcsec
-                            'V3_REF' : -202.2, # aperture location of reference V3 point (arcsec): -100 to -400 arcsec
-                            'VPARITY' : -1, # Relative sense of rotation between Ideal xy and V2V3
-                            'V3I_YANG' : 1.0, # Angle from V3 axis to Ideal y axis (deg)
-                            'RA_REF' : 156.11, # RA at the reference point (deg): 0 < RA < 360
-                            'DEC_REF' : -45.6, # Dec at the reference point (deg): -90 < Dec < +90
-                            'ROLL_REF' : 5.3196 # Roll angle at the reference point (deg), e.g. 5.3196
+                            # 'WCSAXES': 3,  # number of World Coordinate System axes, e.g. 3
+                            # 'CRPIX1': 1024,  # x-coordinate of the reference pixel, e.g. 1024.0
+                            # 'CRPIX2': 1024,  # y-coordinate of the reference pixel, e.g. 128.0
+                            # 'CRPIX3': 1024,  # z-coordinate of the reference pixel
+                            # 'CRVAL1': 5.3196,  # RA at the reference pixel (degrees), e.g. 5.3196
+                            # 'CRVAL2': -72.98605000000001,  # Dec at reference pixel (degrees), e.g. -72.98605000000001
+                            # 'CRVAL3': 2.5,  # Wavelength at the reference pixel (microns), e.g. 2.5
+                            # 'CTYPE1': 'RA---TAN',  # first axis coordinate type
+                            # 'CTYPE2': 'DEC--TAN',  # second axis coordinate type
+                            # 'CTYPE3': 'WAVE',  # third axis coordinate type, e.g. WAVE
+                            # 'CUNIT1': 'deg',  # units for first axis
+                            # 'CUNIT2': 'deg',  # units for seconds axis
+                            # 'CUNIT3': 'um',  # units for third axis, e.g. 'micron'
+                            # 'CDELT1': 8.69045277777777E-06,  # increment per pixel, axis 1, e.g. 0.0000012
+                            # 'CDELT2': 8.73766666666665E-06,  # increment per pixel, axis 2, e.g. 0.0000012
+                            # 'CDELT3': 0.00000672,  # increment per pixel, axis 3, e.g. 0.000672
+                            # 'PC1_1': -1.0,  # linear transformation matrix element, e.g. 1.0
+                            # 'PC1_2': 0.0,  # linear transformation matrix element, e.g. 0.0
+                            # 'PC1_3': 0.0,  # linear transformation matrix element, e.g. 0.0
+                            # 'PC2_1': 0.0,  # linear transformation matrix element, e.g. 0.0
+                            # 'PC2_2': 1.0,  # linear transformation matrix element, e.g. 1.0
+                            # 'PC3_1': 1.0,  # linear transformation matrix element, e.g. 1.0
+                            # 'PC3_2': 1.0,  # linear transformation matrix element, e.g. 0.0
+                            # 'PC3_3': 0.0,  # linear transformation matrix element, e.g. 0.0
+                            # 'S_REGION': 'N/A',  # spatial extent of the observation, e.g. 'N/A'
+                            # 'WAVSTART': 1.0,  # lower bound of the default wavelength range
+                            # 'WAVEND': 2.0,  # upper bound of the default wavelength range
+                            # 'SPORDER': 1,  # default spectral order
+                            # 'V2_REF': 'primary_ext:V2_REF',  # aperture reference V2 point (arcsec): 100 to -400
+                            # 'V3_REF': 'primary_ext:V3_REF',  # aperture reference V3 point (arcsec): -100 to -400
+                            # 'VPARITY': 'pysiaf',  # Relative sense of rotation between Ideal xy and V2V3
+                            'V3I_YANG': 'pysiaf',  # Angle from V3 axis to Ideal y axis (deg)
+                            'RA_REF': 'primary_ext:RA_REF',  # RA at the reference point (deg): 0 < RA < 360
+                            'DEC_REF': 'primary_ext:DEC_REF',  # Dec at the reference point (deg): -90 < Dec < +90
+                            'ROLL_REF': 'primary_ext:ROLL_REF'  # Roll angle at the reference point (deg), e.g. 5.3196
 }
-'''
 
 
 # Functions
@@ -346,7 +344,7 @@ def change_keyword2ips_value(ips_keywd_dict, st_pipe_ready_dict, ips_keywd, st_p
     :param ips_keywd_dict: dictionary, IPS header
     :param st_pipe_ready_dict: dictionary, STScI pipeline-ready file header
     :param st_pipe_ready_keywd: string, keyword with STScI spelling
-    :param ips_key: string, keyword with IPS spelling
+    :param ips_keywd: string, keyword with IPS spelling
     :param st_pipe_ready_file: string, path and name of the fits file that is STScI pipeline-ready
     :param verbose: boolean
     :return: nothing
@@ -354,14 +352,34 @@ def change_keyword2ips_value(ips_keywd_dict, st_pipe_ready_dict, ips_keywd, st_p
     for key, val in st_pipe_ready_dict.items():
         if key == st_pipe_ready_keywd:
             if ips_keywd in ips_keywd_dict:
+                fits.setval(st_pipe_ready_file, st_pipe_ready_keywd, value=ips_keywd_dict[ips_keywd])
                 if verbose:
                     print('Modified keyword: ', key, '   old_value=', val, '   new_value=', ips_keywd_dict[ips_keywd])
-                fits.setval(st_pipe_ready_file, st_pipe_ready_keywd, value=ips_keywd_dict[ips_keywd])
             else:
                 if verbose:
                     print('IPS keyword ', ips_keywd, ', corresponding to ', st_pipe_ready_keywd,
                           'in STScI pipeline, not found in header of IPS file.')
             break
+
+
+def find_subarray_size(subsize1, subsize2, detector, grating):
+    stpipe_key, ssz1, ssz2, sst1, sst2 = None, None, None, None, None
+    for sa in subdict.subarray_dict:
+        ssz1 = subdict.subarray_dict[sa]["subsize1"]
+        ssz2 = subdict.subarray_dict[sa]["subsize2"]
+        if subsize1 == ssz1:
+            if subsize2 == ssz2:
+                stpipe_key = sa
+                sst1 = subdict.subarray_dict[sa]["substrt1"]
+                sst2_dict = subdict.subarray_dict[sa]["substrt2"]
+                for grat, sst2_tuple in sst2_dict.items():
+                    if grat.lower() == grating.lower():
+                        if "1" in detector:
+                            sst2 = sst2_tuple[0]
+                        elif "2" in detector:
+                            sst2 = sst2_tuple[1]
+                        break
+    return stpipe_key, ssz1, ssz2, sst1, sst2
 
 
 def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_ready_file, verbose=False):
@@ -381,8 +399,8 @@ def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_rea
     if 'MSA' in exp_type_keywd_value or 'IFU' in exp_type_keywd_value:
         if verbose:
             print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
-                  '   new_value= GENERIC')
-        st_pipe_ready_dict['SUBARRAY'] = 'GENERIC'
+                  '   new_value= N/A')
+        st_pipe_ready_dict['SUBARRAY'] = 'N/A'
     else:
         if ips_keywd_dict['SUBARRAY'] == 'F':
             if verbose:
@@ -391,39 +409,52 @@ def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_rea
             st_pipe_ready_dict['SUBARRAY'] = 'FULL'
         else:
             # match the subarray used to the sizes keywords
-            subarray_used = ips_keywd_dict['SUBARRAY']
-            for subarray_name_dict, subarray_sizes_dict in subdict.subarray_dict.items():
-                if subarray_name_dict == subarray_used:
-                    # set the expected STScI pipeline subarray name
-                    if '200A1' in subarray_used:
-                        stpipe_key = 'S200A1'
-                    elif '200A2' in subarray_used:
-                        stpipe_key = 'S200A2'
-                    elif '200B1' in subarray_used:
-                        stpipe_key = 'S200B1'
-                    elif '400A1' in subarray_used:
-                        stpipe_key = 'S400A1'
-                    fits.setval(st_pipe_ready_file, 'SUBARRAY', value=stpipe_key)
-                    # set the size keywords
-                    if '1' in detector:
-                        pos = 0
-                    else:
-                        pos = 1
-                    if verbose:
-                        print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
-                              '   new_value=', stpipe_key)
-                        print('Modified keyword: SUBSTRT1', '   old_value=', st_pipe_ready_dict['SUBSTRT1'],
-                              '   new_value=', subarray_sizes_dict['SUBSTRT1'])
-                        print('Modified keyword: SUBSTRT2', '   old_value=', st_pipe_ready_dict['SUBSTRT2'],
-                              '   new_value=', subarray_sizes_dict['SUBSTRT2'][grating][pos])
-                        print('Modified keyword: SUBSIZE1', '   old_value=', st_pipe_ready_dict['SUBSIZE1'],
-                              '   new_value=', subarray_sizes_dict['SUBSIZE1'])
-                        print('Modified keyword: SUBSIZE2', '   old_value=', st_pipe_ready_dict['SUBSIZE2'],
-                              '   new_value=', subarray_sizes_dict['SUBSIZE2'])
-                    fits.setval(st_pipe_ready_file, 'SUBSTRT1', value=subarray_sizes_dict['SUBSTRT1'])
-                    fits.setval(st_pipe_ready_file, 'SUBSTRT2', value=subarray_sizes_dict['SUBSTRT2'][grating][pos])
-                    fits.setval(st_pipe_ready_file, 'SUBSIZE1', value=subarray_sizes_dict['SUBSIZE1'])
-                    fits.setval(st_pipe_ready_file, 'SUBSIZE2', value=subarray_sizes_dict['SUBSIZE2'])
+            data = fits.getdata(st_pipe_ready_file, 'SCI')
+            shape = np.shape(data)
+            subsize2, subsize1 = shape[-2], shape[-1]
+            stpipe_key, ssz1, ssz2, sst1, sst2 = find_subarray_size(subsize1, subsize2, detector, grating)
+            if stpipe_key is None:
+                # try with inverted subsize 1 and 2
+                subsize1, subsize2 = shape[-2], shape[-1]
+                stpipe_key, ssz1, ssz2, sst1, sst2 = find_subarray_size(subsize1, subsize2, detector, grating)
+
+            if stpipe_key is not None:
+                fits.setval(st_pipe_ready_file, 'SUBARRAY', value=stpipe_key)
+                if verbose:
+                    print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
+                          '   new_value=', stpipe_key)
+                    print('Modified keyword: SUBSTRT1', '   old_value=', st_pipe_ready_dict['SUBSTRT1'],
+                          '   new_value=', sst1)
+                    print('Modified keyword: SUBSTRT2', '   old_value=', st_pipe_ready_dict['SUBSTRT2'],
+                          '   new_value=', sst2)
+                    print('Modified keyword: SUBSIZE1', '   old_value=', st_pipe_ready_dict['SUBSIZE1'],
+                          '   new_value=', ssz1)
+                    print('Modified keyword: SUBSIZE2', '   old_value=', st_pipe_ready_dict['SUBSIZE2'],
+                          '   new_value=', ssz2)
+                fits.setval(st_pipe_ready_file, 'SUBSTRT1', value=sst1)
+                fits.setval(st_pipe_ready_file, 'SUBSTRT2', value=sst2)
+                fits.setval(st_pipe_ready_file, 'SUBSIZE1', value=ssz1)
+                fits.setval(st_pipe_ready_file, 'SUBSIZE2', value=ssz2)
+            else:
+                print('WARNING! Unable to determine correct value for the following keywords: '
+                      'SUBARRAY, SUBSTRT1. SUBSTRT2, SUBSIZE1, and SUBSIZE2')
+
+
+def get_pysiaf_aperture(st_pipe_ready_dict, verbose):
+    subarray = st_pipe_ready_dict['SUBARRAY']
+    detector = st_pipe_ready_dict['DETECTOR']
+    if 'ifu' in st_pipe_ready_dict['EXP_TYPE'].lower():
+        aperture_name = detector + '_FULL_IFU'
+        return aperture_name
+    if 'full' in subarray.lower():
+        aperture_name = detector + '_FULL'
+    elif '200' in subarray or '400' in subarray:
+        aperture_name = 'NRS_' + subarray + '_SLIT'
+    else:
+        aperture_name = 'NRS_S1600A1_SLIT'
+    if verbose:
+        print('PySIAF aperture name: ', aperture_name)
+    return aperture_name
 
 
 def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=None, verbose=False):
@@ -445,6 +476,33 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
 
     # iterate over the map of STScI to IPS keywords dictionary (defined in this script)
     for key2modify, val2modify in stsci2ips_dict.items():
+        # check if this is for the science extension in the ST ready file
+        if key2modify == 'wcsinfo':
+            # all these keywords do not need to be calculated
+            for key, val in val2modify.items():
+                if 'pysiaf' in val:
+                    # get this value from pysiaf
+                    NIRSpec_SIAF = pysiaf.Siaf('NIRSpec')
+                    aperture_name = get_pysiaf_aperture(st_pipe_ready_dict, verbose=verbose)
+                    refpoint = NIRSpec_SIAF[aperture_name].reference_point('tel')
+                    V2_REF, V3_REF = refpoint[0], refpoint[1]
+                    V3IdlYAngle = NIRSpec_SIAF[aperture_name].V3IdlYAngle
+                    VIdlParity = NIRSpec_SIAF[aperture_name].VIdlParity
+                    fits.setval(stsci_pipe_ready_file, 'V2_REF', value=V2_REF, extname='SCI')
+                    fits.setval(stsci_pipe_ready_file, 'V3_REF', value=V3_REF, extname='SCI')
+                    fits.setval(stsci_pipe_ready_file, 'V3I_YANG', value=V3IdlYAngle, extname='SCI')
+                    fits.setval(stsci_pipe_ready_file, 'VPARITY', value=VIdlParity, extname='SCI')
+                    if verbose:
+                        print('Modified keyword in science extension: V2_REF', '   new_value=', V2_REF)
+                        print('Modified keyword in science extension: V3_REF', '   new_value=', V3_REF)
+                        print('Modified keyword in science extension: V3I_YANG', '   new_value=', V3IdlYAngle)
+                        print('Modified keyword in science extension: VPARITY', '   new_value=', VIdlParity)
+                else:
+                    ips_key = val.split(':')[-1]
+                    fits.setval(stsci_pipe_ready_file, key, value=primary_ext_ips_keywd_dict[ips_key], extname='SCI')
+                    if verbose:
+                        print('Modified keyword in science extension: ', key,
+                              '   new_value=', primary_ext_ips_keywd_dict[ips_key])
         if val2modify == 'N/A':
             # for a non applicable (not too important) keyword for the simulations, set value to N/A
             st_pipe_ready_dict[key2modify] = 'N/A'
