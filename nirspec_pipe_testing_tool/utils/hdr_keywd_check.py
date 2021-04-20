@@ -663,6 +663,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     warnings_list.append(warning3)
                     warnings_list.append(warning4)
                 elif subkey == 'V3_REF' or subkey == 'V3I_YANG' or subkey == 'VPARITY':
+                    # these keywords were already changed
                     continue
                 else:
                     # add the WCS keywords to science extension
