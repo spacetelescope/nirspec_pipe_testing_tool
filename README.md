@@ -533,7 +533,7 @@ the aperture position angle. Sample values for these quantities are: ra_targ = 5
 dec_targ = -27.79127312,  v2_targ = 393.86285, v3_targ = -424.00329, and aper_angle = 45.0.
 To fix the keywords use the following command from the terminal:
 ```bash
-nptt_fix_pointing blah.fits 53.16199112, -27.79127312, 393.86285, -424.00329, 45.0
+nptt_fix_pointing blah.fits 53.16199112 -27.79127312 393.86285 -424.00329 45.0
 ```
 
 If the data is IFU add the flag -ifu at the end of the command. The output will be the

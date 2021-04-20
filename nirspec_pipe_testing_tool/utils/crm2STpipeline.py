@@ -54,12 +54,13 @@ Example usage:
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.2"
+__version__ = "1.3"
 
 # HISTORY
 # May 2019 - Version 1.0: initial version completed
 # Feb 2020 - Version 1.1: added part to match and replace keyword values from IPS file
 # Feb 2021 - Version 1.2: implemented create a metafile for MOS data
+# Apr 2021 - Version 1.3: implemented rotation of data depending on data array dimensions
 
 
 def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, msa_metafile='N/A',
@@ -167,6 +168,13 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
     if len(hdulist) == 5:
         detectors = [fits.getval(input_fits_file, "DET", 0)]
 
+    # determine if rotation is needed
+    file_type = fits.getval(input_fits_file, "FILETYPE", 0)
+    if 'raw' in file_type.lower():
+        rotation_needed = True
+    else:
+        rotation_needed = False  # this includes the case for value='CTS'
+
     hdulist.close()
 
     if not data_ext and not var_ext and not quality_ext:
@@ -184,8 +192,9 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
                                                     output_dir=output_dir)
 
             # perform rotations expected in the pipeline
-            print("(crm2STpipeline.crm2pipe:) Rotating data for ST pipeline ingestion...")
-            st_pipe_file = rm_extra_exts_and_rotate(st_pipe_file, det, output_dir=output_dir)
+            if rotation_needed:
+                print("(crm2STpipeline.crm2pipe:) Rotating data for ST pipeline ingestion...")
+                st_pipe_file = rm_extra_exts_and_rotate(st_pipe_file, det, output_dir=output_dir)
 
             # Perform the keyword check on the file with the right number of extensions
             print("(crm2STpipeline.crm2pipe:) Fixing the header keywords for detector ", det)
@@ -199,9 +208,10 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         print("(crm2STpipeline.crm2pipe:) The extension names are correct.")
         if len(hdulist) > 4:
             for det in detectors:
-                print("(crm2STpipeline.crm2pipe:) Removing the extra extensions and rotating data for ST "
-                      "pipeline ingestion.")
-                outfile_name = rm_extra_exts_and_rotate(input_fits_file, det, output_dir=output_dir)
+                if rotation_needed:
+                    print("(crm2STpipeline.crm2pipe:) Removing the extra extensions and rotating data for ST "
+                          "pipeline ingestion.")
+                    outfile_name = rm_extra_exts_and_rotate(input_fits_file, det, output_dir=output_dir)
 
                 # Perform the keyword check on the file with the right number of extensions
                 print("(crm2STpipeline.crm2pipe:) Fixing the header keywords")
