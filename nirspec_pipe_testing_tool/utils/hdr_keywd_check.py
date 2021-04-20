@@ -345,6 +345,22 @@ def get_pysiaf_aperture(mode, subarray, detector):
     return aperture_name
 
 
+def get_pipe_subarray_name(subarray):
+    if 'FULL' in subarray:
+        pipe_subarr_val = 'FULL'
+    elif '200A1' in subarray:
+        pipe_subarr_val = 'S200A1'
+    elif '200A2' in subarray:
+        pipe_subarr_val = 'S200A2'
+    elif '200B1' in subarray:
+        pipe_subarr_val = 'S200B1'
+    elif '400A1' in subarray:
+        pipe_subarr_val = 'S400A1'
+    elif '1600' in subarray:
+        pipe_subarr_val = 'S1600A1'
+    return pipe_subarr_val
+
+
 # keyword and format check
 
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used):
@@ -628,7 +644,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 if subkey == 'V2_REF':
                     # set up these keywords from SIAF
                     NIRSpec_SIAF = pysiaf.Siaf('NIRSpec')
-                    aperture_name = get_pysiaf_aperture(mode_used, specific_keys_dict['FXD_SLIT'], detector)
+                    pipe_subarr_val = get_pipe_subarray_name(file_keywd_dict["SUBARRAY"])
+                    aperture_name = get_pysiaf_aperture(mode_used, pipe_subarr_val, detector)
                     refpoint = NIRSpec_SIAF[aperture_name].reference_point('tel')
                     V2_REF, V3_REF = refpoint[0], refpoint[1]
                     V3IdlYAngle = NIRSpec_SIAF[aperture_name].V3IdlYAngle

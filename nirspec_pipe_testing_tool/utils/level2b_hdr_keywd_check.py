@@ -426,6 +426,22 @@ def determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_k
     return specific_keys_dict, missing_keywds
 
 
+def get_pipe_subarray_name(subarray):
+    if 'FULL' in subarray:
+        pipe_subarr_val = 'FULL'
+    elif '200A1' in subarray:
+        pipe_subarr_val = 'S200A1'
+    elif '200A2' in subarray:
+        pipe_subarr_val = 'S200A2'
+    elif '200B1' in subarray:
+        pipe_subarr_val = 'S200B1'
+    elif '400A1' in subarray:
+        pipe_subarr_val = 'S400A1'
+    elif '1600' in subarray:
+        pipe_subarr_val = 'S1600A1'
+    return pipe_subarr_val
+
+
 def set_pysiaf_keywords(input_fits_file, mode, FXD_SLIT, detector):
     # set up these keywords from SIAF
     NIRSpec_SIAF = pysiaf.Siaf('NIRSpec')
@@ -621,17 +637,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     else:  # set SUBARRAY for anything else other than IFU or MOS
                         if subarray is not None:
                             # force the subarray keyword to be set to input
-                            if 'FULL' in subarray:
-                                pipe_subarr_val = 'FULL'
-                            elif '200A1' in subarray:
-                                pipe_subarr_val = 'S200A1'
-                            elif '200A2' in subarray:
-                                pipe_subarr_val = 'S200A2'
-                            elif '200B1' in subarray:
-                                pipe_subarr_val = 'S200B1'
-                            elif '400A1' in subarray:
-                                pipe_subarr_val = 'S400A1'
-                            elif '1600' in subarray:
+                            pipe_subarr_val = get_pipe_subarray_name(subarray)
+                            if '1600' in pipe_subarr_val:
                                 if mode_used.lower() == "fs":
                                     pipe_subarr_val = 'SUB2048'
                                 elif mode_used.lower() == "bots":
@@ -748,7 +755,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
             # add the WCS keywords to science extension
             for subkey, _ in lev2bdict_val.items():
                 if subkey == 'V2_REF':
-                    set_pysiaf_keywords(ff, mode_used, specific_keys_dict['FXD_SLIT'], detector)
+                    pipe_subarr_val = get_pipe_subarray_name(file_keywd_dict["SUBARRAY"])
+                    set_pysiaf_keywords(ff, mode_used, pipe_subarr_val, detector)
                 elif subkey == 'V3_REF' or subkey == 'V3I_YANG' or subkey == 'VPARITY':
                     continue
                 else:
