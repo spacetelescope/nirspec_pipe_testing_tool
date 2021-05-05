@@ -33,8 +33,7 @@ __version__ = "1.0"
 # HISTORY
 # Jan 2020 - Version 1.0: initial version completed
 
-
-#### Define dictionary
+# Define dictionary
 stsci2ips_dict = collections.OrderedDict()
 
 # Standard parameters
