@@ -423,7 +423,7 @@ def determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_k
         missing_keywds.append('SUBSIZE1')
         missing_keywds.append('SUBSTRT2')
         missing_keywds.append('SUBSIZE2')
-    return specific_keys_dict, missing_keywds
+    return pipe_subarr_val, specific_keys_dict, missing_keywds
 
 
 def get_pipe_subarray_name(subarray):
@@ -541,7 +541,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     val = timeobs
                 if key == 'SUBARRAY':
                     subar_data = determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_keywds)
-                    subarr_specific_keys_dict, subarr_missing_keywds = subar_data
+                    pipe_subarr_val, subarr_specific_keys_dict, subarr_missing_keywds = subar_data
                     specific_keys_dict.update(subarr_specific_keys_dict)
                     for item in subarr_missing_keywds:
                         missing_keywds.append(item)
@@ -638,26 +638,26 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         if subarray is not None:
                             # force the subarray keyword to be set to input
                             if isinstance(subarray, bool):
-                                if not subarray:
-                                    subarray = 'FULL'
-                                else:
-                                    subarray = 'Determine'
-                            pipe_subarr_val = get_pipe_subarray_name(subarray)
-                            if '1600' in pipe_subarr_val:
-                                if mode_used.lower() == "fs":
-                                    pipe_subarr_val = 'SUB2048'
-                                elif mode_used.lower() == "bots":
-                                    # determine which 1600 subarray is it
-                                    data = fits.getdata(ff, 1)
-                                    subsize1, subsize2 = np.shape(data)
-                                    for sa in subdict.subarray_dict:
-                                        ssz1 = subdict.subarray_dict[sa]["subsize1"]
-                                        ssz2 = subdict.subarray_dict[sa]["subsize2"]
-                                        if subsize1 == ssz1:
-                                            if subsize2 == ssz2:
-                                                pipe_subarr_val = sa
-                                                break
-                            specific_keys_dict[key] = pipe_subarr_val
+                                subarray_info = determine_subarray(key, ff, detector, grating, specific_keys_dict,
+                                                                   missing_keywds)
+                                pipe_subarr_val, specific_keys_dict, missing_keywds = subarray_info
+                            else:
+                                pipe_subarr_val = get_pipe_subarray_name(subarray)
+                                if '1600' in pipe_subarr_val:
+                                    if mode_used.lower() == "fs":
+                                        pipe_subarr_val = 'SUB2048'
+                                    elif mode_used.lower() == "bots":
+                                        # determine which 1600 subarray is it
+                                        data = fits.getdata(ff, 1)
+                                        subsize1, subsize2 = np.shape(data)
+                                        for sa in subdict.subarray_dict:
+                                            ssz1 = subdict.subarray_dict[sa]["subsize1"]
+                                            ssz2 = subdict.subarray_dict[sa]["subsize2"]
+                                            if subsize1 == ssz1:
+                                                if subsize2 == ssz2:
+                                                    pipe_subarr_val = sa
+                                                    break
+                                specific_keys_dict[key] = pipe_subarr_val
                             subarray = pipe_subarr_val
                             if verbose:
                                 print("changing subarray keyword to ", pipe_subarr_val)
@@ -700,8 +700,9 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                           ssz1, " subsize2=", ssz2)
                         else:
                             # determine subarray from size
-                            specific_keys_dict, missing_keywds = determine_subarray(key, ff, detector, grating,
-                                                                                    specific_keys_dict, missing_keywds)
+                            subarray_info = determine_subarray(key, ff, detector, grating, specific_keys_dict,
+                                                               missing_keywds)
+                            pipe_subarr_val, specific_keys_dict, missing_keywds = subarray_info
 
                 # check for right value for EXP_TYPE, default will be to add the sample value: NRS_MSASPEC
                 if key == 'EXP_TYPE':
