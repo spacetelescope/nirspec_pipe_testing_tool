@@ -761,7 +761,12 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
             # add the WCS keywords to science extension
             for subkey, _ in lev2bdict_val.items():
                 if subkey == 'V2_REF':
-                    pipe_subarr_val = get_pipe_subarray_name(file_keywd_dict["SUBARRAY"])
+                    if isinstance(file_keywd_dict["SUBARRAY"], bool):
+                        subarray_info = determine_subarray(key, ff, detector, grating, specific_keys_dict,
+                                                           missing_keywds)
+                        pipe_subarr_val, _, _ = subarray_info
+                    else:
+                        pipe_subarr_val = get_pipe_subarray_name(file_keywd_dict["SUBARRAY"])
                     set_pysiaf_keywords(ff, mode_used, pipe_subarr_val, detector)
                 elif subkey == 'V3_REF' or subkey == 'V3I_YANG' or subkey == 'VPARITY':
                     continue
