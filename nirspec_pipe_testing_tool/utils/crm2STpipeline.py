@@ -64,7 +64,7 @@ __version__ = "1.3"
 
 
 def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, msa_metafile='N/A',
-             output_dir=None, verbose=False):
+             output_dir=None, force_rotation=False, verbose=False):
     """
     This function is the wrapper for the scripts needed to convert a crm file to a pipeline ready product.
     Args:
@@ -169,24 +169,27 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         detectors = [fits.getval(input_fits_file, "DET", 0)]
 
     # determine if rotation is needed
-    rotation_needed = True  # this includes the case for value='raw'
-    try:
-        file_type = fits.getval(input_fits_file, "FILETYPE", 0)
-        if 'cts' in file_type.lower() or 'crm' in file_type.lower():
-            rotation_needed = False
-        # ensure that in this case the data is rotated
-        if 'uncal' in file_type.lower():
-            rotation_needed = True
-        print("(crm2STpipeline.crm2pipe:) keyword FILETYPE = ", file_type)
-        print("(crm2STpipeline.crm2pipe:) rotation_needed = ", rotation_needed)
-        if not rotation_needed:
-            rotation_input = input("Force data to be rotated? [Y]/n ")
-            if 'n' in rotation_input.lower():
+    if not force_rotation:
+        rotation_needed = True  # this includes the case for value='raw'
+        try:
+            file_type = fits.getval(input_fits_file, "FILETYPE", 0)
+            if 'cts' in file_type.lower() or 'crm' in file_type.lower():
                 rotation_needed = False
-            else:
+            # ensure that in this case the data is rotated
+            if 'uncal' in file_type.lower():
                 rotation_needed = True
-    except KeyError:
-        print("(crm2STpipeline.crm2pipe:) FILETYPE keyword not found. Data will be rotated.")
+            print("(crm2STpipeline.crm2pipe:) keyword FILETYPE = ", file_type)
+            print("(crm2STpipeline.crm2pipe:) rotation_needed = ", rotation_needed)
+            if not rotation_needed:
+                rotation_input = input("Force data to be rotated? [Y]/n ")
+                if 'n' in rotation_input.lower():
+                    rotation_needed = False
+                else:
+                    rotation_needed = True
+        except KeyError:
+            print("(crm2STpipeline.crm2pipe:) FILETYPE keyword not found. Data will be rotated.")
+    else:
+        rotation_needed = force_rotation
     if verbose:
         print("(crm2STpipeline.crm2pipe:) Will the data be rotated? ", rotation_needed)
 
@@ -309,7 +312,7 @@ def rm_extra_exts_and_rotate(input_fits_file, detector, output_dir=None):
 
 
 def crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name, subarray=None, new_file=False,
-                   msa_metafile='N/A', output_dir=None, verbose=False):
+                   msa_metafile='N/A', output_dir=None, force_rotation=False, verbose=False):
     """
     This function is the wrapper for the scripts needed to convert a crm file to a pipeline ready product.
     :param ips_file: string, full path to IPS crm fits file
@@ -322,12 +325,14 @@ def crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name
                      header without creating a new file
     :param msa_metafile: string, name of the MSA metafile
     :param output_dir: string, path to place the output file - if None output will be in same dir as input
+    :param force_rotation: boolean, if True data will be rotated
     :param verbose: boolean
     :return:
     """
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
     stsci_pipe_ready_file = crm2pipe(ips_file, mode_used, add_ref_pix, new_file, subarray=subarray,
-                                     msa_metafile=msa_metafile, output_dir=output_dir, verbose=verbose)
+                                     msa_metafile=msa_metafile, output_dir=output_dir,
+                                     force_rotation=force_rotation, verbose=verbose)
 
     # create dictionary of command-line arguments
     additional_args_dict = {'TITLE': proposal_title,
@@ -388,6 +393,11 @@ def main():
                         action='store',
                         default=None,
                         help='Use -o to provide a path to place the output fits file.')
+    parser.add_argument("-f",
+                        dest="force_rotation",
+                        action='store_true',
+                        default=False,
+                        help='Use -f to force the data to be rotated.')
     parser.add_argument("-v",
                         dest="verbose",
                         action='store_true',
@@ -405,11 +415,13 @@ def main():
     subarray = args.subarray
     msa_metafile = args.msa_metafile
     output_dir = args.output_dir
+    force_rotation = args.force_rotation
     verbose = args.verbose
 
     # Run wrapper function
     crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name, subarray=subarray,
-                   new_file=new_file, msa_metafile=msa_metafile, output_dir=output_dir, verbose=verbose)
+                   new_file=new_file, msa_metafile=msa_metafile, output_dir=output_dir,
+                   force_rotation=force_rotation, verbose=verbose)
 
     print('\n * Script  crm2STpipeline.py  finished * \n')
 
