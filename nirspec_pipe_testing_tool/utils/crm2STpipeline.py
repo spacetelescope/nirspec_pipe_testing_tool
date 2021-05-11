@@ -170,10 +170,13 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
 
     # determine if rotation is needed
     file_type = fits.getval(input_fits_file, "FILETYPE", 0)
+    rotation_needed = True  # this includes the case for value='raw'
     if 'cts' in file_type.lower() or 'crm' in file_type.lower():
         rotation_needed = False
-    else:
-        rotation_needed = True  # this includes the case for value='raw'
+    # ensure that in this case the data is rotated
+    if 'uncal' in file_type.lower():
+        rotation_needed = True
+    print("(crm2STpipeline.crm2pipe:) rotation needed? ", rotation_needed)
 
     hdulist.close()
 
