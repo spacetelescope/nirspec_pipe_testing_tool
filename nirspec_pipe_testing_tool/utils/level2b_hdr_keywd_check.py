@@ -637,6 +637,11 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     else:  # set SUBARRAY for anything else other than IFU or MOS
                         if subarray is not None:
                             # force the subarray keyword to be set to input
+                            if isinstance(subarray, bool):
+                                if not subarray:
+                                    subarray = 'FULL'
+                                else:
+                                    subarray = 'Determine'
                             pipe_subarr_val = get_pipe_subarray_name(subarray)
                             if '1600' in pipe_subarr_val:
                                 if mode_used.lower() == "fs":
