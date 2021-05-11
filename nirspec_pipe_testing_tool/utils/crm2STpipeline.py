@@ -177,9 +177,18 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         # ensure that in this case the data is rotated
         if 'uncal' in file_type.lower():
             rotation_needed = True
+        print("(crm2STpipeline.crm2pipe:) keyword FILETYPE = ", file_type)
+        print("(crm2STpipeline.crm2pipe:) rotation_needed = ", rotation_needed)
+        if not rotation_needed:
+            rotation_input = input("Force data to be rotated? [Y]/n ")
+            if 'n' in rotation_input.lower():
+                rotation_needed = False
+            else:
+                rotation_needed = True
     except KeyError:
         print("(crm2STpipeline.crm2pipe:) FILETYPE keyword not found. Data will be rotated.")
-    print("(crm2STpipeline.crm2pipe:) Will the data be rotated? ", rotation_needed)
+    if verbose:
+        print("(crm2STpipeline.crm2pipe:) Will the data be rotated? ", rotation_needed)
 
     hdulist.close()
 
