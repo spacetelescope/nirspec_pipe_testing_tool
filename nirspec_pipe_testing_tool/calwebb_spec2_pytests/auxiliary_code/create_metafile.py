@@ -453,7 +453,11 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
         if match.size != 0:
             # if there was a match AND this is not a failed open shutter, add source to the table
             tab_source_id[i] = source_id[match]
-            # initialize the repetitions for source ID in the shutter configuration file
+
+            # set the position of the source in the slitlet configuration
+            pos = count_repetitions - 1
+
+            # track the repetitions for source ID in the shutter configuration file
             if count_repetitions == 1:
                 source_tsid = int(i / nnods / shutters_in_slitlet) + 1
                 keep_tab_slitlet_id = True
@@ -472,7 +476,7 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
                       'quadrant = ', source_quad[match], '  row = ', source_row[match],
                       '  column = ', source_col[match], '  source ID = ', source_id[match],
                       '  source xpos = ', source_xpos[match])
-            pos = np.mod(i, nnods * nnods)
+
             if pos in nod:
                 # some values only get filled if the source is in that shutter for that nod
                 tab_background[i] = 'N'
