@@ -75,6 +75,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         subarray: None or string, name of subarray to use
         msa_metafile: string, name of the MSA metafile
         output_dir: string, path to place the output file - if None output will be in same dir as input
+        force_rotation: boolean, if True data will be rotated
         verbose: boolean
 
     Returns:
@@ -325,7 +326,7 @@ def crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name
                      header without creating a new file
     :param msa_metafile: string, name of the MSA metafile
     :param output_dir: string, path to place the output file - if None output will be in same dir as input
-    :param force_rotation: boolean, if True data will be rotated
+    :param force_rotation: boolean, if True data will be rotated to the science frame
     :param verbose: boolean
     :return:
     """
@@ -397,7 +398,8 @@ def main():
                         dest="force_rotation",
                         action='store_true',
                         default=False,
-                        help='Use -f to force the data to be rotated.')
+                        help='Use -f to force the data to be rotated to the Science frame. Default '
+                             'is to rotate only for raw-type data (which is in Detector frame).')
     parser.add_argument("-v",
                         dest="verbose",
                         action='store_true',
