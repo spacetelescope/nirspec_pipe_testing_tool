@@ -21,14 +21,15 @@ jupyter notebook test_MSA_flagging.ipynb written by James Muzerolle in July of 2
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & J. Muzerolle"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Jul 2020 - Version 1.0: initial version completed
 # Jan 2021 - Version 1.1: Implemented option to use datamodels instead of fits files as input
+# May 2021 - Version 1.2: Fixed failed open shutter config file to match PAT_NUM keyword value
 
 
-def create_metafile_fopens(outfile, allcols, allrows, quads, stellarity, failedopens,
+def create_metafile_fopens(outfile, allcols, allrows, quads, stellarity, failedopens, pattnum,
                            save_fig=False, show_fig=False, debug=False):
     """
     Create the metafile for the failed open shutters according to msa failed open - operability - reference file.
@@ -38,6 +39,7 @@ def create_metafile_fopens(outfile, allcols, allrows, quads, stellarity, failedo
     :param quads: array
     :param stellarity: array
     :param failedopens: array
+    :param pattnum: integer
     :param save_fig: boolean
     :param show_fig: boolean
     :param debug: boolean
@@ -59,7 +61,7 @@ def create_metafile_fopens(outfile, allcols, allrows, quads, stellarity, failedo
     # source position in shutter - N/A for ground data, assume centered
     srcx = np.full(len(allcols), 0.)
     srcy = srcx
-    dithptind = np.full(len(allcols), 0)
+    dithptind = np.full(len(allcols), pattnum)
     psrc = np.full(len(allcols), 'Y')
     tabcol1 = fits.Column(name='SLITLET_ID', format='I', array=slitlets)
     tabcol2 = fits.Column(name='MSA_METADATA_ID', format='I', array=metaids)
@@ -288,8 +290,9 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
     else:
         fometafile = 'fopens_metafile_msa.fits'
     if not os.path.isfile(fometafile):
+        pattnum = msaflag.meta.dither.position_number
         create_metafile_fopens(fometafile, allcols, allrows, quads, stellarity, failedopens,
-                               save_fig=save_figs, show_fig=show_figs, debug=debug)
+                               pattnum, save_fig=save_figs, show_fig=show_figs, debug=debug)
 
     # run assign_wcs on the science exposure using F/O metafile
     # change MSA metafile name in header to match the F/O metafile name
@@ -335,7 +338,8 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
         except AttributeError:
             name = i
         print("\nWorking with slit/slice: ", name)
-        print("Slit min and max in y direction: ", slit.ymin, slit.ymax)
+        if "IFU" not in msaflag.meta.exposure.type.upper():
+            print("Slit min and max in y direction: ", slit.ymin, slit.ymax)
         # get the WCS object for this particular slit
         wcs_slice = nirspec.nrs_wcs_set_input(awcs_fo, name)
         # get the bounding box for the 2D subwindow, round to nearest integer, and convert to integer

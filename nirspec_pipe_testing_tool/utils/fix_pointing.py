@@ -15,13 +15,26 @@ Usage:
     Sample values are: ra_targ = 53.16199112, dec_targ = -27.79127312, v2_targ = 393.86285,
     v3_targ = -424.00329, aper_angle = 45.0
 
-    From a terminal type:
+    - From a terminal type:
      $ nptt_fix_pointing blah.fits 53.16199112 -27.79127312 393.86285 -424.00329 45.0
 
-    If the data is IFU add the flag -ifu at the end of the command. The output will be the updated file.
-
-    To create a new updated file add flag -nf to the above command.
-
+     If the data is IFU add the flag -ifu at the end of the command. The output will be the updated file.
+     To create a new updated file add flag -nf to the above command.
+    
+    - Within a script:
+    import nirspec_pipe_testing_tool as nptt
+    stsci_pipe_ready_file = '/somewhere/blah.fits'
+    ra_targ = 53.16199112
+    dec_targ = -27.79127312
+    v2_targ = 393.86285,
+    v3_targ = -424.00329
+    aper_angle = 45.0
+    ifu_used = False   # only True for IFU data
+    nptt.utils.fix_pointing.fix_header_pointing(stsci_pipe_ready_file,
+                                                RA_target, DEC_target,
+                                                v2_target, v3_target,
+                                                aper_angle, ifu=ifu_used)
+    
 """
 
 # HEADER
@@ -33,7 +46,7 @@ __version__ = "1.0"
 # Mar 2020 - Version 1.0: initial version completed
 
 
-def fix_header_pointing(infile, ra_targ, dec_targ, v2_targ, v3_targ, apa, ifu=False):
+def fix_header_pointing(infile, ra_targ, dec_targ, v2_targ, v3_targ, apa=45.0, ifu=False):
     """
         This function takes input FS, MOS, or IFU count rate file and adds/corrects the spacecraft
         pointing header information
@@ -156,7 +169,7 @@ def main():
     parser.add_argument("apa",
                         action='store',
                         default=None,
-                        help='Aperture position angle [deg], e.g. -999.0')
+                        help='Aperture position angle [deg], e.g. 45.0')
     parser.add_argument("-nf",
                         dest="new_file",
                         action='store_true',

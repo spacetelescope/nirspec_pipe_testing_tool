@@ -156,7 +156,7 @@ conda env remove -n name_of_your_old_environment
 
 - Option A. For non-developers and without PTT source code. For the **latest stable tag** type: 
 ```bash
-pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.1.15
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.1.16
 ```
 where the numbers at the end represent the latest stable version of NPTT; for the most recent code, in the 
 terminal type:
@@ -535,6 +535,10 @@ If you do have the corresponding APT files for your data set, you will manually 
 the following information from the APT file: the target's RA, DEC, V2, and V3, as well as
 the aperture position angle. Sample values for these quantities are: ra_targ = 53.16199112,
 dec_targ = -27.79127312,  v2_targ = 393.86285, v3_targ = -424.00329, and aper_angle = 45.0.
+
+Please note that there is a known bug in the ```extract_1d``` step, which can be minimized 
+by setting the aperture angle to 45.0
+
 To fix the keywords use the following command from the terminal:
 ```bash
 nptt_fix_pointing blah.fits 53.16199112 -27.79127312 393.86285 -424.00329 45.0
