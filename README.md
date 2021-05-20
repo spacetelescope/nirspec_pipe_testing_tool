@@ -445,7 +445,6 @@ associated parameters automatically).
 This module can also be called from a script in the following way:
 ```bash
 # set the variables
-# set the variables
 ips_file = '/path_to_crm_file/crm.fits'
 mode_used = 'MOS'  # One of FS, MOS, IFU, or BOTS
 add_ref_pix = False  # Add the reference pixels for IFU - old simulations (<2020) needed this
