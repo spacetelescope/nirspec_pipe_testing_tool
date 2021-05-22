@@ -9,7 +9,8 @@ This script changes the value of a keyword to the specified value. If no extensi
 added/modified in the main header.
 
 Usage:
-    In a terminal, the general format for the script is as follows:
+ - from terminal
+    the general format for the script is as follows:
     $ nptt_change_keywd file.fits keyword_to_be_changed value
 
     Specific examples:
@@ -20,6 +21,11 @@ Usage:
 
     To modify a keyword in extension 1 add -e=1:
     $ nptt_change_keywd fits_file.fits V3_REF -202.2 -e=1
+
+
+ - as a module
+    import nirspec_pipe_testing_tool as nptt
+    nptt.utils.change_keywd.chkeywd(fits_file, 'PA_APER', 45.0, ext_number=0)
 
 """
 
