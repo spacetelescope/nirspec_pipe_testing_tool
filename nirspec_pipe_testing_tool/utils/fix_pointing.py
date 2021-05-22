@@ -46,7 +46,7 @@ __version__ = "1.0"
 # Mar 2020 - Version 1.0: initial version completed
 
 
-def fix_header_pointing(infile, ra_targ, dec_targ, v2_targ, v3_targ, apa=45.0, ifu=False):
+def fix_header_pointing(infile, ra_targ, dec_targ, v2_targ, v3_targ, apa, ifu=False):
     """
         This function takes input FS, MOS, or IFU count rate file and adds/corrects the spacecraft
         pointing header information

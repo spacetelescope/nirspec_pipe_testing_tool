@@ -536,7 +536,7 @@ the aperture position angle. Sample values for these quantities are: ra_targ = 5
 dec_targ = -27.79127312,  v2_targ = 393.86285, v3_targ = -424.00329, and aper_angle = 45.0.
 
 Please note that there is a known bug in the ```extract_1d``` step, which can be minimized 
-by setting the aperture angle to 45.0
+by setting the aperture angle to 45.0. But this fix only works for for NON-MOS data,
 
 To fix the keywords use the following command from the terminal:
 ```bash

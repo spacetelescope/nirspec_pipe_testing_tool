@@ -57,7 +57,7 @@ def units_logic(output_hdul):
             msg = "Photom units keyword in SCI extension are NOT flux density, as expected for POINT source."
 
     if srctype == 'EXTENDED':
-        if units == 'MJy/sr':
+        if units == 'MJy/str':
             msg = "Photom units keyword in SCI extension are surface brightness, as expected for EXTENDED source."
             result = True
         else:
