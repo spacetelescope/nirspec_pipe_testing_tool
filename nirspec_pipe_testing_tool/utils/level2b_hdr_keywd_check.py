@@ -1,5 +1,4 @@
 import argparse
-import pysiaf
 import os
 import re
 import subprocess
@@ -394,7 +393,11 @@ def set_exp_type_value(mode_used):
 
 def determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_keywds):
     data = fits.getdata(ff, 1)
-    subsize1, subsize2 = np.shape(data)
+    shape = np.shape(data)
+    if len(shape) > 2:
+        subsize2, subsize1 = shape[1], shape[2]
+    else:
+        subsize2, subsize1 = shape[0], shape[1]
     pipe_subarr_val = None
     for sa in subdict.subarray_dict:
         ssz1 = subdict.subarray_dict[sa]["subsize1"]
@@ -440,29 +443,6 @@ def get_pipe_subarray_name(subarray):
     elif '1600' in subarray:
         pipe_subarr_val = 'S1600A1'
     return pipe_subarr_val
-
-
-def set_pysiaf_keywords(input_fits_file, mode, FXD_SLIT, detector):
-    # set up these keywords from SIAF
-    NIRSpec_SIAF = pysiaf.Siaf('NIRSpec')
-    if 'ifu' in mode.lower():
-        aperture_name = detector + '_FULL_IFU'
-        return aperture_name
-    if 'full' in FXD_SLIT.lower():
-        aperture_name = detector + '_FULL'
-    elif '200' in FXD_SLIT or '400' in FXD_SLIT:
-        aperture_name = 'NRS_' + FXD_SLIT + '_SLIT'
-    else:
-        aperture_name = 'NRS_S1600A1_SLIT'
-    print('PySIAF aperture name: ', aperture_name)
-    refpoint = NIRSpec_SIAF[aperture_name].reference_point('tel')
-    V2_REF, V3_REF = refpoint[0], refpoint[1]
-    V3IdlYAngle = NIRSpec_SIAF[aperture_name].V3IdlYAngle
-    VIdlParity = NIRSpec_SIAF[aperture_name].VIdlParity
-    fits.setval(input_fits_file, 'V2_REF', value=V2_REF, extname='SCI')
-    fits.setval(input_fits_file, 'V3_REF', value=V3_REF, extname='SCI')
-    fits.setval(input_fits_file, 'V3I_YANG', value=V3IdlYAngle, extname='SCI')
-    fits.setval(input_fits_file, 'VPARITY', value=VIdlParity, extname='SCI')
 
 
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used, detector=None,
@@ -526,9 +506,19 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                 print('     Setting value of ', key, ' to ', val)
                 if key == 'EXP_TYPE':
                     val = set_exp_type_value(mode_used)
+                    if 'ifu' in val.lower():
+                        specific_keys_dict['DATAMODL'] = 'IFUImageModel'
+                        missing_keywds.append('DATAMODL')
+                        warning = '{:<15} {:<9} {:<25}'.format('DATAMODL', 0, 'New keyword added to header')
+                        warnings_list.append(warning)
                 if key == 'TSOVISIT':
                     if mode_used.lower() == 'bots':
                         val = True
+                        if 'ints' in os.path.basename(ff):
+                            specific_keys_dict['DATAMODL'] = 'CubeModel'
+                            missing_keywds.append('DATAMODL')
+                            warning = '{:<15} {:<9} {:<25}'.format('DATAMODL', 0, 'New keyword added to header')
+                            warnings_list.append(warning)
                     else:
                         val = False
                 if key == 'FXD_SLIT':
@@ -718,6 +708,11 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 if key == 'TSOVISIT':
                     if mode_used.lower() == 'bots':
                         val = True
+                        if 'ints' in os.path.basename(ff):
+                            specific_keys_dict['DATAMODL'] = 'CubeModel'
+                            missing_keywds.append('DATAMODL')
+                            warning = '{:<15} {:<9} {:<25}'.format('DATAMODL', 0, 'New keyword added to header')
+                            warnings_list.append(warning)
                     else:
                         val = False
                     specific_keys_dict[key] = val
@@ -760,19 +755,8 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
         else:
             # add the WCS keywords to science extension
             for subkey, _ in lev2bdict_val.items():
-                if subkey == 'V2_REF':
-                    if isinstance(file_keywd_dict["SUBARRAY"], bool):
-                        subarray_info = determine_subarray(key, ff, detector, grating, specific_keys_dict,
-                                                           missing_keywds)
-                        pipe_subarr_val, _, _ = subarray_info
-                    else:
-                        pipe_subarr_val = get_pipe_subarray_name(file_keywd_dict["SUBARRAY"])
-                    set_pysiaf_keywords(ff, mode_used, pipe_subarr_val, detector)
-                elif subkey == 'V3_REF' or subkey == 'V3I_YANG' or subkey == 'VPARITY':
-                    continue
-                else:
-                    missing_keywds.append(key)
-                    specific_keys_dict[key] = val
+                missing_keywds.append(key)
+                specific_keys_dict[key] = val
                 # now add the keyword to in the list to be added into the science extension
                 warning = '{:<15} {:<9} {:<25}'.format(subkey, 'sci', 'New keyword added to header')
                 warnings_list.append(warning)

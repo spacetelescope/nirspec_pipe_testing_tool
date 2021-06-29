@@ -4,7 +4,8 @@ import sys
 import pysiaf
 import numpy as np
 from astropy.io import fits
-from datetime import datetime
+from astropy.time import Time
+from datetime import timedelta
 
 # import subarray dictionary
 from .dict_info import subarray_dict as subdict
@@ -540,25 +541,13 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
         if 'calculation' in val2modify:
             if verbose:
                 print('Value for keyword ', key2modify, ' will be calculated...')
-            if key2modify == 'EXPSTART':
-                # put the dates/times values into the time stamp format to do operations
-                dateobs_string = st_pipe_ready_dict['DATE-OBS'].replace('T', ' ')
-                dateobs = datetime.timestamp(datetime.fromisoformat(dateobs_string))
-                timeobs_string = st_pipe_ready_dict['TIME-OBS']
-                timeobs_string = dateobs_string + ' ' + timeobs_string
-                timeobs = datetime.timestamp(datetime.fromisoformat(timeobs_string))
-                visitstart_string = st_pipe_ready_dict['VSTSTART'].replace('T', ' ')
-                visitstart = datetime.timestamp(datetime.fromisoformat(visitstart_string))
-                # this the calculation follows the JWST keyword dictionary calculation:
-                # https://mast.stsci.edu/portal/Mashup/Clients/jwkeywords/
-                # expstart = input('DATE-OBS') + 'T' + input('TIME-OBS') / UTC exposure start time (MJD)
-                # However, we are using the visit start time instead of the last argument since we do not have an
-                # actual exposure start time, and because the exposures are 1 in this case
-                new_val = dateobs + timeobs / visitstart
-                # change value in dictionary for use within the script
-                st_pipe_ready_dict['EXPSTART'] = new_val
+
+            if key2modify == 'EXPSTART' or key2modify == 'EXPEND' or key2modify == 'EXPMID':
+                continue
 
             if key2modify == 'DURATION':
+                # calculate also EXPSTART, EXPEND and EXPMID
+
                 # this the calculation follows the JWST keyword dictionary calculation:
                 # https://mast.stsci.edu/portal/Mashup/Clients/jwkeywords/
                 # duration = TFRAME*((NGROUPS*NFRAMES+(NGROUPS-1)*GROUPGAP+DROPFRAMES1*NINTS)) where DROPFRAMES1 is
@@ -569,15 +558,30 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
                 # change value in dictionary for use within the script
                 st_pipe_ready_dict['DURATION'] = new_val
 
-            if key2modify == 'EXPEND':
-                new_val = st_pipe_ready_dict['EXPSTART'] + st_pipe_ready_dict['DURATION']
+                # calculate EXPSTART
+                # this the calculation follows the JWST keyword dictionary calculation:
+                # https://mast.stsci.edu/portal/Mashup/Clients/jwkeywords/
+                # expstart = input('DATE-OBS') + 'T' + input('TIME-OBS') / UTC exposure start time (MJD)
+                dateobs_string = st_pipe_ready_dict['DATE-OBS'].replace('T', ' ')
+                timeobs_string = st_pipe_ready_dict['TIME-OBS']
+                expstart_string = dateobs_string + 'T' + timeobs_string
+                expstart = Time(expstart_string, format='fits', scale='utc')
+                expstart_mjd = expstart.mjd
                 # change value in dictionary for use within the script
-                st_pipe_ready_dict['EXPEND'] = new_val
+                st_pipe_ready_dict['EXPSTART'] = expstart_mjd
 
-            if key2modify == 'EXPMID':
-                new_val = st_pipe_ready_dict['EXPSTART'] + (st_pipe_ready_dict['DURATION'] / 2.0)
+                # calculate EXPEND
+                duration = st_pipe_ready_dict['DURATION']
+                expend = expstart + timedelta(seconds=duration)
+                expend_mjd = expend.mjd
                 # change value in dictionary for use within the script
-                st_pipe_ready_dict['EXPMID'] = new_val
+                st_pipe_ready_dict['EXPEND'] = expend_mjd
+
+                # calculate EXPMID
+                expmid = expstart + timedelta(seconds=duration/2)
+                expmid_mjd = expmid.mjd
+                # change value in dictionary for use within the script
+                st_pipe_ready_dict['EXPMID'] = expmid_mjd
 
             if key2modify == 'TSAMPLE':
                 # this the calculation follows the JWST keyword dictionary calculation:
