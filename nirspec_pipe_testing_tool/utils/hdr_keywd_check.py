@@ -346,6 +346,8 @@ def get_pysiaf_aperture(mode, subarray, detector):
 
 
 def get_pipe_subarray_name(subarray):
+    print('changing subarray from value: ', subarray)
+    pipe_subarr_val = 'NOT_FOUND'
     if 'FULL' in subarray:
         pipe_subarr_val = 'FULL'
     elif '200A1' in subarray:
@@ -358,6 +360,7 @@ def get_pipe_subarray_name(subarray):
         pipe_subarr_val = 'S400A1'
     elif '1600' in subarray:
         pipe_subarr_val = 'S1600A1'
+    print('  to value: ', pipe_subarr_val)
     return pipe_subarr_val
 
 
@@ -641,36 +644,11 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                     tf.write(warning + '\n')
         else:
             for subkey, _ in hkwd_val.items():
-                if subkey == 'V2_REF':
-                    # set up these keywords from SIAF
-                    NIRSpec_SIAF = pysiaf.Siaf('NIRSpec')
-                    pipe_subarr_val = get_pipe_subarray_name(file_keywd_dict["SUBARRAY"])
-                    aperture_name = get_pysiaf_aperture(mode_used, pipe_subarr_val, detector)
-                    refpoint = NIRSpec_SIAF[aperture_name].reference_point('tel')
-                    V2_REF, V3_REF = refpoint[0], refpoint[1]
-                    V3IdlYAngle = NIRSpec_SIAF[aperture_name].V3IdlYAngle
-                    VIdlParity = NIRSpec_SIAF[aperture_name].VIdlParity
-                    fits.setval(ff, 'V2_REF', value=V2_REF, extname='SCI')
-                    fits.setval(ff, 'V3_REF', value=V3_REF, extname='SCI')
-                    fits.setval(ff, 'V3I_YANG', value=V3IdlYAngle, extname='SCI')
-                    fits.setval(ff, 'VPARITY', value=VIdlParity, extname='SCI')
-                    warning1 = '{:<15} {:<9} {:<25}'.format('V2_REF', 'sci', 'New keyword added to header')
-                    warning2 = '{:<15} {:<9} {:<25}'.format('V3_REF', 'sci', 'New keyword added to header')
-                    warning3 = '{:<15} {:<9} {:<25}'.format('V3I_YANG', 'sci', 'New keyword added to header')
-                    warning4 = '{:<15} {:<9} {:<25}'.format('VPARITY', 'sci', 'New keyword added to header')
-                    warnings_list.append(warning1)
-                    warnings_list.append(warning2)
-                    warnings_list.append(warning3)
-                    warnings_list.append(warning4)
-                elif subkey == 'V3_REF' or subkey == 'V3I_YANG' or subkey == 'VPARITY':
-                    # these keywords were already changed
-                    continue
-                else:
-                    # add the WCS keywords to science extension
-                    missing_keywds.append(key)
-                    # now add the keyword to in the list to be added into the science extension
-                    warning = '{:<15} {:<9} {:<25}'.format(subkey, 'sci', 'New keyword added to header')
-                    warnings_list.append(warning)
+                # add the WCS keywords to science extension
+                missing_keywds.append(key)
+                # now add the keyword to in the list to be added into the science extension
+                warning = '{:<15} {:<9} {:<25}'.format(subkey, 'sci', 'New keyword added to header')
+                warnings_list.append(warning)
                 with open(warnings_file_name, "a") as tf:
                     tf.write(warning + '\n')
 

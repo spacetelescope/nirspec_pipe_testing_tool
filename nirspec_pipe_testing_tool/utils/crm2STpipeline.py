@@ -244,7 +244,11 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
             exit()
 
     rename = False
-    if det not in out_fits:
+    if '1' in det:
+        sca = '491'
+    else:
+        sca = '492'
+    if det not in out_fits and sca not in out_fits:
         outfile = out_fits.replace(".fits", "_" + det + ".fits")
         rename = True
     else:
@@ -254,7 +258,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         rename = True
     if rename:
         os.rename(out_fits, outfile)
-    return out_fits
+    return outfile
 
 
 def transpose(arr, detector):
