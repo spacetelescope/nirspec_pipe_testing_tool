@@ -128,7 +128,7 @@ keywd_dict['EFFEXPTM'] = 53.68380000000001  # [seconds] effective exposure time,
 keywd_dict['DURATION'] = -1.0  # [seconds] total duration of exposuree.g. -1.0
 
 # Subarray parameters
-keywd_dict['SUBARRAY'] = 'N/A'  # name of subarray used, options are:
+keywd_dict['SUBARRAY'] = 'FULL'  # name of subarray used, options are:
 #                          '1024X16', '128X128', '128X2048', '2048X128', '2048X64', '32X32', '64X2048', '8X8',
 #                          'ALLSLITS', 'BRIGHTSKY', 'FULL', 'GENERIC', 'MASK1065', 'MASK1140', 'MASK1550',
 #                          'MASKLYOT', 'SUB1600A1', 'SUB200A1', 'SUB200A2', 'SUB200B1', 'SUB400A1', 'SLITLESSPRISM',

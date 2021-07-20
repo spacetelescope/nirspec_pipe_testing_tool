@@ -398,7 +398,7 @@ def determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_k
         subsize2, subsize1 = shape[1], shape[2]
     else:
         subsize2, subsize1 = shape[0], shape[1]
-    pipe_subarr_val = None
+    pipe_subarr_val, stop_for_loop = None, False
     for sa in subdict.subarray_dict:
         ssz1 = subdict.subarray_dict[sa]["subsize1"]
         ssz2 = subdict.subarray_dict[sa]["subsize2"]
@@ -413,7 +413,10 @@ def determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_k
                             sst2 = sst2_tuple[0]
                         elif "2" in detector:
                             sst2 = sst2_tuple[1]
+                        stop_for_loop = True
                         break
+        if stop_for_loop:
+            break
 
     if pipe_subarr_val is not None:
         specific_keys_dict[key] = pipe_subarr_val
@@ -530,12 +533,13 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 if key == 'TIME-OBS':
                     val = timeobs
                 if key == 'SUBARRAY':
-                    subar_data = determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_keywds)
-                    pipe_subarr_val, subarr_specific_keys_dict, subarr_missing_keywds = subar_data
-                    specific_keys_dict.update(subarr_specific_keys_dict)
-                    for item in subarr_missing_keywds:
-                        missing_keywds.append(item)
-
+                    if 'full' not in val.lower():
+                        subar_data = determine_subarray(key, ff, detector, grating, specific_keys_dict, missing_keywds)
+                        pipe_subarr_val, subarr_specific_keys_dict, subarr_missing_keywds = subar_data
+                        specific_keys_dict.update(subarr_specific_keys_dict)
+                        for item in subarr_missing_keywds:
+                            missing_keywds.append(item)
+                # these keywords are set during at the same time as SUBARRAY
                 if key == 'SUBSTRT1' or key == 'SUBSTRT2' or key == 'SUBSIZE1' or key == 'SUBSIZE2':
                     continue
 
@@ -624,7 +628,7 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                                 print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for N/A")
                             specific_keys_dict[key] = 'N/A'
                             missing_keywds.append(key)
-                    else:  # set SUBARRAY for anything else other than IFU or MOS
+                    elif 'full' not in val.lower():  # set SUBARRAY for anything else other than IFU or MOS
                         if subarray is not None:
                             # force the subarray keyword to be set to input
                             if isinstance(subarray, bool):
