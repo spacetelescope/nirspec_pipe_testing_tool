@@ -4,6 +4,7 @@ from astropy.io import fits
 import json
 import datetime
 from astropy.visualization import (ImageNormalize, AsinhStretch)
+import matplotlib
 import matplotlib.pyplot as plt
 import time
 import argparse
@@ -125,6 +126,11 @@ def create_metafile_fopens(outfile, allcols, allrows, quads, stellarity, failedo
     im2 = np.concatenate((q3all, q4all))
     image = np.concatenate((im1, im2), axis=1)
 
+    # set up generals for all the plots
+    font = {'weight': 'normal',
+            'size': 12}
+    matplotlib.rc('font', **font)
+
     # plotting
     fig = plt.figure(figsize=(9, 9))
     norm = ImageNormalize(image, vmin=0., vmax=1., stretch=AsinhStretch())
@@ -197,6 +203,11 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
     if debug:
         print('got MSA flagging datamodel!')
 
+    # set up generals for all the plots
+    font = {'weight': 'normal',
+            'size': 12}
+    matplotlib.rc('font', **font)
+
     # plot full image
     fig = plt.figure(figsize=(9, 9))
     norm = ImageNormalize(msaflag.data, vmin=0., vmax=50., stretch=AsinhStretch())
@@ -217,13 +228,15 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
     plt.close()
 
     # read in DQ flags from MSA_flagging product
-    # find all pixels that have been flagged by this step -- DQ = 536870912
+    # find all pixels that have been flagged by this step  as MSA_FAILED_OPEN -> DQ array value = 536870912
+    # https://jwst-pipeline.readthedocs.io/en/latest/jwst/references_general/references_general.html?highlight=536870912#data-quality-flags
     dq_flag = 536870912
     msaflag_1d = msaflag.dq.flatten()
     index_opens = np.squeeze(np.asarray(np.where(msaflag_1d & dq_flag)))
     if debug:
         print("DQ array at 167, 1918: ", msaflag.dq[167, 1918])
-        print("Index where Failed Open shutters exist: ", index_opens)
+        # np.set_printoptions(threshold=sys.maxsize)  # print all elements in array
+        print("Index where Failed Open shutters exist: ", np.shape(index_opens), index_opens)
 
     # execute script that creates an MSA metafile for the failed open shutters
     # read operability reference file
@@ -320,6 +333,10 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
     if debug:
         print("New MSA metadata file in rate file: ", rate_mdl.meta.instrument.msa_metadata_file)
 
+    # force the exp_type of this new model to MSA, even if IFU so that nrs_wcs_set_input pipeline function works
+    if "ifu" in msaflag.meta.exposure.type.lower():
+        rate_mdl.meta.exposure.type = 'NRS_MSASPEC'
+
     # run assign_wcs; use +/-0.45 for the y-limits because the default is too big (0.6 including buffer)
     stp = AssignWcsStep()
     awcs_fo = stp.call(rate_mdl, slit_y_low=-0.45, slit_y_high=0.45)
@@ -359,14 +376,15 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
         print("Max value in slity array (ignoring NANs): ", np.nanmax(slity))
         index_trace = np.squeeze(index_1d)[~np.isnan(slity)]
         n_overlap = np.sum(np.isin(index_opens, index_trace))
+        overlap_percentage = round(n_overlap/index_trace.size*100., 1)
         if debug:
             print("Size of index_trace= ", index_trace.size)
             print("Size of index_opens=", index_opens.size)
             print("Sum of values found in index_opens and index_trace=", n_overlap)
-        msg = 'percentage of F/O trace that was flagged: ' + repr(n_overlap/index_trace.size*100.)
+        msg = 'percentage of F/O trace that was flagged: ' + repr(overlap_percentage)
         print(msg)
         log_msgs.append(msg)
-        allchecks[i] = n_overlap/index_trace.size*100.
+        allchecks[i] = overlap_percentage
         allsizes[i] = index_trace.size
 
         # show 2D cutouts, with flagged pixels overlaid
@@ -389,10 +407,11 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
         # plot the F/O traces
         vmax = np.max(msaflag.data[i3:i4, i1:i2])
         norm = ImageNormalize(msaflag.data[i3:i4, i1:i2], vmin=0., vmax=vmax, stretch=AsinhStretch())
-        plt.imshow(msaflag.data[i3:i4, i1:i2], norm=norm, aspect=10.0, origin='lower', cmap='viridis')
-        plt.imshow(subwin, aspect=20.0, origin='lower', cmap='Reds', alpha=0.3)
+        plt.imshow(msaflag.data[i3:i4, i1:i2], norm=norm, aspect=10.0, origin='lower', cmap='viridis',
+                   label='MSA flagging data')
+        plt.imshow(subwin, aspect=20.0, origin='lower', cmap='Reds', alpha=0.3, label='Calculated F/O')
         # overplot the flagged pixels in translucent grayscale
-        plt.imshow(subwin_dq, aspect=20.0, origin='lower', cmap='gray', alpha=0.3)
+        plt.imshow(subwin_dq, aspect=20.0, origin='lower', cmap='gray', alpha=0.3, label='Pipeline F/O')
         if save_figs:
             t = (file_basename, "FailedOpen_detector", detector, "slit", repr(name) + ".png")
             plt_name = "_".join(t)
@@ -409,6 +428,9 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
         msa_flagging_threshold = float(msa_flagging_threshold)
     if (allchecks[allsizes >= 100] >= msa_flagging_threshold).all():
         FINAL_TEST_RESULT = True
+    else:
+        print("\n * One or more traces show msa_flagging match < ", repr(msa_flagging_threshold))
+        print("   See results above per trace. \n")
     if FINAL_TEST_RESULT:
         result_msg = "\n *** Final result for msa_flagging test will be reported as PASSED *** \n"
         print(result_msg)
