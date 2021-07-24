@@ -488,10 +488,15 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
                     V2_REF, V3_REF = refpoint[0], refpoint[1]
                     V3IdlYAngle = NIRSpec_SIAF[aperture_name].V3IdlYAngle
                     VIdlParity = NIRSpec_SIAF[aperture_name].VIdlParity
-                    fits.setval(stsci_pipe_ready_file, 'V2_REF', value=V2_REF, extname='SCI')
-                    fits.setval(stsci_pipe_ready_file, 'V3_REF', value=V3_REF, extname='SCI')
                     fits.setval(stsci_pipe_ready_file, 'V3I_YANG', value=V3IdlYAngle, extname='SCI')
                     fits.setval(stsci_pipe_ready_file, 'VPARITY', value=VIdlParity, extname='SCI')
+                    # check if these are in the header
+                    if 'V2_REF' in primary_ext_ips_keywd_dict:
+                        V2_REF = primary_ext_ips_keywd_dict['V2_REF']
+                    if 'V3_REF' in primary_ext_ips_keywd_dict:
+                        V3_REF = primary_ext_ips_keywd_dict['V3_REF']
+                    fits.setval(stsci_pipe_ready_file, 'V2_REF', value=V2_REF, extname='SCI')
+                    fits.setval(stsci_pipe_ready_file, 'V3_REF', value=V3_REF, extname='SCI')
                     if verbose:
                         print('Modified keyword in science extension: V2_REF', '   new_value=', V2_REF)
                         print('Modified keyword in science extension: V3_REF', '   new_value=', V3_REF)
