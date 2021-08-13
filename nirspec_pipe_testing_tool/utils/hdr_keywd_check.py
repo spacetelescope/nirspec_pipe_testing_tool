@@ -345,25 +345,6 @@ def get_pysiaf_aperture(mode, subarray, detector):
     return aperture_name
 
 
-def get_pipe_subarray_name(subarray):
-    print('changing subarray from value: ', subarray)
-    pipe_subarr_val = 'NOT_FOUND'
-    if 'FULL' in subarray:
-        pipe_subarr_val = 'FULL'
-    elif '200A1' in subarray:
-        pipe_subarr_val = 'S200A1'
-    elif '200A2' in subarray:
-        pipe_subarr_val = 'S200A2'
-    elif '200B1' in subarray:
-        pipe_subarr_val = 'S200B1'
-    elif '400A1' in subarray:
-        pipe_subarr_val = 'S400A1'
-    elif '1600' in subarray:
-        pipe_subarr_val = 'S1600A1'
-    print('  to value: ', pipe_subarr_val)
-    return pipe_subarr_val
-
-
 # keyword and format check
 
 def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_keywds, mode_used):
@@ -408,6 +389,11 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                 if key == 'MSAMETFL':
                     if ('mos' in mode_used.lower()) or ("msa" in mode_used.lower()):
                         val = msa_metafile
+                        specific_keys_dict[key] = val
+                        print('     Setting value of ', key, ' to ', val)
+                if key == 'TSOVISIT':
+                    if mode_used.lower() == 'bots':
+                        val = True
                         specific_keys_dict[key] = val
                         print('     Setting value of ', key, ' to ', val)
                 missing_keywds.append(key)
