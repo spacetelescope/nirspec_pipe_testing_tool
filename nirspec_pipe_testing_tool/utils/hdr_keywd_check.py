@@ -9,6 +9,7 @@ from datetime import datetime
 from astropy.io import fits
 from collections import OrderedDict
 from glob import glob
+import jwst
 
 # import the header keyword dictionaries
 from .dict_info import hdr_keywd_dict as hkwd
@@ -364,9 +365,13 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
     # get the name and path of the input fits file
     ff = warnings_file_name.replace('_addedkeywds.txt', '.fits')
 
-    # get the detector and grating from the input file
-    detector = fits.getval(ff, "DETECTOR", 0)
-    grating = fits.getval(ff, "GRATING", 0)
+    # get the detector, grating and other info from the input file
+    file_hdr = fits.getheader(ff)
+    detector = file_hdr["DETECTOR"]
+    grating = file_hdr["GRATING"]
+    pipe_version = jwst.__version__
+    print('Setting keyword SDP_VER to current pipeline version: ', pipe_version)
+    fits.setval(ff, 'SDP_VER', 0, value=pipe_version)
 
     # get the instrument mode used either from the input of the script or from the configuration file
     mode, msa_metafile = get_modeused_PTT_cfg_file(detector)
@@ -396,6 +401,12 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                         val = True
                         specific_keys_dict[key] = val
                         print('     Setting value of ', key, ' to ', val)
+                if key == 'FXD_SLIT':
+                    if mode_used.lower() == 'fs':
+                        val = 'S200A1'
+                    elif mode_used.lower() == 'bots':
+                        val = 'S1600A1'
+                    print('     Setting value of ', key, ' to ', val)
                 missing_keywds.append(key)
                 warning = '{:<15} {:<9} {:<25}'.format(key, ext, 'New keyword added to header')
                 warnings_list.append(warning)
