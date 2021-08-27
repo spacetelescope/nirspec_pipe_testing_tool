@@ -168,8 +168,8 @@ keywd_dict['FASTAXIS'] = 2  # Direction of fast readout, options are: 1, 2, -1, 
 keywd_dict['SLOWAXIS'] = 1  # Direction of slow readout, options are: 1, 2, -1, -2
 
 # Dither information
-keywd_dict['XOFFSET'] = 0.0  # float, x offset from pattern starting position
-keywd_dict['YOFFSET'] = 0.0  # float, y offset from pattern starting position
+keywd_dict['XOFFSET'] = 0.0  # x offset from pattern starting position, 0.0 is correct for a slit-centered obj
+keywd_dict['YOFFSET'] = 0.0  # y offset from pattern starting position, 0.0 is correct for a slit-centered obj
 
 # added for build 7.3
 keywd_dict['PATT_NUM'] = 1  # position number within primary pattern

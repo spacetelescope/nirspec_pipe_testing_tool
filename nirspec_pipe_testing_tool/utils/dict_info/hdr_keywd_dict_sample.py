@@ -165,8 +165,8 @@ keywd_dict['FOCUSPOS'] = 1  # int, [mm] focus position for NIRSpec, e.g. 0
 keywd_dict['NRS_NORM'] = 16  # int, Number of normal pixels in IRS2 readout, used also in IFU data
 keywd_dict['NRS_REF'] = 4  # int, Number of reference pixels in IRS2 readout, used also in IFU data
 keywd_dict['FRMDIVSR'] = 1  # integer, Divisor applied to frame-averaged groups
-keywd_dict['XOFFSET'] = 0.0  # float, x offset from pattern starting position
-keywd_dict['YOFFSET'] = 0.0  # float, y offset from pattern starting position
+keywd_dict['XOFFSET'] = 0.0  # x offset from pattern starting position, 0.0 is correct for a slit-centered obj
+keywd_dict['YOFFSET'] = 0.0  # y offset from pattern starting position, 0.0 is correct for a slit-centered obj
 
 # added for build 7.3
 keywd_dict['PATT_NUM'] = 1  # position number within primary pattern
