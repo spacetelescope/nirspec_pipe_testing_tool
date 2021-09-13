@@ -94,6 +94,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     sci_ext_list = auxfunc.get_sci_extensions(flatfile)
 
     # get basic info from model
+    if isinstance(model, list):  # this was added for the validation notebooks to work
+        model = model[0]
+
+    # get basic info from model
     det = model.meta.instrument.detector
     grat = model.meta.instrument.grating
     filt = model.meta.instrument.filter
@@ -108,7 +112,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         file_path = step_input_filename.replace(os.path.basename(step_input_filename), "")
         file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
     else:
-        model = step_input_filename
         file_path = os.path.dirname(os.path.realpath(__file__))
         file_basename = grat + "_" + filt + "_" + det
 

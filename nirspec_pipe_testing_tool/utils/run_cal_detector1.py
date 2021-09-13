@@ -23,8 +23,6 @@ from jwst.jump.jump_step import JumpStep
 from jwst.ramp_fitting.ramp_fit_step import RampFitStep
 from jwst.gain_scale.gain_scale_step import GainScaleStep
 
-from .level2b_hdr_keywd_check import check_lev2b_hdr_keywd
-
 
 """
 This script will perform calwebb_detector1 in one single run, outputing intermediary files named:
@@ -233,6 +231,11 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
                     "lastframe.fits", "linearity.fits", "dark_current.fits", "jump.fits", "ramp_fit.fits",
                     final_output_caldet1]
 
+    # Make sure the file has the metafile for MOS data and the TSO-specific key
+    fits.setval(fits_input_uncal_file, 'MSAMETFL', value=msa_metafile)
+    if 'bots' in mode_used.lower():
+        fits.setval(fits_input_uncal_file, 'TSOVISIT', value=True)
+
     if not step_by_step:
         print("Got arguments and will run the calwebb_detector1 pipeline in full. This may take a while...")
 
@@ -377,10 +380,6 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
     msg = "\n ** Calwebb_detector 1 took "+repr(tot_time)+" to complete **"
     print(msg)
     logging.info(msg)
-
-    # Make sure the rate file has all the keywords for the stage 2, including the metafile for MOS data
-    only_update = True
-    check_lev2b_hdr_keywd(final_output_caldet1, only_update, mode_used, detector=detector, msa_metafile=msa_metafile)
 
     # make sure the final file is name as expected
     if not os.path.isfile(stage2_pipe_input_file):

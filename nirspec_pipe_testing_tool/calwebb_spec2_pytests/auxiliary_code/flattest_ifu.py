@@ -134,6 +134,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     else:
         flatfile = interpolated_flat
 
+    # get basic info from model
+    if isinstance(model, list):  # this was added for the validation notebooks to work
+        model = model[0]
+
     # get the datamodel from the assign_wcs output file
     ifu_slits = nirspec.nrs_ifu_wcs(model)
     det = model.meta.instrument.detector
