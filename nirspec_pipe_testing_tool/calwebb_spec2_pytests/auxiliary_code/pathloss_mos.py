@@ -296,14 +296,15 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
         # get the data from the input and comparison models
         previous_sci = slit.data
-        pipe_correction = pipe_slit.pathloss_uniform
 
         # calculate correction according to source type
         if is_point_source:
+            pipe_correction = pipe_slit.pathloss_point
             print('   Running test for POINT source...')
             corr_vals, corrected_array = pointsourcetest(previous_sci, wave_sci, slit_x, slit_y,
                                                          wave_ref, slitx_ref, slity_ref, plcor_ref_ext, debug)
         else:
+            pipe_correction = pipe_slit.pathloss_uniform
             print('   Running test for UNIFORM source...')
             corr_vals, corrected_array = uniformsourcetest(previous_sci, wave_sci, wave_ref, plcor_ref_ext)
 
