@@ -20,7 +20,7 @@ This script tests the pipeline flat field step output for MOS data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "3.7"
+__version__ = "3.8"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -37,6 +37,8 @@ __version__ = "3.7"
 #                         if the data is Nan or 0, then DQ flag is set to DO_NOT_USE + NO_FLAT_FIELD. The code now
 #                         only looks at the flat DQ flag set to DO_NOT_USE in determining if the data should be used.
 # Jan 2021 - Version 3.7: Implemented option to run with object instead of input fits file.
+# Sep 2021 - Version 3.8: Changing wavelength array to be read from model.slit instead of wcs
+#                         (as recommended in Jira issue https://jira.stsci.edu/browse/JP-2225)
 
 
 def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutter_conf,
@@ -386,8 +388,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         ext = sci_ext_list[slit_id]   # this is for getting the science extension in the pipeline calculated flat
 
         # get the wavelength
-        y, x = np.mgrid[:slit.data.shape[0], :slit.data.shape[1]]
-        ra, dec, wave = slit.meta.wcs(x, y)   # wave is in microns
+        # y, x = np.mgrid[:slit.data.shape[0], :slit.data.shape[1]]
+        # ra, dec, wave = slit.meta.wcs(x, y)   # wave is in microns
+        wave = slit.wavelength
 
         # get the subwindow origin
         px0 = slit.xstart - 1 + model.meta.subarray.xstart
