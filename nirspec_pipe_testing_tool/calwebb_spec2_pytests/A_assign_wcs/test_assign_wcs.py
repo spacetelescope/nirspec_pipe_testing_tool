@@ -22,15 +22,18 @@ from ..auxiliary_code import compare_wcs_ifu
 from ..auxiliary_code import compare_wcs_fs
 from ..auxiliary_code import compare_wcs_mos
 
-# print pipeline version
+# print pipeline and nptt version
 import jwst
-
+import nirspec_pipe_testing_tool as nptt
 pipeline_version = "\n *** Using jwst pipeline version: " + jwst.__version__ + " *** \n"
 print(pipeline_version)
+ppt_version = "\n *** Using NPTT version: " + nptt.__version__ + " *** \n"
+print(ppt_version)
+
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.5"
+__version__ = "2.6"
 
 
 # HISTORY
@@ -41,6 +44,7 @@ __version__ = "2.5"
 # Dec 2019 - Version 2.3: implemented image processing and text file name handling
 # Jun 2020 - Version 2.4: Changed comparison file to be our own instead of ESA files
 # Jul 2020 - Version 2.5: Added check to see if running spec2 is appropriate according to EXP_TYPE rules taken from CRDS
+# Sep 2021 - Version 2.6: Adding print statement for NPTT version
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
