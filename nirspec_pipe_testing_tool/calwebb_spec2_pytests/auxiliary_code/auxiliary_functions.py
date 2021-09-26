@@ -402,7 +402,7 @@ def idl_valuelocate(arr, vals):
 
     """
 
-    if isinstance(vals, float):
+    if not isinstance(vals, (list, np.ndarray)):
         vals = [vals]
 
     idx_list = []

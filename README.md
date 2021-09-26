@@ -156,7 +156,7 @@ conda env remove -n name_of_your_old_environment
 
 - Option A. For non-developers and without PTT source code. For the **latest stable tag** type: 
 ```bash
-pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.1.19
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.1.20
 ```
 where the numbers at the end represent the latest stable version of NPTT; for the most recent code, in the 
 terminal type:

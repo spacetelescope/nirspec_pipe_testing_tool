@@ -380,17 +380,18 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     flatfile_hdu = fits.open(flatfile)
 
     # loop over the 2D subwindows and read in the WCS values
+    total_slits = len(model.slits)
     for slit in model.slits:
         slit_id = slit.name
-        msg = "\nWorking with slit: "+slit_id
+        msg = "\nWorking with slit: "+slit_id+" - out of "+repr(total_slits)
         print(msg)
         log_msgs.append(msg)
         ext = sci_ext_list[slit_id]   # this is for getting the science extension in the pipeline calculated flat
 
         # get the wavelength
         # y, x = np.mgrid[:slit.data.shape[0], :slit.data.shape[1]]
-        # ra, dec, wave = slit.meta.wcs(x, y)   # wave is in microns
-        wave = slit.wavelength
+        # ra, dec, wave = slit.meta.wcs(x, y)   # wave is in microns, commented because it's not wavecor product
+        wave = slit.wavelength  # uses the object from step wavecor
 
         # get the subwindow origin
         px0 = slit.xstart - 1 + model.meta.subarray.xstart
