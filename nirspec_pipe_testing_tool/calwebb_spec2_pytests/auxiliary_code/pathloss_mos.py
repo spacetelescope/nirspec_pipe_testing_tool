@@ -196,7 +196,6 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     grat = pl.meta.instrument.grating
     filt = pl.meta.instrument.filter
     exptype = pl.meta.exposure.type
-
     msg = "from datamodel  -->     Detector: " + det + "   Grating: " + grat + "   Filter: " + \
           filt + "   Lamp: " + lamp + "   EXP_TYPE: " + exptype
     print(msg)
@@ -299,7 +298,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
         # calculate correction according to source type
         if is_point_source:
-            pipe_correction = pipe_slit.pathloss_point
+            pipe_correction = pipe_slit.pathloss_uniform
             print('   Running test for POINT source...')
             corr_vals, corrected_array = pointsourcetest(previous_sci, wave_sci, slit_x, slit_y,
                                                          wave_ref, slitx_ref, slity_ref, plcor_ref_ext, debug)
@@ -454,6 +453,8 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
                 # This is the key argument for the assert pytest function
                 median_diff = False
+                print('\n* TEST result: corrections residuals median =', corr_residuals_mean,
+                      'threshold difference = ', threshold_diff, '\n')
                 if abs(corr_residuals_median) <= float(threshold_diff):
                     median_diff = True
                 if median_diff:
