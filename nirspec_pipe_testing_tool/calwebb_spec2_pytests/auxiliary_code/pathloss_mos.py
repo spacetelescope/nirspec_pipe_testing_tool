@@ -8,7 +8,6 @@ import argparse
 import sys
 
 import jwst
-from gwcs import wcstools
 from jwst import datamodels
 from jwst.assign_wcs import util
 
@@ -281,9 +280,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         slitx_ref, slity_ref, wave_ref = w.all_pix2world(x1, y1, w1, 0)
 
         # get the wavelength from the input model
-        wcs_obj = slit.meta.wcs
-        x, y = wcstools.grid_from_bounding_box(wcs_obj.bounding_box, step=(1, 1), center=True)
-        ra, dec, wave = slit.meta.wcs(x, y)
+        wave = slit.wavelength
         wave_sci = wave * 1.0e-6  # microns --> meters
         if debug:
             print('   wave_sci.size=', wave_sci.size, '  wave_ref.size=', wave_ref.size)
