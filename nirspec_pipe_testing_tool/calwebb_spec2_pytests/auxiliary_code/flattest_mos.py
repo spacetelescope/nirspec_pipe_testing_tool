@@ -381,9 +381,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
     # loop over the 2D subwindows and read in the WCS values
     total_slits = len(model.slits)
-    for slit in model.slits:
+    for si, slit in enumerate(model.slits):
         slit_id = slit.name
-        msg = "\nWorking with slit: "+slit_id+" - out of "+repr(total_slits)
+        msg = "\nWorking with slit ID: "+slit_id+" - which is "+repr(si+1)+" out of "+repr(total_slits)
         print(msg)
         log_msgs.append(msg)
         ext = sci_ext_list[slit_id]   # this is for getting the science extension in the pipeline calculated flat
