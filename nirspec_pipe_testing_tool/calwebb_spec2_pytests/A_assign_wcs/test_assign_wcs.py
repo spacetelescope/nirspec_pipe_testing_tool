@@ -239,10 +239,13 @@ def output_hdul(set_inandout_filenames, config):
 
         # run the pipeline
         print('Running pipeline... \n')
-        if not imaging_mode:
-            Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)  # , logcfg=stpipelogcfg)
-        else:
-            Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
+        try:
+            if not imaging_mode:
+                Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)  # , logcfg=stpipelogcfg)
+            else:
+                Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
+        except:
+            pytest.exit("\n * The pipeline crashed, probably due to no open slits fall on detector")
 
         """
         # For the moment, the pipeline is using the wrong reference file for slit 400A1, so the
