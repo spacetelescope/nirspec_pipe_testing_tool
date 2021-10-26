@@ -25,7 +25,7 @@ This script tests the MSA pipeline pathloss step output for POINT and UNIFORM so
 
 # HEADER
 __author__ = "T King & M Pena-Guerrero"
-__version__ = "1.5"
+__version__ = "1.6"
 
 # HISTORY
 # October 19, 2019 - Version 1.0: initial version started
@@ -34,6 +34,8 @@ __version__ = "1.5"
 # September 25, 2020 - Version 1.3: Added option to use either data model or fits file as input for the test
 # January 2021 - Version 1.4: Implemented option to use datamodels instead of fits files as input
 # April 2021 - Version 1.5: Combined point and uniform sources since MOS data does not have 1 singe source type
+# October 2021 - Version 1.6: Fixed bug to correctly point to uniform and point source and changed to use the
+#                             slit.wavelength to get the correction from wavecor step instead of from the wcs object
 
 
 def get_mos_ps_uni_extensions(fits_file_name):
@@ -295,7 +297,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
         # calculate correction according to source type
         if is_point_source:
-            pipe_correction = pipe_slit.pathloss_uniform
+            pipe_correction = pipe_slit.pathloss_point
             print('   Running test for POINT source...')
             corr_vals, corrected_array = pointsourcetest(previous_sci, wave_sci, slit_x, slit_y,
                                                          wave_ref, slitx_ref, slity_ref, plcor_ref_ext, debug)
