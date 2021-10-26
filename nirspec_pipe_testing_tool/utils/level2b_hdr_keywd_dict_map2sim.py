@@ -442,12 +442,14 @@ def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_rea
 
 def get_pysiaf_aperture(st_pipe_ready_dict, verbose):
     subarray = st_pipe_ready_dict['SUBARRAY']
-    detector = st_pipe_ready_dict['DETECTOR']
     if 'ifu' in st_pipe_ready_dict['EXP_TYPE'].lower():
-        aperture_name = detector + '_FULL_IFU'
+        aperture_name = 'NRS_FULL_IFU'
+        return aperture_name
+    if 'msaspec' in st_pipe_ready_dict['EXP_TYPE'].lower():
+        aperture_name = 'NRS_FULL_MSA'
         return aperture_name
     if 'full' in subarray.lower():
-        aperture_name = detector + '_FULL'
+        aperture_name = 'NRS_FULL'
     elif '200' in subarray or '400' in subarray:
         aperture_name = 'NRS_' + subarray + '_SLIT'
     else:
