@@ -284,7 +284,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         # get the wavelength from the input model
         wcs_obj = slit.meta.wcs
         x, y = wcstools.grid_from_bounding_box(wcs_obj.bounding_box, step=(1, 1), center=True)
-        ra, dec, wave = slit.meta.wcs(x, y)
+        wave = slit.wavelength
         wave_sci = wave * 1.0e-6  # microns --> meters
         if debug:
             print('   wave_sci.size=', wave_sci.size, '  wave_ref.size=', wave_ref.size)
