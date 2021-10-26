@@ -8,7 +8,6 @@ import argparse
 import sys
 
 import jwst
-from gwcs import wcstools
 from jwst import datamodels
 from jwst.assign_wcs import util
 
@@ -26,15 +25,17 @@ This script tests the MSA pipeline pathloss step output for POINT and UNIFORM so
 
 # HEADER
 __author__ = "T King & M Pena-Guerrero"
-__version__ = "1.5"
+__version__ = "1.6"
 
 # HISTORY
-# October 19, 2019 - Version 1.0: initial version started
-# January 14, 2020 - Version 1.1: passes tests
-# February 26, 2020 - Version 1.2: mostly pep8 compliant
-# September 25, 2020 - Version 1.3: Added option to use either data model or fits file as input for the test
-# January 2021 - Version 1.4: Implemented option to use datamodels instead of fits files as input
-# April 2021 - Version 1.5: Combined point and uniform sources since MOS data does not have 1 singe source type
+# Oct 2019 - Version 1.0: initial version started
+# Jan 2020 - Version 1.1: passes tests
+# Feb 2020 - Version 1.2: mostly pep8 compliant
+# Sep 2020 - Version 1.3: Added option to use either data model or fits file as input for the test
+# Jan 2021 - Version 1.4: Implemented option to use datamodels instead of fits files as input
+# Apr 2021 - Version 1.5: Combined point and uniform sources since MOS data does not have 1 singe source type
+# Oct 2021 - Version 1.6: Fixed bug to correctly point to uniform and point source and changed to use the
+#                         slit.wavelength to get the correction from wavecor step instead of from the wcs object
 
 
 def get_mos_ps_uni_extensions(fits_file_name):
@@ -196,7 +197,6 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     grat = pl.meta.instrument.grating
     filt = pl.meta.instrument.filter
     exptype = pl.meta.exposure.type
-
     msg = "from datamodel  -->     Detector: " + det + "   Grating: " + grat + "   Filter: " + \
           filt + "   Lamp: " + lamp + "   EXP_TYPE: " + exptype
     print(msg)
@@ -282,8 +282,6 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         slitx_ref, slity_ref, wave_ref = w.all_pix2world(x1, y1, w1, 0)
 
         # get the wavelength from the input model
-        wcs_obj = slit.meta.wcs
-        x, y = wcstools.grid_from_bounding_box(wcs_obj.bounding_box, step=(1, 1), center=True)
         wave = slit.wavelength
         wave_sci = wave * 1.0e-6  # microns --> meters
         if debug:
@@ -454,6 +452,8 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
                 # This is the key argument for the assert pytest function
                 median_diff = False
+                print('\n* TEST result: corrections residuals median =', corr_residuals_mean,
+                      'threshold difference = ', threshold_diff, '\n')
                 if abs(corr_residuals_median) <= float(threshold_diff):
                     median_diff = True
                 if median_diff:
