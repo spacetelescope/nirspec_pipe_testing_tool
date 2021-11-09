@@ -396,48 +396,47 @@ def set_subarray_and_size_keywds(ips_keywd_dict, st_pipe_ready_dict, st_pipe_rea
     detector = st_pipe_ready_dict['DETECTOR']
 
     # set the subarray keyword to a value the STScI pipeline can process
-    if 'MSA' in exp_type_keywd_value or 'IFU' in exp_type_keywd_value:
+    if 'MSA' in exp_type_keywd_value or 'IFU' in exp_type_keywd_value or ips_keywd_dict['SUBARRAY'] == 'F':
         if verbose:
             print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
-                  '   new_value= N/A')
-        st_pipe_ready_dict['SUBARRAY'] = 'N/A'
-    else:
-        if ips_keywd_dict['SUBARRAY'] == 'F':
+                  '   new_value= FULL')
+        st_pipe_ready_dict['SUBARRAY'] = 'FULL'
+        fits.setval(st_pipe_ready_file, 'SUBARRAY', value='FULL')
+        fits.setval(st_pipe_ready_file, 'SUBSTRT1', value=1)
+        fits.setval(st_pipe_ready_file, 'SUBSTRT2', value=1)
+        fits.setval(st_pipe_ready_file, 'SUBSIZE1', value=2048)
+        fits.setval(st_pipe_ready_file, 'SUBSIZE2', value=2048)
+    elif ips_keywd_dict['SUBARRAY'] == 'T':
+        # match the subarray used to the sizes keywords
+        data = fits.getdata(st_pipe_ready_file, 'SCI')
+        shape = np.shape(data)
+        subsize2, subsize1 = shape[-2], shape[-1]
+        stpipe_key, ssz1, ssz2, sst1, sst2 = find_subarray_size(subsize1, subsize2, detector, grating)
+        if stpipe_key is None:
+            # try with inverted subsize 1 and 2
+            subsize1, subsize2 = shape[-2], shape[-1]
+            stpipe_key, ssz1, ssz2, sst1, sst2 = find_subarray_size(subsize1, subsize2, detector, grating)
+
+        if stpipe_key is not None:
+            fits.setval(st_pipe_ready_file, 'SUBARRAY', value=stpipe_key)
             if verbose:
                 print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
-                      '   new_value= FULL')
-            st_pipe_ready_dict['SUBARRAY'] = 'FULL'
+                      '   new_value=', stpipe_key)
+                print('Modified keyword: SUBSTRT1', '   old_value=', st_pipe_ready_dict['SUBSTRT1'],
+                      '   new_value=', sst1)
+                print('Modified keyword: SUBSTRT2', '   old_value=', st_pipe_ready_dict['SUBSTRT2'],
+                      '   new_value=', sst2)
+                print('Modified keyword: SUBSIZE1', '   old_value=', st_pipe_ready_dict['SUBSIZE1'],
+                      '   new_value=', ssz1)
+                print('Modified keyword: SUBSIZE2', '   old_value=', st_pipe_ready_dict['SUBSIZE2'],
+                      '   new_value=', ssz2)
+            fits.setval(st_pipe_ready_file, 'SUBSTRT1', value=sst1)
+            fits.setval(st_pipe_ready_file, 'SUBSTRT2', value=sst2)
+            fits.setval(st_pipe_ready_file, 'SUBSIZE1', value=ssz1)
+            fits.setval(st_pipe_ready_file, 'SUBSIZE2', value=ssz2)
         else:
-            # match the subarray used to the sizes keywords
-            data = fits.getdata(st_pipe_ready_file, 'SCI')
-            shape = np.shape(data)
-            subsize2, subsize1 = shape[-2], shape[-1]
-            stpipe_key, ssz1, ssz2, sst1, sst2 = find_subarray_size(subsize1, subsize2, detector, grating)
-            if stpipe_key is None:
-                # try with inverted subsize 1 and 2
-                subsize1, subsize2 = shape[-2], shape[-1]
-                stpipe_key, ssz1, ssz2, sst1, sst2 = find_subarray_size(subsize1, subsize2, detector, grating)
-
-            if stpipe_key is not None:
-                fits.setval(st_pipe_ready_file, 'SUBARRAY', value=stpipe_key)
-                if verbose:
-                    print('Modified keyword: SUBARRAY', '   old_value=', st_pipe_ready_dict['SUBARRAY'],
-                          '   new_value=', stpipe_key)
-                    print('Modified keyword: SUBSTRT1', '   old_value=', st_pipe_ready_dict['SUBSTRT1'],
-                          '   new_value=', sst1)
-                    print('Modified keyword: SUBSTRT2', '   old_value=', st_pipe_ready_dict['SUBSTRT2'],
-                          '   new_value=', sst2)
-                    print('Modified keyword: SUBSIZE1', '   old_value=', st_pipe_ready_dict['SUBSIZE1'],
-                          '   new_value=', ssz1)
-                    print('Modified keyword: SUBSIZE2', '   old_value=', st_pipe_ready_dict['SUBSIZE2'],
-                          '   new_value=', ssz2)
-                fits.setval(st_pipe_ready_file, 'SUBSTRT1', value=sst1)
-                fits.setval(st_pipe_ready_file, 'SUBSTRT2', value=sst2)
-                fits.setval(st_pipe_ready_file, 'SUBSIZE1', value=ssz1)
-                fits.setval(st_pipe_ready_file, 'SUBSIZE2', value=ssz2)
-            else:
-                print('WARNING! Unable to determine correct value for the following keywords: '
-                      'SUBARRAY, SUBSTRT1. SUBSTRT2, SUBSIZE1, and SUBSIZE2')
+            print('WARNING! Unable to determine correct value for the following keywords: '
+                  'SUBARRAY, SUBSTRT1. SUBSTRT2, SUBSIZE1, and SUBSIZE2')
 
 
 def get_pysiaf_aperture(st_pipe_ready_dict, verbose):
