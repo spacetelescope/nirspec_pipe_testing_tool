@@ -1,0 +1,85 @@
+name: build and install
+
+on:
+  push:
+  pull_request:
+
+env:
+  BASE_OS: ubuntu-16.04
+  PYTHON_VERSION: '3.8'
+
+jobs:
+  build:
+    name: build and install from source
+    runs-on: $BASE_OS
+    env:
+      USE_DIST: '.'
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: $PYTHON_VERSION
+          cache: 'pip'
+
+      - name: build
+        run: |
+          python -m pip install --upgrade pip wheel
+          python setup.py sdist
+          python setup.py bdist_wheel
+
+      - name: cache artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: install from source
+        run: pip install --progress-bar=off "$USE_DIST"
+
+  install_wheel:
+    name: install from wheel
+    needs: build
+    runs-on: $BASE_OS
+    env:
+      USE_DIST: 'dist/*.whl'
+
+    steps:
+      - name: set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: $PYTHON_VERSION
+          cache: 'pip'
+
+      - name: fetch artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: build-artifact
+
+      - name: install from wheel
+        run: pip install --progress-bar=off "$USE_DIST"
+
+  install_sdist:
+    name: install from sdist
+    needs: build
+    runs-on: $BASE_OS
+    env:
+      USE_DIST: 'dist/*.tar.gz'
+
+    steps:
+      - name: set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: $PYTHON_VERSION
+          cache: 'pip'
+
+      - name: fetch artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: build-artifact
+
+      - name: install from wheel
+        run: pip install --progress-bar=off "$USE_DIST"
