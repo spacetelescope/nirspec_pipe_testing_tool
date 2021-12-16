@@ -29,7 +29,7 @@ jobs:
       - name: cache artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: dist
+          name: dist-artifacts
           path: dist
 
       - name: install from source
@@ -51,7 +51,8 @@ jobs:
       - name: fetch artifacts
         uses: actions/download-artifact@v2
         with:
-          name: dist
+          name: dist-artifacts
+          path: dist
 
       - name: troubleshooting
         run: ls -lR
@@ -75,7 +76,8 @@ jobs:
       - name: fetch artifacts
         uses: actions/download-artifact@v2
         with:
-          name: dist
+          name: dist-artifacts
+          path: dist
 
       - name: install from wheel
         run: pip install --progress-bar=off "$USE_DIST"
