@@ -33,7 +33,7 @@ jobs:
           path: dist
 
       - name: install from source
-        run: pip install --progress-bar=off "$USE_DIST"
+        run: pip install --progress-bar=off $USE_DIST
 
   install_wheel:
     name: install from wheel
@@ -54,11 +54,8 @@ jobs:
           name: dist-artifacts
           path: dist
 
-      - name: troubleshooting
-        run: ls -lR
-
       - name: install from wheel
-        run: pip install --progress-bar=off "$USE_DIST"
+        run: pip install --progress-bar=off $USE_DIST
 
   install_sdist:
     name: install from sdist
@@ -80,4 +77,4 @@ jobs:
           path: dist
 
       - name: install from wheel
-        run: pip install --progress-bar=off "$USE_DIST"
+        run: pip install --progress-bar=off $USE_DIST
