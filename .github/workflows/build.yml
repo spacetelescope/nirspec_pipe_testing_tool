@@ -5,13 +5,12 @@ on:
   pull_request:
 
 env:
-  OS: ubuntu-16.04
   PYTHON_VERSION: '3.8'
 
 jobs:
   build:
     name: build and install from source
-    runs-on: ${{ env.OS }}
+    runs-on: ubuntu-latest
     env:
       USE_DIST: '.'
 
@@ -43,7 +42,7 @@ jobs:
   install_wheel:
     name: install from wheel
     needs: build
-    runs-on: ${{ env.OS }}
+    runs-on: ubuntu-latest
     env:
       USE_DIST: 'dist/*.whl'
 
@@ -65,7 +64,7 @@ jobs:
   install_sdist:
     name: install from sdist
     needs: build
-    runs-on: ${{ env.OS }}
+    runs-on: ubuntu-latest
     env:
       USE_DIST: 'dist/*.tar.gz'
 
