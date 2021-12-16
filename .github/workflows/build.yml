@@ -53,6 +53,9 @@ jobs:
         with:
           name: dist
 
+      - name: troubleshooting
+        run: ls -lR
+
       - name: install from wheel
         run: pip install --progress-bar=off "$USE_DIST"
 
