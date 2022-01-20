@@ -9,6 +9,7 @@ import os
 import urllib
 import json
 import tempfile
+import collections
 
 """
 This script will create the shutter configuration file for MOS data, while the pipeline is not automatically doing so.
@@ -48,22 +49,25 @@ This script will create the shutter configuration file for MOS data, while the p
     
     # set optional variables
     operability_ref = '/path_to_new/operability_ref.json' 
+    flat_metafile = False  # set to True if this is for a flat metafile
     verbose = False
     
     # Run the function
     outfile = nptt.calwebb_spec2_pytests.auxiliary_code.create_metafile.run_create_metafile(config_binary_file, 
                                     fix_old_config_file, targ_file_list, shutters_in_slitlet, 
-                                    operability_ref=operability_ref, verbose=verbose)
+                                    operability_ref=operability_ref, flat_metafile=flat_metafile, 
+                                    verbose=verbose)
     
 """
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & James Muzerolle"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Oct 2019 - Version 1.0: initial version completed
 # Mar 2020 - Version 1.1: minor bug fixes
+# Dec 2021 - Version 1.2: added a condition to to create metafiles for flats
 
 now = datetime.datetime.now()
 
@@ -259,7 +263,7 @@ def fix_metafile(infile):
 
 
 def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitlet, operability_ref=None,
-                           output_dir=None, verbose=False):
+                           output_dir=None, flat_metafile=False, verbose=False):
     """
     This function creates the shutter configuration file for dithers, using the csv files
     Args:
@@ -403,7 +407,7 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
 
     # initialize arrays for table columns
     # slitlet IDs - arbitrary numbering
-    tab_slitlet_id = np.full(allcols.size, 0)
+    # tab_slitlet_id = np.full(allcols.size, 0)  # replaced by dictionary per source ID
     # metadata ID (arbitrary)
     tab_metadata_id = np.full(allcols.size, 1)
     # source IDs - from target file (based on original MPT catalog)
@@ -433,9 +437,8 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
         print("                                          Exiting script.")
         sys.exit()
 
-    sourceid_repetitions = nnods * shutters_in_slitlet
-    count_repetitions, keep_tab_slitlet_id = 1, True
-    obs_failedopen = 0
+    obs_failedopen, all_source_tsid = 0, []
+    slitlet_id_dict = collections.OrderedDict()
     for i in range(nshut):
         for fail_open_id in failedopens:
             # check if this is a failed open shutter
@@ -449,33 +452,40 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
         match = np.intersect1d(np.where(quads[i] == source_quad),
                                np.intersect1d(np.where(allrows[i] == source_row),
                                               np.where(allcols[i] == source_col)))
+        match_length = len(match)
+        if match_length != 0:
+            if match_length > 1:
+                match = match[0]
 
-        if match.size != 0:
             # if there was a match AND this is not a failed open shutter, add source to the table
             tab_source_id[i] = source_id[match]
 
+            if tab_source_id[i] not in slitlet_id_dict:
+                tab_slitlet_id = int(i / nnods / shutters_in_slitlet) + 1
+                while True:
+                    if tab_slitlet_id in all_source_tsid:
+                        tab_slitlet_id += 1
+                    else:
+                        break
+                all_source_tsid.append(tab_slitlet_id)
+                slitlet_id_dict[tab_source_id[i]] = {'nodsourceid': [],
+                                                     'count_repetitions': 1,
+                                                     'source_tsid': tab_slitlet_id}
+            else:
+                slitlet_id_dict[tab_source_id[i]]['count_repetitions'] += 1
+                tab_slitlet_id = slitlet_id_dict[tab_source_id[i]]['source_tsid']
+
             # set the position of the source in the slitlet configuration
+            count_repetitions = slitlet_id_dict[tab_source_id[i]]['count_repetitions']
             pos = count_repetitions - 1
 
-            # track the repetitions for source ID in the shutter configuration file
-            if count_repetitions == 1:
-                source_tsid = int(i / nnods / shutters_in_slitlet) + 1
-                keep_tab_slitlet_id = True
-            if keep_tab_slitlet_id:
-                tab_slitlet_id[i] = source_tsid
-            if count_repetitions != sourceid_repetitions:
-                keep_tab_slitlet_id = True
-                count_repetitions += 1
-            else:
-                keep_tab_slitlet_id = False
-                count_repetitions = 1
             if verbose:
                 print('(create_metafile.create_metafile_dither:) Found target, adding ID shutter ',
-                      tab_slitlet_id[i])
-                print('        Additional information:  shtter ID = ', tab_source_id[i],
+                      tab_slitlet_id)
+                print('  Additional information:  shutter ID = ', tab_slitlet_id,
                       'quadrant = ', source_quad[match], '  row = ', source_row[match],
                       '  column = ', source_col[match], '  source ID = ', source_id[match],
-                      '  source xpos = ', source_xpos[match])
+                      '  source xpos = ', source_xpos[match], '  source ypos = ', source_ypos[match])
 
             if pos in nod:
                 # some values only get filled if the source is in that shutter for that nod
@@ -483,20 +493,59 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
                 tab_source_xpos[i] = source_xpos[match]
                 tab_source_ypos[i] = source_ypos[match]
                 tab_primary_source[i] = 'Y'
+
+            if flat_metafile:
+                tab_source_xpos[i], tab_source_ypos[i] = 0.0, 0.0
             tab_ditherpoint_index[i] = np.mod(i, nnods) + 1
+
+            # track the repetitions for source ID in the shutter configuration file
+            nodsourceid = [tab_slitlet_id, tab_metadata_id[i], tab_source_id[i], tab_background[i],
+                           tab_shutter_state[i], tab_source_xpos[i], tab_source_ypos[i],
+                           tab_ditherpoint_index[i], tab_primary_source[i]]
+            # store in the dictionary per source ID
+            slitlet_id_dict[tab_source_id[i]]['nodsourceid'].append(nodsourceid)
+
         else:
             if verbose:
                 print("(create_metafile.create_metafile_dither:) No source corresponding to shutter: ",
                       quads[i], allrows[i], allcols[i])
-    # make a mask to ignore slitlets without sources (shouldn't normally happen)
-    mask = tab_slitlet_id != 0
 
+    # create and fill arrays to print into metafile
+    tab_slitlet_id, tab_metadata_id, tab_source_id = np.array([]), np.array([]), np.array([])
+    tab_shutter_state, tab_source_xpos, tab_source_ypos = np.array([]), np.array([]), np.array([])
+    tab_background, tab_ditherpoint_index, tab_primary_source = np.array([]), np.array([]), np.array([])
+
+    for sid, sid_dict in slitlet_id_dict.items():
+        for nid in range(len(sid_dict['nodsourceid'])):
+            tab_slitlet_id = np.append(tab_slitlet_id, sid_dict['nodsourceid'][nid][0])
+            tab_metadata_id = np.append(tab_metadata_id, sid_dict['nodsourceid'][nid][1])
+            tab_source_id = np.append(tab_source_id, sid_dict['nodsourceid'][nid][2])
+            tab_background = np.append(tab_background, sid_dict['nodsourceid'][nid][3])
+            tab_shutter_state = np.append(tab_shutter_state, sid_dict['nodsourceid'][nid][4])
+            tab_source_xpos = np.append(tab_source_xpos, sid_dict['nodsourceid'][nid][5])
+            tab_source_ypos = np.append(tab_source_ypos, sid_dict['nodsourceid'][nid][6])
+            tab_ditherpoint_index = np.append(tab_ditherpoint_index, sid_dict['nodsourceid'][nid][7])
+            tab_primary_source = np.append(tab_primary_source, sid_dict['nodsourceid'][nid][8])
+
+    # collect all unique instances of the sources
+    unique_source_id, match, match2 = np.intersect1d(source_id, tab_source_id, return_indices=True)
+    # RA, DEC, rows, cols, and quadrants
+    ra, dec = source_ra[match], source_dec[match]
+    rows, cols, quadrants = source_row[match], source_col[match], source_quad[match]
+
+    if verbose:
+        for i in range(len(ra)):
+            print('shutter ID =', tab_slitlet_id[i], '  quadrant =', quadrants[i], '  row =', rows[i],
+                  '  column =', cols[i], '  source ID =', tab_source_id[i],
+                  '  source xpos =', tab_source_xpos[i], '  source ypos =', tab_source_ypos[i],
+                  '  sRA =', ra[i], '  sDEC =', dec[i])
+
+    """
     # obtain the background slitlets
     remaining_open_shutters = len(tab_slitlet_id[mask]) / sourceid_repetitions
     obs_total_open = nshut - obs_failedopen
     #print(nshut, obs_failedopen, obs_total_open, remaining_open_shutters,
     # len(tab_slitlet_id[mask]), tab_slitlet_id[mask])
-    """
     # Potential code to add background slits
     background_id_starting_point = 900
     for bi in range(backgrounds):
@@ -515,25 +564,23 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
     """
 
     # create and fill in fits table columns
-    tabcol1 = fits.Column(name='SLITLET_ID', format='I', array=tab_slitlet_id[mask])
-    tabcol2 = fits.Column(name='MSA_METADATA_ID', format='I', array=tab_metadata_id[mask])
-    tabcol3 = fits.Column(name='SHUTTER_QUADRANT', format='I', array=quads[mask])
-    tabcol4 = fits.Column(name='SHUTTER_ROW', format='I', array=allrows[mask])
-    tabcol5 = fits.Column(name='SHUTTER_COLUMN', format='I', array=allcols[mask])
-    tabcol6 = fits.Column(name='SOURCE_ID', format='J', array=tab_source_id[mask])
-    tabcol7 = fits.Column(name='BACKGROUND', format='A', array=tab_background[mask])
-    tabcol8 = fits.Column(name='SHUTTER_STATE', format='4A', array=tab_shutter_state[mask])
-    tabcol9 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_X', format='E', array=tab_source_xpos[mask])
-    tabcol10 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_Y', format='E', array=tab_source_ypos[mask])
-    tabcol11 = fits.Column(name='DITHER_POINT_INDEX', format='I', array=tab_ditherpoint_index[mask])
-    tabcol12 = fits.Column(name='PRIMARY_SOURCE', format='1A', array=tab_primary_source[mask])
+    tabcol1 = fits.Column(name='SLITLET_ID', format='I', array=tab_slitlet_id)
+    tabcol2 = fits.Column(name='MSA_METADATA_ID', format='I', array=tab_metadata_id)
+    tabcol3 = fits.Column(name='SHUTTER_QUADRANT', format='I', array=quadrants)
+    tabcol4 = fits.Column(name='SHUTTER_ROW', format='I', array=rows)
+    tabcol5 = fits.Column(name='SHUTTER_COLUMN', format='I', array=cols)
+    tabcol6 = fits.Column(name='SOURCE_ID', format='J', array=tab_source_id)
+    tabcol7 = fits.Column(name='BACKGROUND', format='A', array=tab_background)
+    tabcol8 = fits.Column(name='SHUTTER_STATE', format='4A', array=tab_shutter_state)
+    tabcol9 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_X', format='E', array=tab_source_xpos)
+    tabcol10 = fits.Column(name='ESTIMATED_SOURCE_IN_SHUTTER_Y', format='E', array=tab_source_ypos)
+    tabcol11 = fits.Column(name='DITHER_POINT_INDEX', format='I', array=tab_ditherpoint_index)
+    tabcol12 = fits.Column(name='PRIMARY_SOURCE', format='1A', array=tab_primary_source)
     hdu2 = fits.BinTableHDU.from_columns(
         [tabcol1, tabcol2, tabcol3, tabcol4, tabcol5, tabcol6, tabcol7, tabcol8, tabcol9, tabcol10, tabcol11, tabcol12],
         name='SHUTTER_INFO')
 
     # SOURCE_INFO table
-    # collect all unique instances of the sources
-    unique_source_id, match, match2 = np.intersect1d(source_id, tab_source_id[mask], return_indices=True)
     nsources = len(unique_source_id)
     # program ID - arbitrary
     program = np.full(nsources, '111', dtype="<U8")
@@ -541,9 +588,6 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
     source_name = np.core.defchararray.add('111_', unique_source_id.astype(str))
     # source alias - arbitrary
     alias = np.full(nsources, 'foo', dtype="<U8")
-    # RA, DEC
-    ra = source_ra[match]
-    dec = source_dec[match]
     # preimage file name - arbitrary
     preim = np.full(nsources, 'foo_pre-image.fits', dtype="<U18")
     # stellarity -- assuming perfect point sources, so set to 1
@@ -583,7 +627,7 @@ def create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitl
 
 
 def run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list, shutters_in_slitlet,
-                        operability_ref=None, output_dir=None, verbose=False):
+                        operability_ref=None, output_dir=None, flat_metafile=False, verbose=False):
     """
     This function is a wrapper for all cases.
     Args:
@@ -605,7 +649,8 @@ def run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list,
             outfile = fix_metafile(config_binary_file)
     else:
         outfile = create_metafile_dither(config_binary_file, targ_file_list, shutters_in_slitlet,
-                                         operability_ref=operability_ref, output_dir=output_dir, verbose=verbose)
+                                         operability_ref=operability_ref, output_dir=output_dir,
+                                         flat_metafile=flat_metafile, verbose=verbose)
     return outfile
 
 
@@ -644,6 +689,11 @@ def main():
                         action='store',
                         default=None,
                         help='Use the flag -o to provide the output directory.')
+    parser.add_argument("-mf",
+                        dest="flat_metafile",
+                        action='store_true',
+                        default=False,
+                        help='Use the flag -fm if building a metafile for a flat.')
     parser.add_argument("-v",
                         dest="verbose",
                         action='store_true',
@@ -658,6 +708,7 @@ def main():
     shutters_in_slitlet = args.shutters_in_slitlet
     operability_ref = args.operability_ref
     output_dir = args.output_dir
+    flat_metafile = args.flat_metafile
     verbose = args.verbose
 
     if shutters_in_slitlet is not None:
@@ -665,7 +716,8 @@ def main():
 
     # Run the function
     run_create_metafile(config_binary_file, fix_old_config_file, targ_file_list, shutters_in_slitlet,
-                        operability_ref=operability_ref, output_dir=output_dir, verbose=verbose)
+                        operability_ref=operability_ref, output_dir=output_dir,
+                        flat_metafile=flat_metafile, verbose=verbose)
 
     print("\nScript create_metafile.py done.\n")
 

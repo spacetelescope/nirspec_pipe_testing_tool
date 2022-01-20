@@ -16,8 +16,8 @@ __version__ = "1.0"
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 
+# VERIFICATION FUNCTIONS
 
-### VERIFICATION FUNCTIONS
 
 def s_flat_exists(output_hdul):
     """

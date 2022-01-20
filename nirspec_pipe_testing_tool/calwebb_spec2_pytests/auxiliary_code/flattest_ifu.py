@@ -229,7 +229,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         print(msg)
         log_msgs.append(msg)
         # This is the key argument for the assert pytest function
-        result_msg = "Wrong path in for mode S-flat. Test skiped because mode is not IFU."
+        result_msg = "Wrong path in for mode S-flat. Test skipped because mode is not IFU."
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
 

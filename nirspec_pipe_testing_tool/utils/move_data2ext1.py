@@ -52,7 +52,7 @@ def move_data(input_fits_file, detector='NRS1', add_ref_pix=False, output_dir=No
 
     # move the the data to extension corresponding to de detector indicated in the function arguments
     det = 1  # default for NRS1=491
-    if len(original_hdulist) > 5:
+    if len(original_hdulist) > 6:
         if '2' in detector:
             det = 4
     input_fits_file_data = fits.getdata(input_fits_file, det)
