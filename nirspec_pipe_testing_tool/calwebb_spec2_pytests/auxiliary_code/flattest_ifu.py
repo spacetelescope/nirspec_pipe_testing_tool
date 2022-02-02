@@ -431,6 +431,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 flatcor[j] = dff * dfs * sff * sfs * fff
                 sffarr[j] = sff
 
+                # if there is a NaN (i.e. the pipeline is using this pixel but we are not), set this to 1.0
+                # to match what the pipeline is doing. The value would be NaN if one or more of the 3 flat
+                # components do not give a valid result because the wavelength is out of range. This is only
+                # an issue for IFU since extract_2d is skipped.
+                if np.isnan(flatcor[j]):
+                    flatcor[j] = 1.0
+
                 # To visually compare between the pipeline flat and the calculated one (e.g. in ds9), Phil Hodge
                 # suggested using the following line:
                 calc_flat[pind[0], pind[1]] = flatcor[j]
