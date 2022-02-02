@@ -447,8 +447,6 @@ def get_pysiaf_aperture(st_pipe_ready_dict, verbose):
     if 'msaspec' in st_pipe_ready_dict['EXP_TYPE'].lower():
         aperture_name = 'NRS_FULL_MSA'
         return aperture_name
-    if 'full' in subarray.lower():
-        aperture_name = 'NRS_FULL'
     elif '200' in subarray or '400' in subarray:
         aperture_name = 'NRS_' + subarray + '_SLIT'
     else:

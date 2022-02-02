@@ -622,12 +622,17 @@ def check_keywds(file_keywd_dict, warnings_file_name, warnings_list, missing_key
                             print('     Setting value of ', key, ' to ', val)
                 # specific check for SUBARRAY
                 if key == 'SUBARRAY':
-                    if 'ifu' in mode_used.lower() or "mos" in mode_used.lower():
+                    if 'ifu' in mode_used.lower() or "mos" in mode_used.lower() or 'mirror' in grating.lower():
                         if val != lev2bdict_val:
+                            val = 'FULL'
                             if verbose:
-                                print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for N/A")
-                            specific_keys_dict[key] = 'N/A'
+                                print("Replacing ", key, fits.getval(ff, "SUBARRAY", 0), "for FULL")
+                            specific_keys_dict[key] = val
                             missing_keywds.append(key)
+                            subarray_info = determine_subarray(key, ff, detector, grating, specific_keys_dict,
+                                                               missing_keywds)
+                            pipe_subarr_val, specific_keys_dict, missing_keywds = subarray_info
+
                     elif 'full' not in val.lower():  # set SUBARRAY for anything else other than IFU or MOS
                         if subarray is not None:
                             # force the subarray keyword to be set to input

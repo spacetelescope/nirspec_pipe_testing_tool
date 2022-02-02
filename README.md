@@ -156,7 +156,7 @@ conda env remove -n name_of_your_old_environment
 
 - Option A. For non-developers and without PTT source code. For the **latest stable tag** type: 
 ```bash
-pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.1.21
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@1.1.22
 ```
 where the numbers at the end represent the latest stable version of NPTT; for the most recent code, in the 
 terminal type:
@@ -513,13 +513,18 @@ targ_file_list = 'obs1.csv, obs1.csv'   # list of dither files
 
 # to fix an old shutter configuration file for the pipeline
 config_binary_file = 'V9621500100101_metafile_msa.fits'
-fix_old_config_file = True
-targ_file_list = False
+fix_old_config_file = False
+targ_file_list = nod1.csv,nod2.csv,nod3.csv
+shutters_in_slitlet = 3
+operability_ref = None
+flat_metafile = False  # set to true if this is a metafile for a flat
+verbose = False
 
 # run the module
-nptt.calwebb_spec2_pytests.auxiliary_code.create_metafile.run_create_metafile(config_binary_file,
-                                                                              fix_old_config_file,
-                                                                              targ_file_list)
+nptt.calwebb_spec2_pytests.auxiliary_code.create_metafile.run_create_metafile(config_binary_file, 
+                                    fix_old_config_file, targ_file_list, shutters_in_slitlet, 
+                                    operability_ref=operability_ref, flat_metafile=flat_metafile, 
+                                    verbose=verbose)
 ```
 
 
