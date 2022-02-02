@@ -1,0 +1,80 @@
+name: build and install
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: build and install from source
+    runs-on: ubuntu-latest
+    env:
+      USE_DIST: '.'
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: build
+        run: |
+          python -m pip install --upgrade pip wheel
+          python setup.py sdist
+          python setup.py bdist_wheel
+
+      - name: cache artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist-artifacts
+          path: dist
+
+      - name: install from source
+        run: pip install --progress-bar=off $USE_DIST
+
+  install_wheel:
+    name: install from wheel
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      USE_DIST: 'dist/*.whl'
+
+    steps:
+      - name: set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: fetch artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: dist-artifacts
+          path: dist
+
+      - name: install from wheel
+        run: pip install --progress-bar=off $USE_DIST
+
+  install_sdist:
+    name: install from sdist
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      USE_DIST: 'dist/*.tar.gz'
+
+    steps:
+      - name: set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: fetch artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: dist-artifacts
+          path: dist
+
+      - name: install from wheel
+        run: pip install --progress-bar=off $USE_DIST
