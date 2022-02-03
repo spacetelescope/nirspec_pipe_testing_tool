@@ -468,7 +468,13 @@ def match_IPS_keywords(stsci_pipe_ready_file, ips_file, additional_args_dict=Non
     """
     # get the headers from the IPS file
     primary_ext_ips_keywd_dict = fits.getheader(ips_file, 0)
-    header_ext_ips_keywd_dict = fits.getheader(ips_file, extname='header')
+    try:
+        header_ext_ips_keywd_dict = fits.getheader(ips_file, extname='header')
+    except KeyError:
+        print('\n * (level2b_hdr_keywd_dict_map2sim.match_IPS_keywords:) WARNING! Looks like this file does not have an'
+              ' extension called HEADER. I will try to extract the info I need from the PRIMARY extension. \n')
+        print('      This is probably and old file so, fingers crossed!')
+        header_ext_ips_keywd_dict = primary_ext_ips_keywd_dict
 
     # get the header from the STScI pipeline-ready file
     st_pipe_ready_dict = fits.getheader(stsci_pipe_ready_file, 0)
