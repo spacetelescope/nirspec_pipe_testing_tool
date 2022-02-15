@@ -332,8 +332,8 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         wcol = (bswave-cv1)/cd1
         if debug:
             print('np.shape(yrow)=', np.shape(yrow))
-        point3 = [10, np.shape(yrow)[1]-50]
-        print(yrow[point3[0], point3[1]], wcol[point3[0], point3[1]])
+            point3 = [10, np.shape(yrow)[1]-50]
+            print(yrow[point3[0], point3[1]], wcol[point3[0], point3[1]])
 
         fig = plt.figure(figsize=(12, 10))
         # Top figure
