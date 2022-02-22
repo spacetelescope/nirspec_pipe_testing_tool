@@ -404,8 +404,6 @@ def run_caldet1(fits_input_uncal_file, step_by_step=False):
                     ff_newname = os.path.join(output_dir, ff.replace("step_", ""))
                 else:
                     ff_newname = os.path.join(output_dir, ff)
-                if detector.lower() not in ff.lower():
-                    ff_newname = ff_newname.replace(".fits", "_"+detector+".fits")
                 subprocess.run(["mv", ff, ff_newname])
             # move text files too
             subprocess.run(["mv", txt_outputs_summary, output_dir])

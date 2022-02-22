@@ -323,8 +323,6 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
             # subtract xstart and ystart values in order to get subarray coords instead of full frame
             # wcs_slit.x(y)start are 1-based, turn them to 0-based for extraction
             xstart, ystart = img.meta.subarray.xstart, img.meta.subarray.ystart
-            truth_y = truth_y - (ystart - 1)
-            truth_x = truth_x - (xstart - 1)
             bounding_box = False
         else:
             bounding_box = True
