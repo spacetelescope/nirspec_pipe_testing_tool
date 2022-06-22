@@ -15,7 +15,7 @@ from jwst.dq_init.dq_init_step import DQInitStep
 from jwst.saturation.saturation_step import SaturationStep
 from jwst.superbias.superbias_step import SuperBiasStep
 from jwst.refpix.refpix_step import RefPixStep
-from jwst.rscd.rscd_step import RSCD_Step
+# from jwst.rscd import RscdStep   # this is MIRI only so not importing
 from jwst.lastframe.lastframe_step import LastFrameStep
 from jwst.linearity.linearity_step import LinearityStep
 from jwst.dark_current.dark_current_step import DarkCurrentStep
@@ -37,7 +37,7 @@ This script will perform calwebb_detector1 in one single run, outputing intermed
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.4"
+__version__ = "1.5"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -45,6 +45,7 @@ __version__ = "1.4"
 # Feb 2019 - Version 1.2: made changes to be able to process 491 and 492 files in the same directory
 # Mar 2019 - Version 1.3: added logging capability
 # May 2019 - Version 1.4: added capability to process darks
+# Jun 2022 - Version 1.5: updated the imports to avoid a crash with a MIRI-specific import
 
 
 def get_caldet1cfg_and_workingdir(detector):
