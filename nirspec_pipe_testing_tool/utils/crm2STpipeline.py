@@ -54,17 +54,18 @@ Example usage:
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.3"
+__version__ = "1.4"
 
 # HISTORY
 # May 2019 - Version 1.0: initial version completed
 # Feb 2020 - Version 1.1: added part to match and replace keyword values from IPS file
 # Feb 2021 - Version 1.2: implemented create a metafile for MOS data
 # Apr 2021 - Version 1.3: implemented rotation of data depending on data array dimensions
+# Jun 2022 - Version 1.4: corrected naming and implemented rotation_needed as a switch
 
 
 def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, msa_metafile='N/A',
-             output_dir=None, force_rotation=False, verbose=False):
+             output_dir=None, force_rotation=False, rotation_needed=False, verbose=False):
     """
     This function is the wrapper for the scripts needed to convert a crm file to a pipeline ready product.
     Args:
@@ -76,6 +77,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         msa_metafile: string, name of the MSA metafile
         output_dir: string, path to place the output file - if None output will be in same dir as input
         force_rotation: boolean, if True data will be rotated
+        rotation_needed: boolean,  True value includes the case for 'RAW' data
         verbose: boolean
 
     Returns:
@@ -162,16 +164,16 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
         detectors = ["NRS1"]
     elif all("2" in ext for ext in ext_name_list):
         detectors = ["NRS2"]
-    elif "NRS1" in input_fits_file or "491" in input_fits_file:
+    elif "NRS1" in input_fits_file.upper() or "491" in input_fits_file:
         detectors = ["NRS1"]
-    elif "NRS2" in input_fits_file or "492" in input_fits_file:
+    elif "NRS2" in input_fits_file.upper() or "492" in input_fits_file:
         detectors = ["NRS2"]
     if len(hdulist) == 5:
         detectors = [fits.getval(input_fits_file, "DET", 0)]
 
     # determine if rotation is needed
     if not force_rotation:
-        rotation_needed = True  # this includes the case for value='raw'
+        # rotation_needed = True  # this includes the case for value='raw'
         try:
             file_type = fits.getval(input_fits_file, "FILETYPE", 0)
             if 'cts' in file_type.lower() or 'crm' in file_type.lower():
@@ -231,6 +233,8 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
                     print("(crm2STpipeline.crm2pipe:) Removing the extra extensions and rotating data for ST "
                           "pipeline ingestion.")
                     outfile_name = rm_extra_exts_and_rotate(input_fits_file, det, output_dir=output_dir)
+                else:
+                    outfile_name = input_fits_file
 
                 # Perform the keyword check on the file with the right number of extensions
                 print("(crm2STpipeline.crm2pipe:) Fixing the header keywords")
@@ -243,22 +247,7 @@ def crm2pipe(input_fits_file, mode_used, add_ref_pix, new_file, subarray=None, m
                   "Exiting script.")
             exit()
 
-    rename = False
-    if '1' in det:
-        sca = '491'
-    else:
-        sca = '492'
-    if det not in out_fits and sca not in out_fits:
-        outfile = out_fits.replace(".fits", "_" + det + ".fits")
-        rename = True
-    else:
-        outfile = out_fits
-    if 'modified' not in outfile:
-        outfile = outfile.replace(".fits", "_modified.fits")
-        rename = True
-    if rename:
-        os.rename(out_fits, outfile)
-    return outfile
+    return out_fits
 
 
 def transpose(arr, detector):
@@ -303,7 +292,7 @@ def rm_extra_exts_and_rotate(input_fits_file, detector, output_dir=None):
 
     # write the new output file
     outfile_name = input_fits_file
-    if detector not in outfile_name:
+    if detector.lower() not in outfile_name.lower():
         outfile_name = outfile_name.replace(".fits", "_" + detector + ".fits")
     if 'modified' not in outfile_name:
         outfile_name = outfile_name.replace(".fits", "_modified.fits")
@@ -317,7 +306,8 @@ def rm_extra_exts_and_rotate(input_fits_file, detector, output_dir=None):
 
 
 def crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name, subarray=None, new_file=False,
-                   msa_metafile='N/A', output_dir=None, force_rotation=False, verbose=False):
+                   msa_metafile='N/A', output_dir=None, force_rotation=False,
+                   rotation_needed=False, verbose=False):
     """
     This function is the wrapper for the scripts needed to convert a crm file to a pipeline ready product.
     :param ips_file: string, full path to IPS crm fits file
@@ -331,13 +321,15 @@ def crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name
     :param msa_metafile: string, name of the MSA metafile
     :param output_dir: string, path to place the output file - if None output will be in same dir as input
     :param force_rotation: boolean, if True data will be rotated to the science frame
+    :param rotation_needed: boolean,  True value includes the case for 'RAW' data
     :param verbose: boolean
     :return:
     """
     # Perform data move to the science extension and the keyword check on the file with the right number of extensions
     stsci_pipe_ready_file = crm2pipe(ips_file, mode_used, add_ref_pix, new_file, subarray=subarray,
                                      msa_metafile=msa_metafile, output_dir=output_dir,
-                                     force_rotation=force_rotation, verbose=verbose)
+                                     force_rotation=force_rotation,
+                                     rotation_needed=rotation_needed, verbose=verbose)
 
     # create dictionary of command-line arguments
     additional_args_dict = {'TITLE': proposal_title,
@@ -404,6 +396,11 @@ def main():
                         default=False,
                         help='Use -f to force the data to be rotated to the Science frame. Default '
                              'is to rotate only for raw-type data (which is in Detector frame).')
+    parser.add_argument("-rn",
+                        dest="rotation_needed",
+                        action='store_true',
+                        default=False,
+                        help='Use -rn to indicate if rotaton is needed for this data. Default is False.')
     parser.add_argument("-v",
                         dest="verbose",
                         action='store_true',
@@ -422,12 +419,13 @@ def main():
     msa_metafile = args.msa_metafile
     output_dir = args.output_dir
     force_rotation = args.force_rotation
+    rotation_needed = args.rotation_needed
     verbose = args.verbose
 
     # Run wrapper function
     crm2STpipeline(ips_file, mode_used, add_ref_pix, proposal_title, target_name, subarray=subarray,
                    new_file=new_file, msa_metafile=msa_metafile, output_dir=output_dir,
-                   force_rotation=force_rotation, verbose=verbose)
+                   force_rotation=force_rotation, rotation_needed=rotation_needed, verbose=verbose)
 
     print('\n * Script  crm2STpipeline.py  finished * \n')
 

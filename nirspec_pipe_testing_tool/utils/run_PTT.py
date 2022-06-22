@@ -7,6 +7,10 @@ Example usage:
     Terminal
         Simply type the command
         $ nptt_run_PTT report_name PTT_config.cfg
+
+        Optional arguments:
+        -d1=blah_uncal.fits  this will run calwebb_detector1 on the given file
+        -q  this is a boolean, if used several on-screen messages will be avoided
         
     As a module
         # import the script
@@ -15,10 +19,12 @@ Example usage:
         # set the variables
         report_name = 'my_report'
         config_file = 'PTT_config_NRS1.cfg'
+        run_detector1 = 'blah_uncal.fits'
         quiet = False
 
         # run the module
-        nptt.utils.run_PTT.run_PTT(report_name, config_file, quiet)
+        nptt.utils.run_PTT.run_PTT(report_name=report_name, config_path=config,
+                                   run_detector1=run_detector1, verbose=quiet)
 """
 
 import os
@@ -35,10 +41,11 @@ from .. import calwebb_spec3_pytests
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Sep 2019 - Version 1.0: initial version completed
+# Jun 2022 - Version 1.1: Updated file name output and documentation of usage
 
 
 def mk_stpipe_log_cfg(detector):

@@ -38,7 +38,7 @@ will crash if this config file does not exist.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.6"
+__version__ = "1.7"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -48,6 +48,7 @@ __version__ = "1.6"
 # Jul 2020 - Version 1.4: changed default value of SUBARRAY according to CRDS rules
 # Aug 2020 - Version 1.5: fixed bug with set_exp_type_value function
 # Feb 2021 - Version 1.6: implemented adding the MSA metafile name to the header
+# Jun 2022 - Version 1.7: implemented an alternative for a date that does not have T between date and time
 
 
 # Paths
@@ -277,7 +278,10 @@ def check_datetimeformat(key, val, check_time, check_date, check_datetime, ext='
     if check_date:
         val = datetime.strptime(val, '%Y-%m-%d')
     if check_datetime:
-        val = datetime.strptime(val, '%Y-%m-%dT%H:%M:%S')
+        try:
+            val = datetime.strptime(val, '%Y-%m-%dT%H:%M:%S')
+        except:
+            val = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
     if isinstance(val, datetime):
         if verbose:
             print('{:<15} {:<9} {:<25}'.format(key, ext, 'Correct value format'))

@@ -21,17 +21,22 @@ Example usage:
         $ nptt_prepare_data2run blah.fits MODE
     where MODE is either FS, IFU, MOS, BOTS
 
-    * use -d at the end of the command if NOT wanting to modify the filter value from OPAQUE to science
+    * Optional arguments:
+    -rm boolean, if used the directory prep_data to remove once the job is done
+    -nf boolean, create a new file with updated header, instead of just updating
+    -d  boolean, use if NOT wanting to modify the filter value from OPAQUE to science
+    
 """
 
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.1"
+__version__ = "1.2"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Feb 2019 - Version 1.1: made changes to be able to process 491 and 492 files in the same directory
+# Jun 2022 - Version 1.2: set to True the variable that updates the output file (instead of having 2)
 
 
 def modify_PTT_cfg_file(fits_file, mode):
@@ -181,11 +186,11 @@ def main():
                         action='store_true',
                         default=False,
                         help='If -rm is used, the directory prep_data will be removed once the job is done.')
-    parser.add_argument("-u",
+    parser.add_argument("-nf",
                         dest="only_update",
-                        action='store_true',
-                        default=False,
-                        help='Use -u if NOT wanting to create a new file with updated header.')
+                        action='store_false',
+                        default=True,
+                        help='Use -nf if you want to create a new file with updated header, instead of just updating.')
     parser.add_argument("-d",
                         dest="dont_change_opaque2sci",
                         action='store_true',

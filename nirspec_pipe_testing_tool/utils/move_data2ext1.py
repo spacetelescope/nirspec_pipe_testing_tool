@@ -22,13 +22,14 @@ Example usage:
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.2"
+__version__ = "1.3"
 
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Apr 2019 - Version 1.1: implemented option to add reference pixels
 # Feb 2021 - Version 1.2: implemented option for output directory
+# Jun 2022 - Version 1.3: corrected naming of output file
 
 # General functions
 
@@ -77,9 +78,9 @@ def move_data(input_fits_file, detector='NRS1', add_ref_pix=False, output_dir=No
     outfile.append(outfile_ext)
 
     # write the new output file
-    outfile_name = input_fits_file.replace(".fits", "_" + detector + "_modified.fits")
+    outfile_name = input_fits_file
     if output_dir is not None:
-        outfile_name = os.path.join(output_dir, os.path.basename(outfile_name))
+        outfile_name = os.path.join(output_dir, os.path.basename(input_fits_file))
         if ".fits" in output_dir:
             outfile_name = output_dir
     outfile.writeto(outfile_name, overwrite=True)
