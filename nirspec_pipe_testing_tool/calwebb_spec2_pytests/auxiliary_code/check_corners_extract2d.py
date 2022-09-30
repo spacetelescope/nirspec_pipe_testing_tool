@@ -25,6 +25,211 @@ Check that the corners after the extract_2d step match the truth (benchmark) dat
 """
 
 
+def fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict, log_msgs, img, slit,
+                              pipeslit, esa_files_path, truth_img, extract_2d_threshold_diff):
+    """
+    This function tests if the corners of the truth file are present in the corners of the pipeline.
+    Args:
+        result: dictionary
+        large_diff_corners_dict: dictionary
+        log_msgs: list
+        img: ImageModel object
+        slit: model slit object
+        pipeslit: string, name of slit
+        esa_files_path: string
+        truth_img: truth model
+        extract_2d_threshold_diff: float
+    Returns:
+        result: updated dictionary
+        large_diff_corners_dict: updated dictionary
+        log_msgs: updated list
+    """
+    # grab corners of extracted sub-window
+    px0 = slit.xstart + img.meta.subarray.xstart - 1
+    py0 = slit.ystart + img.meta.subarray.ystart - 1
+    pnx = slit.xsize
+    pny = slit.ysize
+
+    px1 = px0 + pnx
+    py1 = py0 + pny
+
+    pipeline_corners = [px0, py0, px1, py1]
+
+    compare_to_esa_data = False
+    if esa_files_path is not None:
+        compare_to_esa_data = True
+
+        # Find esafile (most of this copy-pasted from compare_wcs_fs)
+        _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
+        specifics = [pipeslit]
+        # check if ESA data is not in the regular directory tree
+        NIDs = ["30055", "30055", "30205", "30133", "30133"]
+        special_cutout_files = ["NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits",
+                                "NRSSMOS-MOD-G1H-02-5344031756_1_492_SE_2015-12-10T03h25m56.fits",
+                                "NRSSMOS-MOD-G2M-01-5344191938_1_491_SE_2015-12-10T19h29m26.fits",
+                                "NRSSMOS-MOD-G3H-02-5344120942_1_491_SE_2015-12-10T12h18m25.fits",
+                                "NRSSMOS-MOD-G3H-02-5344120942_1_492_SE_2015-12-10T12h18m25.fits"]
+        if raw_data_root_file in special_cutout_files:
+            nid = NIDs[special_cutout_files.index(raw_data_root_file)]
+        else:
+            nid = None
+        esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
+        # print('got the ESA file:', esafile)
+
+        if esafile == "ESA file not found":
+            msg1 = " * validate_wcs_extract2d is exiting because the corresponding ESA file was not found."
+            msg2 = "   -> The extract_2d test is now set to skip. "
+            print(msg1)
+            print(msg2)
+            log_msgs.append(msg1)
+            log_msgs.append(msg2)
+            result = "skip"
+            return result, log_msgs
+
+        if not isinstance(esafile, list):
+            if isinstance(esafile, tuple):
+                esafile_list = []
+                for ef in esafile:
+                    if ef:
+                        esafile_list.append(ef)
+            else:
+                esafile_list = [esafile]
+        else:
+            esafile_list = esafile
+
+        slit = pipeslit.replace("S", "")
+        if "A" in slit:
+            slit = "_"+slit.split("A")[0]+"_"
+        if "B" in slit:
+            slit = "_"+slit.split("B")[0]+"_"
+
+        # choose corresponding esa file
+        for esafile in esafile_list:
+            if "not found" in esafile:
+                msg = " * No ESA file was found. Test will be skipped because there is no file to compare with."
+                print(msg)
+                log_msgs.append(msg)
+                return "skip", log_msgs
+
+            if slit in esafile:
+                print("Using this ESA file: \n", esafile)
+                with fits.open(esafile) as esahdulist:
+                    # Find corners from ESA file
+                    # print(esahdulist.info())
+                    if detector == "NRS1" or "NRS1" in infile_name  or  "491" in infile_name:
+                        dat = "DATA1"
+                    else:
+                        dat = "DATA2"
+                    try:
+                        esahdr = esahdulist[dat].header
+                        print("For detector=", detector, " reading data of extension name=", dat)
+                    except KeyError:
+                        print("This file contains no information for extension name=", dat)
+                        continue
+
+                    enext = []
+                    for ext in esahdulist:
+                        enext.append(ext)
+                    if detector == "NRS1":
+                        eflux = fits.getdata(esafile, "DATA1")
+                    if detector == "NRS2":
+                        try:
+                            eflux = fits.getdata(esafile, "DATA2")
+                        except IndexError:
+                            msg1 = " * Exiting extract_2d test because there are no extensions that match " \
+                                   "detector NRS2 in the ESA file."
+                            msg2 = "   -> The extract_2d test is now set to skip. "
+                            print(msg1)
+                            print(msg2)
+                            log_msgs.append(msg1)
+                            log_msgs.append(msg2)
+                            result = "skip"
+                            continue
+
+                    # get the origin of the subwindow
+                    ney, nex = eflux.shape
+                    truth_slit_size = [nex, ney]
+                    if detector == "NRS1":
+                        ex0 = int(esahdr["CRVAL1"]) - int(esahdr["CRPIX1"]) + 1
+                        ey0 = int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"]) + 1
+                    else:
+                        ex0 = 2049 - int(esahdr["CRPIX1"]) - int(esahdr["CRVAL1"])
+                        ey0 = 2049 - int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"])
+
+                    ex1 = ex0 + nex
+                    ey1 = ey0 + ney
+
+                    truth_corners = [ex0, ey0, ex1, ey1]
+
+    # In case we are NOT comparing to ESA data
+    if not compare_to_esa_data:
+        # determine if the current open slit is also open in the truth file
+        slit_in_truth_file = False
+        if exp_type == "NRS_BRIGHTOBJ":
+            truth_slit = truth_img
+            slit_in_truth_file = True
+        else:
+            for truth_slit in truth_img.slits:
+                if truth_slit.name == pipeslit:
+                    slit_in_truth_file = True
+                    break
+
+        if not slit_in_truth_file:
+            msg1 = "\n * Script check_corners_extract_2d.py is exiting because open slit " + pipeslit + \
+                   " is not open in truth file."
+            msg2 = "   -> The extract_2d test is now set to FAILED. \n"
+            print(msg1)
+            print(msg2)
+            log_msgs.append(msg1)
+            log_msgs.append(msg2)
+            FINAL_TEST_RESULT = False
+            return FINAL_TEST_RESULT, log_msgs
+
+        else:
+            # grab corners of extracted sub-window from the truth file
+            tx0 = truth_slit.xstart + truth_img.meta.subarray.xstart - 1
+            ty0 = truth_slit.ystart + truth_img.meta.subarray.ystart - 1
+            tnx = truth_slit.xsize
+            tny = truth_slit.ysize
+
+            tx1 = tx0 + tnx
+            ty1 = ty0 + tny
+
+            truth_corners = [tx0, ty0, tx1, ty1]
+            truth_slit_size = [tnx, tny]
+
+    # pass/fail criterion: if truth corners match pipeline corners then True, else False
+    result[pipeslit], msgs = truth_corners_in_pipeline_corners(truth_corners, pipeline_corners,
+                                                               extract_2d_threshold_diff=extract_2d_threshold_diff)
+    for msg in msgs:
+        log_msgs.append(msg)
+
+    print('    Truth slit size = ', truth_slit_size)
+    print(' Pipeline slit size = ', pnx, pny)
+
+    msg1 = "Corners for slit " + pipeslit + ":  [x0, y0, x1, y1]"
+    msg2 = "   Truth corners: " + repr(truth_corners)
+    msg3 = "    Pipeline corners: " + repr(pipeline_corners)
+    print(msg1)
+    print(msg2)
+    print(msg3)
+    log_msgs.append(msg1)
+    log_msgs.append(msg2)
+    log_msgs.append(msg3)
+    if result[pipeslit]:
+        msg = "* Test PASSED: All corners match within the threshold."
+        print(msg)
+        log_msgs.append(msg)
+    else:
+        msg = "* Test FAILED: One or more corners have a difference larger than threshold."
+        print(msg)
+        log_msgs.append(msg)
+        # Record all the corners that have points larger than threshold
+        large_diff_corners_dict[pipeslit] = [truth_corners, pipeline_corners]
+
+    return result, large_diff_corners_dict, log_msgs
+
+
 def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extract_2d_threshold_diff=4):
     """
     Find the slits corners of pipeline and truth file and determine if they match.
@@ -44,13 +249,14 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
     large_diff_corners_dict = OrderedDict()
     log_msgs = []
 
+    truth_img = None
     if esa_files_path is None:
         # get the model from the "truth" (or comparison) file
         truth_hdul = fits.open(truth_file)
         print("Information from the 'truth' (or comparison) file ")
         print(truth_hdul.info())
         truth_hdul.close()
-        truth_img = datamodels.ImageModel(truth_file)
+        truth_img = datamodels.open(truth_file)  # guess the best model to use
 
     # get grating and filter info from the pipeline file or datamodel
     if isinstance(infile_name, str):
@@ -66,196 +272,37 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
     lamp = img.meta.instrument.lamp_state
     grat = img.meta.instrument.grating
     filt = img.meta.instrument.filter
-    msg = "from assign_wcs file  -->     Detector: " + detector + "   Grating: " + grat + "   Filter: " + \
-          filt + "   Lamp: " + lamp
+    exp_type = img.meta.exposure.type.upper()
+    msg = "from extract_2d file/model  -->     Detector: " + detector + "   Grating: " + grat + \
+          "   Filter: " + filt + "   Lamp: " + lamp + "   Exp_Type: " + exp_type
     print(msg)
     log_msgs.append(msg)
 
     # To get the open and projected on the detector slits of the pipeline processed file
-    for slit in img.slits:
-        pipeslit = slit.name
-        msg = "\nWorking with slit: "+pipeslit
+    single_slit_mdl = False
+    if exp_type == "NRS_BRIGHTOBJ":
+        slit = img
+        pipeslit = "S1600A1"
+        single_slit_mdl = True
+
+    if single_slit_mdl:
+        msg = "\nWorking with BOTS single slit model "
         print(msg)
         log_msgs.append(msg)
-
-        # grab corners of extracted sub-window
-        px0 = slit.xstart + img.meta.subarray.xstart - 1
-        py0 = slit.ystart + img.meta.subarray.ystart - 1
-        pnx = slit.xsize
-        pny = slit.ysize
-
-        px1 = px0 + pnx
-        py1 = py0 + pny
-
-        pipeline_corners = [px0, py0, px1, py1]
-
-        compare_to_esa_data = False
-        if esa_files_path is not None:
-            compare_to_esa_data = True
-
-            # Find esafile (most of this copy-pasted from compare_wcs_fs)
-            _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
-            specifics = [pipeslit]
-            # check if ESA data is not in the regular directory tree
-            NIDs = ["30055", "30055", "30205", "30133", "30133"]
-            special_cutout_files = ["NRSSMOS-MOD-G1H-02-5344031756_1_491_SE_2015-12-10T03h25m56.fits",
-                                    "NRSSMOS-MOD-G1H-02-5344031756_1_492_SE_2015-12-10T03h25m56.fits",
-                                    "NRSSMOS-MOD-G2M-01-5344191938_1_491_SE_2015-12-10T19h29m26.fits",
-                                    "NRSSMOS-MOD-G3H-02-5344120942_1_491_SE_2015-12-10T12h18m25.fits",
-                                    "NRSSMOS-MOD-G3H-02-5344120942_1_492_SE_2015-12-10T12h18m25.fits"]
-            if raw_data_root_file in special_cutout_files:
-                nid = NIDs[special_cutout_files.index(raw_data_root_file)]
-            else:
-                nid = None
-            esafile = auxfunc.get_esafile(esa_files_path, raw_data_root_file, "FS", specifics, nid=nid)
-            # print('got the ESA file:', esafile)
-
-            if esafile == "ESA file not found":
-                msg1 = " * validate_wcs_extract2d is exiting because the corresponding ESA file was not found."
-                msg2 = "   -> The extract_2d test is now set to skip. "
-                print(msg1)
-                print(msg2)
-                log_msgs.append(msg1)
-                log_msgs.append(msg2)
-                result = "skip"
-                return result, log_msgs
-
-            if not isinstance(esafile, list):
-                if isinstance(esafile, tuple):
-                    esafile_list = []
-                    for ef in esafile:
-                        if ef:
-                            esafile_list.append(ef)
-                else:
-                    esafile_list = [esafile]
-            else:
-                esafile_list = esafile
-
-            slit = pipeslit.replace("S", "")
-            if "A" in slit:
-                slit = "_"+slit.split("A")[0]+"_"
-            if "B" in slit:
-                slit = "_"+slit.split("B")[0]+"_"
-
-            # choose corresponding esa file
-            for esafile in esafile_list:
-                if "not found" in esafile:
-                    msg = " * No ESA file was found. Test will be skipped because there is no file to compare with."
-                    print(msg)
-                    log_msgs.append(msg)
-                    return "skip", log_msgs
-
-                if slit in esafile:
-                    print("Using this ESA file: \n", esafile)
-                    with fits.open(esafile) as esahdulist:
-                        # Find corners from ESA file
-                        # print(esahdulist.info())
-                        if detector == "NRS1" or "NRS1" in infile_name  or  "491" in infile_name:
-                            dat = "DATA1"
-                        else:
-                            dat = "DATA2"
-                        try:
-                            esahdr = esahdulist[dat].header
-                            print("For detector=", detector, " reading data of extension name=", dat)
-                        except KeyError:
-                            print("This file contains no information for extension name=", dat)
-                            continue
-
-                        enext = []
-                        for ext in esahdulist:
-                            enext.append(ext)
-                        if detector == "NRS1":
-                            eflux = fits.getdata(esafile, "DATA1")
-                        if detector == "NRS2":
-                            try:
-                                eflux = fits.getdata(esafile, "DATA2")
-                            except IndexError:
-                                msg1 = " * Exiting extract_2d test because there are no extensions that match " \
-                                       "detector NRS2 in the ESA file."
-                                msg2 = "   -> The extract_2d test is now set to skip. "
-                                print(msg1)
-                                print(msg2)
-                                log_msgs.append(msg1)
-                                log_msgs.append(msg2)
-                                result = "skip"
-                                continue
-
-                        # get the origin of the subwindow
-                        ney, nex = eflux.shape
-                        truth_slit_size = [nex, ney]
-                        if detector == "NRS1":
-                            ex0 = int(esahdr["CRVAL1"]) - int(esahdr["CRPIX1"]) + 1
-                            ey0 = int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"]) + 1
-                        else:
-                            ex0 = 2049 - int(esahdr["CRPIX1"]) - int(esahdr["CRVAL1"])
-                            ey0 = 2049 - int(esahdr["CRVAL2"]) - int(esahdr["CRPIX2"])
-
-                        ex1 = ex0 + nex
-                        ey1 = ey0 + ney
-
-                        truth_corners = [ex0, ey0, ex1, ey1]
-
-        # In case we are NOT comparing to ESA data
-        if not compare_to_esa_data:
-            # determine if the current open slit is also open in the truth file
-            slit_in_truth_file = False
-            for truth_slit in truth_img.slits:
-                if truth_slit.name == pipeslit:
-                    slit_in_truth_file = True
-                    break
-
-            if not slit_in_truth_file:
-                msg1 = "\n * Script check_corners_extract_2d.py is exiting because open slit " + pipeslit + \
-                       " is not open in truth file."
-                msg2 = "   -> The extract_2d test is now set to FAILED. \n"
-                print(msg1)
-                print(msg2)
-                log_msgs.append(msg1)
-                log_msgs.append(msg2)
-                FINAL_TEST_RESULT = False
-                return FINAL_TEST_RESULT, log_msgs
-
-            else:
-                # grab corners of extracted sub-window from the truth file
-                tx0 = truth_slit.xstart + truth_img.meta.subarray.xstart - 1
-                ty0 = truth_slit.ystart + truth_img.meta.subarray.ystart - 1
-                tnx = truth_slit.xsize
-                tny = truth_slit.ysize
-
-                tx1 = tx0 + tnx
-                ty1 = ty0 + tny
-
-                truth_corners = [tx0, ty0, tx1, ty1]
-                truth_slit_size = [tnx, tny]
-
-        # pass/fail criterion: if truth corners match pipeline corners then True, else False
-        result[pipeslit], msgs = truth_corners_in_pipeline_corners(truth_corners, pipeline_corners,
-                                                                   extract_2d_threshold_diff=extract_2d_threshold_diff)
-        for msg in msgs:
-            log_msgs.append(msg)
-
-        print('    Truth slit size = ', truth_slit_size)
-        print(' Pipeline slit size = ', pnx, pny)
-
-        msg1 = "Corners for slit " + pipeslit + ":  [x0, y0, x1, y1]"
-        msg2 = "   Truth corners: " + repr(truth_corners)
-        msg3 = "    Pipeline corners: " + repr(pipeline_corners)
-        print(msg1)
-        print(msg2)
-        print(msg3)
-        log_msgs.append(msg1)
-        log_msgs.append(msg2)
-        log_msgs.append(msg3)
-        if result[pipeslit]:
-            msg = "* Test PASSED: All corners match within the threshold."
+        outputs = fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict,
+                                            log_msgs, img, slit, pipeslit, esa_files_path,
+                                            truth_img, extract_2d_threshold_diff)
+        result, large_diff_corners_dict, log_msgs = outputs
+    else:
+        for slit in img.slits:
+            pipeslit = slit.name
+            msg = "\nWorking with slit: "+pipeslit
             print(msg)
             log_msgs.append(msg)
-        else:
-            msg = "* Test FAILED: One or more corners have a difference larger than threshold."
-            print(msg)
-            log_msgs.append(msg)
-            # Record all the corners that have points larger than threshold
-            large_diff_corners_dict[pipeslit] = [truth_corners, pipeline_corners]
+            outputs = fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict,
+                                                log_msgs, img, slit, pipeslit, esa_files_path,
+                                                truth_img, extract_2d_threshold_diff)
+            result, large_diff_corners_dict, log_msgs = outputs
 
     # If all tests passed then test will be marked as PASSED, else it will be FAILED
     print('\nSummary of test results: \n', result)
