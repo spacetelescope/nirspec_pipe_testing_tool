@@ -261,7 +261,7 @@ def validate_extract2d(output_hdul):
     msg = "\n Performing extract_2d validation test... "
     print(msg)
     logging.info(msg)
-    if core_utils.check_FS_true(hdu):
+    if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
         result, log_msgs = check_corners_extract2d.find_FSwindowcorners(infile_name, truth_file=truth_file,
                                                                         esa_files_path=esa_files_path,
                                                                         extract_2d_threshold_diff=

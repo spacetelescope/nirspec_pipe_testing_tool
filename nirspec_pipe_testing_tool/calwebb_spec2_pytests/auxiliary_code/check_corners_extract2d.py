@@ -25,8 +25,8 @@ Check that the corners after the extract_2d step match the truth (benchmark) dat
 """
 
 
-def fs_extract_2d_and_compare(result, large_diff_corners_dict, log_msgs, img, slit, pipeslit,
-                              esa_files_path, truth_img, extract_2d_threshold_diff):
+def fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict, log_msgs, img, slit,
+                              pipeslit, esa_files_path, truth_img, extract_2d_threshold_diff):
     """
     This function tests if the corners of the truth file are present in the corners of the pipeline.
     Args:
@@ -165,10 +165,14 @@ def fs_extract_2d_and_compare(result, large_diff_corners_dict, log_msgs, img, sl
     if not compare_to_esa_data:
         # determine if the current open slit is also open in the truth file
         slit_in_truth_file = False
-        for truth_slit in truth_img.slits:
-            if truth_slit.name == pipeslit:
-                slit_in_truth_file = True
-                break
+        if exp_type == "NRS_BRIGHTOBJ":
+            truth_slit = truth_img
+            slit_in_truth_file = True
+        else:
+            for truth_slit in truth_img.slits:
+                if truth_slit.name == pipeslit:
+                    slit_in_truth_file = True
+                    break
 
         if not slit_in_truth_file:
             msg1 = "\n * Script check_corners_extract_2d.py is exiting because open slit " + pipeslit + \
@@ -252,7 +256,7 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
         print("Information from the 'truth' (or comparison) file ")
         print(truth_hdul.info())
         truth_hdul.close()
-        truth_img = datamodels.ImageModel(truth_file)
+        truth_img = datamodels.open(truth_file)  # guess the best model to use
 
     # get grating and filter info from the pipeline file or datamodel
     if isinstance(infile_name, str):
@@ -269,30 +273,24 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
     grat = img.meta.instrument.grating
     filt = img.meta.instrument.filter
     exp_type = img.meta.exposure.type.upper()
-    msg = "from assign_wcs file/model  -->     Detector: " + detector + "   Grating: " + grat + \
+    msg = "from extract_2d file/model  -->     Detector: " + detector + "   Grating: " + grat + \
           "   Filter: " + filt + "   Lamp: " + lamp + "   Exp_Type: " + exp_type
     print(msg)
     log_msgs.append(msg)
 
     # To get the open and projected on the detector slits of the pipeline processed file
     single_slit_mdl = False
-    try:
-        img.slits
-    except KeyError:
-        # this error is produced when the single slit model is used (BOTS)
-        if exp_type == "NRS_BRIGHTOBJ":
-            slit = img
-            pipeslit = "S1600A1"
-            single_slit_mdl = True
-        else:
-            print("This model does not have the attribute 'slits' and it is not BOTS.")
-            exit()
+    if exp_type == "NRS_BRIGHTOBJ":
+        slit = img
+        pipeslit = "S1600A1"
+        single_slit_mdl = True
+
     if single_slit_mdl:
         msg = "\nWorking with BOTS single slit model "
         print(msg)
         log_msgs.append(msg)
-        outputs = fs_extract_2d_and_compare(result, large_diff_corners_dict, log_msgs,
-                                            img, slit, pipeslit, esa_files_path,
+        outputs = fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict,
+                                            log_msgs, img, slit, pipeslit, esa_files_path,
                                             truth_img, extract_2d_threshold_diff)
         result, large_diff_corners_dict, log_msgs = outputs
     else:
@@ -301,8 +299,8 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
             msg = "\nWorking with slit: "+pipeslit
             print(msg)
             log_msgs.append(msg)
-            outputs = fs_extract_2d_and_compare(result, large_diff_corners_dict, log_msgs,
-                                                img, slit, pipeslit, esa_files_path,
+            outputs = fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict,
+                                                log_msgs, img, slit, pipeslit, esa_files_path,
                                                 truth_img, extract_2d_threshold_diff)
             result, large_diff_corners_dict, log_msgs = outputs
 
