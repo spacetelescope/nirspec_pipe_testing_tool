@@ -14,10 +14,11 @@ from ..auxiliary_code import auxiliary_functions as auxfunc
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__version__ = "1.1"
 
 # HISTORY
 # Jul 2020 - Version 1.0: initial version completed
+# Oct 2022 - Version 1.1: Implemented code for BOTS model to work
 
 
 """
@@ -25,11 +26,12 @@ Check that the corners after the extract_2d step match the truth (benchmark) dat
 """
 
 
-def fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict, log_msgs, img, slit,
-                              pipeslit, esa_files_path, truth_img, extract_2d_threshold_diff):
+def fs_extract_2d_and_compare(infile_name, exp_type, result, large_diff_corners_dict, log_msgs, img,
+                              slit, pipeslit, esa_files_path, truth_img, extract_2d_threshold_diff):
     """
     This function tests if the corners of the truth file are present in the corners of the pipeline.
     Args:
+        infile_name: string, name of the input pipeline fits file
         result: dictionary
         large_diff_corners_dict: dictionary
         log_msgs: list
@@ -83,8 +85,8 @@ def fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict, log_msg
             print(msg2)
             log_msgs.append(msg1)
             log_msgs.append(msg2)
-            result = "skip"
-            return result, log_msgs
+            result[pipeslit] = False
+            return result, large_diff_corners_dict, log_msgs
 
         if not isinstance(esafile, list):
             if isinstance(esafile, tuple):
@@ -109,7 +111,8 @@ def fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict, log_msg
                 msg = " * No ESA file was found. Test will be skipped because there is no file to compare with."
                 print(msg)
                 log_msgs.append(msg)
-                return "skip", log_msgs
+                result[pipeslit] = False
+                return result, large_diff_corners_dict, log_msgs
 
             if slit in esafile:
                 print("Using this ESA file: \n", esafile)
@@ -143,7 +146,7 @@ def fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict, log_msg
                             print(msg2)
                             log_msgs.append(msg1)
                             log_msgs.append(msg2)
-                            result = "skip"
+                            result[pipeslit] = False
                             continue
 
                     # get the origin of the subwindow
@@ -182,8 +185,8 @@ def fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict, log_msg
             print(msg2)
             log_msgs.append(msg1)
             log_msgs.append(msg2)
-            FINAL_TEST_RESULT = False
-            return FINAL_TEST_RESULT, log_msgs
+            result[pipeslit] = False
+            return result, large_diff_corners_dict, log_msgs
 
         else:
             # grab corners of extracted sub-window from the truth file
@@ -289,7 +292,7 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
         msg = "\nWorking with BOTS single slit model "
         print(msg)
         log_msgs.append(msg)
-        outputs = fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict,
+        outputs = fs_extract_2d_and_compare(infile_name, exp_type, result, large_diff_corners_dict,
                                             log_msgs, img, slit, pipeslit, esa_files_path,
                                             truth_img, extract_2d_threshold_diff)
         result, large_diff_corners_dict, log_msgs = outputs
@@ -299,13 +302,15 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
             msg = "\nWorking with slit: "+pipeslit
             print(msg)
             log_msgs.append(msg)
-            outputs = fs_extract_2d_and_compare(exp_type, result, large_diff_corners_dict,
+            outputs = fs_extract_2d_and_compare(infile_name, exp_type, result, large_diff_corners_dict,
                                                 log_msgs, img, slit, pipeslit, esa_files_path,
                                                 truth_img, extract_2d_threshold_diff)
             result, large_diff_corners_dict, log_msgs = outputs
 
     # If all tests passed then test will be marked as PASSED, else it will be FAILED
-    print('\nSummary of test results: \n', result)
+    print('\nPass/Fail test results: ')
+    for  k, v in result.items():
+        print(k, v)
     FINAL_TEST_RESULT = False
     for t, v in result.items():
         if not v:
