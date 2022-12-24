@@ -6,6 +6,7 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 from astropy.io import fits
+from glob import glob
 
 from gwcs import wcstools
 from gwcs.utils import _toindex
@@ -23,7 +24,7 @@ This script tests the pipeline flat field step output for IFU data. It is the py
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.7"
+__version__ = "2.8"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -35,6 +36,24 @@ __version__ = "2.7"
 # May 2019 - Version 2.5: Implemented plot of residuals as well as histogram.
 # Jun 2019 - Version 2.6: Updated name of interpolated flat to be the default pipeline name for this file.
 # Jan 2021 - Version 2.7: Implemented option to run with object instead of input fits file.
+# Dec 2022 - Version 2.8: Fixed code to read new post-commissioning reference files in CRDS format.
+
+
+def get_slit_wavdat(fastvartable, slit_id):
+    """
+    Extract the data for the appropriate slit from the fits table.
+    Args:
+        fastvartable: astropy table
+        slit_id: string
+    Returns:
+        fastvar_wav: array, wavelengths for fast variation
+        fastvar_dat: array
+    """
+    # obtain the table index for corresponding to the given slit
+    idx = np.where(fastvartable['slit_name'] == slit_id)
+    fastvar_wav = fastvartable['wavelength'][idx]
+    fastvar_dat = fastvartable['data'][idx]
+    return fastvar_wav[0], fastvar_dat[0]
 
 
 def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name):
@@ -156,8 +175,31 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     else:
         mode = "not IFU data"
 
+    # print the info about the reference files used:
+    with datamodels.open(step_input_filename) as pipe_flat_field_mdl:
+        msg0 = "\n * FOR COMPARISON PURPOSES, for file " + step_input_filename
+        msg1 = "    DATE-OBS = " + str(pipe_flat_field_mdl.meta.observation.date)
+        msg2 = "    Pipeline CRDS context: " + str(pipe_flat_field_mdl.meta.ref_file.crds.context_used)
+        msg3 = "    Pipeline ref d-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.dflat.name)
+        msg4 = "    Pipeline ref s-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.sflat.name)
+        msg5 = "    Pipeline ref f-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.fflat.name) + "\n"
+        print(msg0)
+        print(msg1)
+        print(msg2)
+        print(msg3)
+        print(msg4)
+        print(msg5)
+        log_msgs.append(msg0)
+        log_msgs.append(msg1)
+        log_msgs.append(msg2)
+        log_msgs.append(msg3)
+        log_msgs.append(msg4)
+        log_msgs.append(msg5)
+
     # read in the on-the-fly flat image
-    pipeflat = fits.getdata(flatfile, "SCI")
+    with fits.open(flatfile) as flatfile_hdu:
+        pipeflat = flatfile_hdu["SCI"].data
+        pipeflat_err = flatfile_hdu["ERR"].data
 
     # get the reference files
     msg = "Getting and reading the D-, S-, and F-flats for this specific IFU configuration... "
@@ -166,28 +208,34 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
     # D-Flat
     if ".fits" not in dflat_path:
-        dflat_ending = "f_01.03.fits"
-        dfile = dflat_path+"_nrs1_"+dflat_ending
-        if det == "NRS2":
-            dfile = dfile.replace("nrs1", "nrs2")
+        # get all the fits files and find the appropriate detector
+        fflatfiles = glob(os.path.join(dflat_path, "*.fits"))
+        for ff in fflatfiles:
+            if det.lower() in ff.lower():
+                if debug:
+                    print('Is detector ', det, ' in file ', ff)
+                dfile = ff
+                break
+            else:
+                result_msg = "Test skiped because there is no flat correspondence for the detector {} in directory {}".format(det,
+                             dflat_path)
+                print(msg)
+                median_diff = "skip"
+                return median_diff, result_msg, log_msgs
     else:
         dfile = dflat_path
-    msg = "Using D-flat: " + dfile
-    print(msg)
-    log_msgs.append(msg)
+    msg0 = " * This flat test is using the following reference files "
+    msg1 = "    D-flat: " + dfile
+    print(msg0)
+    print(msg1)
+    log_msgs.append(msg0)
+    log_msgs.append(msg1)
     with fits.open(dfile) as dfile_hdu:
         dfim = dfile_hdu["SCI"].data
         dfimdq = dfile_hdu["DQ"].data
-        dfrqe = dfile_hdu["RQE"].data
+        dfrqe = dfile_hdu["FAST_VARIATION"].data
         dfile_scihdr = dfile_hdu["SCI"].header
-    # need to flip/rotate the image into science orientation
     ns = np.shape(dfim)
-    dfim = np.transpose(dfim, (0, 2, 1))   # keep in mind that 0,1,2 = z,y,x in Python, whereas =x,y,z in IDL
-    dfimdq = np.transpose(dfimdq)
-    if det == "NRS2":
-        # rotate science data by 180 degrees for NRS2
-        dfim = dfim[..., ::-1, ::-1]
-        dfimdq = dfimdq[..., ::-1, ::-1]
     naxis3 = dfile_scihdr["NAXIS3"]
 
     # get the wavelength values
@@ -217,62 +265,94 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         return median_diff, msg
 
     if ".fits" not in sflat_path:
-        sflat_ending = "f_01.01.fits"
-        sfile = sflat_path+"_"+grat+"_OPAQUE_"+flat+"_nrs1_"+sflat_ending
-        if det == "NRS2":
-            sfile = sfile.replace("nrs1", "nrs2")
+        # get all the fits files and find the appropriate detector
+        flatfiles = glob(os.path.join(sflat_path, "*_"+mode+"_*"+det+"*.fits"))
+        if len(flatfiles) == 0:
+            flatfiles = glob(os.path.join(sflat_path, "*_IFS_*"+det+"*.fits"))
+        if debug:
+            print('Files found in sflat path: ', len(flatfiles))
+        for ff in flatfiles:
+            if debug:
+                print('looking for grating ', grat, ' in file ', ff)
+            # look for the right configuration flat
+            if grat in ff:
+                if debug:
+                    print('found grating, now looking for filter ', filt, ' in file ', ff)
+                try:
+                    if filt in ff:
+                        sfile = ff
+                        break
+                    else:
+                        result_msg = "Test skiped because there is no S-flat correspondence for configuration {} {} in directory {}".format(grat, filt, sflat_path)
+                        print(msg)
+                        median_diff = "skip"
+                        return median_diff, result_msg, log_msgs
+                except Exception as err:
+                    print(err)
+                    print('Trying OPAQUE as filter')
+                    if 'OPAQUE' in ff:
+                        sfile = ff
+                        break
+                    else:
+                        result_msg = "Test skiped because there is no S-flat correspondence for configuration {} {} in directory {}".format(grat, 'OPAQUE', sflat_path)
+                        print(msg)
+                        median_diff = "skip"
+                        return median_diff, result_msg, log_msgs
     else:
         sfile = sflat_path
 
-    if mode not in sflat_path:
-        msg = "Wrong path in for mode S-flat. This script handles mode " + mode + "only."
-        print(msg)
-        log_msgs.append(msg)
-        # This is the key argument for the assert pytest function
-        result_msg = "Wrong path in for mode S-flat. Test skipped because mode is not IFU."
-        median_diff = "skip"
-        return median_diff, result_msg, log_msgs
-
-    if debug:
-        print("grat = ", grat)
-        print("flat = ", flat)
-        print("sfile used = ", sfile)
-
-    msg = "Using S-flat: "+sfile
+    msg = "    S-flat: " + sfile
     print(msg)
     log_msgs.append(msg)
     with fits.open(sfile) as sfile_hdu:
         sfim = sfile_hdu["SCI"].data
         sfimdq = sfile_hdu["DQ"].data
-        sfv = sfile_hdu["IFU"].data  # extension 5 -> VECTOR in other modes
-
-    # need to flip/rotate image into science orientation
-    sfim = np.transpose(sfim)
-    sfimdq = np.transpose(sfimdq)
-    if det == "NRS2":
-        # rotate science data by 180 degrees for NRS2
-        sfim = sfim[..., ::-1, ::-1]
-        sfimdq = sfimdq[..., ::-1, ::-1]
+        sffastvar = sfile_hdu["FAST_VARIATION"].data
 
     # F-Flat
     if ".fits" not in fflat_path:
-        fflat_ending = "01.01.fits"
-        ffile = "_".join((fflat_path, filt, fflat_ending))
+        # get all the fits files and find the appropriate detector
+        flatfiles = glob(os.path.join(fflat_path, "*_"+mode+"_*.fits"))
+        if len(flatfiles) == 0:
+            flatfiles = glob(os.path.join(fflat_path, "*_IFS_*.fits"))
+        if debug:
+            print('Files found in fflat path: ', len(flatfiles))
+        for ff in flatfiles:
+            # look for the right configuration flat
+            if grat in ff:
+                if debug:
+                    print('found grating ', grat, ' in flat file')
+                try:
+                    if filt in ff:
+                        if debug:
+                            print('found filter ', filt, ' in flat file')
+                        ffile = ff
+                        break
+                    else:
+                        result_msg = "Test skiped because there is no F-flat correspondence for configuration {} {} in directory {}".format(grat, filt, fflat_path)
+                        print(msg)
+                        median_diff = "skip"
+                        return median_diff, result_msg, log_msgs
+                except Exception as err:
+                    print(err)
+                    print('Now trying OPAQUE as filter')
+                    if 'OPAQUE' in ff:
+                        ffile = ff
+                        break
+                    else:
+                        result_msg = "Test skiped because there is no F-flat correspondence for configuration {} {} in directory {}".format(grat, 'OPAQUE', fflat_path)
+                        print(msg)
+                        median_diff = "skip"
+                        return median_diff, result_msg, log_msgs
     else:
         ffile = fflat_path
 
-    if mode not in fflat_path:
-        msg = "Wrong path in for mode F-flat. This script handles mode " + mode + "only."
-        print(msg)
-        log_msgs.append(msg)
-        # This is the key argument for the assert pytest function
-        median_diff = "skip"
-        return median_diff, msg, log_msgs
-
-    msg = "Using F-flat: "+ffile
+    msg = "    F-flat: " + ffile
     print(msg)
     log_msgs.append(msg)
-    ffv = fits.getdata(ffile, "IFU")
+    with fits.open(ffile) as ffile_hdu:
+        fferr = ffile_hdu["ERR"].data
+        fffastvar = ffile_hdu["FAST_VARIATION"].data
 
     # now go through each pixel in the test data
 
@@ -286,6 +366,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         hdu0 = fits.PrimaryHDU()
         complfile = fits.HDUList()
         complfile.append(hdu0)
+
+    # select the appropriate S- and F-flat fast vector
+    sfv_wav, sfv_dat = get_slit_wavdat(sffastvar, 'ANY')
+    ffv_wav, ffv_dat = get_slit_wavdat(fffastvar, 'ANY')
 
     # loop over the slices
     all_delfg_mean, all_delfg_mean_arr, all_delfg_median, all_test_result = [], [], [], []
@@ -326,6 +410,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         flatcor = np.zeros([nw]) + 999.0
         sffarr = np.zeros([nw])
         calc_flat = np.zeros([2048, 2048]) + 999.0
+        flat_err = np.zeros([2048, 2048])) + 999.0
+        delflaterr = np.zeros([2048, 2048]))
 
         # loop through the wavelengths
         msg = " Looping through the wavelength, this may take a little time ... "
@@ -357,8 +443,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     print("delw = ", delw)
 
                 # integrate over D-flat fast vector
-                dfrqe_wav = dfrqe.field("WAVELENGTH")
-                dfrqe_rqe = dfrqe.field("RQE")
+                dfrqe_wav = dfrqe["wavelength"][0]
+                dfrqe_rqe = dfrqe["data"][0]
                 iw = np.where((dfrqe_wav >= jwav-delw/2.0) & (dfrqe_wav <= jwav+delw/2.0))
                 if np.size(iw) == 0:
                     iw = -1
@@ -381,8 +467,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     dfs = np.interp(jwav, dfwave, dfim[:, pind[0], pind[1]])
 
                 # integrate over S-flat fast vector
-                sfv_wav = sfv.field("WAVELENGTH")
-                sfv_dat = sfv.field("DATA")
                 if (jwav < 5.3) and (jwav > 0.6):
                     iw = np.where((sfv_wav >= jwav-delw/2.0) & (sfv_wav <= jwav+delw/2.0))
                     if np.size(iw) == 0:
@@ -414,9 +498,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
                 # integrate over f-flat fast vector
                 # reference file blue cutoff is 1 micron, so need to force solution for shorter wavs
-                ffv_wav = ffv.field("WAVELENGTH")
-                ffv_dat = ffv.field("DATA")
                 fff = 1.0
+                fff_err = 0.0
                 if jwav-delw/2.0 >= 1.0:
                     iw = np.where((ffv_wav >= jwav-delw/2.0) & (ffv_wav <= jwav+delw/2.0))
                     if np.size(iw) == 0:
@@ -427,9 +510,26 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                         fff = int_tab/(last_ffv_wav - first_ffv_wav)
                     elif np.size(iw) == 1:
                         fff = float(ffv_dat[iw])
+                    # f-flat corresponding error estimation by following same logic with average of
+                    # value+err and value-err
+                    if fferr.size != 0:
+                        int_tab_pluserr = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw]+fferr[pind[0], pind[1]])
+                        fff_pluserr = int_tab_pluserr / (last_ffv_wav - first_ffv_wav)
+                        int_tab_minuserr = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw]-fferr[pind[0], pind[1]])
+                        fff_minuserr = int_tab_minuserr / (last_ffv_wav - first_ffv_wav)
+                        fff_err = (fff_pluserr - fff_minuserr)/2
 
                 flatcor[j] = dff * dfs * sff * sfs * fff
                 sffarr[j] = sff
+
+                # calculate the corresponding error propagation
+                # If the errors were independent from each other
+                # flat_err[k, j] = np.sqrt( dff_err**2/dff**2 + dfs_err**2/dfs**2 + sff_err**2/sff**2 + fff_err**2/fff**2 ) * flatcor[k, j]
+                # However, the errors of the D-flat and S-flat are correlated to the F-flat because it corrects for
+                # any field- and wavelength-dependent effects of the OTE and the FORE optics
+                # (also, the S-flat uncertainy is currently being overestimated as an arbitrary 10%), hence, the
+                # uncertainty from the S- and D-flats will be ignored and we assume that the F-flat uncertainties dominate
+                flat_err[pind[0], pind[1]] = np.sqrt( fff_err**2/fff**2 ) * flatcor[j]
 
                 # if there is a NaN (i.e. the pipeline is using this pixel but we are not), set this to 1.0
                 # to match what the pipeline is doing. The value would be NaN if one or more of the 3 flat
@@ -446,12 +546,16 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
                 # Difference between pipeline and calculated values
                 delf[j] = pipeflat[pind[0], pind[1]] - flatcor[j]
+                # difference between pipeline errors array and calculated values
+                delflaterr[pind[0], pind[1]] = pipeflat_err[pind[0], pind[1]] - flat_err[pind[0], pind[1]]
 
                 # Remove all pixels with values=1 (mainly inter-slit pixels) for statistics
                 if pipeflat[pind[0], pind[1]] == 1:
                     delf[j] = 999.0
+                    delflaterr[pind[0], pind[1]] = 999.0
                 if np.isnan(jwav):
                     flatcor[j] = 1.0   # no correction if no wavelength
+                    flat_err[pind[0], pind[1]] = 999.0
 
                 if debug:
                     print("np.shape(iw) = ", np.shape(iw))
@@ -461,6 +565,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
         # ignore outliers for calculating median
         delfg = delf[np.where(delf != 999.0)]
+        delflaterr = delflaterr.flatten()
+        delflaterr = delflaterr[np.where(delf != 999.0)]
         msg = "Flat value differences for slice number: "+pslice
         print(msg)
         log_msgs.append(msg)
@@ -469,6 +575,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         delfg_mean, delfg_median, delfg_std = stats
         for msg in stats_print_strings:
             log_msgs.append(msg)
+        _ = auxfunc.print_stats(delflaterr, "Flat Error Difference", float(threshold_diff), absolute=True)
 
         if debug:
             print("np.shape(delf) = ", np.shape(delf))
@@ -524,8 +631,15 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 log_msgs.append(msg)
 
         if writefile:
+            flatcor = flatcor.reshape(wave_shape)
+            flatcor[np.where(flatcor == 999.0)] = 1.0
+            flat_err[np.where(flatcor == 999.0)] = np.nan
+
             # this is the file to hold the image of pipeline-calculated difference values
-            outfile_ext = fits.ImageHDU(flatcor.reshape(wave_shape), name=pslice)
+            outfile_ext = fits.ImageHDU(flatcor, name=pslice)
+            outfile.append(outfile_ext)
+            # this is the file to hold the corresponding error extensions
+            outfile_ext = fits.ImageHDU(flat_err, name=slit_id+'_ERR')
             outfile.append(outfile_ext)
 
             # this is the file to hold the image of pipeline-calculated difference values
@@ -580,8 +694,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
     # create fits file to hold the calculated flat for each slice
     if writefile:
-        outfile_name = flatfile.replace("interpolatedflat.fits", "_flat_calc.fits")
-        complfile_name = flatfile.replace("interpolatedflat.fits", "_flat_comp.fits")
+        outfile_name = flatfile.replace("interpolatedflat.fits", "flat_calc.fits")
+        complfile_name = flatfile.replace("interpolatedflat.fits", "flat_comp.fits")
 
         # create the fits list to hold the calculated flat values for each slit
         outfile.writeto(outfile_name, overwrite=True)
