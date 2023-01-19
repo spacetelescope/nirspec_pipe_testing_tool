@@ -36,6 +36,31 @@ __version__ = "2.8"
 # Dec 2022 - Version 2.8: Fixed code to read new post-commissioning reference files in CRDS format.
 
 
+def interp_close_pts(wav_pt, wav_arr, dat_arr, debug):
+    """
+    Do linear interpolation of 3 points in the wave- and data-array pair given.
+    Args:
+        wav_pt: float, wavelength of interest
+        wav_arr: array
+        dat_arr: array
+    Returns:
+        point_in_dat_arr: float, corresponding point to the wavelenth of interest
+    """
+    nearest_wav, nearest_wav_idx = auxfunc.find_nearest(wav_arr, wav_pt)
+    nearest_fv = dat_arr[nearest_wav_idx]
+    prev_nearest_wav, prev_nearest_fv = wav_arr[nearest_wav_idx-1], dat_arr[nearest_wav_idx-1]
+    foll_nearest_wav, foll_nearest_fv = wav_arr[nearest_wav_idx+1], dat_arr[nearest_wav_idx+1]
+    nearest_wav_arr = np.array([prev_nearest_wav, nearest_wav, foll_nearest_wav])
+    nearest_fv_arr = np.array([prev_nearest_fv, nearest_fv, foll_nearest_fv])
+    point_in_dat_arr = np.interp(wav_pt, nearest_wav_arr, nearest_fv_arr)
+    if debug:
+        print("No wavelengths found to integrate over, trying an interpolation to find value: ")
+        print("  prev_nearest_wav, prev_nearest_sfv: ", prev_nearest_wav, prev_nearest_sfv)
+        print("  nearest_wav, nearest_dat: ", nearest_wav, nearest_fv)
+        print("  foll_nearest_wav, foll_nearest_fv: ", foll_nearest_wav, foll_nearest_fv)
+    return point_in_dat_arr
+
+
 def get_slit_wavdat(fastvartable, slit_id):
     """
     Extract the data for the appropriate slit from the fits table.
@@ -128,26 +153,27 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     print(msg)
     log_msgs.append(msg)
 
-    # print the info about the reference files used:
-    with datamodels.open(step_input_filename) as pipe_flat_field_mdl:
-        msg0 = "\n * FOR COMPARISON PURPOSES, for file " + step_input_filename
-        msg1 = "    DATE-OBS = " + str(pipe_flat_field_mdl.meta.observation.date)
-        msg2 = "    Pipeline CRDS context: " + str(pipe_flat_field_mdl.meta.ref_file.crds.context_used)
-        msg3 = "    Pipeline ref d-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.dflat.name)
-        msg4 = "    Pipeline ref s-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.sflat.name)
-        msg5 = "    Pipeline ref f-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.fflat.name) + "\n"
-        print(msg0)
-        print(msg1)
-        print(msg2)
-        print(msg3)
-        print(msg4)
-        print(msg5)
-        log_msgs.append(msg0)
-        log_msgs.append(msg1)
-        log_msgs.append(msg2)
-        log_msgs.append(msg3)
-        log_msgs.append(msg4)
-        log_msgs.append(msg5)
+    if isinstance(step_input_filename, str):
+        # print the info about the reference files used:
+        with datamodels.open(step_input_filename) as pipe_flat_field_mdl:
+            msg0 = "\n * FOR COMPARISON PURPOSES, for file " + step_input_filename
+            msg1 = "    DATE-OBS = " + str(pipe_flat_field_mdl.meta.observation.date)
+            msg2 = "    Pipeline CRDS context: " + str(pipe_flat_field_mdl.meta.ref_file.crds.context_used)
+            msg3 = "    Pipeline ref d-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.dflat.name)
+            msg4 = "    Pipeline ref s-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.sflat.name)
+            msg5 = "    Pipeline ref f-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.fflat.name) + "\n"
+            print(msg0)
+            print(msg1)
+            print(msg2)
+            print(msg3)
+            print(msg4)
+            print(msg5)
+            log_msgs.append(msg0)
+            log_msgs.append(msg1)
+            log_msgs.append(msg2)
+            log_msgs.append(msg3)
+            log_msgs.append(msg4)
+            log_msgs.append(msg5)
 
     # get the reference files
     # D-Flat
@@ -401,7 +427,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
             delf = np.zeros([nw2, nw1]) + 999.0
             flatcor = np.zeros([nw2, nw1]) + 999.0
-            flat_err = np.zeros([nw2, nw1]) + 999.0
+            flat_err = np.zeros([nw2, nw1])
             delflaterr = np.zeros([nw2, nw1])
 
             # read the pipeline-calculated flat image, using the corresponding SCI extension number
@@ -453,10 +479,16 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                         # integrate over D-flat fast vector
                         dfrqe_wav = dfrqe["wavelength"][0]
                         dfrqe_rqe = dfrqe["data"][0]
-                        iw = np.where((dfrqe_wav >= wave[k, j] - delw / 2.) & (dfrqe_wav <= wave[k, j] + delw / 2.))
-                        int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw], dfrqe_rqe[iw])
-                        first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
-                        dff = int_tab / (last_dfrqe_wav - first_dfrqe_wav)
+                        dff = 1.0
+                        if (wave[k, j] >= 0.6) and (wave[k, j] <= 5.292):
+                            iw = np.where((dfrqe_wav >= wave[k, j] - delw / 2.) & (dfrqe_wav <= wave[k, j] + delw / 2.))
+                            if np.size(iw) > 1:
+                                int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw], dfrqe_rqe[iw])
+                                first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
+                                dff = int_tab / (last_dfrqe_wav - first_dfrqe_wav)
+                            # or do linear interpolation
+                            else:
+                                dff = interp_close_pts(wave[k, j], dfrqe_wav, dfrqe_rqe, debug)
 
                         if debug:
                             print("k, py0, j, px0 = ", k, py0, j,px0)
@@ -500,30 +532,20 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                             print("dfs = ", dfs)
 
                         # integrate over S-flat fast vector
-                        up_wav = wave[k, j] + delw / 2.0
-                        lo_wav = wave[k, j] - delw / 2.0
-                        iw = np.where((sfv_wav >= lo_wav) & (sfv_wav <= up_wav))
                         sff = 1.0
-                        if np.size(iw) > 2:
-                            int_tab = auxfunc.idl_tabulate(sfv_wav[iw], sfv_dat[iw])
-                            first_sfv_wav, last_sfv_wav = sfv_wav[iw[0]][0], sfv_wav[iw[0]][-1]
-                            sff = int_tab / (last_sfv_wav - first_sfv_wav)
-                        else:
-                            # find the nearest point in the reference table and use that as center plus the one previous
-                            # and following it to create array to interpolate.
-                            nearest_wav, nearest_wav_idx = auxfunc.find_nearest(sfv_wav, wave[k, j])
-                            nearest_sfv = sfv_dat[nearest_wav_idx]
-                            prev_nearest_wav, prev_nearest_sfv = sfv_wav[nearest_wav_idx-1], sfv_dat[nearest_wav_idx-1]
-                            foll_nearest_wav, foll_nearest_sfv = sfv_wav[nearest_wav_idx+1], sfv_dat[nearest_wav_idx+1]
-                            nearest_wav_arr = np.array([prev_nearest_wav, nearest_wav, foll_nearest_wav])
-                            nearest_sfv_arr = np.array([prev_nearest_sfv, nearest_sfv, foll_nearest_sfv])
+                        if (wave[k, j] >= 0.6) and (wave[k, j] <= 5.292):
+                            up_wav = wave[k, j] + delw / 2.0
+                            lo_wav = wave[k, j] - delw / 2.0
+                            iw = np.where((sfv_wav >= lo_wav) & (sfv_wav <= up_wav))
+                            if np.size(iw) > 2:
+                                int_tab = auxfunc.idl_tabulate(sfv_wav[iw], sfv_dat[iw])
+                                first_sfv_wav, last_sfv_wav = sfv_wav[iw[0]][0], sfv_wav[iw[0]][-1]
+                                sff = int_tab / (last_sfv_wav - first_sfv_wav)
+                            else:
+                                # find the nearest point in the reference table and use that as center plus the one previous
+                                # and following it to create array to interpolate.
+                                sff = interp_close_pts(wave[k, j], sfv_wav, sfv_dat, debug)
 
-                            sff = np.interp(wave[k, j], nearest_wav_arr, nearest_sfv_arr)
-                            if debug:
-                                print("No wavelengths found to integrate over, trying an interpolation to find sff: ")
-                                print("  prev_nearest_wav, prev_nearest_sfv: ", prev_nearest_wav, prev_nearest_sfv)
-                                print("  nearest_wav, nearest_sfv: ", nearest_wav, nearest_sfv)
-                                print("  foll_nearest_wav, foll_nearest_sfv: ", foll_nearest_wav, foll_nearest_sfv)
                         # get s-flat pixel-dependent correction
                         sfs = 1.0
                         if sfimdq[pind[0], pind[1]] == 0:
@@ -545,7 +567,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                         # reference file blue cutoff is 1 micron, so need to force solution for shorter wavs
                         fff = 1.0
                         fff_err = 0.0
-                        if wave[k, j] - delw / 2.0 >= 1.0:
+                        if (wave[k, j] >= 0.6) and (wave[k, j] <= 5.292):
                             iw = np.where((ffv_wav >= wave[k, j] - delw / 2.0) & (ffv_wav <= wave[k, j] + delw / 2.0))
                             if np.size(iw) > 1:
                                 int_tab = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw])
@@ -562,21 +584,15 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                             else:
                                 # find the nearest point in the reference table and use that as center plus the one previous
                                 # and following it to create array to interpolate.
-                                nearest_wav, nearest_wav_idx = auxfunc.find_nearest(ffv_wav, wave[k, j])
-                                nearest_ffv = ffv_dat[nearest_wav_idx]
-                                prev_nearest_wav, prev_nearest_ffv = ffv_wav[nearest_wav_idx-1], ffv_dat[nearest_wav_idx-1]
-                                foll_nearest_wav, foll_nearest_ffv = ffv_wav[nearest_wav_idx+1], ffv_dat[nearest_wav_idx+1]
-                                nearest_wav_arr = np.array([prev_nearest_wav, nearest_wav, foll_nearest_wav])
-                                nearest_ffv_arr = np.array([prev_nearest_ffv, nearest_ffv, foll_nearest_ffv])
-                                fff = np.interp(wave[k, j], nearest_wav_arr, nearest_ffv_arr)
-                                if debug:
-                                    print("No wavelengths found to integrate over, trying an interpolation to find fff: ")
-                                    print("  prev_nearest_wav, prev_nearest_ffv: ", prev_nearest_wav, prev_nearest_ffv)
-                                    print("  nearest_wav, nearest_ffv: ", nearest_wav, nearest_ffv)
-                                    print("  foll_nearest_wav, foll_nearest_ffv: ", foll_nearest_wav, foll_nearest_ffv)
-                                # f-flat corresponding error estimation by following same logic with average of
-                                # value+err and value-err, where err is value at wavelength[k, j]
-                                if fferr.size != 0:
+                                fff = interp_close_pts(wave[k, j], ffv_wav, ffv_dat, debug)
+
+                            # f-flat corresponding error estimation
+                            if fferr.size != 0:
+                                if fferr[k, j] != 0.0:
+                                    # following same logic with average of value+err and value-err, where err is value at wavelength[k, j]
+                                    nearest_wav, nearest_wav_idx = auxfunc.find_nearest(ffv_wav, ffv_dat)
+                                    nearest_wav_arr = np.array([wav_arr[nearest_wav_idx-1], wave[k, j],
+                                                                wav_arr[nearest_wav_idx+1]])
                                     nearest_ffv_arr = np.array([ffv_dat[nearest_wav_idx-1] + fferr[k, j],
                                                                 ffv_dat[nearest_wav_idx] + fferr[k, j],
                                                                 ffv_dat[nearest_wav_idx+1] + fferr[k, j]])
@@ -597,7 +613,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                         # any field- and wavelength-dependent effects of the OTE and the FORE optics
                         # (also, the S-flat uncertainy is currently being overestimated as an arbitrary 10%), hence, the
                         # uncertainty from the S- and D-flats will be ignored and we assume that the F-flat uncertainties dominate
-                        flat_err[k, j] = np.sqrt( fff_err**2/fff**2 ) * flatcor[k, j]
+                        if fff_err != 0.0:
+                            flat_err[k, j] = np.sqrt( fff_err**2/fff**2 ) * flatcor[k, j]
 
                         if debug:
                             print("np.shape(iw) =", np.shape(iw))
@@ -614,13 +631,27 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                             # difference between pipeline errors array and calculated values
                             delflaterr[k, j] = pipeflat_err[k, j] - flat_err[k, j]
 
+                            '''
+                            # print where the differeces are too big
+                            if abs(delf[k, j]) > 1e3:
+                                print("wave[k, j] = ", wave[k, j])
+                                print("dfs, dff = ", dfs, dff)
+                                print("sfs, sff = ", sfs, sff)
+                                print("fff = ", fff)
+                                print('x, y, diff, pipeflat, calcflat: ')
+                                print(j+1, k+1, delf[k, j], pipeflat[k, j], flatcor[k, j])
+                                print('pipeflat_err, calcflat_err: ')
+                                print(pipeflat_err[k, j], delflaterr[k, j])
+                                input()
+                                '''
+
                             # Remove all pixels with values=1 (outside slit boundaries) for statistics
                             if pipeflat[k, j] == 1:
                                 delf[k, j] = 999.0
-                                delflaterr[k, j] = 999.0
+                                delflaterr[k, j] = 0.0
                             if np.isnan(wave[k, j]):
                                 flatcor[k, j] = 1.0  # no correction if no wavelength
-                                flat_err[k, j] = 999.0
+                                flat_err[k, j] = 0.0
 
                             if debug:
                                 print("Difference between pipeline and calculated values:  delf[k, j] = ", delf[k, j])
@@ -642,7 +673,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
             nanind = np.isnan(delf)  # get all the nan indexes
             notnan = ~nanind  # get all the not-nan indexes
-            delf = delf[notnan]  # get rid of NaNs
+            delf = delf[notnan]   # get rid of NaNs
             delflaterr = delflaterr[notnan]
             if debug:
                 print('nanind = ', np.shape(nanind), nanind)
@@ -685,7 +716,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     delfg_mean, delfg_median, delfg_std = stats
                     for msg in stats_print_strings:
                         log_msgs.append(msg)
-                    _ = auxfunc.print_stats(delflaterr, "Flat Error Difference", float(threshold_diff), absolute=True)
+                    err_stats_and_strings = auxfunc.print_stats(delflaterr, "Flat Error Difference", float(threshold_diff), absolute=True)
+                    err_stats, err_stats_print_strings = err_stats_and_strings
 
                     # This is the key argument for the assert pytest function
                     median_diff = False
@@ -705,7 +737,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             flatcor_copy = deepcopy(flatcor)
             flatcor_copy[np.where(flatcor_copy == 999.0)] = np.nan
             flat_err_copy = deepcopy(flat_err)
-            flat_err_copy[np.where(flat_err_copy == 999.0)] = np.nan
+            flat_err_copy[np.where(flatcor == 999.0)] = np.nan
             if show_figs or save_figs:
 
                 # set plot variables
@@ -751,7 +783,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 title = main_title + "Residuals"
                 info_img = [title, "x (pixels)", "y (pixels)"]
                 xlabel, ylabel = "flat_err$_{pipe}$ - flat_err$_{calc}$", "N"
-                info_hist = [xlabel, ylabel, bins, stats]
+                info_hist = [xlabel, ylabel, bins, err_stats]
                 if delflaterr.size != 0 and delflaterr[1] is np.nan:
                     msg = "Unable to create plot of pipeline - calulated flat error values."
                     print(msg)
@@ -785,7 +817,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 log_msgs.append(msg)
 
                 # this is the file to hold the image of calculated flat correctoion values
-                #flatcor_copy[np.where(flatcor == 999.0)] = 1.0
                 flatcor_copy[np.isnan(flatcor_copy)] = 1.0
                 outfile_ext = fits.ImageHDU(flatcor_copy, name=slit_id)
                 outfile.append(outfile_ext)
