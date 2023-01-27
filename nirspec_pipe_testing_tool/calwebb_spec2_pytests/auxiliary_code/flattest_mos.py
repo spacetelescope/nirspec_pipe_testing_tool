@@ -93,7 +93,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     compute_world_coordinates.py script with the ESA files. The function calls that script.
 
     Args:
-        step_input_filename: str, name of the output fits file from the 2d_extract step (with full path)
+        step_input_filename: str, name of the output fits file from the flat field step (with full path)
         dflatref_path: str, path of where the D-flat reference fits files
         sflat_path: str, path of where the S-flat reference fits files
         fflat_path: str, path of where the F-flat reference fits files
@@ -218,6 +218,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         dfhdr_sci = dfhdu["SCI"].header
         dfim = dfhdu["SCI"].data
         dfimdq = dfhdu["DQ"].data
+        dfimerr = dfhdu["ERR"].data
         dfrqe = dfhdu["FAST_VARIATION"].data
     ns = np.shape(dfim)
     naxis3 = dfhdr_sci["NAXIS3"]
@@ -290,6 +291,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     with fits.open(sfile) as sfhdu:
         sfim = sfhdu["SCI"].data
         sfimdq = sfhdu["DQ"].data
+        sfimerr = sfhdu["ERR"].data
         sffastvar = sfhdu["FAST_VARIATION"].data
         sfhdu_sci = sfhdu["SCI"].header
     sfv_wav, sfv_dat = get_slit_wavdat(sffastvar, 'ANY')
@@ -514,13 +516,15 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         print("wave[k, j+1], wave[k, j-1] : ", np.isfinite(wave[k, j+1]), wave[k, j+1], wave[k, j-1])
                         print("delw = ", delw)
 
-                    dff, dfs, sff, sfs, ffs, fff, ffs_err = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0
+                    # define temporary variables and set wavelength range to operate in
+                    dff, dfs, sff, sfs, fff, ffs = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+                    dff_err, dfs_err, sff_err, sfs_err, fff_err, ffs_err = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
                     if (wave[k, j] >= 0.6) and (wave[k, j] <= 5.292):
                         # integrate over dflat fast vector
                         dfrqe_wav = dfrqe["wavelength"][0]
                         dfrqe_rqe = dfrqe["data"][0]
                         iw = np.where((dfrqe_wav >= wave[k, j]-delw/2.0) & (dfrqe_wav <= wave[k, j]+delw/2.0))
-                        if np.size(iw) > 1:
+                        if np.size(iw) > 2:
                             int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw[0]], dfrqe_rqe[iw[0]])
                             first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
                             dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
@@ -528,6 +532,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                             # find the nearest point in the reference table and use that as center plus the one previous
                             # and following it to create array to interpolate.
                             dff = interp_close_pts(wave[k, j], dfrqe_wav, dfrqe_rqe, debug)
+                        # the corresponding error is 0.0 because we currently have no information on this
 
                         if debug:
                             print("np.shape(dfrqe_wav) : ", np.shape(dfrqe_wav))
@@ -553,12 +558,17 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         kk = np.size(zzwherenonan)
                         if (wave[k, j] <= max(dfwave)) and (wave[k, j] >= min(dfwave)) and (kk == 2):
                             dfs = np.interp(wave[k, j], dfwave[ibr], zz[zzwherenonan])
+                            # calculate corresponding error
+                            try:
+                                dfs_err = np.interp(wave[k, j], dfwave[ibr], dfimerr[:, pind[0], pind[1]][ibr])
+                            except IndexError:   # meaning that the ERR extension does not have the same size array
+                                dfs_err = dfimerr[pind[0], pind[1]]
 
                         # check DQ flags for d-flat
                         if dfimdq[pind[0], pind[1]] == 1 or dfimdq[pind[0], pind[1]] == 4:
                             # print("d-flat: DQ flag 1 = DO NOT USE forcing -> dfs=1.0   or  ",
                             # "DQ flag 4 = NO_FLAT_FIELD, also forcing -> dfs=1.0")
-                            dfs = 1.0
+                            dfs, dfs_err = 1.0, 0.0
 
                         # integrate over s-flat fast vector
                         iw = np.where((sfv_wav >= wave[k, j]-delw/2.0) & (sfv_wav <= wave[k, j]+delw/2.0))
@@ -570,6 +580,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                             # find the nearest point in the reference table and use that as center plus the one previous
                             # and following it to create array to interpolate.
                             sff = interp_close_pts(wave[k, j], sfv_wav, sfv_dat, debug)
+                        # the corresponding error is 0.0 because we currently have no information on this
 
                         # interpolate s-flat cube
                         iloc = auxfunc.idl_valuelocate(sfimwave, wave[k, j])[0]
@@ -585,13 +596,18 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         kk = np.size(zzwherenonan)
                         if (wave[k, j] <= max(sfimwave)) and (wave[k, j] >= min(sfimwave)) and (kk == 2):
                             sfs = np.interp(wave[k, j], sfimwave[ibr], zz[zzwherenonan])
+                            # calculate corresponding error
+                            try:
+                                sfs_err = np.interp(wave[k, j], dfwave[ibr], sfimerr[:, pind[0], pind[1]][ibr])
+                            except IndexError:   # meaning that the ERR extension does not have the same size array
+                                sfs_err = sfimerr[pind[0], pind[1]]
 
                         # check DQ flags for s-flat
                         kk1 = np.where(sfimdq[:, pind[0], pind[1]][ibr] == 1)
                         kk2 = np.where(sfimdq[:, pind[0], pind[1]][ibr] == 4)
                         if np.size(kk1) >= 1 or np.size(kk2) >= 1:
                             # print("s-flat: DQ flag DO NOT USE  or  NO_FLAT_FIELD force sfs=1.0")
-                            sfs = 1.0
+                            sfs, sfs_err = 1.0, 0.0
 
                         # integrate over f-flat fast vector
                         # reference file wavelength range is from 0.6 to 5.206 microns, so need to force
@@ -605,34 +621,69 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                             # find the nearest point in the reference table and use that as center plus the one previous
                             # and following it to create array to interpolate.
                             fff = interp_close_pts(wave[k, j], ffv_wav, ffv_dat, debug)
+                        # the corresponding error is 0.0 because we currently have no information on this
 
                         # interpolate over f-flat cube
                         ffs = np.interp(wave[k, j], ffsallwave, ffsall[:, col-1, row-1])
-
                         # get corresponding error estimation
-                        if fferr.size != 0:
-                            ffs_err = np.interp(wave[k, j], ffsallwave, fferr[:, col-1, row-1])
+                        try:
+                            ffs_err = fferr[pind[0], pind[1]]
+                        except IndexError:   # this means that the ERR extension is not an array
+                            ffs_err = 0.0
 
                         # check DQ flags for f-flat
                         kk1 = np.where(ffsalldq[:, col-1, row-1] == 1)
                         kk12 = np.where(ffsalldq[:, col-1, row-1] == 4)
                         if np.size(kk1) >= 1 or np.size(kk2) >= 1:
                             ffs = 1.0
+                            ffs_err = 0.0
 
                     # add correction
                     flatcor[k, j] = dff * dfs * sff * sfs * fff * ffs
-                    if flatcor[k, j] < 0.0:
-                        flatcor[k, j] = 1.0
 
                     # calculate the corresponding error propagation
-                    # If the errors were independent from each other
-                    # flat_err[k, j] = np.sqrt( dff_err**2/dff**2 + dfs_err**2/dfs**2 + sff_err**2/sff**2 + fff_err**2/fff**2 ) * flatcor[k, j]
-                    # However, the errors of the D-flat and S-flat are correlated to the F-flat because it corrects for
-                    # any field- and wavelength-dependent effects of the OTE and the FORE optics
-                    # (also, the S-flat uncertainy is currently being overestimated as an arbitrary 10%), hence, the
-                    # uncertainty from the S- and D-flats will be ignored and we assume that the F-flat uncertainties dominate
-                    if ffs_err != 0.0:
-                        flat_err[k, j] = np.sqrt( ffs_err**2/ffs**2 ) * flatcor[k, j]
+                    try:
+                        dff_err2 = dff_err**2/dff**2
+                    except ZeroDivisionError:
+                        dff_err2 = 0.0
+                    try:
+                        dfs_err2 = dfs_err**2/dfs**2
+                    except ZeroDivisionError:
+                        dfs_err2 = 0.0
+                    try:
+                        sff_err2 = sff_err**2/sff**2
+                    except ZeroDivisionError:
+                        sff_err2 = 0.0
+                    try:
+                        sfs_err2 = sfs_err**2/sfs**2
+                    except ZeroDivisionError:
+                        sfs_err2 = 0.0
+                    try:
+                        fff_err2 = fff_err**2/fff**2
+                    except ZeroDivisionError:
+                        fff_err2 = 0.0
+                    try:
+                        ffs_err2 = ffs_err**2/ffs**2
+                    except ZeroDivisionError:
+                        ffs_err2 = 0.0
+                    if np.isnan(dff_err2):
+                        dff_err2 = 0.0
+                    if np.isnan(dfs_err2):
+                        dfs_err2 = 0.0
+                    if np.isnan(sff_err2):
+                        sff_err2 = 0.0
+                    if np.isnan(sfs_err2):
+                        sfs_err2 = 0.0
+                    if np.isnan(fff_err2):
+                        fff_err2 = 0.0
+                    if np.isnan(ffs_err2):
+                        ffs_err2 = 0.0
+                    error_sq_sum = dff_err2 + dfs_err2 + sff_err2 + sfs_err2 + fff_err2 + ffs_err2
+                    flat_err[k, j] = np.sqrt( error_sq_sum ) * flatcor[k, j]
+
+                    if flatcor[k, j] < 0.0:
+                        flatcor[k, j] = 1.0
+                        flat_err[k, j] = 0.0
 
                     if (pind[1]-px0+1 == 9999) and (pind[0]-py0+1 == 9999):
                         if debug:
@@ -701,24 +752,24 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         delflaterr[k, j] = pipeflat_err[k, j] - flat_err[k, j]
 
                         '''
-                        # print where the differeces are too big
-                        if abs(delf[k, j]) > 1e3:
+                        # Uncomment to print where the differeces are too big, and see where we differ with the pipeline
+                        if abs(delf[k, j]) > 1e2:
                             print("wave[k, j] = ", wave[k, j])
                             print("dfs, dff = ", dfs, dff)
                             print("sfs, sff = ", sfs, sff)
                             print("fff, ffs = ", fff, ffs)
-                            print('x, y, diff, pipeflat, calcflat: ')
-                            print(j+1, k+1, delf[k, j], pipeflat[k, j], flatcor[k, j])
+                            print('dflat dq flag = ', dfimdq[pind[0], pind[1]])
+                            print('sflat dq flag = ', sfimdq[pind[0], pind[1]])
+                            print('x, y, pipeflat, calcflat, diff: ')
+                            print(j+1, k+1, pipeflat[k, j], flatcor[k, j], delf[k, j])
                             print('pipeflat_err, calcflat_err: ')
                             print(pipeflat_err[k, j], delflaterr[k, j])
                             input()
-                            '''
+                        '''
 
                         # Remove all pixels with values=1 (outside slit boundaries) for statistics
                         if pipeflat[k, j] == 1.0:
                             delf[k, j] = 999.0
-                        if np.isnan(wave[k, j]):
-                            flatcor[k, j] = 1.0   # no correction if no wavelength
 
                         if debug:
                             print("flatcor[k, j] = ", flatcor[k, j])
@@ -726,11 +777,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     except:
                         IndexError
 
-        nanind = np.isnan(delf)   # get all the nan indexes
-        notnan = ~nanind   # get all the not-nan indexes
-        delf = delf[notnan]   # get rid of NaNs
-        delflaterr = delflaterr[notnan]
-        delf_shape = np.shape(delf)
+        delfg = delf[np.where(delf != 999.0)]   # this does not get rid of outliers
+        delflaterr = delflaterr[np.where(delf != 999.0)]   # this does not get rid of outliers
         test_result = "FAILED"
         if delf.size == 0:
             msg1 = " * Unable to calculate statistics because difference array has all values as NaN."
@@ -743,15 +791,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
             msg = "Calculating statistics... "
             print(msg)
             log_msgs.append(msg)
-            # find out which outliers work better
-            outlier_threshold = 0.1
-            if len(delf[np.where((delf != 999.0) & (delf < outlier_threshold) & (delf > -1*outlier_threshold))]) <= 1:
-                # the differences are much larger than 0.1, need a larger outlier threshold
-                # sort the differences and return the 5th largest value
-                outlier_threshold = sorted(list(np.abs(delf[np.where(delf != 999.0)])), reverse=True)[5]
-            # ignore outliers
-            delfg = delf[np.where((delf != 999.0) & (delf < outlier_threshold) & (delf > -1*outlier_threshold))]
-            delflaterr = delflaterr[np.where((delf != 999.0) & (delf < outlier_threshold) & (delf > -1*outlier_threshold))]
             if delfg.size == 0:
                 msg1 = " * Unable to calculate statistics because difference array has all outlier values."
                 msg2 = "   Test will be set to FAILED and NO plots will be made."
@@ -834,7 +873,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
             outfile.append(outfile_ext)
 
             # this is the file to hold the image of the comparison values
-            complfile_ext = fits.ImageHDU(delf, name=slitlet_id)
+            complfile_ext = fits.ImageHDU(difference_img, name=slitlet_id)
             complfile.append(complfile_ext)
 
             # the file is not yet written, indicate that this slit was appended to list to be written
@@ -842,6 +881,81 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                                                                    "and comparison fits files."
             print(msg)
             log_msgs.append(msg)
+
+        # Total error calculation according to equation taken from:
+        # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
+        wcs_file = step_input_filename.replace("_flat_field.fits", "_wavecorr.fits")
+        if os.path.isfile(step_input_filename) and os.path.isfile(wcs_file):
+            flatcor_copy[np.isnan(flatcor_copy)] = 0.0
+            flat_err_copy[np.isnan(flat_err_copy)] = 0.0
+            # for comparison to final pipeline result
+            with fits.open(step_input_filename) as flout_hdul:
+                flout_hdul_sci = flout_hdul['SCI', si+1].data
+                flout_hdul_err = flout_hdul['ERR', si+1].data
+            flout_hdul_sci[np.isnan(flout_hdul_sci)] = 0.0
+            flout_hdul_err[np.isnan(flout_hdul_err)] = 0.0
+            # to calculate error components
+            with fits.open(wcs_file) as input_hdul:
+                input_sci = input_hdul['SCI', si+1].data
+                input_var_poisson = input_hdul['VAR_POISSON', si+1].data
+                input_var_rnoise = input_hdul['VAR_RNOISE', si+1].data
+            input_sci[np.isnan(input_sci)] = 0.0
+            input_var_poisson[np.isnan(input_var_poisson)] = 0.0
+            input_var_rnoise[np.isnan(input_var_rnoise)] = 0.0
+            # Calculate flat correction of SCI data
+            pipe_corr_sci = input_sci / pipeflat
+            calc_corr_sci = input_sci / flatcor_copy
+            diff_corr_sci = pipe_corr_sci - calc_corr_sci
+            mean_pipe, mean_calc = np.mean(pipe_corr_sci), np.mean(calc_corr_sci)
+            diff_percent = '0%'
+            if np.isfinite(1.0 - mean_calc/mean_pipe):
+                diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
+            print('\n * Mean difference of flat corrected SCI values: ', np.mean(diff_corr_sci), ' -> ', diff_percent)
+            print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+            print('       final pipeline calculated SCI mean = ', np.mean(flout_hdul_sci))
+            # Calculate flat correction of VAR_POISSON data
+            pipe_corr_var_poisson_sci = input_var_poisson / pipeflat**2
+            calc_corr_var_poisson_sci = input_var_poisson / flatcor_copy**2
+            diff_var_poisson_sci = pipe_corr_var_poisson_sci - calc_corr_var_poisson_sci
+            mean_pipe, mean_calc = np.mean(pipe_corr_var_poisson_sci), np.mean(calc_corr_var_poisson_sci)
+            diff_percent = '0%'
+            if np.isfinite(1.0 - mean_calc/mean_pipe):
+                diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
+            print('\n * Mean difference of flat corrected VAR_POISSON values: ', np.mean(diff_var_poisson_sci),  ' -> ', diff_percent)
+            print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+            # Calculate flat correction of VAR_RNOISE data
+            pipe_corr_var_rnoise_sci = input_var_rnoise / pipeflat**2
+            calc_corr_var_rnoise_sci = input_var_rnoise / flatcor_copy**2
+            diff_var_rnoise_sci = pipe_corr_var_rnoise_sci - calc_corr_var_rnoise_sci
+            mean_pipe, mean_calc = np.mean(pipe_corr_var_rnoise_sci), np.mean(calc_corr_var_rnoise_sci)
+            diff_percent = '0%'
+            if np.isfinite(1.0 - mean_calc/mean_pipe):
+                diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
+            print('\n * Mean difference of flat corrected VAR_RNOISE values: ', np.mean(diff_var_rnoise_sci),  ' -> ', diff_percent)
+            print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+            # Calculate flat correction of VAR_FLAT data
+            pipe_corr_var_flat_sci = (input_sci**2 / pipeflat**2) * pipeflat_err**2
+            calc_corr_var_flat_sci = (input_sci**2 / flatcor_copy**2) * flat_err_copy**2
+            diff_var_flat_sci = pipe_corr_var_flat_sci - calc_corr_var_flat_sci
+            mean_pipe, mean_calc = np.mean(pipe_corr_var_flat_sci), np.mean(calc_corr_var_flat_sci)
+            diff_percent = '0%'
+            if np.isfinite(1.0 - mean_calc/mean_pipe):
+                diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
+            print('\n * Mean difference of flat corrected VAR_FLAT values: ', np.mean(diff_var_flat_sci),  ' -> ', diff_percent)
+            print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+            # Total error calculation
+            pipe_err_sci = np.sqrt( pipe_corr_var_poisson_sci + pipe_corr_var_rnoise_sci + pipe_corr_var_flat_sci)
+            calc_err_sci = np.sqrt( calc_corr_var_poisson_sci + calc_corr_var_rnoise_sci + calc_corr_var_flat_sci)
+            diff_tot_err = pipe_err_sci - calc_err_sci
+            mean_pipe, mean_calc = np.mean(pipe_err_sci), np.mean(calc_err_sci)
+            diff_percent = '0%'
+            if np.isfinite(1.0 - mean_calc/mean_pipe):
+                diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
+            print('\n * Mean difference of total error calculation: ', np.mean(diff_tot_err),  ' -> ', diff_percent)
+            print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+            print('       final pipeline calculated ERR mean = ', np.mean(flout_hdul_err))
+        else:
+            print('\n * Unable to find the assign_wcs.fits or flat_field.fits file(s). Skipping total error calculation! * \n')
 
     flatfile_hdu.close()
 
