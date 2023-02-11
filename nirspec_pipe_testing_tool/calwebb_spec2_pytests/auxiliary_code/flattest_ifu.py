@@ -40,48 +40,6 @@ __version__ = "2.8"
 # Dec 2022 - Version 2.8: Fixed code to read new post-commissioning reference files in CRDS format.
 
 
-def interp_close_pts(wav_pt, wav_arr, dat_arr, debug):
-    """
-    Do linear interpolation of 3 points in the wave- and data-array pair given.
-    Args:
-        wav_pt: float, wavelength of interest
-        wav_arr: array
-        dat_arr: array
-    Returns:
-        point_in_dat_arr: float, corresponding point to the wavelenth of interest
-    """
-    nearest_wav, nearest_wav_idx = auxfunc.find_nearest(wav_arr, wav_pt)
-    nearest_fv = dat_arr[nearest_wav_idx]
-    prev_nearest_wav, prev_nearest_fv = wav_arr[nearest_wav_idx-1], dat_arr[nearest_wav_idx-1]
-    foll_nearest_wav, foll_nearest_fv = wav_arr[nearest_wav_idx+1], dat_arr[nearest_wav_idx+1]
-    nearest_wav_arr = np.array([prev_nearest_wav, nearest_wav, foll_nearest_wav])
-    nearest_fv_arr = np.array([prev_nearest_fv, nearest_fv, foll_nearest_fv])
-    point_in_dat_arr = np.interp(wav_pt, nearest_wav_arr, nearest_fv_arr)
-    if debug:
-        print("No wavelengths found to integrate over, trying an interpolation to find value: ")
-        print("  prev_nearest_wav, prev_nearest_sfv: ", prev_nearest_wav, prev_nearest_sfv)
-        print("  nearest_wav, nearest_dat: ", nearest_wav, nearest_fv)
-        print("  foll_nearest_wav, foll_nearest_fv: ", foll_nearest_wav, foll_nearest_fv)
-    return point_in_dat_arr
-
-
-def get_slit_wavdat(fastvartable, slit_id):
-    """
-    Extract the data for the appropriate slit from the fits table.
-    Args:
-        fastvartable: astropy table
-        slit_id: string
-    Returns:
-        fastvar_wav: array, wavelengths for fast variation
-        fastvar_dat: array
-    """
-    # obtain the table index for corresponding to the given slit
-    idx = np.where(fastvartable['slit_name'] == slit_id)
-    fastvar_wav = fastvartable['wavelength'][idx]
-    fastvar_dat = fastvartable['data'][idx]
-    return fastvar_wav[0], fastvar_dat[0]
-
-
 def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name):
     # create histogram
     font = {#'family' : 'normal',
@@ -240,23 +198,12 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     log_msgs.append(msg)
 
     # D-Flat
-    if ".fits" not in dflat_path:
-        # get all the fits files and find the appropriate detector
-        fflatfiles = glob(os.path.join(dflat_path, "*.fits"))
-        for ff in fflatfiles:
-            if det.lower() in ff.lower():
-                if debug:
-                    print('Is detector ', det, ' in file ', ff)
-                dfile = ff
-                break
-            else:
-                result_msg = "Test skiped because there is no flat correspondence for the detector {} in directory {}".format(det,
-                             dflat_path)
-                print(msg)
-                median_diff = "skip"
-                return median_diff, result_msg, log_msgs
-    else:
-        dfile = dflat_path
+    if not os.path.isfile(dflat_path):
+        result_msg = "Test skiped because the D-flat provided does not exist: {}".format(dflat_path)
+        print(msg)
+        median_diff = "skip"
+        return median_diff, result_msg, log_msgs
+    dfile = dflat_path
     msg0 = " * This flat test is using the following reference files "
     msg1 = "    D-flat: " + dfile
     print(msg0)
@@ -298,43 +245,12 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         median_diff = "skip"
         return median_diff, msg
 
-    if ".fits" not in sflat_path:
-        # get all the fits files and find the appropriate detector
-        flatfiles = glob(os.path.join(sflat_path, "*_"+mode+"_*"+det+"*.fits"))
-        if len(flatfiles) == 0:
-            flatfiles = glob(os.path.join(sflat_path, "*_IFS_*"+det+"*.fits"))
-        if debug:
-            print('Files found in sflat path: ', len(flatfiles))
-        for ff in flatfiles:
-            if debug:
-                print('looking for grating ', grat, ' in file ', ff)
-            # look for the right configuration flat
-            if grat in ff:
-                if debug:
-                    print('found grating, now looking for filter ', filt, ' in file ', ff)
-                try:
-                    if filt in ff:
-                        sfile = ff
-                        break
-                    else:
-                        result_msg = "Test skiped because there is no S-flat correspondence for configuration {} {} in directory {}".format(grat, filt, sflat_path)
-                        print(msg)
-                        median_diff = "skip"
-                        return median_diff, result_msg, log_msgs
-                except Exception as err:
-                    print(err)
-                    print('Trying OPAQUE as filter')
-                    if 'OPAQUE' in ff:
-                        sfile = ff
-                        break
-                    else:
-                        result_msg = "Test skiped because there is no S-flat correspondence for configuration {} {} in directory {}".format(grat, 'OPAQUE', sflat_path)
-                        print(msg)
-                        median_diff = "skip"
-                        return median_diff, result_msg, log_msgs
-    else:
-        sfile = sflat_path
-
+    if not os.path.isfile(sflat_path):
+        result_msg = "Test skiped because the S-flat provided does not exist: {}".format(sflat_path)
+        print(msg)
+        median_diff = "skip"
+        return median_diff, result_msg, log_msgs
+    sfile = sflat_path
     msg = "    S-flat: " + sfile
     print(msg)
     log_msgs.append(msg)
@@ -345,43 +261,12 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         sffastvar = sfile_hdu["FAST_VARIATION"].data
 
     # F-Flat
-    if ".fits" not in fflat_path:
-        # get all the fits files and find the appropriate detector
-        flatfiles = glob(os.path.join(fflat_path, "*_"+mode+"_*.fits"))
-        if len(flatfiles) == 0:
-            flatfiles = glob(os.path.join(fflat_path, "*_IFS_*.fits"))
-        if debug:
-            print('Files found in fflat path: ', len(flatfiles))
-        for ff in flatfiles:
-            # look for the right configuration flat
-            if grat in ff:
-                if debug:
-                    print('found grating ', grat, ' in flat file')
-                try:
-                    if filt in ff:
-                        if debug:
-                            print('found filter ', filt, ' in flat file')
-                        ffile = ff
-                        break
-                    else:
-                        result_msg = "Test skiped because there is no F-flat correspondence for configuration {} {} in directory {}".format(grat, filt, fflat_path)
-                        print(msg)
-                        median_diff = "skip"
-                        return median_diff, result_msg, log_msgs
-                except Exception as err:
-                    print(err)
-                    print('Now trying OPAQUE as filter')
-                    if 'OPAQUE' in ff:
-                        ffile = ff
-                        break
-                    else:
-                        result_msg = "Test skiped because there is no F-flat correspondence for configuration {} {} in directory {}".format(grat, 'OPAQUE', fflat_path)
-                        print(msg)
-                        median_diff = "skip"
-                        return median_diff, result_msg, log_msgs
-    else:
-        ffile = fflat_path
-
+    if not os.path.isfile(fflat_path):
+        result_msg = "Test skiped because the F-flat provided does not exist: {}".format(fflat_path)
+        print(msg)
+        median_diff = "skip"
+        return median_diff, result_msg, log_msgs
+    ffile = fflat_path
     msg = "    F-flat: " + ffile
     print(msg)
     log_msgs.append(msg)
@@ -389,7 +274,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         fferr = ffile_hdu["ERR"].data
         fffastvar = ffile_hdu["FAST_VARIATION"].data
 
-    # now go through each pixel in the test data
+    # now prepare the output files and structures to go through each pixel in the test data
 
     if writefile:
         # create the fits list to hold the calculated flat values for each slit
@@ -403,8 +288,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         complfile.append(hdu0)
 
     # select the appropriate S- and F-flat fast vector
-    sfv_wav, sfv_dat = get_slit_wavdat(sffastvar, 'ANY')
-    ffv_wav, ffv_dat = get_slit_wavdat(fffastvar, 'ANY')
+    sfv_wav, sfv_dat = auxfunc.get_slit_wavdat(sffastvar, 'ANY')
+    ffv_wav, ffv_dat = auxfunc.get_slit_wavdat(fffastvar, 'ANY')
 
     # loop over the slices
     all_delfg_mean, all_delfg_mean_arr, all_delfg_median, all_test_result = [], [], [], []
@@ -430,7 +315,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         # get the subwindow origin (technically no subwindows for IFU, but need this for comparing to the
         # full frame on-the-fly flat image).
         px0 = model.meta.subarray.xstart - 1 + int(_toindex(slice.bounding_box[0][0])) + 1
-        py0 = model.meta.subarray.xstart - 1 + int(_toindex(slice.bounding_box[1][0])) + 1
+        py0 = model.meta.subarray.ystart - 1 + int(_toindex(slice.bounding_box[1][0])) + 1
         n_p = np.shape(wave)
         nx, ny = n_p[1], n_p[0]
         nw = nx * ny
@@ -463,12 +348,12 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     # get the pixel indeces
                     t = np.where(wave == jwav)
                     pind = [t[0][0]+py0-1, t[1][0]+px0-1]   # pind =[pixel_y, pixe_x] in python, [x, y] in IDL
-                    if debug:
-                        print('j, jwav, px0, py0 : ', j, jwav, px0, py0)
-                        print('pind[0], pind[1] = ', pind[0], pind[1])
+                    #if debug:
+                    #    print('j, jwav, px0, py0 : ', j, jwav, px0, py0)
+                    #    print('pind[0], pind[1] = ', pind[0], pind[1])
 
                     # get the pixel bandwidth **this needs to be modified for prism, since the dispersion is not linear!**
-                    delw = 0.0
+                    delw = 0.1
                     if (j != 0) and (int((j-1)/nx) == int(j/nx)) and (int((j+1)/nx) == int(j/nx)) and \
                             np.isfinite(flat_wave[j+1]) and np.isfinite(flat_wave[j-1]):
                         delw = 0.5 * (flat_wave[j+1] - flat_wave[j-1])
@@ -477,182 +362,151 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     if (j == nw-1) or not np.isfinite(flat_wave[j+1]) or (int((j+1)/nx) != int(j/nx)):
                         delw = 0.5 * (flat_wave[j] - flat_wave[j-1])
 
-                    if debug:
-                        print("delw = ", delw)
+                    #if debug:
+                    #    print("delw = ", delw)
 
                     # integrate over D-flat fast vector
                     dff = 1.0
                     dfrqe_wav = dfrqe["wavelength"][0]
                     dfrqe_rqe = dfrqe["data"][0]
-                    iw = np.where((dfrqe_wav >= jwav-delw/2.0) & (dfrqe_wav <= jwav+delw/2.0))
-                    if np.size(iw) > 2:
-                        int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw], dfrqe_rqe[iw])
-                        first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw][0], dfrqe_wav[iw][-1]
-                        dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
-                    else:
-                        # find the nearest point in the reference table and use that as center plus the one previous
-                        # and following it to create array to interpolate.
-                        dff = interp_close_pts(jwav, dfrqe_wav, dfrqe_rqe, debug)
+                    # find the nearest point in the reference table and use that as center plus the one previous
+                    # and following it to create array to interpolate.
+                    dff = auxfunc.interp_close_pts(jwav, dfrqe_wav, dfrqe_rqe, debug)
                     # the corresponding error is 0.0 because we currently have no information on this
                     dff_err = 0.0
 
-                    if debug:
-                        print("np.shape(iw) = ", np.shape(iw))
-                        print("iw = ", iw)
-                        print("dff = ", dff)
-
                     # interpolate over D-flat cube and the corresponding error
-                    dfs, dfs_err = 1.0, 0.0
+                    dfs, dfs_err, dflat_dqflags_ok = 1.0, 0.0, False
                     if dfimdq[pind[0], pind[1]] == 0:
                         dfs = np.interp(jwav, dfwave, dfim[:, pind[0], pind[1]])
                         dfs_err = dfimerr[pind[0], pind[1]]
+                        dflat_dqflags_ok = True
 
                     # integrate over S-flat fast vector
                     sff = 1.0
-                    iw = np.where((sfv_wav >= jwav-delw/2.0) & (sfv_wav <= jwav+delw/2.0))
-                    if np.size(iw) > 2:
-                        int_tab = auxfunc.idl_tabulate(sfv_wav[iw], sfv_dat[iw])
-                        first_sfv_wav, last_sfv_wav = sfv_wav[iw][0], sfv_wav[iw][-1]
-                        sff = int_tab/(last_sfv_wav - first_sfv_wav)
-                    else:
-                        # find the nearest point in the reference table and use that as center plus the one previous
-                        # and following it to create array to interpolate.
-                        sff = interp_close_pts(jwav, sfv_wav, sfv_dat, debug)
+                    # find the nearest point in the reference table and use that as center plus the one previous
+                    # and following it to create array to interpolate.
+                    sff = auxfunc.interp_close_pts(jwav, sfv_wav, sfv_dat, debug)
                     # the corresponding error is 0.0 because we currently have no information on this
                     sff_err = 0.0
 
                     # get s-flat pixel-dependent correction and the corresponding error
-                    sfs, sfs_err = 1.0, 0.0
+                    sfs, sfs_err, sflat_dqflags_ok = 1.0, 0.0, False
                     if sfimdq[pind[0], pind[1]] == 0:
                         sfs = sfim[pind[0], pind[1]]
                         sfs_err = sfimerr[pind[0], pind[1]]
-
-                    if debug:
-                        print("jwav-delw/2.0 = ", jwav-delw/2.0)
-                        print("jwav+delw/2.0 = ", jwav+delw/2.0)
-                        print("np.shape(sfv_wav), sfv_wav[-1] = ", np.shape(sfv_wav), sfv_wav[-1])
-                        print("iw = ", iw)
-                        print("sfv_wav[iw] = ", sfv_wav[iw])
-                        print("int_tab = ", int_tab)
-                        print("first_sfv_wav, last_sfv_wav = ", first_sfv_wav, last_sfv_wav)
-                        print("sfs = ", sfs)
-                        print("sff = ", sff)
+                        sflat_dqflags_ok = True
 
                     # No component of the f-flat slow component for IFU
                     ffs, ffs_err = 1.0, 0.0
 
                     # Integrate over f-flat fast vector
                     fff = 1.0
-                    # reference file blue cutoff is 1 micron, so need to force solution for shorter wavs
-                    #if jwav-delw/2.0 >= 1.0:
-                    iw = np.where((ffv_wav >= jwav-delw/2.0) & (ffv_wav <= jwav+delw/2.0))
-                    if np.size(iw) > 2:
-                        int_tab = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw])
-                        first_ffv_wav, last_ffv_wav = ffv_wav[iw][0], ffv_wav[iw][-1]
-                        fff = int_tab/(last_ffv_wav - first_ffv_wav)
-                    else:
-                        # find the nearest point in the reference table and use that as center plus the one previous
-                        # and following it to create array to interpolate.
-                        fff = interp_close_pts(jwav, ffv_wav, ffv_dat, debug)
+                    # find the nearest point in the reference table and use that as center plus the one previous
+                    # and following it to create array to interpolate.
+                    fff = auxfunc.interp_close_pts(jwav, ffv_wav, ffv_dat, debug)
                     # the corresponding error is 0.0 because we currently have no information on this
                     fff_err = 0.0
 
-                flatcor[j] = dff * dfs * sff * sfs * fff
-                sffarr[j] = sff
-
-                # calculate the total error propagation
-                try:
-                    dff_err2 = dff_err**2/dff**2
-                except ZeroDivisionError:
-                    dff_err2 = 0.0
-                try:
-                    dfs_err2 = dfs_err**2/dfs**2
-                except ZeroDivisionError:
-                    dfs_err2 = 0.0
-                try:
-                    sff_err2 = sff_err**2/sff**2
-                except ZeroDivisionError:
-                    sff_err2 = 0.0
-                try:
-                    sfs_err2 = sfs_err**2/sfs**2
-                except ZeroDivisionError:
-                    sfs_err2 = 0.0
-                try:
-                    fff_err2 = fff_err**2/fff**2
-                except ZeroDivisionError:
-                    fff_err2 = 0.0
-                try:
-                    ffs_err2 = ffs_err**2/ffs**2
-                except ZeroDivisionError:
-                    ffs_err2 = 0.0
-                if np.isnan(dff_err2):
-                    dff_err2 = 0.0
-                if np.isnan(dfs_err2):
-                    dfs_err2 = 0.0
-                if np.isnan(sff_err2):
-                    sff_err2 = 0.0
-                if np.isnan(sfs_err2):
-                    sfs_err2 = 0.0
-                if np.isnan(fff_err2):
-                    fff_err2 = 0.0
-                if np.isnan(ffs_err2):
-                    ffs_err2 = 0.0
-                error_sq_sum = dff_err2 + dfs_err2 + sff_err2 + sfs_err2 + fff_err2 + ffs_err2
-                flat_err[pind[0], pind[1]] = np.sqrt( error_sq_sum ) * flatcor[j]
-
-                # if there is a NaN (i.e. the pipeline is using this pixel but we are not), set this to 1.0
-                # to match what the pipeline is doing. The value would be NaN if one or more of the 3 flat
-                # components do not give a valid result because the wavelength is out of range. This is only
-                # an issue for IFU since extract_2d is skipped.
-                # Remove all pixels with values=1 (mainly inter-slit pixels), for statistics
-                if np.isnan(flatcor[j]) or pipeflat[pind[0], pind[1]] == 1:
                     flatcor[j] = 1.0
-                    flat_err[pind[0], pind[1]] = 0.0
-                    delf[j] = 999.0
+                    if dflat_dqflags_ok and sflat_dqflags_ok:
+                        flatcor[j] = dff * dfs * sff * sfs * fff * ffs
+                        # if there is a NaN (i.e. the pipeline is using this pixel but we are not), set this to 1.0
+                        # to match what the pipeline is doing. The value would be NaN if one or more of the 3 flat
+                        # components do not give a valid result because the wavelength is out of range. This is only
+                        # an issue for IFU since extract_2d is skipped.
+                        if np.isnan(flatcor[j]) or flatcor[j] <= 0.0 or pipeflat[pind[0], pind[1]] == 1:
+                            flatcor[j] = 1.0
+                    sffarr[j] = sff
 
-                # To visually compare between the pipeline flat and the calculated one (e.g. in ds9), Phil Hodge
-                # suggested using the following line:
-                calc_flat[pind[0], pind[1]] = flatcor[j]
+                    # calculate the total error propagation
+                    try:
+                        dff_err2 = dff_err**2/dff**2
+                    except ZeroDivisionError:
+                        dff_err2 = 0.0
+                    try:
+                        dfs_err2 = dfs_err**2/dfs**2
+                    except ZeroDivisionError:
+                        dfs_err2 = 0.0
+                    try:
+                        sff_err2 = sff_err**2/sff**2
+                    except ZeroDivisionError:
+                        sff_err2 = 0.0
+                    try:
+                        sfs_err2 = sfs_err**2/sfs**2
+                    except ZeroDivisionError:
+                        sfs_err2 = 0.0
+                    try:
+                        fff_err2 = fff_err**2/fff**2
+                    except ZeroDivisionError:
+                        fff_err2 = 0.0
+                    try:
+                        ffs_err2 = ffs_err**2/ffs**2
+                    except ZeroDivisionError:
+                        ffs_err2 = 0.0
+                    if np.isnan(dff_err2):
+                        dff_err2 = 0.0
+                    if np.isnan(dfs_err2):
+                        dfs_err2 = 0.0
+                    if np.isnan(sff_err2):
+                        sff_err2 = 0.0
+                    if np.isnan(sfs_err2):
+                        sfs_err2 = 0.0
+                    if np.isnan(fff_err2):
+                        fff_err2 = 0.0
+                    if np.isnan(ffs_err2):
+                        ffs_err2 = 0.0
+                    error_sq_sum = dff_err2 + dfs_err2 + sff_err2 + sfs_err2 + fff_err2 + ffs_err2
+                    flat_err[pind[0], pind[1]] = np.sqrt( error_sq_sum ) * flatcor[j]
 
-                # Write the calculated flat into the all slices-combined full frame array
-                fullframe_calc_flat[pind[0], pind[1]] = flatcor[j]
-                fullframe_flat_err[pind[0], pind[1]] = flat_err[pind[0], pind[1]]
+                    # To visually compare between the pipeline flat and the calculated one (e.g. in ds9), Phil Hodge
+                    # suggested using the following line:
+                    calc_flat[pind[0], pind[1]] = flatcor[j]
 
-                # Difference between pipeline and calculated values
-                delf[j] = pipeflat[pind[0], pind[1]] - flatcor[j]
-                # difference between pipeline errors array and calculated values
-                delflaterr[j] = pipeflat_err[pind[0], pind[1]] - flat_err[pind[0], pind[1]]
+                    # Write the calculated flat into the all slices-combined full frame array
+                    fullframe_calc_flat[pind[0], pind[1]] = flatcor[j]
+                    fullframe_flat_err[pind[0], pind[1]] = flat_err[pind[0], pind[1]]
 
-                '''
-                # Uncomment to print where the differeces are too big, and see where we differ with the pipeline
-                if abs(delf[j]) > 999.0:
-                    print("wave = ", jwav)
-                    print("dfs, dff = ", dfs, dff)
-                    print("sfs, sff = ", sfs, sff)
-                    print("fff = ", fff)
-                    print('dflat dq flag = ', dfimdq[pind[0], pind[1]])
-                    print('sflat dq flag = ', sfimdq[pind[0], pind[1]])
-                    print('pix_x, pix_y, diff, pipeflat, calcflat: ')
-                    print(pind[1]+1, pind[0]+1, delf[j], pipeflat[pind[0], pind[1]], flatcor[j])
-                    print('dff_err2', 'dfs_err2', 'sff_err2', 'sfs_err2', 'fff_err2', 'ffs_err2 : ')
-                    print(dff_err2, dfs_err2, sff_err2, sfs_err2, fff_err2, ffs_err2)
-                    print('pipeflat_err, calcflat_err: ')
-                    print(pipeflat_err[pind[0], pind[1]], flat_err[pind[0], pind[1]])
-                    input()
-                '''
+                    # Difference between pipeline and calculated values
+                    delf[j] = pipeflat[pind[0], pind[1]] - flatcor[j]
+                    # difference between pipeline errors array and calculated values
+                    delflaterr[j] = pipeflat_err[pind[0], pind[1]] - flat_err[pind[0], pind[1]]
 
-            if debug:
-                print("np.shape(iw) = ", np.shape(iw))
-                print("fff = ", fff)
-                print("flatcor[j] = ", flatcor[j])
-                print("delf[j] = ", delf[j])
+                    if debug:
+                        # Uncomment to print where the differeces are too big, and see where we differ with the pipeline
+                        if abs(delf[j]) >= 1.0:
+                            print("wave = ", jwav)
+                            print("dfs, dff = ", dfs, dff)
+                            print("sfs, sff = ", sfs, sff)
+                            print("fff = ", fff)
+                            print('dflat dq flag = ', dfimdq[pind[0], pind[1]])
+                            print('sflat dq flag = ', sfimdq[pind[0], pind[1]])
+                            print('pix_x, pix_y, diff, pipeflat, calcflat: ')
+                            print(pind[1]+1, pind[0]+1, delf[j], pipeflat[pind[0], pind[1]], flatcor[j])
+                            print('dff_err2', 'dfs_err2', 'sff_err2', 'sfs_err2', 'fff_err2', 'ffs_err2 : ')
+                            print(dff_err2, dfs_err2, sff_err2, sfs_err2, fff_err2, ffs_err2)
+                            print('pipeflat_err, calcflat_err: ')
+                            print(pipeflat_err[pind[0], pind[1]], flat_err[pind[0], pind[1]])
+                            print()
+                            #input()
 
-        # only keep points inside the slice
-        delfg = delf[np.where(delf != 999.0)]   # this does not get rid of outliers
-        delflaterr = delflaterr[np.where(delf != 999.0)]   # this does not get rid of outliers
-        # remove NaNs
-        delfg[np.isnan(delfg)] = 0.0
-        delflaterr[np.isnan(delflaterr)] = 0.0
+                    # Remove all pixels with values=1 (mainly inter-slit pixels), for statistics
+                    if pipeflat[pind[0], pind[1]] == 1:
+                        delf[j] = 999.0
+
+        # only keep points inside the slice (but still have to remove outliers)
+        delfg = delf[np.where(delf != 999.0)]
+        delflaterr = delflaterr[np.where(delf != 999.0)]
+        # attempt remove outliers, for better statistics, only use points where pipe-calc <= 1.0
+        outliers_idx = np.where(np.absolute(delfg) <= 1.0)
+        if len(outliers_idx) >= len(delfg)/2.0:
+            # the remaining points more than half the original number, remove outliers
+            delfg = delfg[outliers_idx]
+        # same with the error differences
+        outliers_idx = np.where(np.absolute(delflaterr) <= 1.0)
+        if len(outliers_idx) >= len(delflaterr)/2.0:
+            delflaterr = delflaterr[outliers_idx]
+        # calculate stats and print on screen
         msg = "Flat value differences for slice number: "+pslice
         print(msg)
         log_msgs.append(msg)
@@ -671,7 +525,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         all_delfg_median.append(delfg_median)
 
         # make the slice plot
-        calc_flat[np.where(calc_flat == 999.0)] = np.nan
+        calc_flat[np.where(calc_flat == 999.0)] = np.nan   # only keep the slice points
         if np.isfinite(delfg_median) and (len(delfg)!=0):
             if show_figs or save_figs:
                 msg = "Making the plot for this slice..."
@@ -796,82 +650,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         log_msgs.append(msg)
         log_msgs.append(complfile_name)
 
-    # Total error calculation according to equation taken from:
-    # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
-    wcs_file = step_input_filename.replace("_flat_field.fits", "_assign_wcs.fits")
-    if os.path.isfile(step_input_filename) and os.path.isfile(wcs_file):
-        # comparison to final pipeline result
-        with fits.open(step_input_filename) as flout_hdul:
-            flout_hdul_sci = flout_hdul['SCI'].data
-            flout_hdul_err = flout_hdul['ERR'].data
-        flout_hdul_sci[np.isnan(flout_hdul_sci)] = 0.0
-        flout_hdul_err[np.isnan(flout_hdul_err)] = 0.0
-        # to calculate error components
-        with fits.open(assign_wcs_file) as input_hdul:
-            input_sci = input_hdul['SCI'].data
-            input_var_poisson = input_hdul['VAR_POISSON'].data
-            input_var_rnoise = input_hdul['VAR_RNOISE'].data
-        input_sci[np.isnan(input_sci)] = 0.0
-        input_var_poisson[np.isnan(input_var_poisson)] = 0.0
-        input_var_rnoise[np.isnan(input_var_rnoise)] = 0.0
-        # Calculate flat correction of SCI data
-        fullframe_calc_flat[np.isnan(fullframe_calc_flat)] = 0.0
-        fullframe_flat_err[np.isnan(fullframe_flat_err)] = 0.0
-        print('len(np.where(fullframe_calc_flat != 0.0)) : ', len(np.where(fullframe_calc_flat != 0.0)))
-        pipe_corr_sci = input_sci / pipeflat
-        calc_corr_sci = input_sci / fullframe_calc_flat
-        diff_corr_sci = pipe_corr_sci - calc_corr_sci
-        mean_pipe, mean_calc = np.mean(pipe_corr_sci), np.mean(calc_corr_sci)
-        diff_percent = '0%'
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
-        print('\n * Mean difference of flat corrected SCI values: ', np.mean(diff_corr_sci), ' -> ', diff_percent)
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        print('       final pipeline calculated SCI mean = ', np.mean(flout_hdul_sci))
-        # Calculate flat correction of VAR_POISSON data
-        pipe_corr_var_poisson_sci = input_var_poisson / pipeflat**2
-        calc_corr_var_poisson_sci = input_var_poisson / fullframe_calc_flat**2
-        diff_var_poisson_sci = pipe_corr_var_poisson_sci - calc_corr_var_poisson_sci
-        mean_pipe, mean_calc = np.mean(pipe_corr_var_poisson_sci), np.mean(calc_corr_var_poisson_sci)
-        diff_percent = '0%'
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
-        print('\n * Mean difference of flat corrected VAR_POISSON values: ', np.mean(diff_var_poisson_sci),  ' -> ', diff_percent)
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        # Calculate flat correction of VAR_RNOISE data
-        pipe_corr_var_rnoise_sci = input_var_rnoise / pipeflat**2
-        calc_corr_var_rnoise_sci = input_var_rnoise / fullframe_calc_flat**2
-        diff_var_rnoise_sci = pipe_corr_var_rnoise_sci - calc_corr_var_rnoise_sci
-        mean_pipe, mean_calc = np.mean(pipe_corr_var_rnoise_sci), np.mean(calc_corr_var_rnoise_sci)
-        diff_percent = '0%'
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
-        print('\n * Mean difference of flat corrected VAR_RNOISE values: ', np.mean(diff_var_rnoise_sci),  ' -> ', diff_percent)
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        # Calculate flat correction of VAR_FLAT data
-        pipe_corr_var_flat_sci = (input_sci**2 / pipeflat**2) * pipeflat_err**2
-        calc_corr_var_flat_sci = (input_sci**2 / fullframe_calc_flat**2) * fullframe_flat_err**2
-        diff_var_flat_sci = pipe_corr_var_flat_sci - calc_corr_var_flat_sci
-        mean_pipe, mean_calc = np.mean(pipe_corr_var_flat_sci), np.mean(calc_corr_var_flat_sci)
-        diff_percent = '0%'
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
-        print('\n * Mean difference of flat corrected VAR_FLAT values: ', np.mean(diff_var_flat_sci),  ' -> ', diff_percent)
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        # Total error calculation
-        pipe_err_sci = np.sqrt( pipe_corr_var_poisson_sci + pipe_corr_var_rnoise_sci + pipe_corr_var_flat_sci)
-        calc_err_sci = np.sqrt( calc_corr_var_poisson_sci + calc_corr_var_rnoise_sci + calc_corr_var_flat_sci)
-        diff_tot_err = pipe_err_sci - calc_err_sci
-        mean_pipe, mean_calc = np.mean(pipe_err_sci), np.mean(calc_err_sci)
-        diff_percent = '0%'
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = repr(int((1.0 - mean_calc/mean_pipe) * 100.0))+'%'
-        print('\n * Mean difference of total error calculation: ', np.mean(diff_tot_err),  ' -> ', diff_percent)
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        print('       final pipeline calculated ERR mean = ', np.mean(flout_hdul_err))
-    else:
-        print('\n * Unable to find the assign_wcs.fits or flat_field.fits file(s). Skipping total error calculation! * \n')
-
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = True
     for t in all_test_result:
@@ -888,6 +666,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         print(msg)
         log_msgs.append(msg)
         result_msg = "One or more slices FAILED flat_field test."
+
+    # Total error calculation according to equation taken from:
+    # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
+    auxfunc.calc_flat_total_errs(step_input_filename, show_plts=show_figs, save_plts=save_figs)
 
     # end the timer
     flattest_end_time = time.time() - flattest_start_time
