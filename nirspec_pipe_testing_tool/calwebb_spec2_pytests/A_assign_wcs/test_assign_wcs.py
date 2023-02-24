@@ -33,7 +33,7 @@ print(ppt_version)
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & Gray Kanarek"
-__version__ = "2.6"
+__version__ = "2.7"
 
 
 # HISTORY
@@ -45,6 +45,7 @@ __version__ = "2.6"
 # Jun 2020 - Version 2.4: Changed comparison file to be our own instead of ESA files
 # Jul 2020 - Version 2.5: Added check to see if running spec2 is appropriate according to EXP_TYPE rules taken from CRDS
 # Sep 2021 - Version 2.6: Adding print statement for NPTT version
+# Oct 2022 - Version 2.7: Modified exit message to be generic and added or for BOTS test
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -241,11 +242,17 @@ def output_hdul(set_inandout_filenames, config):
         print('Running pipeline... \n')
         try:
             if not imaging_mode:
-                Spec2Pipeline.call(step_input_file, config_file=calwebb_spec2_cfg)  # , logcfg=stpipelogcfg)
+                instance = Spec2Pipeline()
+                config_file = calwebb_spec2_cfg
             else:
-                Image2Pipeline.call(step_input_file, config_file=calwebb_image2_cfg)
-        except:
-            pytest.exit("\n * The pipeline crashed, probably due to no open slits fall on detector")
+                instance = Image2Pipeline()
+                config_file = calwebb_image2_cfg
+            result = instance.call(step_input_file, config_file=config_file)  # , logcfg=stpipelogcfg)
+            result.save(final_output_name)
+        except Exception as err:
+            pytest.exit("\n\n  The pipeline crashed. It could be that the limit in the number of open files that pytest allow was hit. "
+                        "Try running the pipeline outside of the pytest environment (e.g. ipython or command line). \n "
+                        " No tests done. ")
 
         """
         # For the moment, the pipeline is using the wrong reference file for slit 400A1, so the
@@ -481,7 +488,7 @@ def validate_wcs(output_hdul):
     print(msg)
     logging.info(msg)
     log_msgs = None
-    if core_utils.check_FS_true(hdu):
+    if core_utils.check_FS_true(hdu) or core_utils.check_BOTS_true(hdu):
         result, log_msgs = compare_wcs_fs.compare_wcs(infile_name, truth_file=truth_file, esa_files_path=esa_files_path,
                                                       show_figs=show_figs, save_figs=save_wcs_plots,
                                                       threshold_diff=threshold_diff, raw_data_root_file=None,
@@ -505,7 +512,6 @@ def validate_wcs(output_hdul):
                                                        debug=False)
 
     else:
-        # We do not have truth data to compare with for BOTS
         pytest.skip("Skipping pytest: The fits file is not FS, MOS, or IFU.")
 
     if log_msgs is not None:
