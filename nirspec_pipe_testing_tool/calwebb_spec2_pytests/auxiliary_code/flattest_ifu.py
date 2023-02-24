@@ -18,8 +18,9 @@ from . import auxiliary_functions as auxfunc
 
 
 """
-This script tests the pipeline flat field step output for IFU data. It is the python version of the IDL script
-(with the same name) written by James Muzerolle, and changes on it made by Ben Sargent.
+This script tests the pipeline flat field step output for MOS data. It is the python version of the IDL script
+(with the same name) written by James Muzerolle. In Feb of 2023 it was modified entirely to use reference
+files from CRDS instead of ESA-format.
 """
 
 
@@ -37,7 +38,9 @@ __version__ = "2.8"
 # May 2019 - Version 2.5: Implemented plot of residuals as well as histogram.
 # Jun 2019 - Version 2.6: Updated name of interpolated flat to be the default pipeline name for this file.
 # Jan 2021 - Version 2.7: Implemented option to run with object instead of input fits file.
-# Dec 2022 - Version 2.8: Fixed code to read new post-commissioning reference files in CRDS format.
+# Feb 2023 - Version 2.8: Major rearrange. Fixed code to read new post-commissioning reference files in CRDS
+#                         format and added total error determination according to:
+#                         https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
 
 
 def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name):
@@ -271,8 +274,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     print(msg)
     log_msgs.append(msg)
     with fits.open(ffile) as ffile_hdu:
-        fferr = ffile_hdu["ERR"].data
         fffastvar = ffile_hdu["FAST_VARIATION"].data
+        try:
+            fferr = ffile_hdu["ERR"].data
+        except KeyError:   # this version of the file did not have ERR extension
+            fferr = np.zeros((2048, 2048))
 
     # now prepare the output files and structures to go through each pixel in the test data
 
@@ -369,9 +375,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     dff = 1.0
                     dfrqe_wav = dfrqe["wavelength"][0]
                     dfrqe_rqe = dfrqe["data"][0]
-                    # find the nearest point in the reference table and use that as center plus the one previous
-                    # and following it to create array to interpolate.
-                    dff = auxfunc.interp_close_pts(jwav, dfrqe_wav, dfrqe_rqe, debug)
+                    iw = np.where((dfrqe_wav >= jwav-delw/2.0) & (dfrqe_wav <= jwav+delw/2.0))
+                    if np.size(iw) > 2:
+                        int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw], dfrqe_rqe[iw])
+                        first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw][0], dfrqe_wav[iw][-1]
+                        dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
+                    else:
+                        dff = auxfunc.interp_close_pts(jwav, dfrqe_wav, dfrqe_rqe, debug)
                     # the corresponding error is 0.0 because we currently have no information on this
                     dff_err = 0.0
 
@@ -384,9 +394,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
                     # integrate over S-flat fast vector
                     sff = 1.0
-                    # find the nearest point in the reference table and use that as center plus the one previous
-                    # and following it to create array to interpolate.
-                    sff = auxfunc.interp_close_pts(jwav, sfv_wav, sfv_dat, debug)
+                    iw = np.where((sfv_wav >= jwav-delw/2.0) & (sfv_wav <= jwav+delw/2.0))
+                    if np.size(iw) > 2:
+                        int_tab = auxfunc.idl_tabulate(sfv_wav[iw], sfv_dat[iw])
+                        first_sfv_wav, last_sfv_wav = sfv_wav[iw][0], sfv_wav[iw][-1]
+                        sff = int_tab/(last_sfv_wav - first_sfv_wav)
+                    else:
+                        sff = auxfunc.interp_close_pts(jwav, sfv_wav, sfv_dat, debug)
                     # the corresponding error is 0.0 because we currently have no information on this
                     sff_err = 0.0
 
@@ -402,9 +416,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
                     # Integrate over f-flat fast vector
                     fff = 1.0
-                    # find the nearest point in the reference table and use that as center plus the one previous
-                    # and following it to create array to interpolate.
-                    fff = auxfunc.interp_close_pts(jwav, ffv_wav, ffv_dat, debug)
+                    iw = np.where((ffv_wav >= jwav-delw/2.0) & (ffv_wav <= jwav+delw/2.0))
+                    if np.size(iw) > 2:
+                        int_tab = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw])
+                        first_ffv_wav, last_ffv_wav = ffv_wav[iw][0], ffv_wav[iw][-1]
+                        fff = int_tab/(last_ffv_wav - first_ffv_wav)
+                    else:
+                        fff = auxfunc.interp_close_pts(jwav, ffv_wav, ffv_dat, debug)
                     # the corresponding error is 0.0 because we currently have no information on this
                     fff_err = 0.0
 

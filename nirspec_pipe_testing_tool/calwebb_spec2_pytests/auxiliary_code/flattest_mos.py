@@ -15,7 +15,8 @@ from . import auxiliary_functions as auxfunc
 
 """
 This script tests the pipeline flat field step output for MOS data. It is the python version of the IDL script
-(with the same name) written by James Muzerolle.
+(with the same name) written by James Muzerolle. In Feb of 2023 it was modified entirely to use reference
+files from CRDS instead of ESA-format.
 """
 
 
@@ -40,7 +41,9 @@ __version__ = "3.9"
 # Jan 2021 - Version 3.7: Implemented option to run with object instead of input fits file.
 # Sep 2021 - Version 3.8: Changing wavelength array to be read from model.slit instead of wcs
 #                         (as recommended in Jira issue https://jira.stsci.edu/browse/JP-2225)
-# Oct 2022 - Version 3.9: Fixed code to read new post-commissioning reference files in CRDS format.
+# Oct 2022 - Version 3.9: Major rearrange. Fixed code to read new post-commissioning reference files in CRDS
+#                         format and added total error determination according to:
+#                         https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
 
 
 def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutter_conf,
@@ -300,7 +303,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     # open the flatfile
     flatfile_hdu = fits.open(flatfile)
 
-    #debug = True
     # loop over the 2D subwindows and read in the WCS values
     total_slits = len(model.slits)
     for si, slit in enumerate(model.slits):
@@ -317,9 +319,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         wave = slit.wavelength  # uses the object from step wavecor
 
         # get the subwindow origin
-        px0 = slit.xstart - 1 + model.meta.subarray.xstart
-        py0 = slit.ystart - 1 + model.meta.subarray.ystart
-        msg = " Subwindow origin:   px0="+repr(px0)+"   py0="+repr(py0)
+        px0 = slit.xstart - 1 + model.meta.subarray.xstart - 1
+        py0 = slit.ystart - 1 + model.meta.subarray.ystart - 1
+        msg = " Subwindow origin 0-based:   px0="+repr(px0)+"   py0="+repr(py0)
         print(msg)
         log_msgs.append(msg)
         n_p = np.shape(wave)
@@ -385,7 +387,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                 if np.isfinite(wave[k, j]):   # skip if wavelength is NaN
                     # get the pixel indexes
                     jwav = wave[k, j]
-                    pind = [k+py0-1, j+px0-1]
+                    pind = [k+py0, j+px0]
                     #if debug:
                     #    print('j, k, jwav, px0, py0 : ', j, k, jwav, px0, py0)
                     #    print('pind = ', pind)
@@ -414,14 +416,17 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     # define temporary variables and set wavelength range to operate in
                     dff, dfs, sff, sfs, fff, ffs = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
                     dff_err, dfs_err, sff_err, sfs_err, fff_err, ffs_err = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-                    sflat_dqflags_ok, dflat_dqflags_ok, fflat_dqflags_ok = True, True, True
                     if (wave[k, j] >= 0.6) and (wave[k, j] <= 5.3):
                         # integrate over dflat fast vector
                         dfrqe_wav = dfrqe["wavelength"][0]
                         dfrqe_rqe = dfrqe["data"][0]
-                        # find the nearest point in the reference table and use that as center plus the one previous
-                        # and following it to create array to interpolate.
-                        dff = auxfunc.interp_close_pts(wave[k, j], dfrqe_wav, dfrqe_rqe, debug)
+                        iw = np.where((dfrqe_wav >= wave[k, j]-delw/2.0) & (dfrqe_wav <= wave[k, j]+delw/2.0))
+                        if np.size(iw) > 2:
+                            int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw[0]], dfrqe_rqe[iw[0]])
+                            first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
+                            dff = int_tab/(last_dfrqe_wav - first_dfrqe_wav)
+                        else:
+                            dff = auxfunc.interp_close_pts(wave[k, j], dfrqe_wav, dfrqe_rqe, debug)
                         # the corresponding error is 0.0 because we currently have no information on this
 
                         # interpolate over dflat cube
@@ -445,16 +450,19 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                                 dfs_err = dfimerr[pind[0], pind[1]]
 
                         # check DQ flags for d-flat
-                        if dfimdq[pind[0], pind[1]] != 0:
+                        if dfimdq[pind[0], pind[1]] == 1 or dfimdq[pind[0], pind[1]] == 4:
                             # print("d-flat: DQ flag 1 = DO NOT USE forcing -> dfs=1.0   or  ",
                             # "DQ flag 4 = NO_FLAT_FIELD, also forcing -> dfs=1.0")
                             dfs, dfs_err = 1.0, 0.0
-                            dflat_dqflags_ok = False
 
                         # integrate over s-flat fast vector
-                        # find the nearest point in the reference table and use that as center plus the one previous
-                        # and following it to create array to interpolate.
-                        sff = auxfunc.interp_close_pts(wave[k, j], sfv_wav, sfv_dat, debug)
+                        iw = np.where((sfv_wav >= wave[k, j]-delw/2.0) & (sfv_wav <= wave[k, j]+delw/2.0))
+                        if np.size(iw) > 2:
+                            int_tab = auxfunc.idl_tabulate(sfv_wav[iw], sfv_dat[iw])
+                            first_sfv_wav, last_sfv_wav = sfv_wav[iw[0]][0], sfv_wav[iw[0]][-1]
+                            sff = int_tab/(last_sfv_wav - first_sfv_wav)
+                        else:
+                            sff = auxfunc.interp_close_pts(wave[k, j], sfv_wav, sfv_dat, debug)
                         # the corresponding error is 0.0 because we currently have no information on this
 
                         # interpolate s-flat cube
@@ -479,16 +487,20 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                                 sfs_err = sfimerr[pind[0], pind[1]]
 
                         # check DQ flags for s-flat
-                        kk = np.where(sfimdq[:, col-1, row-1] != 0)
-                        if np.size(kk) >= 1:
-                            # print("s-flat: DQ flag DO NOT USE  or  NO_FLAT_FIELD force sfs=1.0")
+                        kk = np.where(sfimdq[:, pind[0], pind[1]][ibr] == 1)
+                        kk2 = np.where(sfimdq[:, pind[0], pind[1]][ibr] == 4)
+                        if np.size(kk) >= 1 or np.size(kk2) >= 1:
+                            # print("s-flat: DQ flag DO NOT USE forcing sfs=1.0")
                             sfs, sfs_err = 1.0, 0.0
-                            sflat_dqflags_ok = False
 
                         # integrate over f-flat fast vector
-                        # find the nearest point in the reference table and use that as center plus the one previous
-                        # and following it to create array to interpolate.
-                        fff = auxfunc.interp_close_pts(wave[k, j], ffv_wav, ffv_dat, debug)
+                        iw = np.where((ffv_wav >= wave[k, j]-delw/2.0) & (ffv_wav <= wave[k, j]+delw/2.0))
+                        if np.size(iw) > 2:
+                            int_tab = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw])
+                            first_ffv_wav, last_ffv_wav = ffv_wav[iw[0]][0], ffv_wav[iw[0]][-1]
+                            fff = int_tab/(last_ffv_wav - first_ffv_wav)
+                        else:
+                            fff = auxfunc.interp_close_pts(wave[k, j], ffv_wav, ffv_dat, debug)
                         # the corresponding error is 0.0 because we currently have no information on this
 
                         # interpolate over f-flat cube
@@ -500,19 +512,17 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                             ffs_err = 0.0
 
                         # check DQ flags for f-flat
-                        kk = np.where(ffsalldq[:, col-1, row-1] != 0)
-                        if np.size(kk) >= 1:
+                        kk = np.where(ffsalldq[:, col-1, row-1] == 1)
+                        kk2 = np.where(ffsalldq[:, col-1, row-1] == 4)
+                        if np.size(kk) >= 1 or np.size(kk2) >= 1:
                             ffs = 1.0
                             ffs_err = 0.0
-                            fflat_dqflags_ok = False
 
                         # add correction
-                        flatcor[k, j] = 1.0
-                        if sflat_dqflags_ok and dflat_dqflags_ok and fflat_dqflags_ok:
-                            flatcor[k, j] = dff * dfs * sff * sfs * fff * ffs
-                            if np.isnan(flatcor[k, j]):
-                                flatcor[k, j] = 1.0
-                        if flatcor[k, j] <= 0.0 or pipeflat[k, j] == 1:  # follow the pipeline:
+                        flatcor[k, j] = dff * dfs * sff * sfs * fff * ffs
+                        if np.isnan(flatcor[k, j]):
+                            flatcor[k, j] = 1.0
+                        if np.isnan(flatcor[k, j]) or flatcor[k, j] <= 0.0 or pipeflat[k, j] == 1:  # follow the pipeline:
                             flatcor[k, j] = 1.0
 
                         # calculate the corresponding error propagation
@@ -618,10 +628,12 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                                 print("fff, ffs = ", fff, ffs)
                                 print('dflat dq flag = ', dfimdq[pind[0], pind[1]])
                                 print('sflat dq flag = ', sfimdq[:, pind[0], pind[1]][ibr])
+                                print('sflat_dqflags_ok, dflat_dqflags_ok, fflat_dqflags_ok: ',
+                                      sflat_dqflags_ok, dflat_dqflags_ok, fflat_dqflags_ok)
                                 print('pind[0], pind[1] = ', pind[0], pind[1])
                                 print('x, y, pipeflat, calcflat, diff: ')
                                 print(j+1, k+1, pipeflat[k, j], flatcor[k, j], delf[k, j])
-                                print('is the calc point somwhere in the pipeflat?', np.where(pipeflat == flatcor[k, j]))
+                                #print('is the calc point somwhere in the pipeflat?', np.where(pipeflat == flatcor[k, j]))
                                 print('pipeflat_err, calcflat_err: ')
                                 print(pipeflat_err[k, j], flat_err[k, j])
                                 print('dff_err, dfs_err, sff_err, sfs_err, fff_err, ffs_err :')

@@ -473,11 +473,16 @@ def interp_close_pts(wav_pt, wav_arr, dat_arr, debug):
     Returns:
         point_in_dat_arr: float, corresponding point to the wavelenth of interest
     """
+    # remove NaNs
+    nonan_idx = np.where(np.isfinite(wav_arr))
+    wav_arr, dat_arr = wav_arr[nonan_idx], dat_arr[nonan_idx]
+    # find nearest point in reference arrays
     nearest_wav, nearest_wav_idx = find_nearest(wav_arr, wav_pt)
     nearest_fv = dat_arr[nearest_wav_idx]
     if wav_pt == nearest_wav:
         return nearest_fv
     try:
+        # try interpolation close to given point
         prev_nearest_wav, prev_nearest_fv = wav_arr[nearest_wav_idx-1], dat_arr[nearest_wav_idx-1]
         foll_nearest_wav, foll_nearest_fv = wav_arr[nearest_wav_idx+1], dat_arr[nearest_wav_idx+1]
         nearest_wav_arr = np.array([prev_nearest_wav, nearest_wav, foll_nearest_wav])
@@ -821,15 +826,6 @@ def idl_tabulate(x, f, p=5):
             return 0
         rn = (x.shape[0] - 1) * (x - x[0]) / (x[-1] - x[0])
         weights = integrate.newton_cotes(rn)[0]
-        """
-        # I added this part for the last remaining non 5 points, it will only use the available points
-        lw, lf = len(weights), len(f)
-        if lw != lf:
-            last_weights = []
-            for i, fi in enumerate(f):
-                last_weights.append(weights[i])
-            weights = np.array(last_weights)
-        """
         dot_wf = np.dot(weights, f)
         return (x[-1] - x[0]) / (x.shape[0] - 1) * dot_wf
 

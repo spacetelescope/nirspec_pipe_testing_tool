@@ -14,7 +14,8 @@ from . import auxiliary_functions as auxfunc
 
 """
 This script tests the pipeline flat field step output for MOS data. It is the python version of the IDL script
-(with the same name) written by James Muzerolle.
+(with the same name) written by James Muzerolle. In Feb of 2023 it was modified entirely to use reference
+files from CRDS instead of ESA-format.
 """
 
 # HEADER
@@ -33,8 +34,8 @@ __version__ = "2.8"
 # Jun 2019 - Version 2.5: Updated name of interpolated flat to be the default pipeline name for this file.
 # Sep 2019 - Version 2.6: Updated line to call model for SlitModel to work correctly with pipeline changes.
 # Jan 2021 - Version 2.7: Implemented option to run with object instead of input fits file.
-# Jan 2023 - Version 2.8: Fixed code to read new post-commissioning reference files in CRDS format and added
-#                         total error determination according to:
+# Feb 2023 - Version 2.8: Major rearrange. Fixed code to read new post-commissioning reference files in CRDS
+#                         format and added total error determination according to:
 #                         https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
 
 
@@ -263,7 +264,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     if exp_type == "NRS_BRIGHTOBJ":
         sltname_list = ["S1600A1"]
 
-    #debug = True
     # do the loop over the slits
     for si, slit_id in enumerate(sltname_list):
         continue_flat_field_test = False
@@ -306,9 +306,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             wave = slit.wavelength  # uses the object from step wavecor
 
             # get the subwindow origin
-            px0 = slit.xstart - 1 + model.meta.subarray.xstart
-            py0 = slit.ystart - 1 + model.meta.subarray.ystart
-            msg = " Subwindow origin:   px0=" + repr(px0) + "   py0=" + repr(py0)
+            px0 = slit.xstart - 1 + model.meta.subarray.xstart - 1
+            py0 = slit.ystart - 1 + model.meta.subarray.ystart - 1
+            msg = " Subwindow origin 0-based:   px0=" + repr(px0) + "   py0=" + repr(py0)
             print(msg)
             log_msgs.append(msg)
             n_p = np.shape(wave)
@@ -353,7 +353,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 for k in range(nw2):  # in y
                     if np.isfinite(wave[k, j]):  # skip if wavelength is NaN
                         # get the full-frame pixel indeces for D- and S-flat image components
-                        pind = [k + py0 - 1, j + px0 - 1]
+                        pind = [k + py0, j + px0]
 
                         # get the pixel bandwidth
                         if (j != 0) and (j < nw1 - 1):
@@ -376,7 +376,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                             # integrate over D-flat fast vector
                             dfrqe_wav = dfrqe["wavelength"][0]
                             dfrqe_rqe = dfrqe["data"][0]
-                            dff = auxfunc.interp_close_pts(wave[k, j], dfrqe_wav, dfrqe_rqe, debug)
+                            iw = np.where((dfrqe_wav >= wave[k, j] - delw / 2.) & (dfrqe_wav <= wave[k, j] + delw / 2.))
+                            if np.size(iw) > 2:
+                                int_tab = auxfunc.idl_tabulate(dfrqe_wav[iw], dfrqe_rqe[iw])
+                                first_dfrqe_wav, last_dfrqe_wav = dfrqe_wav[iw[0]][0], dfrqe_wav[iw[0]][-1]
+                                dff = int_tab / (last_dfrqe_wav - first_dfrqe_wav)
+                            else:
+                                dff = auxfunc.interp_close_pts(wave[k, j], dfrqe_wav, dfrqe_rqe, debug)
                             # the corresponding error is 0.0 because we currently have no information on this
 
                             # interpolate over D-flat cube and check DQ flags
@@ -405,9 +411,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                                 dflat_dqflags_ok = False
 
                             # integrate over S-flat fast vector
-                            # find the nearest point in the reference table and use that as center plus the one previous
-                            # and following it to create array to interpolate.
-                            sff = auxfunc.interp_close_pts(wave[k, j], sfv_wav, sfv_dat, debug)
+                            iw = np.where((sfv_wav >= wave[k, j] - delw / 2.0) & (sfv_wav <= wave[k, j] + delw / 2.0))
+                            if np.size(iw) > 2:
+                                int_tab = auxfunc.idl_tabulate(sfv_wav[iw], sfv_dat[iw])
+                                first_sfv_wav, last_sfv_wav = sfv_wav[iw[0]][0], sfv_wav[iw[0]][-1]
+                                sff = int_tab / (last_sfv_wav - first_sfv_wav)
+                            else:
+                                sff = auxfunc.interp_close_pts(wave[k, j], sfv_wav, sfv_dat, debug)
                             # the corresponding error is 0.0 because we currently have no information on this
 
                             # get s-flat pixel-dependent correction and check DQ flags
@@ -422,9 +432,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                                 sflat_dqflags_ok = False
 
                             # integrate over F-flat fast vector
-                            # find the nearest point in the reference table and use that as center plus the one previous
-                            # and following it to create array to interpolate.
-                            fff = auxfunc.interp_close_pts(wave[k, j], ffv_wav, ffv_dat, debug)
+                            iw = np.where((ffv_wav >= wave[k, j] - delw / 2.0) & (ffv_wav <= wave[k, j] + delw / 2.0))
+                            if np.size(iw) > 2:
+                                int_tab = auxfunc.idl_tabulate(ffv_wav[iw], ffv_dat[iw])
+                                first_ffv_wav, last_ffv_wav = ffv_wav[iw[0]][0], ffv_wav[iw[0]][-1]
+                                fff = int_tab / (last_ffv_wav - first_ffv_wav)
+                            else:
+                                fff = auxfunc.interp_close_pts(wave[k, j], ffv_wav, ffv_dat, debug)
                             # the corresponding error is 0.0 because we currently have no information on this
 
                             # No component of the f-flat slow component for FS
@@ -529,12 +543,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             delflaterr = delflaterr[np.where(delf != 999.0)]
             # attempt remove outliers, for better statistics, only use points where pipe-calc <= 1.0
             outliers_idx = np.where(np.absolute(delfg) <= 1.0)
+            # if the remaining points are more than half the original number, remove outliers
             if len(outliers_idx) >= len(delfg)/2.0:
-                # the remaining points more than half the original number, remove outliers
                 delfg = delfg[outliers_idx]
-            # same with the error differences
-            outliers_idx = np.where(np.absolute(delflaterr) <= 1.0)
-            if len(outliers_idx) >= len(delflaterr)/2.0:
+                # do the same with the error differences array
+                outliers_idx = np.where(np.absolute(delflaterr) <= 1.0)
                 delflaterr = delflaterr[outliers_idx]
             if debug:
                 print('delf = ', np.shape(delf),  delf)
