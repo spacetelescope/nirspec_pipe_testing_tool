@@ -4,20 +4,27 @@ import re
 import glob
 import time
 import subprocess
+import configparser
+import logging
+from logging.handlers import RotatingFileHandler
 from astropy.io import fits
 from nirspec_pipe_testing_tool.calwebb_spec2_pytests import TESTSDIR
+
+import jwst
+import nirspec_pipe_testing_tool as nptt
 
 '''
 This script contains functions frequently used in the test suite.
 '''
 
 # HEADER
-__author__ = "M. A. Pena-Guerrero"
-__version__ = "1.2"
+__author__ = "M. Pena-Guerrero"
+__version__ = "1.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Feb 2019 - Version 1.2: made changes to be able to process 491 and 492 files in the same directory
+# Apr 2023 - Version 1.3: Cleaned-up code
 
 
 # dictionary of the steps and corresponding strings to be added to the file name after the step has ran
@@ -39,8 +46,16 @@ step_string_dict["photom"] = {"outfile": True, "suffix": "_photom"}
 step_string_dict["resample_spec"] = {"outfile": True, "suffix": "_s2d"}
 step_string_dict["cube_build"] = {"outfile": True, "suffix": "_s3d"}
 step_string_dict["extract_1d"] = {"outfile": True, "suffix": "_x1d"}
+
 # spec3
-step_string_dict["master_background"] = {"outfile": True, "suffix": "_master_background"}
+spec3_step_dict = collections.OrderedDict()
+spec3_step_dict["assign_mtwcs"] = {"outfile": True, "suffix": "assign_mtwcs"}
+spec3_step_dict["master_background"] = {"outfile": True, "suffix": "_master_background"}
+spec3_step_dict["exp_to_source"] = {"outfile": True, "suffix": "_cal"}
+spec3_step_dict["outlier_detection"] = {"outfile": True, "suffix": "_crf"}
+spec3_step_dict["resample_spec"] = {"outfile": True, "suffix": "_s2d"}
+spec3_step_dict["cube_build"] = {"outfile": True, "suffix": "_s3d"}
+spec3_step_dict["extract_1d"] = {"outfile": True, "suffix": "_x1d"}
 
 
 def getlist(option, sep=',', chars=None):
@@ -49,67 +64,55 @@ def getlist(option, sep=',', chars=None):
     return [chunk.strip(chars) for chunk in option.split(sep)]
 
 
-def read_hdrfits(fits_file_name, info=False, show_hdr=False, ext=0):
+def mk_stpipe_log_cfg(outpur_dir, log_name):
     """
-    This function reads the header fits file and returns a dictionary of the keywords with
-    corresponding values. Keywords will be stored in the order they are read.
+    Create a configuration file with the name log_name, where
+    the pipeline will write all output.
     Args:
-        fits_file_name: full path with name of the header text file
-        info: if True the function will show the contents and shapes of the file
-        show_hdr: if True the function will print the header of the file
-        ext: integer, number of extension to be read
+        outpur_dir: sstr: path of the output directory
+        log_name: str, name of the log to record screen output
+    Returns:
+        nothing
+    """
+    config = configparser.ConfigParser()
+    config.add_section("*")
+    config.set("*", "handler", "file:" + log_name)
+    config.set("*", "level", "INFO")
+    pipe_log_config = os.path.join(outpur_dir, "pipeline-log.cfg")
+    config.write(open(pipe_log_config, "w"))
+
+
+def mk_nptt_log(logname, reset=True):
+    """
+    Wrapper for setting up a standard logger.
+
+    Usage:
+    lg = set_logger("myname", "/path/to/log/folder")
+    lg.info("This is some info I want to give")
+    lg.warning("This is a warning")
+    lg.error("This is an error")
+
+    Args:
+        logname : str, name of the logger.
+        reset: boolean, start a new file or not
 
     Returns:
-        hdrl: The header of the fits file
+        logger instance
     """
-    #  Read the fits file
-    hdulist = fits.open(fits_file_name)
-    # print on screen what extensions are in the file
-    if info:
-        print('\n FILE INFORMATION: \n')
-        hdulist.info()
-    # get and print header
-    hdrl = hdulist[ext].header
-    if show_hdr:
-        print('\n FILE HEADER: \n')
-        print(repr(hdrl))
-    # close the fits file
-    hdulist.close()
-    return hdrl
-
-
-def get_filedata(fits_file_name, extension=None):
-    """
-    This function gets the data from the science extension of the fits file provided.
-    Args:
-        fits_file_name: name of the fits file used as input for the pipeline
-        extension: integer, if no number is given as input, the default is extension 1
-
-    Returns:
-        fdata: the data extension of the file
-    """
-    if extension is None:
-        ext = 1
+    # Start the logger and set the default log level
+    logger = logging.getLogger(logname)
+    logging_level = logging.INFO
+    logger.setLevel(logging_level)
+    # Restart the logger each time and set the report format
+    if reset:
+        file_handler = RotatingFileHandler(logname, mode='w')
     else:
-        ext = extension
-    fdata = fits.getdata(fits_file_name, ext)
-    return fdata
-
-
-def get_keywd_val(fits_file_name, keywd, ext=0):
-    """
-    This function obtains the value corresponding to the given keyword.
-    Args:
-        fits_file_name: name of the fits file used as input for the pipeline
-        keywd: keyword for which to obtain the value
-        ext: extension in which the kwyword lives, by default it is set to the
-             primary extension.
-
-    Returns:
-        keywd_val: the value corresponding to the inputed keyword
-    """
-    keywd_val = fits.getval(fits_file_name, keywd, ext)
-    return keywd_val
+        file_handler = logging.FileHandler(logname)
+    formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    print("\n * NPTT screen output will be logged in file: ", logname)
+    return logger
 
 
 def get_sci_extensions(fits_file_name):
@@ -147,8 +150,9 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
     """
 
     # make sure the input file name has the detector included in the name of the output files
-    detector = fits.getval(initial_input_file, "DETECTOR", 0)
-    exp_type = fits.getval(initial_input_file, "EXP_TYPE", 0)
+    hdr = fits.getheader(initial_input_file)
+    detector = hdr["DETECTOR"]
+    exp_type = hdr["EXP_TYPE"]
     initial_input_file_basename = os.path.basename(initial_input_file)
     if "_uncal_rate" in initial_input_file_basename:
         initial_input_file_basename = initial_input_file_basename.replace("_uncal_rate", "")
@@ -179,7 +183,7 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
                         if counter > len(step_string_dict.items()):  # 13 is the number of steps of calwebb_spec2
                             exit_while_loop = True
                             print("Limiting number of iterations reached. No input file found. ")
-                            print("PTT will use initial input file for step ", step)
+                            print("NPTT will use initial input file for step ", step)
                             in_file_suffix = ""
                             step_input_filename = initial_input_file
                             break
@@ -227,7 +231,7 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
                                 continue
                         elif j == 0:
                             # make sure the while loop ends at this point
-                            print("PTT will use initial input file for step ", step)
+                            print("NPTT will use initial input file for step ", step)
                             in_file_suffix = ""
                             step_input_filename = initial_input_file
                             exit_while_loop = True
@@ -244,13 +248,6 @@ def get_step_inandout_filename(step, initial_input_file, output_directory, debug
             step_output_basename = initial_input_file_basename.replace(".fits", out_file_suffix + ".fits")
             if '_rate' in step_output_basename:
                 step_output_basename = step_output_basename.replace('_rate', '')
-            # Special case for BOTS files after extract_1d  -  COMMENTED OUT BECAUSE NOT IN USE IN THE PIPELINE
-            #if "extract_1d" in stp:
-            #    inhdu = read_hdrfits(initial_input_file, info=False, show_hdr=False)
-            #    if check_BOTS_true(inhdu):
-            #        step_output_basename = initial_input_file_basename.replace(".fits",
-            #                                                                   "ints"+out_file_suffix+".fits")
-            # remove the step name _gain_scale if it is still in the base name
             if "_gain_scale".lower() in step_output_basename.lower():
                 step_output_basename = step_output_basename.replace("_gain_scale", "")
             step_output_filename = os.path.join(output_directory, step_output_basename)
@@ -275,16 +272,17 @@ def add_detector2filename(output_directory, step_input_file):
     Returns:
         nothing
     """
-    # dictionary of the steps and corresponding strings to be added to the file name after the step has ran
-    step_strings = ["_assign_wcs", "_bkg_subtract", "_imprint_subtract", "_msa_flagging", "_extract_2d", "_flat_field",
-                    "_srctype", "_pathloss", "_barshadow", "_photom", "_resample_spec", "_cube_build", "_extract_1d",
-                    "_interpolatedflat", "_s2d", "_s3d", "_x1d", "_cal"]
+    # list of the steps suffix to be added to the file name after the step has ran
+    step_strings = []
+    for stp, stp_dict in step_string_dict.items():
+        suffix = stp_dict['suffix']
+        step_strings.append(suffix)
 
     # get the detector name and add it
     det = fits.getval(step_input_file, "DETECTOR", 0)
     # step_input_file_basename = os.path.basename(step_input_file).replace(".fits", "")
-    ptt_directory = TESTSDIR  # directory where PTT lives
-    step_files = glob.glob(os.path.join(ptt_directory, "*.fits"))
+    nptt_directory = TESTSDIR  # directory where NPTT lives
+    step_files = glob.glob(os.path.join(nptt_directory, "*.fits"))
     for sf in step_files:
         for stp_str in step_strings:
             if stp_str in sf.lower():  # look for the step string appearing in the name of the files
@@ -295,7 +293,7 @@ def add_detector2filename(output_directory, step_input_file):
                     new_name = os.path.basename(sf.replace(stp_str + ".fits", "_" + det + stp_str + ".fits"))
                 else:
                     print("Detector ", det, " is already part of the file name ", os.path.basename(sf),
-                          ", PTT will not add it again.")
+                          ", NPTT will not add it again.")
                     new_name = os.path.basename(sf)
                 # move to the working directory
                 new_name = os.path.join(output_directory, new_name)
@@ -395,8 +393,9 @@ def calculate_step_run_time(screen_output_txt):
         return timestamp
 
     # read the screen_output_txt file
-    pipe_steps = ["assign_wcs", "bkg_subtract", "imprint_subtract", "msa_flagging", "extract_2d", "flat_field",
-                  "srctype", "pathloss", "barshadow", "photom", "resample_spec", "cube_build", "extract_1d"]
+    pipe_steps = ["assign_wcs", "bkg_subtract", "imprint_subtract", "msa_flagging", "extract_2d",
+                  "srctype", "wavecorr", "flat_field", "pathloss", "barshadow", "photom",
+                  "resample_spec", "cube_build", "extract_1d"]
     step_running_times = {}
     with open(screen_output_txt, "r") as sot:
         for line in sot.readlines():
@@ -421,7 +420,7 @@ def calculate_step_run_time(screen_output_txt):
 
 def get_stp_run_time_from_screenfile(step, det, output_directory):
     """
-    This function calculates the running time for the given step from the screen output file. It is used when PTT
+    This function calculates the running time for the given step from the screen output file. It is used when NPTT
     is told to skip running the pipeline step.
     Args:
         step: string, name of step
@@ -435,15 +434,13 @@ def get_stp_run_time_from_screenfile(step, det, output_directory):
 
     # add the running time for this step
     calspec2_pipelog = "calspec2_pipeline_" + det + ".log"
-    # make sure we are able to find calspec2_pipelog either in the calwebb_spec2 directory or in the working dir
-    if not os.path.isfile(calspec2_pipelog):
-        calspec2_pipelog = os.path.join(output_directory, calspec2_pipelog)
+    calspec2_pipelog = os.path.join(output_directory, calspec2_pipelog)
 
     # if the pipelog is not found look for the step pipelog
     if not os.path.isfile(calspec2_pipelog):
-        calspec2_pipelog = calspec2_pipelog.replace(det + ".log", step + "_" + det + ".log")
+        calspec2_pipelog = calspec2_pipelog.replace("pipeline", step)
 
-    # if PTT can find either log file
+    # if NPTT can find either log file
     end_time = None
     if os.path.isfile(calspec2_pipelog):
         step_running_times = calculate_step_run_time(calspec2_pipelog)
@@ -458,8 +455,8 @@ def get_stp_run_time_from_screenfile(step, det, output_directory):
                 continue
 
     if end_time is None:
-        print("\n * PTT unable to calculate time from " + calspec2_pipelog + " for step ", step)
-        print("   - This means that the step has not been run yet, or was set not to run in PTT_config. \n")
+        print("\n * NPTT unable to calculate time from " + calspec2_pipelog + " for step ", step)
+        print("   - This means that the step has not been run yet, or was set not to run in NPTT_config. \n")
         end_time = "0.0"
 
     return end_time
@@ -491,9 +488,9 @@ def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_c
         tf.write(line2write + "\n")
 
 
-def start_end_PTT_time(txt_name, start_time=None, end_time=None):
+def start_end_nptt_time(txt_name, start_time=None, end_time=None):
     """
-    This function calculates and prints the starting/ending PTT running time in the True_steps_suffix_map.txt or
+    This function calculates and prints the starting/ending NPTT running time in the True_steps_suffix_map.txt or
     full_run_map.txt file.
     Args:
         txt_name: string, path and name of the text file
@@ -504,34 +501,35 @@ def start_end_PTT_time(txt_name, start_time=None, end_time=None):
         Nothing.
     """
     if start_time is not None:
-        # start the timer to compute the step running time of PTT
-        # print("PTT starting time: ", repr(start_time), "\n")
-        line2write = "{:<20} {:<20}".format('# Starting PTT running time: ', repr(start_time))
-        print(line2write)
-        with open(txt_name, "a") as tf:
-            tf.write(line2write + "\n")
+        line1 = "# {:<20} {:<20}".format('Starting NPTT running time: ', repr(start_time))
+        line2 = "# {:<17} {:<20} {:<20} {:<20}".format("Step", "Added suffix", "Step complition", "Time to run [s]")
+        # start the timer to compute the step running time of NPTT
+        print(line2)
+        with open(txt_name, "w") as tf:
+            tf.write(line1 + "\n")
+            tf.write(line2 + "\n")
 
     if end_time is not None:
         # get the start time from the file
         with open(txt_name, "r") as tf:
             for line in tf.readlines():
-                if "Starting PTT running time" in line:
-                    PTT_start_time = float(line.split(":")[-1])
+                if "Starting NPTT running time" in line:
+                    nptt_start_time = float(line.split(":")[-1])
                     break
-        # compute end the timer to compute PTT running time
-        PTT_total_time = end_time - PTT_start_time  # this is in seconds
-        if PTT_total_time > 60.0:
-            PTT_total_time_min = round(PTT_total_time / 60.0, 1)  # in minutes
-            PTT_total_run_time = repr(PTT_total_time_min) + "min"
-            if PTT_total_time_min > 60.0:
-                PTT_total_time_hr = round(PTT_total_time_min / 60.0, 1)  # in hrs
-                PTT_total_run_time = repr(PTT_total_time_hr) + "hr"
+        # compute end the timer to compute NPTT running time
+        nptt_total_time = end_time - nptt_start_time  # this is in seconds
+        if nptt_total_time > 60.0:
+            nptt_total_time_min = round(nptt_total_time / 60.0, 1)  # in minutes
+            nptt_total_run_time = repr(nptt_total_time_min) + "min"
+            if nptt_total_time_min > 60.0:
+                nptt_total_time_hr = round(nptt_total_time_min / 60.0, 1)  # in hrs
+                nptt_total_run_time = repr(nptt_total_time_hr) + "hr"
         else:
-            PTT_total_run_time = repr(round(PTT_total_time, 1)) + "sec"
+            nptt_total_run_time = repr(round(nptt_total_time, 1)) + "sec"
 
-        print("The total time for PTT to run (including pipeline) was " + repr(PTT_total_time) + " seconds.")
-        line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'PTT+pipe_total_time ',
-                                                          repr(PTT_total_time) + '  =' + PTT_total_run_time)
+        print("# The total time for NPTT to run (including pipeline) was " + repr(nptt_total_time) + " seconds.")
+        line2write = "{:<20} {:<20} {:<20} {:<20}".format('', '', 'NPTT+pipe_total_time ',
+                                                          repr(nptt_total_time) + '  =' + nptt_total_run_time)
         print(line2write)
         with open(txt_name, "a") as tf:
             tf.write(line2write + "\n")
@@ -604,12 +602,12 @@ def set_inandout_filenames(step, config):
     run_calwebb_spec2 = config.getboolean("run_calwebb_spec2_in_full", "run_calwebb_spec2")
 
     if not run_calwebb_spec2:
-        True_steps_suffix_map = os.path.join(output_directory, "spec2_suffix_map_" + detector + ".txt")
-        print("Pipeline was set to run step by step. Suffix map named: ", True_steps_suffix_map,
-              ", located in working directory.")
+        True_steps_suffix_map = os.path.join(output_directory, "spec2_step_run_map_" + detector + ".txt")
+        print("Pipeline was set to run step by step. Steps and suffix map file named: ", True_steps_suffix_map,
+              ", located in output directory.")
     else:
-        print("Pipeline was set to run in full. Suffix map named: full_run_map_DETECTOR.txt, "
-              "located in working directory.")
+        print("Pipeline was set to run in full. Suffix map named: spec2_full_run_map_DETECTOR.txt, "
+              "located in output directory.")
     suffix_and_filenames = get_step_inandout_filename(step, initial_input_file, output_directory)
     in_file_suffix, out_file_suffix, step_input_filename, step_output_filename = suffix_and_filenames
     print("step_input_filename = ", step_input_filename)
@@ -617,7 +615,7 @@ def set_inandout_filenames(step, config):
     return step_input_filename, step_output_filename, in_file_suffix, out_file_suffix, True_steps_suffix_map
 
 
-def read_info4outputhdul(config, step_info):
+def read_info4output_vars(config, step_info):
     """
     Unfold the variables from the return of the function set_inandout_filenames, and get variables from the
     configuration file.
@@ -639,66 +637,66 @@ def read_info4outputhdul(config, step_info):
     return set_inandout_filenames_info
 
 
-def check_FS_true(output_hdul):
+def check_FS_true(hdr):
     """
     This function checks if the fits file is a Fixed Slit.
     Args:
-        output_hdul: the HDU list of the output header keywords
+        hdr: dict, header keywords
 
     Returns:
         result: boolean, if true, the file is assumed to be Fixed Slit
     """
     result = False
-    if "EXP_TYPE" in output_hdul:
-        if output_hdul["EXP_TYPE"] == "NRS_FIXEDSLIT":
+    if "EXP_TYPE" in hdr:
+        if hdr["EXP_TYPE"] == "NRS_FIXEDSLIT":
             result = True
     return result
 
 
-def check_BOTS_true(output_hdul):
+def check_BOTS_true(hdr):
     """
     This function checks if the fits file is a Bright Object Time Series, BOTS.
     Args:
-        output_hdul: the HDU list of the output header keywords
+        hdr: dict, header keywords
 
     Returns:
         result: boolean, if true, the file is assumed to be BOTS
     """
     result = False
-    if "EXP_TYPE" in output_hdul:
-        if output_hdul["EXP_TYPE"] == "NRS_BRIGHTOBJ":
+    if "EXP_TYPE" in hdr:
+        if hdr["EXP_TYPE"] == "NRS_BRIGHTOBJ":
             result = True
     return result
 
 
-def check_MOS_true(output_hdul):
+def check_MOS_true(hdr):
     """
     This function checks if the fits file is Multi-Object Spectroscopy (MOS).
     Args:
-        output_hdul: the HDU list of the output header keywords
+        hdr: dict, header keywords
 
     Returns:
         result: boolean, if true, the file is assumed to be MOS data
     """
     result = False
-    if "EXP_TYPE" in output_hdul:
-        if "MSA" in output_hdul["EXP_TYPE"]:
+    if "EXP_TYPE" in hdr:
+        if "MSA" in hdr["EXP_TYPE"]:
             result = True
     return result
 
 
-def check_IFU_true(output_hdul):
+def check_IFU_true(hdr):
     """
     This function checks if the fits file is IFU data.
     Args:
-        output_hdul: the HDU list of the output header keywords
+        hdr: dict, header keywords
 
     Returns:
         result: boolean, if true, the file is assumed to be IFU data
     """
     result = False
-    if "EXP_TYPE" in output_hdul:
-        if "IFU" in output_hdul["EXP_TYPE"]:
+    if "EXP_TYPE" in hdr:
+        if "IFU" in hdr["EXP_TYPE"]:
             result = True
     return result
 
@@ -723,8 +721,9 @@ def check_completed_steps(step, step_input_file, caldet1=False):
     steps_calwebbspec2["assign_wcs"] = "WCS"
     steps_calwebbspec2["msa_flagging"] = "MSAFLG"
     steps_calwebbspec2["extract_2d"] = "EXTR2D"
-    steps_calwebbspec2["flat_field"] = "FLAT"
     steps_calwebbspec2["srctype"] = "SRCTYP"
+    steps_calwebbspec2["wavecorr"] = "WAVCOR"
+    steps_calwebbspec2["flat_field"] = "FLAT"
     steps_calwebbspec2["pathloss"] = "PTHLOS"
     steps_calwebbspec2["barshadow"] = "BARSHA"
     steps_calwebbspec2["photom"] = "PHOTOM"
@@ -759,35 +758,35 @@ def check_completed_steps(step, step_input_file, caldet1=False):
                 "may be incorrect. \n")
 
 
-def find_which_slit(output_hdul):
+def find_which_slit(hdr):
     """
     This function determines which Fixed Slit was used
     Args:
-        output_hdul: the HDU list of the output header keywords
+        hdr: dict, header keywords
 
     Returns:
         s: string, slit used or is None if not in the list
     """
     # the order of this list corresponds to the
-    slits = ["S200A1", "S200A2", "S200B1", "S400A1", "S1600A1", ]
-    if "FXD_SLIT" in output_hdul:
+    slits = ["S200A1", "S200A2", "S200B1", "S400A1", "S1600A1"]
+    if "FXD_SLIT" in hdr:
         for i, s in enumerate(slits):
             print("slit: ", s, i)
-            if s in output_hdul["FXD_SLIT"]:
+            if s in hdr["FXD_SLIT"]:
                 return i + 1, s
 
 
-def find_DETECTOR(output_hdul):
+def find_DETECTOR(hdr):
     """
     This function determines which detector was used
     Args:
-        output_hdul: the HDU list of the output header keywords
+        hdr: dict, header keywords
 
     Returns:
         det: string, either NRS1 or NRS2
     """
-    if "DETECTOR" in output_hdul:
-        det = output_hdul["DETECTOR"]
+    if "DETECTOR" in hdr:
+        det = hdr["DETECTOR"]
         return det
 
 
@@ -870,17 +869,16 @@ def convert_html2pdf(detector):
     print("\n Converted ", latest_htmlfile, " to ", pdf_file, ". Both files are available in current directory. \n")
 
 
-def move_txt_files_2workdir(config, detector):
+def move_txt_files_2outdir(output_dir, detector):
     """
-    This function moves the PTT output reporting files into the working directory.
+    This function moves the NPTT output reporting files into the output directory.
     Args:
-        detector: string, name in keyword DETECTOR
+        output_dir: string, path to the output directory
+        detector: string, value of the DETECTOR hearder keyword
 
     Returns:
         Nothing
     """
-    # get the working directory
-    output_dir = config.get("calwebb_spec2_input_file", "output_directory")
     # get a list of all the txt files in the calwebb_spec2_pytests dir
     latest_screenoutputtxtfile = get_latest_file("*screen*" + detector + "*.txt", detector,
                                                  disregard_known_files=True)  # this picks up the output_screen file

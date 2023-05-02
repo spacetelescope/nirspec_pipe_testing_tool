@@ -88,8 +88,8 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         msametfl = fits.getval(infile_name, "MSAMETFL", 0)
         if msametfl != os.path.basename(msa_conf_name):
             msg = "* WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL " \
-                  "keyword in main header.\n"
-            print(msg)
+                  "keyword in main header."
+            print(msg+"\n")
             log_msgs.append(msg)
         basenameinfile_name = os.path.basename(infile_name)
 
@@ -173,7 +173,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
     # loop over the slices
     for slit in slits_list:
         name = slit.name
-        msg = "\nWorking with slit: "+str(name)
+        msg = "Working with slit: "+str(name)
         print(msg)
         log_msgs.append(msg)
 
@@ -217,7 +217,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                 print(len(esafile[-1]))
                 if len(esafile[-1]) == 0:
                     esafile = esafile[0]
-            msg = "Using this ESA file: \n"+str(esafile)
+            msg = "Using this ESA file: "+str(esafile)
             print(msg)
             log_msgs.append(msg)
             with fits.open(esafile) as esahdulist:
@@ -236,28 +236,28 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                 print(msg)
                 log_msgs.append(msg)
                 if q == esa_quadrant:
-                    msg = "\n -> Same quadrant for pipeline and ESA data: "+str(q)
+                    msg = " -> Same quadrant for pipeline and ESA data: "+str(q)
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    msg = "\n -> Missmatch of quadrant for pipeline and ESA data: "+str(q)+esa_quadrant
+                    msg = " -> Missmatch of quadrant for pipeline and ESA data: "+str(q)+esa_quadrant
                     print(msg)
                     log_msgs.append(msg)
                 if r == esa_shutter_i:
-                    msg = "\n -> Same row for pipeline and ESA data: "+str(r)
+                    msg = " -> Same row for pipeline and ESA data: "+str(r)
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    msg = "\n -> Missmatch of row for pipeline and ESA data: "+str(r)+esa_shutter_i
+                    msg = " -> Missmatch of row for pipeline and ESA data: "+str(r)+esa_shutter_i
                     print(msg)
                     log_msgs.append(msg)
                 if c == esa_shutter_j:
-                    msg = "\n -> Same column for pipeline and ESA data: "+str(c)+"\n"
-                    print(msg)
+                    msg = " -> Same column for pipeline and ESA data: "+str(c)
+                    print(msg+"\n")
                     log_msgs.append(msg)
                 else:
-                    msg = "\n -> Missmatch of column for pipeline and ESA data: "+str(c)+esa_shutter_j+"\n"
-                    print(msg)
+                    msg = " -> Missmatch of column for pipeline and ESA data: "+str(c)+esa_shutter_j
+                    print(msg+"\n")
                     log_msgs.append(msg)
 
                 # Assign variables according to detector
@@ -334,11 +334,11 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                     break
 
             if not continue_with_wcs_test:
-                msg1 = "\n * Script compare_wcs_mos.py is exiting because open slitlet "+slitlet_idx+" is not open " \
+                msg1 = " * Script compare_wcs_mos.py is exiting because open slitlet "+slitlet_idx+" is not open " \
                                                                                                      "in truth file."
-                msg2 = "   -> The WCS test is now set to FAILED and no plots will be generated. \n"
+                msg2 = "   -> The WCS test is now set to FAILED and no plots will be generated. "
                 print(msg1)
-                print(msg2)
+                print(msg2+"\n")
                 log_msgs.append(msg1)
                 log_msgs.append(msg2)
                 FINAL_TEST_RESULT = "FAILED"
@@ -660,8 +660,8 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                                                  save_figs=save_figs)
 
         else:
-            msg = "NO plots were made because show_figs and save_figs were both set to False. \n"
-            print(msg)
+            msg = "NO plots were made because show_figs and save_figs were both set to False. "
+            print(msg+"\n")
             log_msgs.append(msg)
 
     # remove the copy of the MSA shutter configuration file
@@ -678,22 +678,22 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
             for t, tr in tdict.items():
                 if tr == "FAILED":
                     FINAL_TEST_RESULT = "FAILED"
-                    msg = "\n * The test of "+t+" for slitlet "+sl+"  FAILED."
+                    msg = " * The test of "+t+" for slitlet "+sl+"  FAILED."
                     print(msg)
                     log_msgs.append(msg)
                 else:
                     FINAL_TEST_RESULT = "PASSED"
-                    msg = "\n * The test of "+t+" for slitlet "+sl+ "  PASSED."
+                    msg = " * The test of "+t+" for slitlet "+sl+ "  PASSED."
                     print(msg)
                     log_msgs.append(msg)
 
     if FINAL_TEST_RESULT == "PASSED":
-        msg = "\n *** Final result for assign_wcs test will be reported as PASSED *** \n"
-        print(msg)
+        msg = " *** Final result for assign_wcs test will be reported as PASSED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
     else:
-        msg = "\n *** Final result for assign_wcs test will be reported as FAILED *** \n"
-        print(msg)
+        msg = " *** Final result for assign_wcs test will be reported as FAILED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
 
     return FINAL_TEST_RESULT, log_msgs

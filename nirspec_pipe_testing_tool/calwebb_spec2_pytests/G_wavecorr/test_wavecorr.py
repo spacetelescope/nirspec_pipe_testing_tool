@@ -6,7 +6,6 @@ py.test module for unit testing the wavecorr step.
 import os
 import time
 import pytest
-import logging
 from astropy.io import fits
 from glob import glob
 from jwst.wavecorr.wavecorr_step import WavecorrStep
@@ -14,15 +13,15 @@ from jwst.wavecorr.wavecorr_step import WavecorrStep
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 from . import wavecorr_utils
 from nirspec_pipe_testing_tool import core_utils
-from .. import TESTSDIR
 
 
 # HEADER
-__author__ = "M. A. Pena-Guerrero"
-__version__ = "1.0"
+__author__ = "M. Pena-Guerrero"
+__version__ = "1.1"
 
 # HISTORY
 # Mar 2021 - Version 1.0: initial version completed
+# Apr 2023 - Version 1.1: Cleaned-up code
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
 
@@ -38,21 +37,21 @@ def set_inandout_filenames(config):
 
 # fixture to read the output file header
 @pytest.fixture(scope="module")
-def output_hdul(set_inandout_filenames, config):
+def output_vars(set_inandout_filenames, config):
     # determine if the pipeline is to be run in full, per steps, or skipped
     run_calwebb_spec2 = config.get("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     if run_calwebb_spec2 == "skip":
-        print('\n * PTT finished processing run_calwebb_spec2 is set to skip. \n')
-        pytest.exit("Skipping pipeline run and tests for spec2, run_calwebb_spec2 is set to skip in PTT_config file.")
+        print('\n * NPTT finished processing run_calwebb_spec2 is set to skip. \n')
+        pytest.exit("Skipping pipeline run and tests for spec2, run_calwebb_spec2 is set to skip in NPTT_config file.")
     elif "T" in run_calwebb_spec2:
         run_calwebb_spec2 = True
     else:
         run_calwebb_spec2 = False
 
     # get the general info
-    set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
+    set_inandout_filenames_info = core_utils.read_info4output_vars(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, outstep_file_suffix = set_inandout_filenames_info
-    run_pipe_step = config.getboolean("run_pipe_steps", step)
+    run_pipe_step = config.getboolean("run_spec2_steps", step)
 
     # determine which tests are to be run
     wavecorr_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
@@ -80,40 +79,36 @@ def output_hdul(set_inandout_filenames, config):
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(output_directory, initial_input_file)
     if os.path.isfile(initial_input_file):
-        inhdu = core_utils.read_hdrfits(initial_input_file, info=False, show_hdr=False)
-        detector = fits.getval(initial_input_file, "DETECTOR", 0)
+        inhdr = fits.getheader(step_input_file)
+        detector = inhdr["DETECTOR"]
     else:
-        pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
+        msg = "Skipping "+step+" because the initial input file given in NPTT_config.cfg does not exist."
+        pytest.skip(msg)
 
-    if not core_utils.check_IFU_true(inhdu):
+    # Get the logfile instance for NPTT created in the run.py script
+    nptt_log = os.path.join(output_directory, 'NPTT_calspec2_' + detector + '.log')
+    nptt_log = core_utils.mk_nptt_log(nptt_log, reset=False)
+
+    if not core_utils.check_IFU_true(inhdr):
         if run_calwebb_spec2:
-            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-            return hdul, step_output_file, run_pytests, scihdul
+            outhdr = fits.getheader(step_output_file)
+            scihdur = fits.getheader(step_output_file, 'SCI')
+            return outhdr, step_output_file, run_pytests, scihdur, nptt_log
 
         else:
             if run_pipe_step:
-
-                # Create the logfile for PTT, but erase the previous one if it exists
-                PTTcalspec2_log = os.path.join(output_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
-                if os.path.isfile(PTTcalspec2_log):
-                    os.remove(PTTcalspec2_log)
-                print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
-                for handler in logging.root.handlers[:]:
-                    logging.root.removeHandler(handler)
-                logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
-                # print pipeline version
-                import jwst
-                pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
-                print(pipeline_version)
-                logging.info(pipeline_version)
-                if change_filter_opaque:
-                    logging.info(filter_opaque_msg)
-
                 if os.path.isfile(step_input_file):
+                    if change_filter_opaque:
+                        logging.info(filter_opaque_msg)
+
+                    # Create the pipeline step log
+                    stp_pipelog = "calspec2_" + step + "_" + detector + ".log"
+                    core_utils.mk_stpipe_log_cfg(output_dir, stp_pipelog)
+                    print("Pipeline step screen output will be logged in file: ", stp_pipelog)
+
                     msg = " *** Step "+step+" set to True"
                     print(msg)
-                    logging.info(msg)
+                    nptt_log.info(msg)
                     stp = WavecorrStep()
 
                     # check that previous pipeline steps were run up to this point
@@ -132,45 +127,35 @@ def output_hdul(set_inandout_filenames, config):
                     end_time = repr(time.time() - start_time)   # this is in seconds
                     msg = "Step "+step+" took "+end_time+" seconds to finish"
                     print(msg)
-                    logging.info(msg)
+                    nptt_log.info(msg)
 
                     step_completed = True
-                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                    scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
-
-                    # rename and move the pipeline log file
-                    pipelog = "pipeline_" + detector + ".log"
-                    try:
-                        calspec2_pilelog = "calspec2_pipeline_" + step + "_" + detector + ".log"
-                        pytest_workdir = TESTSDIR
-                        logfile = glob(pytest_workdir + "/" + pipelog)[0]
-                        os.rename(logfile, os.path.join(output_directory, calspec2_pilelog))
-                    except IndexError:
-                        print("\n* WARNING: Something went wrong. Could not find a ", pipelog, " file \n")
+                    outhdr = fits.getheader(step_output_file)
+                    scihdur = fits.getheader(step_output_file, 'SCI')
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests, scihdul
+                    return outhdr, step_output_file, run_pytests, scihdur, nptt_log
 
                 else:
                     msg = " The input file does not exist. Skipping step."
                     print(msg)
-                    logging.info(msg)
+                    nptt_log.info(msg)
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     pytest.skip("Skipping "+step+" because the input file does not exist.")
 
             else:
                 msg = "Skipping running pipeline step "+step
                 print(msg)
-                logging.info(msg)
+                nptt_log.info(msg)
                 end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
                 if os.path.isfile(step_output_file):
-                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-                    scihdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False, ext=1)
+                    outhdr = fits.getheader(step_output_file)
+                    scihdur = fits.getheader(step_output_file, 'SCI')
                     step_completed = True
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, run_pytests, scihdul
+                    return outhdr, step_output_file, run_pytests, scihdur, nptt_log
                 else:
                     step_completed = False
                     # add the running time for this step
@@ -184,37 +169,41 @@ def output_hdul(set_inandout_filenames, config):
 
 # Unit tests
 
-def test_s_wavecor_exists(output_hdul):
+def test_s_wavecor_exists(output_vars):
+    # get the logger instance
+    nptt_log = output_vars[-1]
     # want to run this pytest?
-    # output_hdul[2] = wavecorr_completion_tests, wavecorr_reffile_tests
-    run_pytests = output_hdul[2][0]
+    # output_vars[2] = wavecorr_completion_tests, wavecorr_reffile_tests
+    run_pytests = output_vars[2][0]
     if not run_pytests:
-        msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        msg = "Skipping completion pytest: option to run Pytest is set to False in NPTT_config.cfg file."
         print(msg)
-        logging.info(msg)
+        nptt_log.info(msg)
         pytest.skip(msg)
     else:
-        msg = "\n * Running completion pytest...\n"
+        msg = " * Running completion pytest..."
         print(msg)
-        logging.info(msg)
-        assert wavecorr_utils.s_wavecor_exists(output_hdul[0]), "The keyword S_WAVCOR was not added to the header " \
+        nptt_log.info(msg)
+        assert wavecorr_utils.s_wavecor_exists(output_vars[0]), "The keyword S_WAVCOR was not added to the header " \
                                                                 "--> WAVECORR step was not completed."
 
-def test_wavecor_rfile(output_hdul):
+def test_wavecor_rfile(output_vars):
+    # get the logger instance
+    nptt_log = output_vars[-1]
     # want to run this pytest?
-    # output_hdul[2] = wavecorr_completion_tests, wavecorr_reffile_tests
-    run_pytests = output_hdul[2][1]
+    # output_vars[2] = wavecorr_completion_tests, wavecorr_reffile_tests
+    run_pytests = output_vars[2][1]
     if not run_pytests:
-        msg = "Skipping ref_file pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        msg = "Skipping ref_file pytest: option to run Pytest is set to False in NPTT_config.cfg file."
         print(msg)
-        logging.info(msg)
+        nptt_log.info(msg)
         pytest.skip(msg)
     else:
-        msg = "\n * Running reference file pytest...\n"
+        msg = " * Running reference file pytest..."
         print(msg)
-        logging.info(msg)
-        result = wavecorr_utils.wavecor_rfile_is_correct(output_hdul)
+        nptt_log.info(msg)
+        result = wavecorr_utils.wavecor_rfile_is_correct(output_vars)
         for log_msg in result[1]:
             print(log_msg)
-            logging.info(log_msg)
+            nptt_log.info(log_msg)
         assert not result[0], result[0]

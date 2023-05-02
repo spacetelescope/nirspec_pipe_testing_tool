@@ -481,8 +481,8 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                 else:
                     test_result = "FAILED"
 
-        msg = " *** Result of the test: "+test_result+"\n"
-        print(msg)
+        msg = " *** Result of the test: "+test_result
+        print(msg+"\n")
         log_msgs.append(msg)
         total_test_result.append(test_result)
 
@@ -500,7 +500,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         # this is the file to hold the image of pipeline-calculated difference values
         compfile.writeto(compfile_name, overwrite=True)
 
-        msg = "\nFits file with calculated pathloss values of each slit saved as: "
+        msg = "Fits file with calculated pathloss values of each slit saved as: "
         print(msg)
         log_msgs.append(msg)
         print(outfile_name)
@@ -522,13 +522,13 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             FINAL_TEST_RESULT = True
 
     if FINAL_TEST_RESULT:
-        msg = "\n *** Final pathloss test result reported as PASSED *** \n"
-        print(msg)
+        msg = " *** Final pathloss test result reported as PASSED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
         result_msg = "All slits PASSED path_loss test."
     else:
-        msg = "\n *** Final pathloss test result reported as FAILED *** \n"
-        print(msg)
+        msg = " *** Final pathloss test result reported as FAILED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
         result_msg = "One or more slits FAILED path_loss test."
 
@@ -536,12 +536,12 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     pathloss_end_time = time.time() - pathtest_start_time
     if pathloss_end_time > 60.0:
         pathloss_end_time = pathloss_end_time/60.0  # in minutes
-        pathloss_tot_time = "* Script FS_PS.py took ", repr(pathloss_end_time) + " minutes to finish."
+        pathloss_tot_time = "* Script FS_PS.py took "+repr(pathloss_end_time)+" minutes to finish."
         if pathloss_end_time > 60.0:
             pathloss_end_time = pathloss_end_time/60.  # in hours
-            pathloss_tot_time = "* Script FS_PS.py took ", repr(pathloss_end_time) + " hours to finish."
+            pathloss_tot_time = "* Script FS_PS.py took "+repr(pathloss_end_time)+" hours to finish."
     else:
-        pathloss_tot_time = "* Script FS_PS.py took ", repr(pathloss_end_time) + " seconds to finish."
+        pathloss_tot_time = "* Script FS_PS.py took "+repr(pathloss_end_time)+" seconds to finish."
     print(pathloss_tot_time)
     log_msgs.append(pathloss_tot_time)
 
@@ -600,9 +600,6 @@ def main():
     show_figs = args.show_figs
     threshold_diff = args.threshold_diff
     debug = args.debug
-
-    # print pipeline version
-    print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script
     pathtest(step_input_filename, reffile, comparison_filename, writefile=writefile,

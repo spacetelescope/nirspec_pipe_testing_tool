@@ -1,5 +1,5 @@
 """
-This script creates a sample configuration file needed to run the run_PTT_with_multiprocessing.py script. A
+This script creates a sample configuration file needed to run the run_nptt_with_multiprocessing.py script. A
 configuration file will be created in the working directory.
 """
 
@@ -8,7 +8,7 @@ import sys
 import configparser
 
 
-def write_ptt_multiprocessing_cfg():
+def write_nptt_multiprocessing_cfg():
     config = configparser.ConfigParser(allow_no_value=True)
 
     config.add_section("data_sets_to_run")
@@ -34,14 +34,14 @@ def write_ptt_multiprocessing_cfg():
                None)
     config.set("data_sets_to_run", "cores2use", "8 \n")
 
-    ptt_m_config = os.path.join(os.getcwd(), "multiprocessing_PTT_config.cfg")
-    config.write(open(ptt_m_config, "w"))
-    ptt_m_config.close()
+    nptt_m_config = os.path.join(os.getcwd(), "multiprocessing_NPTT_config.cfg")
+    config.write(open(nptt_m_config, "w"))
+    nptt_m_config.close()
 
 
 def main():
     # create the sample multiprocessing configuration file in the current working directory
-    write_ptt_multiprocessing_cfg()
+    write_nptt_multiprocessing_cfg()
 
 
 if __name__ == '__main__':

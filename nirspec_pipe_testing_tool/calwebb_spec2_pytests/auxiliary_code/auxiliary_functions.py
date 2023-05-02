@@ -18,7 +18,7 @@ This script contains the auxiliary functions that the wcs FS, MOS, and IFU WCS s
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
-__version__ = "2.3"
+__version__ = "2.4"
 
 
 # HISTORY
@@ -28,6 +28,7 @@ __version__ = "2.3"
 # Aug 2018 - Version 2.1: Added case to catch simulation rawdataroot names for the ESA files
 # Sep 2019 - Version 2.2: Modified function to identify science extensions to work with build 7.3
 # Feb 2023 - Version 2.3: Added function to calculate total errors after flat field step
+# Mar 2023 - Version 2.4: Fixed total error estimation bug to match slitlet by slitlet
 
 
 def find_nearest(arr, value):
@@ -108,12 +109,26 @@ def get_vminmax(img):
     return vminmax
 
 
-def calc_flat_total_errs(flat_field_outfile, show_plts=False, save_plts=False):
+def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_slt_err,
+                            input_sci, input_err, input_var_psn, input_var_rnse,
+                            pipeflat, pipeflat_err, calcflat, calcflat_err,
+                            show_plts=False, save_plts=False):
     """
     Function to calculate total errors after flat field step and comparison of
     validation vs pipeline results.
     Args:
         flat_field_outfile: string, full path and name of the flat_field.fits file
+        slt_nme: string, name of the slit/slice/slitlet
+        flout_slt_sci: numpy array, SCI data from flat_field step output
+        flout_slt_err: numpy array, ERR data from flat_field step output
+        input_sci: numpy array, SCI data from wcs input
+        input_err: numpy array, ERR data from wcs input
+        input_var_psn: numpy array, VAR_POISSON data from wcs input
+        input_var_rnse: numpy array, VAR_RNOISE data from wcs input
+        pipeflat: numpy array, SCI data from pipeline interpolated flat
+        pipeflat_err: numpy array, ERR data from pipeline interpolated flat
+        calcflat: numpy array, SCI data from validation-calculated flat
+        calcflat_err: numpy array, ERR data from validation-calculated flat
         show_plt: boolean
         save_plt: boolean
     Returns:
@@ -123,344 +138,311 @@ def calc_flat_total_errs(flat_field_outfile, show_plts=False, save_plts=False):
     if save_plts:
         matplotlib.use("Agg")
 
-    # make sure all files exist
-    all_files_exist = True
-    if not os.path.isfile(flat_field_outfile):
-        print('\n * Unable to find the flat_field.fits file! * \n')
-        all_files_exist = False
-    wcs_file = flat_field_outfile.replace("_flat_field.fits", "_wavecorr.fits")
-    if 'ifu' in os.path.basename(flat_field_outfile):
-        wcs_file = flat_field_outfile.replace("_flat_field.fits", "_assign_wcs.fits")
-    if not os.path.isfile(wcs_file):
-        print('\n * Unable to find the assign_wcs.fits file! * \n')
-        all_files_exist = False
-    pipeflat_file = flat_field_outfile.replace("_flat_field.fits", "_interpolatedflat.fits")
-    if not os.path.isfile(pipeflat_file):
-        print('\n * Unable to find the interpolated flat pipeline output file! * \n')
-        all_files_exist = False
-    calc_flat_file = flat_field_outfile.replace("_flat_field.fits", "_flat_calc.fits")
-    if not os.path.isfile(calc_flat_file):
-        print('\n * Unable to find the calculated flat file.fits! * \n')
-        all_files_exist = False
+    # Total error calculation according to equation taken from:
+    # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
+    print('\n Calculating total errors for slit ', slt_nme)
 
-    # get the data if all files exist, else exit
-    if not all_files_exist:
-        print('\n * Exiting script. \n')
-    # get the number of SCI extensions to work with and iterate over it
-    sci_ext_name_list, hdu_idx_list = get_sci_extensions(flat_field_outfile, lists=True)
-    flout_hdul = fits.open(flat_field_outfile)
-    input_hdul = fits.open(wcs_file)
-    pipeflat_hdu = fits.open(pipeflat_file)
-    calcflat_hdu = fits.open(calc_flat_file)
-    for i, sci_ext_name in enumerate(sci_ext_name_list):
-        # this will open the i number of the SCI extension, regardless of it being a different file
-        ext = i + 1
-        print('\n Working with SCI extension ', i + 1,' of ', len(sci_ext_name_list))
-        # get data for comparison to final pipeline result
-        flout_hdul_sci = flout_hdul['SCI', ext].data
-        flout_hdul_err = flout_hdul['ERR', ext].data
-        # get data to calculate error components
-        input_sci = input_hdul['SCI', ext].data
-        input_var_poisson = input_hdul['VAR_POISSON', ext].data
-        input_var_rnoise = input_hdul['VAR_RNOISE', ext].data
-        # get data from the pipeline interpolated output flat
-        pipeflat = pipeflat_hdu["SCI", ext].data
-        pipeflat_err = pipeflat_hdu["ERR", ext].data
-        # get data from the validation calculation output flat
-        if 'ifu' in os.path.basename(flat_field_outfile):
-            fullframe_calc_flat = calcflat_hdu["SCI", ext].data
-            fullframe_flat_err = calcflat_hdu["ERR", ext].data
+    # Calculate flat correction of SCI data and ignore all nan and inf values
+    pipe_corr_sci = input_sci / pipeflat
+    pipe_corr = pipe_corr_sci[((np.isfinite(pipe_corr_sci)) & (pipe_corr_sci != 0.0))]
+    calc_corr_sci = input_sci / calcflat
+    calc_corr = calc_corr_sci[((np.isfinite(calc_corr_sci)) & (calc_corr_sci != 0.0))]
+    diff_corr_sci = pipe_corr_sci - calc_corr_sci
+    diff_corr_sci_good_idx = np.where(diff_corr_sci <= 1.0)
+    mean_pipe, mean_calc = np.mean(pipe_corr), np.mean(calc_corr)
+    median_pipe, median_calc = np.median(pipe_corr), np.median(calc_corr)
+    diff_percent = '0%'
+    if np.isfinite(1.0 - mean_calc/mean_pipe):
+        diff_percent = repr(int(abs(1.0 - mean_calc/mean_pipe) * 100.0))+'%'
+    print('\n * Mean difference of flat corrected SCI values: ',
+          np.mean(diff_corr_sci[diff_corr_sci_good_idx]), ' -> ', diff_percent)
+    print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+    print('       final pipeline calculated SCI mean = ', np.mean(flout_slt_sci))
+
+    # Calculate flat correction of VAR_POISSON data and ignore all nan and inf values
+    pipe_corr_var_poisson_sci = input_var_psn / pipeflat**2
+    pipe_corr_vpsn = pipe_corr_var_poisson_sci[((np.isfinite(pipe_corr_var_poisson_sci)) & (pipe_corr_var_poisson_sci != 0.0))]
+    calc_corr_var_poisson_sci = input_var_psn / calcflat**2
+    calc_corr_vpsn = calc_corr_var_poisson_sci[((np.isfinite(calc_corr_var_poisson_sci)) & (calc_corr_var_poisson_sci != 0.0))]
+    diff_var_poisson_sci = pipe_corr_var_poisson_sci - calc_corr_var_poisson_sci
+    diff_var_poisson_sci_good_idx = np.where(diff_var_poisson_sci <= 1.0)
+    mean_pipe, mean_calc = np.mean(pipe_corr_vpsn), np.mean(calc_corr_vpsn)
+    median_pipe, median_calc = np.median(pipe_corr_vpsn), np.median(calc_corr_vpsn)
+    diff_percent = '0%'
+    if np.isfinite(1.0 - mean_calc/mean_pipe):
+        diff_percent = repr(int(abs(1.0 - mean_calc/mean_pipe) * 100.0))+'%'
+    print('\n * Mean difference of flat corrected VAR_POISSON values: ',
+          np.mean(diff_var_poisson_sci[diff_var_poisson_sci_good_idx]),  ' -> ', diff_percent)
+    print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+
+    # Calculate flat correction of VAR_RNOISE data and ignore all nan and inf values
+    pipe_corr_var_rnoise_sci = input_var_rnse / pipeflat**2
+    pipe_corr_vrnse = pipe_corr_var_rnoise_sci[((np.isfinite(pipe_corr_var_rnoise_sci)) & (pipe_corr_var_rnoise_sci != 0.0))]
+    calc_corr_var_rnoise_sci = input_var_rnse / calcflat**2
+    calc_corr_vrnse = calc_corr_var_rnoise_sci[((np.isfinite(calc_corr_var_rnoise_sci)) & (calc_corr_var_rnoise_sci != 0.0))]
+    diff_var_rnoise_sci = pipe_corr_var_rnoise_sci - calc_corr_var_rnoise_sci
+    diff_var_rnoise_sci_good_idx = np.where(diff_var_rnoise_sci <= 1.0)
+    mean_pipe, mean_calc = np.mean(pipe_corr_vrnse), np.mean(calc_corr_vrnse)
+    median_pipe, median_calc = np.median(pipe_corr_vrnse), np.median(calc_corr_vrnse)
+    diff_percent = '0%'
+    if np.isfinite(1.0 - mean_calc/mean_pipe):
+        diff_percent = repr(int(abs(1.0 - mean_calc/mean_pipe) * 100.0))+'%'
+    print('\n * Mean difference of flat corrected VAR_RNOISE values: ',
+          np.mean(diff_var_rnoise_sci[diff_var_rnoise_sci_good_idx]),  ' -> ', diff_percent)
+    print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+    print('       median_pipe, median_calc = ', median_pipe, median_calc)
+
+    # Calculate flat correction of VAR_FLAT data and data and ignore all nan and inf values
+    pipe_corr_var_flat_sci = input_sci**2 / pipeflat**2 * pipeflat_err**2
+    pipe_corr_vflat = pipe_corr_var_flat_sci[((np.isfinite(pipe_corr_var_flat_sci)) & (pipe_corr_var_flat_sci != 0.0))]
+    calc_corr_var_flat_sci = input_sci**2 / calcflat**2 * calcflat_err**2
+    calc_corr_vflat = calc_corr_var_flat_sci[((np.isfinite(calc_corr_var_flat_sci)) & (calc_corr_var_flat_sci != 0.0))]
+    diff_var_flat_sci = pipe_corr_var_flat_sci - calc_corr_var_flat_sci
+    diff_var_flat_sci = diff_var_flat_sci[(np.isfinite(diff_var_flat_sci) & (diff_var_flat_sci <= 1.0))]
+    mean_pipe, mean_calc = np.mean(pipe_corr_vflat), np.mean(calc_corr_vflat)
+    median_pipe, median_calc = np.median(pipe_corr_vflat), np.median(calc_corr_vflat)
+    diff_percent = 0
+    if np.isfinite(1.0 - mean_calc/mean_pipe):
+        diff_percent = int(abs(1.0 - mean_calc/mean_pipe) * 100.0)
+    print('\n * Mean difference of flat corrected VAR_FLAT values: ',
+          np.mean(diff_var_flat_sci), ' -> ', repr(diff_percent)+'%')
+    print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+    print('       median_pipe, median_calc = ', median_pipe, median_calc)
+    if diff_percent >= 50:
+        print('   Maybe an issue of outliers, check median values and other stats: ')
+        print('       np.mean(input_sci**2/pipeflat**2), np.mean(input_sci**2/calcflat**2)')
+        kk1 = input_sci**2/pipeflat**2
+        kk1 = kk1[~np.isnan(kk1)]
+        kk2 = input_sci**2/calcflat**2
+        kk2 = kk2[~np.isnan(kk2)]
+        print('       ', np.mean(kk1), np.mean(kk2))
+        print('       np.median(input_sci**2/pipeflat**2), np.median(input_sci**2/calcflat**2)')
+        print('       ', np.median(kk1), np.median(kk2))
+        print('     Means and medians where arrays are not 0.0: ')
+        print('       np.mean(pipeflat_err**2), np.mean(calcflat_err**2), difference')
+        kk1 = pipeflat_err[pipeflat_err!=0.0]**2
+        kk1 = kk1[~np.isnan(kk1)]
+        kk2 = calcflat_err[calcflat_err!=0.0]**2
+        kk2 = kk2[~np.isnan(kk2)]
+        print('       ', np.mean(kk1), np.mean(kk2), np.mean(kk1)-np.mean(kk2))
+        print('       np.median(pipeflat_err**2), np.median(calcflat_err**2), difference')
+        print('       ', np.median(kk1), np.median(kk2), np.median(kk1)-np.median(kk2))
+
+    # Total error calculation
+    pipe_err_sci = np.sqrt(pipe_corr_var_poisson_sci + pipe_corr_var_rnoise_sci + pipe_corr_var_flat_sci)
+    calc_err_sci = np.sqrt(calc_corr_var_poisson_sci + calc_corr_var_rnoise_sci + calc_corr_var_flat_sci)
+    diff_tot_err = pipe_err_sci - calc_err_sci
+    diff_tot_err_good_idx = np.where(diff_tot_err <= 1.0)
+    mean_pipe, mean_calc = np.mean(pipe_err_sci), np.mean(calc_err_sci)
+    median_pipe, median_calc = np.median(pipe_err_sci), np.median(calc_err_sci)
+    diff_percent = 0
+    if np.isfinite(1.0 - mean_calc/mean_pipe):
+        diff_percent = int(abs(1.0 - mean_calc/mean_pipe) * 100.0)
+    print('\n * Mean difference of total error calculation: ',
+          np.mean(diff_tot_err[diff_tot_err_good_idx]),  ' -> ', repr(diff_percent)+'%')
+    print('       median_pipe, median_calc = ', median_pipe, median_calc)
+    print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+    no_nan_err = flout_slt_err[~np.isnan(flout_slt_err)]
+    print('       final pipeline calculated ERR mean = ', np.mean(no_nan_err))
+    if diff_percent >= 50:
+        print('   Maybe an issue of outliers, check median values and other stats where not 1.0: ')
+        print('       np.mean(pipeflat), np.mean(calcflat), difference')
+        kk1 = pipeflat[pipeflat!=1.0]
+        kk1 = kk1[~np.isnan(kk1)]
+        kk2 = calcflat[calcflat!=1.0]
+        kk2 = kk2[~np.isnan(kk2)]
+        if np.size(kk2) == 0:
+            print('       Oh no! All values for calcflat are either 1.0 or NaN')
+        print('       ', np.mean(kk1), np.mean(kk2), np.mean(kk1)-np.mean(kk2))
+        print('       np.median(pipeflat), np.median(calcflat), difference')
+        print('       ', np.median(kk1), np.median(kk2), np.median(kk1)-np.median(kk2))
+
+    if show_plts or save_plts:
+        font = {'weight' : 'normal',
+                'size'   : 10}
+        matplotlib.rc('font', **font)
+        alpha = 0.6
+        # pipe flat and histogram
+        fig, axs = plt.subplots(3, 2, figsize=(14, 8))
+        fig.suptitle(slt_nme +'_flats_comparison')
+        str_x_stddev = "stddev = {:0.3e}".format(np.std(pipeflat))
+        stddev_x, stddev_y = 0.75, 0.62
+        vminmax = get_vminmax(pipeflat)
+        im = axs[0, 0].imshow(pipeflat, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
+        plt.colorbar(im, ax=axs[0, 0])
+        axs[0, 0].set_title('Pipeline flat')
+        axs[0, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[0, 0].minorticks_on()
+        axs[0, 1].hist(pipeflat.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        axs[0, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[0, 1].transAxes)
+        axs[0, 1].axvline(mean_pipe, label="mean = %0.3e" % (mean_pipe), color="g")
+        axs[0, 1].axvline(median_pipe, label="median = %0.3e" % (median_pipe), linestyle="-.", color="b")
+        axs[0, 1].set_title('Pipeline flat histogram')
+        axs[0, 1].legend()
+        axs[0, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[0, 1].minorticks_on()
+        # validation flat and histogram
+        str_x_stddev = "stddev = {:0.3e}".format(np.std(calcflat))
+        vminmax = get_vminmax(calcflat)
+        im = axs[1, 0].imshow(calcflat, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
+        plt.colorbar(im, ax=axs[1, 0])
+        axs[1, 0].set_title('Validation flat')
+        axs[1, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[1, 0].minorticks_on()
+        axs[1, 1].hist(calcflat.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        axs[1, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[1, 1].transAxes)
+        axs[1, 1].axvline(mean_calc, label="mean = %0.3e" % (mean_calc), color="g")
+        axs[1, 1].axvline(median_calc, label="median = %0.3e" % (median_calc), linestyle="-.", color="b")
+        axs[1, 1].set_title('Validation flat histogram')
+        axs[1, 1].legend()
+        axs[1, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[1, 1].minorticks_on()
+        # difference image and its histogram
+        flat_diff = pipeflat - calcflat
+        str_x_stddev = "stddev = {:0.3e}".format(np.std(flat_diff))
+        mean_diff, median_diff = np.mean(flat_diff), np.median(flat_diff)
+        vminmax = get_vminmax(flat_diff)
+        im = axs[2, 0].imshow(flat_diff, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
+        plt.colorbar(im, ax=axs[2, 0])
+        axs[2, 0].set_title('Difference = Pipeline flat - Validation flat')
+        axs[2, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[2, 0].minorticks_on()
+        axs[2, 1].hist(flat_diff.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        axs[2, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[2, 1].transAxes)
+        axs[2, 1].axvline(mean_diff, label="mean = %0.3e" % (mean_diff), color="g")
+        axs[2, 1].axvline(median_diff, label="median = %0.3e" % (median_diff), linestyle="-.", color="b")
+        axs[2, 1].set_title('Validation flat histogram')
+        axs[2, 1].legend()
+        axs[2, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[2, 1].minorticks_on()
+        # set the axis labels
+        for i, ax in enumerate(axs.flat):
+            if i % 2 == 0:   # left side plots
+                ax.set(xlabel='x-pixels', ylabel='y-pixels')
+            else:   # histograms
+                ax.set(xlabel='Flux', ylabel='N')
+        # increase spacing between plots
+        fig.tight_layout()
+        # show and/or save plots
+        if save_plts:
+            flat_field_outfile = flat_field_outfile.split(sep='flat_field')[0]
+            plt_name = flat_field_outfile + slt_nme+'_flats_comparison.png'
+            plt.savefig(plt_name)
+        if show_plts:
+            plt.show()
+
+        # make plots to visualize final result
+        fig, axs = plt.subplots(4, 2, figsize=(14, 10))
+        fig.suptitle(slt_nme+'_flat_corr_comparison')
+        #stddev_x, stddev_y = 0.08, 0.58
+        stddev_x, stddev_y = 0.75, 0.58
+        # sci uncorrected data
+        str_x_stddev = "stddev = {:0.3e}".format(np.std(flout_slt_sci))
+        mean, median = np.mean(flout_slt_sci), np.median(flout_slt_sci)
+        vminmax = get_vminmax(flout_slt_sci)
+        im = axs[0, 0].imshow(flout_slt_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
+        plt.colorbar(im, ax=axs[0, 0])
+        axs[0, 0].set_title('SCI uncorrected data')
+        axs[0, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[0, 0].minorticks_on()
+        axs[0, 1].hist(flout_slt_sci.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        axs[0, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[0, 1].transAxes)
+        axs[0, 1].axvline(mean, label="mean = %0.3e" % (mean), color="g")
+        axs[0, 1].axvline(median, label="median = %0.3e" % (median), linestyle="-.", color="b")
+        axs[0, 1].set_title('Histogram SCI uncorrected')
+        axs[0, 1].legend()
+        axs[0, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[0, 1].minorticks_on()
+        # pipeline sci corrected data
+        str_x_stddev = "stddev = {:0.3e}".format(np.std(pipe_corr_sci))
+        mean, median = np.mean(pipe_corr_sci), np.median(pipe_corr_sci)
+        vminmax = get_vminmax(pipe_corr_sci)
+        #pipe_corr_sci[np.where(pipe_corr_sci == 0.0)] = np.nan
+        im = axs[1, 0].imshow(pipe_corr_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
+        plt.colorbar(im, ax=axs[1, 0])
+        axs[1, 0].set_title('SCI_corr by pipeline')
+        axs[1, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[1, 0].minorticks_on()
+        axs[1, 1].hist(pipe_corr_sci.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        axs[1, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[1, 1].transAxes)
+        axs[1, 1].axvline(mean, label="mean = %0.3e" % (mean), color="g")
+        axs[1, 1].axvline(median, label="median = %0.3e" % (median), linestyle="-.", color="b")
+        axs[1, 1].set_title('Histogram SCI_corr by pipeline')
+        axs[1, 1].legend()
+        axs[1, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[1, 1].minorticks_on()
+        # validation sci corrected data
+        str_x_stddev = "stddev = {:0.3e}".format(np.std(calc_corr_sci))
+        mean, median = np.mean(calc_corr_sci), np.median(calc_corr_sci)
+        vminmax = get_vminmax(calc_corr_sci)
+        im = axs[2, 0].imshow(calc_corr_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
+        plt.colorbar(im, ax=axs[2, 0])
+        axs[2, 0].set_title('SCI_corr by validation')
+        axs[2, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[2, 0].minorticks_on()
+        axs[2, 1].hist(calc_corr_sci.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        axs[2, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[2, 1].transAxes)
+        axs[2, 1].axvline(mean, label="mean = %0.3e" % (mean), color="g")
+        axs[2, 1].axvline(median, label="median = %0.3e" % (median), linestyle="-.", color="b")
+        axs[2, 1].set_title('Histogram SCI_corr by validation')
+        axs[2, 1].legend()
+        axs[2, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[2, 1].minorticks_on()
+        # difference sci corrected data
+        vminmax = get_vminmax(diff_corr_sci)
+        im = axs[3, 0].imshow(diff_corr_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
+        plt.colorbar(im, ax=axs[3, 0])
+        axs[3, 0].set_title('SCI_corr difference = Pipeline - Validation')
+        axs[3, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[3, 0].minorticks_on()
+        axs[3, 1].hist(diff_corr_sci.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
+        axs[3, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[3, 1].transAxes)
+        diff_corr_sci = diff_corr_sci[((np.isfinite(diff_corr_sci)) & (diff_corr_sci != 0.0))]
+        str_x_stddev = "stddev = {:0.3e}".format(np.std(diff_corr_sci))
+        mean, median = np.mean(diff_corr_sci), np.median(diff_corr_sci)
+        axs[3, 1].axvline(mean, label="mean = %0.3e" % (mean), color="g")
+        axs[3, 1].axvline(median, label="median = %0.3e" % (median), linestyle="-.", color="b")
+        axs[3, 1].set_title('Histogram SCI_corr difference = Pipeline - Validation')
+        axs[3, 1].legend()
+        axs[3, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+        axs[3, 1].minorticks_on()
+        # set the axis labels
+        for i, ax in enumerate(axs.flat):
+            if i % 2 == 0:   # left side plots
+                ax.set(xlabel='x-pixels', ylabel='y-pixels')
+            else:   # histograms
+                ax.set(xlabel='Flux', ylabel='N')
+        # increase spacing between plots
+        fig.tight_layout()
+        # show and/or save plots
+        if save_plts:
+            plt_name = flat_field_outfile + slt_nme + '_flat_corr_comparison.png'
+            plt.savefig(plt_name)
+        if show_plts:
+            plt.show()
         else:
-            calc_ext = ext
-            if ext > 1:
-                calc_ext = ext_err+1
-            ext_err = calc_ext+1
-            fullframe_calc_flat = calcflat_hdu[calc_ext].data
-            fullframe_flat_err = calcflat_hdu[ext_err].data
+            plt.close()
 
-        # Ignore all nan and inf values
-        flout_hdul_sci = np.ma.masked_invalid(flout_hdul_sci)
-        flout_hdul_err = np.ma.masked_invalid(flout_hdul_err)
-        input_sci = np.ma.masked_invalid(input_sci)
-        input_var_poisson = np.ma.masked_invalid(input_var_poisson)
-        input_var_rnoise = np.ma.masked_invalid(input_var_rnoise)
-        pipeflat = np.ma.masked_invalid(pipeflat)
-        pipeflat_err = np.ma.masked_invalid(pipeflat_err)
-        fullframe_calc_flat = np.ma.masked_invalid(fullframe_calc_flat)
-        fullframe_flat_err = np.ma.masked_invalid(fullframe_flat_err)
 
-        # Total error calculation according to equation taken from:
-        # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
-
-        # Calculate flat correction of SCI data
-        pipe_corr_sci = input_sci / pipeflat
-        calc_corr_sci = input_sci / fullframe_calc_flat
-        diff_corr_sci = pipe_corr_sci - calc_corr_sci
-        diff_corr_sci_good_idx = np.where(diff_corr_sci <= 1.0)
-        mean_pipe, mean_calc = np.mean(pipe_corr_sci), np.mean(calc_corr_sci)
-        median_pipe, median_calc = np.median(pipe_corr_sci), np.median(calc_corr_sci)
-        diff_percent = '0%'
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = repr(int(abs(1.0 - mean_calc/mean_pipe) * 100.0))+'%'
-        print('\n * Mean difference of flat corrected SCI values: ',
-              np.mean(diff_corr_sci[diff_corr_sci_good_idx]), ' -> ', diff_percent)
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        print('       final pipeline calculated SCI mean = ', np.mean(flout_hdul_sci))
-        # Calculate flat correction of VAR_POISSON data
-        pipe_corr_var_poisson_sci = input_var_poisson / pipeflat**2
-        calc_corr_var_poisson_sci = input_var_poisson / fullframe_calc_flat**2
-        diff_var_poisson_sci = pipe_corr_var_poisson_sci - calc_corr_var_poisson_sci
-        diff_var_poisson_sci_good_idx = np.where(diff_var_poisson_sci <= 1.0)
-        mean_pipe, mean_calc = np.mean(pipe_corr_var_poisson_sci), np.mean(calc_corr_var_poisson_sci)
-        median_pipe, median_calc = np.median(pipe_corr_var_poisson_sci), np.median(calc_corr_var_poisson_sci)
-        diff_percent = '0%'
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = repr(int(abs(1.0 - mean_calc/mean_pipe) * 100.0))+'%'
-        print('\n * Mean difference of flat corrected VAR_POISSON values: ',
-              np.mean(diff_var_poisson_sci[diff_var_poisson_sci_good_idx]),  ' -> ', diff_percent)
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        # Calculate flat correction of VAR_RNOISE data
-        pipe_corr_var_rnoise_sci = input_var_rnoise / pipeflat**2
-        calc_corr_var_rnoise_sci = input_var_rnoise / fullframe_calc_flat**2
-        diff_var_rnoise_sci = pipe_corr_var_rnoise_sci - calc_corr_var_rnoise_sci
-        diff_var_rnoise_sci_good_idx = np.where(diff_var_rnoise_sci <= 1.0)
-        mean_pipe, mean_calc = np.mean(pipe_corr_var_rnoise_sci), np.mean(calc_corr_var_rnoise_sci)
-        median_pipe, median_calc = np.median(pipe_corr_var_rnoise_sci), np.median(calc_corr_var_rnoise_sci)
-        diff_percent = '0%'
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = repr(int(abs(1.0 - mean_calc/mean_pipe) * 100.0))+'%'
-        print('\n * Mean difference of flat corrected VAR_RNOISE values: ',
-              np.mean(diff_var_rnoise_sci[diff_var_rnoise_sci_good_idx]),  ' -> ', diff_percent)
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        print('       median_pipe, median_calc = ', median_pipe, median_calc)
-        # Calculate flat correction of VAR_FLAT data
-        pipe_corr_var_flat_sci = input_sci**2 / pipeflat**2 * pipeflat_err**2
-        calc_corr_var_flat_sci = input_sci**2 / fullframe_calc_flat**2 * fullframe_flat_err**2
-        diff_var_flat_sci = pipe_corr_var_flat_sci - calc_corr_var_flat_sci
-        diff_var_flat_sci_good_idx = np.where(diff_var_flat_sci <= 1.0)
-        mean_pipe, mean_calc = np.mean(pipe_corr_var_flat_sci), np.mean(calc_corr_var_flat_sci)
-        median_pipe, median_calc = np.median(pipe_corr_var_flat_sci), np.median(calc_corr_var_flat_sci)
-        diff_percent = 0
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = int(abs(1.0 - mean_calc/mean_pipe) * 100.0)
-        print('\n * Mean difference of flat corrected VAR_FLAT values: ',
-              np.mean(diff_var_flat_sci[diff_var_flat_sci_good_idx]), ' -> ', repr(diff_percent)+'%')
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        print('       median_pipe, median_calc = ', median_pipe, median_calc)
-        if diff_percent >= 50:
-            print('   Maybe an issue of outliers, check median values and other stats: ')
-            print('       np.mean(input_sci**2/pipeflat**2), np.mean(input_sci**2/fullframe_calc_flat**2)')
-            print('       ', np.mean(input_sci**2/pipeflat**2), np.mean(input_sci**2/fullframe_calc_flat**2))
-            print('       np.median(input_sci**2/pipeflat**2), np.median(input_sci**2/fullframe_calc_flat**2)')
-            print('       ', np.median(input_sci**2/pipeflat**2), np.median(input_sci**2/fullframe_calc_flat**2))
-            print('     Means and medians where arrays are not 0.0: ')
-            print('       np.mean(pipeflat_err**2), np.mean(fullframe_flat_err**2), difference')
-            print('       ', np.mean(pipeflat_err[pipeflat_err!=0.0]**2),
-                  np.mean(fullframe_flat_err[fullframe_flat_err!=0.0]**2),
-                  np.mean(pipeflat_err[pipeflat_err!=0.0]**2)-np.mean(fullframe_flat_err[fullframe_flat_err!=0.0]**2))
-            print('       np.median(pipeflat_err**2), np.median(fullframe_flat_err**2), difference')
-            print('       ', np.median(pipeflat_err[pipeflat_err!=0.0]**2),
-                  np.median(fullframe_flat_err[fullframe_flat_err!=0.0]**2),
-                  np.median(pipeflat_err[pipeflat_err!=0.0]**2)-np.median(fullframe_flat_err[fullframe_flat_err!=0.0]**2))
-        # Total error calculation
-        pipe_err_sci = np.sqrt( pipe_corr_var_poisson_sci + pipe_corr_var_rnoise_sci + pipe_corr_var_flat_sci)
-        calc_err_sci = np.sqrt( calc_corr_var_poisson_sci + calc_corr_var_rnoise_sci + calc_corr_var_flat_sci)
-        diff_tot_err = pipe_err_sci - calc_err_sci
-        diff_tot_err_good_idx = np.where(diff_tot_err <= 1.0)
-        mean_pipe, mean_calc = np.mean(pipe_err_sci), np.mean(calc_err_sci)
-        median_pipe, median_calc = np.median(pipe_err_sci), np.median(calc_err_sci)
-        diff_percent = 0
-        if np.isfinite(1.0 - mean_calc/mean_pipe):
-            diff_percent = int(abs(1.0 - mean_calc/mean_pipe) * 100.0)
-        print('\n * Mean difference of total error calculation: ',
-              np.mean(diff_tot_err[diff_tot_err_good_idx]),  ' -> ', repr(diff_percent)+'%')
-        print('       median_pipe, median_calc = ', median_pipe, median_calc)
-        print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-        print('       final pipeline calculated ERR mean = ', np.mean(flout_hdul_err))
-        if diff_percent >= 50:
-            print('   Maybe an issue of outliers, check median values and other stats where not 1.0: ')
-            print('       np.mean(pipeflat), np.mean(fullframe_calc_flat), difference')
-            print('       ', np.mean(pipeflat[pipeflat!=1.0]),
-                  np.mean(fullframe_calc_flat[fullframe_calc_flat!=1.0]),
-                  np.mean(pipeflat[pipeflat!=1.0])-np.mean(fullframe_calc_flat[fullframe_calc_flat!=1.0]))
-            print('       np.median(pipeflat), np.median(fullframe_calc_flat), difference')
-            print('       ', np.median(pipeflat[pipeflat!=1.0]),
-                  np.median(fullframe_calc_flat[fullframe_calc_flat!=1.0]),
-                  np.median(pipeflat[pipeflat!=1.0])-np.median(fullframe_calc_flat[fullframe_calc_flat!=1.0]))
-
-        if show_plts or save_plts:
-            font = {'weight' : 'normal',
-                    'size'   : 10}
-            matplotlib.rc('font', **font)
-            alpha = 0.6
-            # pipe flat and histogram
-            fig, axs = plt.subplots(3, 2, figsize=(14, 8))
-            fig.suptitle('flats_comparison')
-            if len(sci_ext_name_list) > 1:
-                fig.suptitle(sci_ext_name+'_flats_comparison')
-            str_x_stddev = "stddev = {:0.3e}".format(np.std(pipeflat))
-            stddev_x, stddev_y = 0.75, 0.62
-            vminmax = get_vminmax(pipeflat)
-            im = axs[0, 0].imshow(pipeflat, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
-            plt.colorbar(im, ax=axs[0, 0])
-            axs[0, 0].set_title('Pipeline flat')
-            axs[0, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[0, 0].minorticks_on()
-            axs[0, 1].hist(pipeflat.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-            axs[0, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[0, 1].transAxes)
-            axs[0, 1].axvline(mean_pipe, label="mean = %0.3e" % (mean_pipe), color="g")
-            axs[0, 1].axvline(median_pipe, label="median = %0.3e" % (median_pipe), linestyle="-.", color="b")
-            axs[0, 1].set_title('Pipeline flat histogram')
-            axs[0, 1].legend()
-            axs[0, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[0, 1].minorticks_on()
-            # validation flat and histogram
-            str_x_stddev = "stddev = {:0.3e}".format(np.std(fullframe_calc_flat))
-            vminmax = get_vminmax(fullframe_calc_flat)
-            im = axs[1, 0].imshow(fullframe_calc_flat, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
-            plt.colorbar(im, ax=axs[1, 0])
-            axs[1, 0].set_title('Validation flat')
-            axs[1, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[1, 0].minorticks_on()
-            axs[1, 1].hist(fullframe_calc_flat.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-            axs[1, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[1, 1].transAxes)
-            axs[1, 1].axvline(mean_calc, label="mean = %0.3e" % (mean_calc), color="g")
-            axs[1, 1].axvline(median_calc, label="median = %0.3e" % (median_calc), linestyle="-.", color="b")
-            axs[1, 1].set_title('Validation flat histogram')
-            axs[1, 1].legend()
-            axs[1, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[1, 1].minorticks_on()
-            # difference image and its histogram
-            flat_diff = pipeflat - fullframe_calc_flat
-            str_x_stddev = "stddev = {:0.3e}".format(np.std(flat_diff))
-            mean_diff, median_diff = np.mean(flat_diff), np.median(flat_diff)
-            vminmax = get_vminmax(flat_diff)
-            im = axs[2, 0].imshow(flat_diff, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
-            plt.colorbar(im, ax=axs[2, 0])
-            axs[2, 0].set_title('Difference = Pipeline flat - Validation flat')
-            axs[2, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[2, 0].minorticks_on()
-            axs[2, 1].hist(flat_diff.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-            axs[2, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[2, 1].transAxes)
-            axs[2, 1].axvline(mean_diff, label="mean = %0.3e" % (mean_diff), color="g")
-            axs[2, 1].axvline(median_diff, label="median = %0.3e" % (median_diff), linestyle="-.", color="b")
-            axs[2, 1].set_title('Validation flat histogram')
-            axs[2, 1].legend()
-            axs[2, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[2, 1].minorticks_on()
-            # set the axis labels
-            for i, ax in enumerate(axs.flat):
-                if i % 2 == 0:   # left side plots
-                    ax.set(xlabel='x-pixels', ylabel='y-pixels')
-                else:   # histograms
-                    ax.set(xlabel='Flux', ylabel='N')
-            # increase spacing between plots
-            fig.tight_layout()
-            # show and/or save plots
-            if save_plts:
-                plt_name = flat_field_outfile.replace('flat_field.fits', 'flats_comparison.png')
-                if len(sci_ext_name_list) > 1:
-                    plt_name = flat_field_outfile.replace('flat_field.fits', sci_ext_name+'_flats_comparison.png')
-                plt.savefig(plt_name)
-            if show_plts:
-                plt.show()
-
-            # make plots to visualize final result
-            fig, axs = plt.subplots(4, 2, figsize=(14, 10))
-            fig.suptitle('flat_corr_comparison')
-            if len(sci_ext_name_list) > 1:
-                fig.suptitle(sci_ext_name+'_flat_corr_comparison')
-            #stddev_x, stddev_y = 0.08, 0.58
-            stddev_x, stddev_y = 0.75, 0.58
-            # sci uncorrected data
-            str_x_stddev = "stddev = {:0.3e}".format(np.std(flout_hdul_sci))
-            mean, median = np.mean(flout_hdul_sci), np.median(flout_hdul_sci)
-            vminmax = get_vminmax(flout_hdul_sci)
-            im = axs[0, 0].imshow(flout_hdul_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
-            plt.colorbar(im, ax=axs[0, 0])
-            axs[0, 0].set_title('SCI uncorrected data')
-            axs[0, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[0, 0].minorticks_on()
-            axs[0, 1].hist(flout_hdul_sci.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-            axs[0, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[0, 1].transAxes)
-            axs[0, 1].axvline(mean, label="mean = %0.3e" % (mean), color="g")
-            axs[0, 1].axvline(median, label="median = %0.3e" % (median), linestyle="-.", color="b")
-            axs[0, 1].set_title('Histogram SCI uncorrected')
-            axs[0, 1].legend()
-            axs[0, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[0, 1].minorticks_on()
-            # pipeline sci corrected data
-            str_x_stddev = "stddev = {:0.3e}".format(np.std(pipe_corr_sci))
-            mean, median = np.mean(pipe_corr_sci), np.median(pipe_corr_sci)
-            vminmax = get_vminmax(pipe_corr_sci)
-            #pipe_corr_sci[np.where(pipe_corr_sci == 0.0)] = np.nan
-            im = axs[1, 0].imshow(pipe_corr_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
-            plt.colorbar(im, ax=axs[1, 0])
-            axs[1, 0].set_title('SCI_corr by pipeline')
-            axs[1, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[1, 0].minorticks_on()
-            axs[1, 1].hist(pipe_corr_sci.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-            axs[1, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[1, 1].transAxes)
-            axs[1, 1].axvline(mean, label="mean = %0.3e" % (mean), color="g")
-            axs[1, 1].axvline(median, label="median = %0.3e" % (median), linestyle="-.", color="b")
-            axs[1, 1].set_title('Histogram SCI_corr by pipeline')
-            axs[1, 1].legend()
-            axs[1, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[1, 1].minorticks_on()
-            # validation sci corrected data
-            str_x_stddev = "stddev = {:0.3e}".format(np.std(calc_corr_sci))
-            mean, median = np.mean(calc_corr_sci), np.median(calc_corr_sci)
-            vminmax = get_vminmax(calc_corr_sci)
-            im = axs[2, 0].imshow(calc_corr_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
-            plt.colorbar(im, ax=axs[2, 0])
-            axs[2, 0].set_title('SCI_corr by validation')
-            axs[2, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[2, 0].minorticks_on()
-            axs[2, 1].hist(calc_corr_sci.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-            axs[2, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[2, 1].transAxes)
-            axs[2, 1].axvline(mean, label="mean = %0.3e" % (mean), color="g")
-            axs[2, 1].axvline(median, label="median = %0.3e" % (median), linestyle="-.", color="b")
-            axs[2, 1].set_title('Histogram SCI_corr by validation')
-            axs[2, 1].legend()
-            axs[2, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[2, 1].minorticks_on()
-            # difference sci corrected data
-            str_x_stddev = "stddev = {:0.3e}".format(np.std(diff_corr_sci))
-            mean, median = np.mean(diff_corr_sci), np.median(diff_corr_sci)
-            vminmax = get_vminmax(diff_corr_sci)
-            im = axs[3, 0].imshow(diff_corr_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
-            plt.colorbar(im, ax=axs[3, 0])
-            axs[3, 0].set_title('SCI_corr difference = Pipeline - Validation')
-            axs[3, 0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[3, 0].minorticks_on()
-            axs[3, 1].hist(diff_corr_sci.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
-            axs[3, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[3, 1].transAxes)
-            axs[3, 1].axvline(mean, label="mean = %0.3e" % (mean), color="g")
-            axs[3, 1].axvline(median, label="median = %0.3e" % (median), linestyle="-.", color="b")
-            axs[3, 1].set_title('Histogram SCI_corr difference = Pipeline - Validation')
-            axs[3, 1].legend()
-            axs[3, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-            axs[3, 1].minorticks_on()
-            # set the axis labels
-            for i, ax in enumerate(axs.flat):
-                if i % 2 == 0:   # left side plots
-                    ax.set(xlabel='x-pixels', ylabel='y-pixels')
-                else:   # histograms
-                    ax.set(xlabel='Flux', ylabel='N')
-            # increase spacing between plots
-            fig.tight_layout()
-            # show and/or save plots
-            if save_plts:
-                plt_name = flat_field_outfile.replace('flat_field.fits', 'flat_corr_comparison.png')
-                if len(sci_ext_name_list) > 1:
-                    plt_name = flat_field_outfile.replace('flat_field.fits', sci_ext_name+'_flat_corr_comparison.png')
-                plt.savefig(plt_name)
-            if show_plts:
-                plt.show()
-    flout_hdul.close()
-    input_hdul.close()
-    pipeflat_hdu.close()
-    calcflat_hdu.close()
+def find_slit(bench_nme, mdl):
+    """
+    Function to find the slit/slice/slitlet in the given model
+    Args:
+        bench_nme: string, name of the slit
+        mdl: datamodel, input model to search
+    Returns:
+        slt: model slit
+    """
+    slt = None
+    try:
+        for slt in mdl.slits:
+            if slt.name == bench_nme:
+                return slt
+    except AttributeError:
+        print('The variable given as model does not have the attribute slits.')
+    if slt is None:
+        print('Could not find the slit {} in the given model.'.format(bench_nme))
+    return None
 
 
 def interp_close_pts(wav_pt, wav_arr, dat_arr, debug):
@@ -797,11 +779,11 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None, debug=Fal
                     log_msgs.append(rawdatroot_msg)
                     if rawdatroot.replace(".fits", "") in root_filename:
                         msg = " * File name matches raw file used for create_data."
-                        print(msg)
+                        #print(msg)
                         log_msgs.append(msg)
                     else:
                         msg = " * WARNING: Raw data file name used for create_data does not match esa root file name."
-                        print(msg)
+                        #print(msg)
                         log_msgs.append(msg)
 
     return esafile, log_msgs
@@ -987,12 +969,12 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
     stats_print_strings.append(threshold3)
     stats_print_strings.append(threshold5)
     if int(round(percentage_results[1], 0)) > 10:
-        msg = '\n *** WARNING: More than 10% of pixels have a median value greater than 3xthreshold!\n'
-        print(msg)
+        msg = ' *** WARNING: More than 10% of pixels have a median value greater than 3xthreshold!'
+        #print(msg)
         stats_print_strings.append(msg)
     if int(round(percentage_results[2], 0)) > 10:
-        msg = '\n *** WARNING: More than 10% of pixels have a median value greater than 5xthreshold!\n'
-        print(msg)
+        msg = ' *** WARNING: More than 10% of pixels have a median value greater than 5xthreshold!'
+        #print(msg)
         stats_print_strings.append(msg)
     x_stats = [arrX_mean, arrX_median, arrX_stdev]
     if return_percentages:

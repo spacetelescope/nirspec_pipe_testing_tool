@@ -1,16 +1,16 @@
 """
-This script creates the PTT input configuration file.
+This script creates the NPTT input configuration file.
 
 Example usage:
     The code works from the terminal or called as a module.
 
     Terminal
-        To create a the PTT configuration file go to the output directory, then type:
-        $ nptt_mk_pttconfig_file output_directory input_file mode_used raw_data_root_file
+        To create a the NPTT configuration file go to the output directory, then type:
+        $ nptt_mk_npttconfig_file output_directory input_file mode_used raw_data_root_file
 
-        This will create a PTT config file in the output directory with many of the default values. Please open the
+        This will create a NPTT config file in the output directory with many of the default values. Please open the
         config file and make sure that all variables are properly set. The variables are:
-        output_directory = path where PTT will place all output from the pipeline and tests
+        output_directory = path where NPTT will place all output from the pipeline and tests
         input_file = basename of the count rate file
         mode_used = FS, MOS, IFU, BOTS, dark, image, confirm, taconfirm, wata, msata, focus, mimf
         raw_data_root_file = basename of the file that generated the count rate file
@@ -27,10 +27,10 @@ Example usage:
         mode_used = string
         raw_data_root_file = string, basename of the data where the count rate file was generated from
 
-        # create the PTT config file with the minimum information and all default values
-        nptt.utils.mk_pttconfig_file.mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file)
+        # create the NPTT config file with the minimum information and all default values
+        nptt.utils.mk_pnttconfig_file.mk_nptt_cfg(output_directory, input_file, mode_used, raw_data_root_file)
 
-        # OR create the PTT config file with specified variables
+        # OR create the NPTT config file with specified variables
 
         # set the optional variables
         data_directory = string
@@ -47,15 +47,15 @@ Example usage:
         extract_2d_threshold_diff = float, acceptable difference between the comparison and the pipeline file
         flattest_threshold_diff = float, acceptable difference between the comparison and the pipeline file
 
-        # create the PTT config file
-        mk_pttconfig_file.mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file,
-                                     data_directory=data_directory, local_pipe_cfg_path=local_pipe_cfg_path,
-                                     comparison_file_path=comparison_file_path, msa_conf_name=msa_conf_name,
-                                     dflat_path=dflat_path, sflat_path=sflat_path, fflat_path=fflat_path,
-                                     run_calwebb_spec2=run_calwebb_spec2, wcs_threshold_diff=wcs_threshold_diff,
-                                     save_plots=save_plots, change_filter_opaque=change_filter_opaque,
-                                     extract_2d_threshold_diff=extract_2d_threshold_diff,
-                                     flattest_threshold_diff=flattest_threshold_diff)
+        # create the NPTT config file
+        mk_npttconfig_file.mk_nptt_cfg(output_directory, input_file, mode_used, raw_data_root_file,
+                                       data_directory=data_directory,
+                                       comparison_file_path=comparison_file_path, msa_conf_name=msa_conf_name,
+                                       dflat_path=dflat_path, sflat_path=sflat_path, fflat_path=fflat_path,
+                                       run_calwebb_spec2=run_calwebb_spec2, wcs_threshold_diff=wcs_threshold_diff,
+                                       save_plots=save_plots, change_filter_opaque=change_filter_opaque,
+                                       extract_2d_threshold_diff=extract_2d_threshold_diff,
+                                       flattest_threshold_diff=flattest_threshold_diff)
 
 
 """
@@ -67,7 +67,7 @@ import argparse
 from astropy.io import fits
 
 
-def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
+def write_nptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
                   run_pytest, spec3_args, additional_arguments):
 
     config = configparser.ConfigParser(allow_no_value=True)
@@ -96,37 +96,42 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     config.set("benchmark_intermediary_products", "fflat_path", fflat_path)
 
     config.add_section("run_calwebb_spec2_in_full")
-    run_calwebb_spec2, calwebb_spec2_cfg = run_calwebb_spec2_in_full
     config.set("run_calwebb_spec2_in_full", "# options for run_calwebb_spec2: True (will run in full), "
                                             "False (run individual steps), skip (go to spec3)", None)
-    config.set("run_calwebb_spec2_in_full", "run_calwebb_spec2", run_calwebb_spec2)
-    config.set("run_calwebb_spec2_in_full", "calwebb_spec2_cfg", calwebb_spec2_cfg)
+    config.set("run_calwebb_spec2_in_full", "run_calwebb_spec2", run_calwebb_spec2_in_full)
 
     config.add_section("calwebb_spec3")
     config.set("calwebb_spec3", "# options for run_calwebb_spec3: True (will run in full), "
                                 "False (run individual steps), skip (only do spec2)", None)
     config.set("calwebb_spec3", "run_calwebb_spec3", spec3_args[0])
     config.set("calwebb_spec3", "s3_input_file", spec3_args[1])
-    config.set("calwebb_spec3", "calwebb_spec3_cfg", spec3_args[2])
 
-    config.add_section("run_pipe_steps")
-    config.set("run_pipe_steps", "# Spec2 steps", None)
-    config.set("run_pipe_steps", "assign_wcs", run_pipe_steps[0])
-    config.set("run_pipe_steps", "bkg_subtract", run_pipe_steps[1])
-    config.set("run_pipe_steps", "imprint_subtract", run_pipe_steps[2])
-    config.set("run_pipe_steps", "msa_flagging", run_pipe_steps[3])
-    config.set("run_pipe_steps", "extract_2d", run_pipe_steps[4])
-    config.set("run_pipe_steps", "srctype", run_pipe_steps[5])
-    config.set("run_pipe_steps", "wavecorr", run_pipe_steps[6])
-    config.set("run_pipe_steps", "flat_field", run_pipe_steps[7])
-    config.set("run_pipe_steps", "pathloss", run_pipe_steps[8])
-    config.set("run_pipe_steps", "barshadow", run_pipe_steps[9])
-    config.set("run_pipe_steps", "photom", run_pipe_steps[10])
-    config.set("run_pipe_steps", "resample_spec", run_pipe_steps[11])
-    config.set("run_pipe_steps", "cube_build", run_pipe_steps[12])
-    config.set("run_pipe_steps", "extract_1d", run_pipe_steps[13])
-    config.set("run_pipe_steps", "# Spec3 steps", None)
-    config.set("run_pipe_steps", "master_background", run_pipe_steps[14])
+    config.add_section("run_spec2_steps")
+    config.set("run_spec2_steps", "# Spec2 steps", None)
+    config.set("run_spec2_steps", "assign_wcs", run_pipe_steps[0])
+    config.set("run_spec2_steps", "bkg_subtract", run_pipe_steps[1])
+    config.set("run_spec2_steps", "imprint_subtract", run_pipe_steps[2])
+    config.set("run_spec2_steps", "msa_flagging", run_pipe_steps[3])
+    config.set("run_spec2_steps", "extract_2d", run_pipe_steps[4])
+    config.set("run_spec2_steps", "srctype", run_pipe_steps[5])
+    config.set("run_spec2_steps", "wavecorr", run_pipe_steps[6])
+    config.set("run_spec2_steps", "flat_field", run_pipe_steps[7])
+    config.set("run_spec2_steps", "pathloss", run_pipe_steps[8])
+    config.set("run_spec2_steps", "barshadow", run_pipe_steps[9])
+    config.set("run_spec2_steps", "photom", run_pipe_steps[10])
+    config.set("run_spec2_steps", "resample_spec", run_pipe_steps[11])
+    config.set("run_spec2_steps", "cube_build", run_pipe_steps[12])
+    config.set("run_spec2_steps", "extract_1d", run_pipe_steps[13])
+
+    config.add_section("run_spec3_steps")
+    config.set("run_spec3_steps", "# Spec3 steps", None)
+    config.set("run_spec3_steps", "assign_mtwcs", run_pipe_steps[14])
+    config.set("run_spec3_steps", "master_background", run_pipe_steps[15])
+    config.set("run_spec3_steps", "exp_to_source", run_pipe_steps[16])
+    config.set("run_spec3_steps", "outlier_detection", run_pipe_steps[17])
+    config.set("run_spec3_steps", "resample_spec", run_pipe_steps[18])
+    config.set("run_spec3_steps", "cube_build", run_pipe_steps[19])
+    config.set("run_spec3_steps", "extract_1d", run_pipe_steps[20])
 
     config.add_section("run_pytest")
     config.set("run_pytest", "# Spec2 tests", None)
@@ -183,12 +188,11 @@ def write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run
     config.set("additional_arguments", "write_barshadow_files", additional_arguments[17])
 
     detector = fits.getval(calwebb_spec2_input_file[5], "DETECTOR")
-    ptt_config = os.path.join(calwebb_spec2_input_file[0], "PTT_config_"+detector+".cfg")
-    config.write(open(ptt_config, "w"))
+    nptt_config = os.path.join(calwebb_spec2_input_file[0], "NPTT_config_"+detector+".cfg")
+    config.write(open(nptt_config, "w"))
 
 
-def set_ptt_immutable_paths():
-    calwebb_spec2_cfg = os.path.realpath(__file__).replace("mk_pttconfig_file.py", "data/calwebb_spec2.cfg")
+def set_nptt_immutable_paths():
     wit4_path = os.environ.get('WIT4_PATH')
     if wit4_path is None:
         print("(msa_flagging_testing): The environment variable WIT4_PATH is not defined. To set it, follow the "
@@ -196,7 +200,7 @@ def set_ptt_immutable_paths():
               "                        https://github.com/spacetelescope/nirspec_pipe_testing_tool")
     test_data_suite = "nirspec_vault/prelaunch_data/testing_sets/b7.1_pipeline_testing/test_data_suite/"
     esa_files_path = os.path.join(wit4_path, test_data_suite)
-    return calwebb_spec2_cfg, esa_files_path
+    return esa_files_path
 
 
 def list2_allstrings_list(a_list):
@@ -207,55 +211,54 @@ def list2_allstrings_list(a_list):
 
 
 def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_root_file, data_directory=None,
-                      local_pipe_cfg_path=None, comparison_file_path=None, msa_conf_name=None, dflat_path=None,
+                      comparison_file_path=None, msa_conf_name=None, dflat_path=None,
                       sflat_path=None, fflat_path=None, msa_flag_opref=None,
                       run_calwebb_spec2=None, wcs_threshold_diff=None,
                       save_plots=True, change_filter_opaque=False,
                       msa_flagging_threshold=None, stellarity=None, extract_2d_threshold_diff=None,
-                      flattest_threshold_diff=None, association=None):
+                      flattest_threshold_diff=None):
     """
-    This function prepares all the input variables for the ConfigParser to write the PTT configuration file.
-    :param output_directory: string
-    :param rate_input_file: string
-    :param mode_used: string
-    :param raw_data_root_file: string, basename of the raw data
-    :param data_directory: string
-    :param local_pipe_cfg_path: string, local path to the pipeline configuration files
-    :param comparison_file_path: string, path and name of the file to compare with for assign_wcs
-    :param msa_conf_name: string, basename of the shutter configuration file
-    :param dflat_path: string, path and name of the D-flat
-    :param sflat_path: string, path and name of the S-flat for this filter/grating configuration
-    :param fflat_path: string, path and name of the F-flat for this filter configuration
-    :param msa_flag_opref: string, path and name of the msa_flagging operability reference file
-    :param run_calwebb_spec2: string, name of the step to run in spec2
-    :param wcs_threshold_diff: float, acceptable difference between the comparison and the pipeline file
-    :param save_plots: boolean
-    :param change_filter_opaque: boolean
-    :param msa_flagging_threshold: string, acceptable percentage of overlap of values found in index_opens and
+    This function prepares all the input variables for the ConfigParser to write the NPTT configuration file.
+    Args:
+        output_directory: string
+        rate_input_file: string
+        mode_used: string
+        raw_data_root_file: string, basename of the raw data
+        data_directory: string
+        comparison_file_path: string, path and name of the file to compare with for assign_wcs and extract_2d
+        msa_conf_name: string, basename of the shutter configuration file
+        dflat_path: string, path and name of the D-flat
+        sflat_path: string, path and name of the S-flat for this filter/grating configuration
+        fflat_path: string, path and name of the F-flat for this filter configuration
+        msa_flag_opref: string, path and name of the msa_flagging operability reference file
+        run_calwebb_spec2: string, name of the step to run in spec2
+        wcs_threshold_diff: float, acceptable difference between the comparison and the pipeline file
+        save_plots: boolean
+        change_filter_opaque: boolean
+        msa_flagging_threshold: string, acceptable percentage of overlap of values found in index_opens and
                                    index_trace for all slits with more than 100 pixels
-    :param stellarity: string, value for new desired stellarity
-    :param extract_2d_threshold_diff: float, acceptable difference between the comparison and the pipeline file
-    :param flattest_threshold_diff: float, acceptable difference between the comparison and the pipeline file
-    :param association: string, values are True, False, or skip. With True or False spec3 tests will be ran
-    :return: variables: list, contains lists of the variables included in each section of the PTT config file
+        stellarity: string, value for new desired stellarity
+        extract_2d_threshold_diff: float, acceptable difference between the comparison and the pipeline file
+        flattest_threshold_diff: float, acceptable difference between the comparison and the pipeline file
+    Returns:
+        variables: list, contains lists of the variables included in each section of the NPTT config file
     """
     if data_directory is None:
         data_directory = output_directory
 
-    if local_pipe_cfg_path is None:
-        local_pipe_cfg_path = 'pipe_source_tree_code'
+    local_pipe_cfg_path = 'pipe_source_tree_code'
 
     if msa_conf_name is None:
-        msa_conf_name = '/path_to_corresponding_MSA_shutter_configuration_file/V9621500100101_short_msa.fits'
+        msa_conf_name = '/path_to_corresponding_MSA_shutter_configuration_file/MSA_shutter_config.fits'
 
     wit4_path = os.environ.get('WIT4_PATH')
     if wit4_path is None:
-        print("(mk_pttconfig_file): The environment variable CRDS_PATH is not defined. To set it, follow the "
+        print("(mk_npttconfig_file): The environment variable CRDS_PATH is not defined. To set it, follow the "
               "instructions at: \n"
               "                     https://github.com/spacetelescope/nirspec_pipe_testing_tool")
         exit()
     if dflat_path is None:
-        dflat_path = os.path.join(wit4_path, 'nirspec/CDP3/04_Flat_field/4.2_D_Flat/nirspec_dflat')
+        dflat_path = os.path.join(wit4_path, 'jwst_nirspec_dflat_0001.fits')
     mode_used = mode_used.upper()
     mu = mode_used
     if 'bots' in mode_used.lower():
@@ -265,13 +268,9 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     elif 'ifu' in mode_used or 'ifs' in mode_used:
         mu = 'IFU'
     if sflat_path is None:
-        sflat = os.path.join(wit4_path, 'nirspec/CDP3/04_Flat_field/4.3_S_Flat/')
-        sflat_path = "".join([sflat, mu, '/nirspec_',
-                              mu, '_sflat'])
+        sflat = os.path.join(wit4_path, 'jwst_nirspec_sflat_0007.fits')
     if fflat_path is None:
-        fflat = os.path.join(wit4_path, 'nirspec/CDP3/04_Flat_field/4.1_F_Flat/')
-        fflat_path = "".join([fflat, mu, '/nirspec_',
-                              mu, '_fflat'])
+        fflat = os.path.join(wit4_path, 'jwst_nirspec_fflat_0004.fits')
 
     truth_assign_wcs = rate_input_file.replace(".fits", "_assign_wcs_truth.fits")
     truth_extract_2d = rate_input_file.replace(".fits", "_extract_2d_truth.fits")
@@ -281,7 +280,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
 
     crds_path = os.environ.get('CRDS_PATH')
     if wit4_path is None:
-        print("(mk_pttconfig_file): The environment variable CRDS_PATH is not defined. To set it, follow the "
+        print("(mk_npttconfig_file): The environment variable CRDS_PATH is not defined. To set it, follow the "
               "instructions at: \n"
               "                     https://github.com/spacetelescope/nirspec_pipe_testing_tool")
         exit()
@@ -293,9 +292,10 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
                   'wavecorr', 'flat_field', 'pathloss', 'barshadow', 'photom', 'resample_spec', 'cube_build',
                   'extract_1d',
                   # spec3
-                  'master_background']
+                  'assign_mtwcs', 'master_background', 'exp_to_source', 'outlier_detection', 'resample_spec',
+                  'cube_build', 'extract_1d']
 
-    ptt_pytests = ['assign_wcs_completion_tests', 'assign_wcs_reffile_tests', 'assign_wcs_validation_tests',
+    nptt_pytests = ['assign_wcs_completion_tests', 'assign_wcs_reffile_tests', 'assign_wcs_validation_tests',
                    'bkg_subtract_completion_tests', 'bkg_subtract_numerical_tests',
                    'imprint_subtract_completion_tests', 'imprint_subtract_numerical_tests',
                    'msa_flagging_completion_tests', 'msa_flagging_validation_tests',
@@ -316,14 +316,15 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     run_pipe_steps, run_pytests = [], []
     if run_calwebb_spec2 is None:
         run_calwebb_spec2 = True
-        print(" * The PTT configuration file will be created with running the spec2 pipeline in full and ALL pytests \n"
+        print("\n * The NPTT configuration file will be created with running the spec2 pipeline in full and ALL pytests \n"
               "   will be set to True. \n "
-              "    -> If you need to skip any tests, please open the PTT config file and change the pytest values to \n"
-              "        False for the tests you are interested in skipping.")
-        # set individual steps to False and all PTT tests to True
+              "    -> If you need to skip any tests, please open the NPTT config file and change the pytest values to \n"
+              "        False for the tests you are interested in skipping. \n"
+              "    -> The spec3 pipeline steps will also be set to True. \n")
+        # set individual steps to False and all NPTT tests to True
         for _ in pipe_steps:
             run_pipe_steps.append(False)
-        for _ in ptt_pytests:
+        for _ in nptt_pytests:
             run_pytests.append(True)
     else:
         step2run = run_calwebb_spec2
@@ -334,15 +335,15 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
                 run_pipe_steps.append(True)
             else:
                 run_pipe_steps.append(False)
-        # set individual PTT tests to True or False
-        for ptest in ptt_pytests:
+        # set individual NPTT tests to True or False
+        for ptest in nptt_pytests:
             if step2run in ptest:
                 run_pytests.append(True)
             else:
                 run_pytests.append(False)
 
     # get the immutable paths
-    calwebb_spec2_cfg, esa_files_path = set_ptt_immutable_paths()
+    esa_files_path = set_nptt_immutable_paths()
 
     # set the full ESA path to compare the data
     if comparison_file_path is None:
@@ -361,20 +362,14 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
         esa_files_full_path = comparison_file_path
 
     # spec3 variables
-    if association is None:
-        run_calwebb_spec3 = 'skip'
-    else:
-        run_calwebb_spec3 = association
-    calwebb_spec3_cfg = calwebb_spec2_cfg.replace("2", "3")
-    s3_input_file = rate_input_file.replace("caldet1", "spec2")
-    if 'rate' in rate_input_file:
-        s3_input_file = rate_input_file.replace("rate", "cal")
+    run_calwebb_spec3 = 'skip'
+    s3_input_file = rate_input_file.lower().split("_nrs")[0] + "_asn.json"
 
     # set the additional parameters section
     if wcs_threshold_diff is None:
         wcs_threshold_diff = 1.0e-7
     if save_plots:
-        print(" * PTT will save all test output plots in the output directory.")
+        print(" * NPTT will save all test output plots in the output directory.")
         save_wcs_plots = True
         save_msa_flagging_plots = True
         save_flattest_plot = True
@@ -382,7 +377,7 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
         save_barshadow_final_plot = True
         save_barshadow_intermediary_plots = False
     else:
-        print(" * PTT will NOT save any test output plots.")
+        print(" * NPTT will NOT save any test output plots.")
         save_wcs_plots = False
         save_msa_flagging_plots = False
         save_flattest_plot = False
@@ -410,8 +405,8 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
                                 change_filter_opaque, raw_data_root_file, local_pipe_cfg_path]
     benchmark_intermediary_products = [esa_files_full_path, msa_conf_name, dflat_path, sflat_path, fflat_path,
                                        truth_assign_wcs, truth_extract_2d, msa_flag_opref]
-    run_calwebb_spec2_in_full = [run_calwebb_spec2, calwebb_spec2_cfg]
-    spec3_args = [run_calwebb_spec3, s3_input_file, calwebb_spec3_cfg]
+    run_calwebb_spec2_in_full = str(run_calwebb_spec2)
+    spec3_args = [run_calwebb_spec3, s3_input_file]
     additional_arguments = [wcs_threshold_diff, save_wcs_plots, bkg_list, msa_imprint_structure,
                             msa_flagging_threshold, stellarity, save_msa_flagging_plots,
                             extract_2d_threshold_diff, flattest_threshold_diff, save_flattest_plot,
@@ -422,7 +417,6 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     # make sure all variables are strings for creating the configuration file
     calwebb_spec2_input_file = list2_allstrings_list(calwebb_spec2_input_file)
     benchmark_intermediary_products = list2_allstrings_list(benchmark_intermediary_products)
-    run_calwebb_spec2_in_full = list2_allstrings_list(run_calwebb_spec2_in_full)
     run_pipe_steps = list2_allstrings_list(run_pipe_steps)
     run_pytests = list2_allstrings_list(run_pytests)
     spec3_args = list2_allstrings_list(spec3_args)
@@ -433,40 +427,40 @@ def prepare_variables(output_directory, rate_input_file, mode_used, raw_data_roo
     return variables
 
 
-def mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file, data_directory=None,
-               local_pipe_cfg_path=None, comparison_file_path=None, msa_conf_name=None, dflat_path=None,
+def mk_nptt_cfg(output_directory, input_file, mode_used, raw_data_root_file, data_directory=None,
+               comparison_file_path=None, msa_conf_name=None, dflat_path=None,
                sflat_path=None, fflat_path=None, msa_flag_opref=None, run_calwebb_spec2=None, wcs_threshold_diff=None,
                save_plots=True, change_filter_opaque=False, msa_flagging_threshold=None, stellarity=None,
                extract_2d_threshold_diff=None, flattest_threshold_diff=None, association=None):
     """
-    This function makes the PTT configuration file.
-    :param output_directory: string
-    :param input_file: string
-    :param mode_used: string
-    :param raw_data_root_file: string, basename of the raw data
-    :param data_directory: string
-    :param local_pipe_cfg_path: string, local path to the pipeline configuration files
-    :param comparison_file_path: string, path and name of the file to compare with for assign_wcs
-    :param msa_conf_name: string, basename of the shutter configuration file
-    :param dflat_path: string, path and name of the D-flat
-    :param sflat_path: string, path and name of the S-flat for this filter/grating configuration
-    :param fflat_path: string, path and name of the F-flat for this filter configuration
-    :param msa_flag_opref: string, path and name of the msa_flagging operability reference file
-    :param run_calwebb_spec2: string, name of the step to run in spec2
-    :param wcs_threshold_diff: string, acceptable difference between the comparison and the pipeline file
-    :param save_plots: boolean
-    :param change_filter_opaque: boolean
-    :param msa_flagging_threshold: string, acceptable percentage of overlap of values found in index_opens and
+    This function makes the NPTT configuration file.
+    Args:
+        output_directory: string
+        input_file: string
+        mode_used: string
+        raw_data_root_file: string, basename of the raw data
+        data_directory: string
+        comparison_file_path: string, path and name of the file to compare with for assign_wcs
+        msa_conf_name: string, basename of the shutter configuration file
+        dflat_path: string, path and name of the D-flat
+        sflat_path: string, path and name of the S-flat for this filter/grating configuration
+        fflat_path: string, path and name of the F-flat for this filter configuration
+        msa_flag_opref: string, path and name of the msa_flagging operability reference file
+        run_calwebb_spec2: string, name of the step to run in spec2
+        wcs_threshold_diff: string, acceptable difference between the comparison and the pipeline file
+        save_plots: boolean
+        change_filter_opaque: boolean
+        msa_flagging_threshold: string, acceptable percentage of overlap of values found in index_opens and
                                    index_trace for all slits with more than 100 pixels
-    :param stellarity: string, value for new desired stellarity
-    :param extract_2d_threshold_diff: string, acceptable difference between the comparison and the pipeline file
-    :param flattest_threshold_diff: string, acceptable difference between the comparison and the pipeline file
-    :param association: string, values are True, False, or skip. With True or False spec3 tests will be ran.
-    :return: nothing
+        stellarity: string, value for new desired stellarity
+        extract_2d_threshold_diff: string, acceptable difference between the comparison and the pipeline file
+        flattest_threshold_diff: string, acceptable difference between the comparison and the pipeline file
+    Returns:
+        nothing
     """
-    # prepare all variables to create the PTT config file
+    # prepare all variables to create the NPTT config file
     variables = prepare_variables(output_directory, input_file, mode_used, raw_data_root_file,
-                                  data_directory=data_directory, local_pipe_cfg_path=local_pipe_cfg_path,
+                                  data_directory=data_directory,
                                   comparison_file_path=comparison_file_path, msa_conf_name=msa_conf_name,
                                   dflat_path=dflat_path, sflat_path=sflat_path, fflat_path=fflat_path,
                                   msa_flag_opref=msa_flag_opref,
@@ -474,15 +468,15 @@ def mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file, data
                                   save_plots=save_plots, change_filter_opaque=change_filter_opaque,
                                   msa_flagging_threshold=msa_flagging_threshold, stellarity=stellarity,
                                   extract_2d_threshold_diff=extract_2d_threshold_diff,
-                                  flattest_threshold_diff=flattest_threshold_diff,
-                                  association=association)
+                                  flattest_threshold_diff=flattest_threshold_diff)
 
-    calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps, run_pytests, spec3_args, additional_arguments = variables
+    (calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full,
+    run_pipe_steps, run_pytests, spec3_args, additional_arguments) = variables
 
-    # Create the PTT config file
-    write_ptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
+    # Create the NPTT config file
+    write_nptt_cfg(calwebb_spec2_input_file, benchmark_intermediary_products, run_calwebb_spec2_in_full, run_pipe_steps,
                   run_pytests, spec3_args, additional_arguments)
-    print('\n * Script  mk_pttconfig_file.py  finished * \n')
+    print('\n * Script  mk_npttconfig_file.py  finished * \n')
 
 
 def main():
@@ -493,7 +487,7 @@ def main():
     parser.add_argument("output_directory",
                         action='store',
                         default=None,
-                        help='Required variable. Path to directory where all the PTT output will be saved.')
+                        help='Required variable. Path to directory where all the NPTT output will be saved.')
     parser.add_argument("input_file",
                         action='store',
                         default=None,
@@ -514,18 +508,12 @@ def main():
                         dest="data_directory",
                         action='store',
                         default=None,
-                        help='Use the -d flag to change the path where PTT will look for the input file.')
-    parser.add_argument("-l",
-                        dest="local_pipe_cfg_path",
-                        action='store',
-                        default=None,
-                        help='Use the -l flag to change the path where PTT will look for the pipeline '
-                             'configuration files.')
+                        help='Use the -d flag to change the path where NPTT will look for the input file.')
     parser.add_argument("-c",
                         dest="comparison_file_path",
                         action='store',
                         default=None,
-                        help='Use the -c flag to change the path and name of the file PTT will use as comparison '
+                        help='Use the -c flag to change the path and name of the file NPTT will use as comparison '
                              'for assign_wcs test.')
     parser.add_argument("-m",
                         dest="msa_conf_name",
@@ -538,19 +526,19 @@ def main():
                         action='store',
                         default=None,
                         help='Use the -D flag to change the path and name of the D-flat file, e.g. /path_to_file/'
-                             'nirspec_FS_sflat_G140M_OPAQUE_FLAT1_nrs1_f_01.01.fits')
+                             'jwst_CRDS_file_for_dflat.fits')
     parser.add_argument("-S",
                         dest="sflat_path",
                         action='store',
                         default=None,
                         help='Use the -S flag to change the path and name of the S-flat file, e.g. /path_to_file/'
-                             'nirspec_FS_sflat_G140M_OPAQUE_FLAT1_nrs1_f_01.01.fits')
+                             'jwst_CRDS_file_for_sflat.fits')
     parser.add_argument("-F",
                         dest="fflat_path",
                         action='store',
                         default=None,
                         help='Use the -F flag to change the path and name of the F-flat file, '
-                             'e.g. /path_to_file/nirspec_FS_fflat_F100LP_01.01.fits')
+                             'e.g. /path_to_file/jwst_CRDS_file_for_fflat.fits')
     parser.add_argument("-O",
                         dest="msa_flag_opref",
                         action='store',
@@ -566,13 +554,13 @@ def main():
                         dest="wcs_threshold_diff",
                         action='store',
                         default=None,
-                        help='Use the -w flag to change the float value that PTT will use as acceptable difference '
+                        help='Use the -w flag to change the float value that NPTT will use as acceptable difference '
                              'between the pipeline product and the comparison file for the assign_wcs test.')
     parser.add_argument("-p",
                         dest="save_plots",
                         action='store_false',
                         default=True,
-                        help='Use the -p flag to skip saving the plots produced by the PTT tests.')
+                        help='Use the -p flag to skip saving the plots produced by the NPTT tests.')
     parser.add_argument("-o",
                         dest="change_filter_opaque",
                         action='store_true',
@@ -583,19 +571,19 @@ def main():
                         dest="extract_2d_threshold_diff",
                         action='store',
                         default=None,
-                        help='Use the -e flag to change the float value that PTT will use as acceptable difference '
+                        help='Use the -e flag to change the float value that NPTT will use as acceptable difference '
                              'between the pipeline product and the comparison file for the extract_2d test.')
     parser.add_argument("-f",
                         dest="flattest_threshold_diff",
                         action='store',
                         default=None,
-                        help='Use the -f flag to change the float value that PTT will use as acceptable difference '
+                        help='Use the -f flag to change the float value that NPTT will use as acceptable difference '
                              'between the pipeline product and the comparison file for the flat_field test.')
     parser.add_argument("-t",
                         dest="msa_flagging_threshold",
                         action='store',
                         default=None,
-                        help='Use the -t flag to change the float value that PTT will use as acceptable percentage '
+                        help='Use the -t flag to change the float value that NPTT will use as acceptable percentage '
                              'of overlap of values found in index_opens and index_trace for all slits with more '
                              'than 100 pixels.')
     parser.add_argument("-s",
@@ -603,11 +591,6 @@ def main():
                         action='store',
                         default=None,
                         help='Use the -s flag if to provide a specific value of stellarity, e.g. -s=0.8')
-    parser.add_argument("-a",
-                        dest="association",
-                        action='store',
-                        default=None,
-                        help='Use the -a flag if the file is an association and needs Spec3 processing.')
     args = parser.parse_args()
 
     # Set the required variables
@@ -619,7 +602,6 @@ def main():
     # set the other variables
     data_directory = args.data_directory
     change_filter_opaque = args.change_filter_opaque
-    local_pipe_cfg_path = args.local_pipe_cfg_path
     comparison_file_path = args.comparison_file_path
     msa_conf_name = args.msa_conf_name
     dflat_path = args.dflat_path
@@ -633,19 +615,17 @@ def main():
     flattest_threshold_diff = args.flattest_threshold_diff
     msa_flagging_threshold = args.msa_flagging_threshold
     stellarity = args.stellarity
-    association = args.association
 
-    # create the PTT config file
-    mk_ptt_cfg(output_directory, input_file, mode_used, raw_data_root_file,
-               data_directory=data_directory, local_pipe_cfg_path=local_pipe_cfg_path,
+    # create the NPTT config file
+    mk_nptt_cfg(output_directory, input_file, mode_used, raw_data_root_file,
+               data_directory=data_directory,
                comparison_file_path=comparison_file_path,  msa_conf_name=msa_conf_name,
                dflat_path=dflat_path, sflat_path=sflat_path, fflat_path=fflat_path, msa_flag_opref=msa_flag_opref,
                run_calwebb_spec2=run_calwebb_spec2, wcs_threshold_diff=wcs_threshold_diff,
                save_plots=save_plots, change_filter_opaque=change_filter_opaque,
                msa_flagging_threshold=msa_flagging_threshold, stellarity=stellarity,
                extract_2d_threshold_diff=extract_2d_threshold_diff,
-               flattest_threshold_diff=flattest_threshold_diff,
-               association=association)
+               flattest_threshold_diff=flattest_threshold_diff)
 
 
 if __name__ == '__main__':

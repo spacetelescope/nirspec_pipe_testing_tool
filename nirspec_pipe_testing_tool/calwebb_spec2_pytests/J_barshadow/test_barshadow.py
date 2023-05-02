@@ -6,26 +6,25 @@ py.test module for unit testing the barshadow step.
 import os
 import time
 import pytest
-import logging
 from glob import glob
 from astropy.io import fits
 from jwst.barshadow.barshadow_step import BarShadowStep
 
 from . import barshadow_utils
 from nirspec_pipe_testing_tool import core_utils
-from .. import TESTSDIR
 from .. auxiliary_code import barshadow_testing
 from nirspec_pipe_testing_tool.utils import change_filter_opaque2science
 
 
 # HEADER
-__author__ = "M. A. Pena-Guerrero"
-__version__ = "1.2"
+__author__ = "M. Pena-Guerrero"
+__version__ = "1.3"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
 # Mar 2019 - Version 1.1: separated completion from other tests
-# Apr 2019 - Version 1.2: implemented logging capability
+# Apr 2019 - Version 1.2: implemented nptt_log capability
+# Apr 2023 - Version 1.3: Cleaned-up code
 
 
 # Set up the fixtures needed for all of the tests, i.e. open up all of the FITS files
@@ -41,7 +40,7 @@ def set_inandout_filenames(request, config):
 
 # fixture to read the output file header
 @pytest.fixture(scope="module")
-def output_hdul(set_inandout_filenames, config):
+def output_vars(set_inandout_filenames, config):
     # determine if the pipeline is to be run in full, per steps, or skipped
     run_calwebb_spec2 = config.get("run_calwebb_spec2_in_full", "run_calwebb_spec2")
     if run_calwebb_spec2 == "skip":
@@ -53,9 +52,9 @@ def output_hdul(set_inandout_filenames, config):
         run_calwebb_spec2 = False
 
     # get the general info
-    set_inandout_filenames_info = core_utils.read_info4outputhdul(config, set_inandout_filenames)
+    set_inandout_filenames_info = core_utils.read_info4output_vars(config, set_inandout_filenames)
     step, txt_name, step_input_file, step_output_file, outstep_file_suffix = set_inandout_filenames_info
-    run_pipe_step = config.getboolean("run_pipe_steps", step)
+    run_pipe_step = config.getboolean("run_spec2_steps", step)
     # determine which tests are to be run
     barshadow_completion_tests = config.getboolean("run_pytest", "_".join((step, "completion", "tests")))
     barshadow_validation_tests = config.getboolean("run_pytest", "_".join((step, "validation", "tests")))
@@ -67,6 +66,8 @@ def output_hdul(set_inandout_filenames, config):
     barshadow_switches = [barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots,
                           write_barshadow_files]
 
+    # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
+    step_completed = False
     end_time = '0.0'
 
     # Only run step if data is MOS
@@ -74,16 +75,18 @@ def output_hdul(set_inandout_filenames, config):
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(output_directory, initial_input_file)
     if os.path.isfile(initial_input_file):
-        inhdu = core_utils.read_hdrfits(initial_input_file, info=False, show_hdr=False)
-        detector = fits.getval(initial_input_file, "DETECTOR", 0)
+        inhdr = fits.getheader(step_input_file)
+        detector = inhdr["DETECTOR"]
     else:
-        pytest.skip("Skipping "+step+" because the initial input file given in PTT_config.cfg does not exist.")
+        msg = "Skipping "+step+" because the initial input file given in NPTT_config.cfg does not exist."
+        pytest.skip(msg)
 
-    print("core_utils.check_MOS_true(inhdu)=", core_utils.check_MOS_true(inhdu))
-    if core_utils.check_MOS_true(inhdu):
-        # if run_calwebb_spec2 is True calwebb_spec2 will be called, else individual steps will be ran
-        step_completed = False
+    # Get the logfile instance for NPTT created in the run.py script
+    nptt_log = os.path.join(output_directory, 'NPTT_calspec2_' + detector + '.log')
+    nptt_log = core_utils.mk_nptt_log(nptt_log, reset=False)
 
+    print("core_utils.check_MOS_true =", core_utils.check_MOS_true(inhdr))
+    if core_utils.check_MOS_true(inhdr):
         # check if the filter is to be changed
         change_filter_opaque = config.getboolean("calwebb_spec2_input_file", "change_filter_opaque")
         if change_filter_opaque:
@@ -97,32 +100,22 @@ def output_hdul(set_inandout_filenames, config):
                 pytest.skip("Skipping "+step+" because FILTER=OPAQUE.")
 
         if run_calwebb_spec2:
-            hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
-            return hdul, step_output_file, barshadow_switches, run_pytests
-
+            outhdr = fits.getheader(step_output_file)
+            return outhdr, step_output_file, barshadow_switches, run_pytests, nptt_log
         else:
             if run_pipe_step:
-
-                # Create the logfile for PTT, but erase the previous one if it exists
-                PTTcalspec2_log = os.path.join(output_directory, 'PTT_calspec2_'+detector+'_'+step+'.log')
-                if os.path.isfile(PTTcalspec2_log):
-                    os.remove(PTTcalspec2_log)
-                print("Information outputed to screen from PTT will be logged in file: ", PTTcalspec2_log)
-                for handler in logging.root.handlers[:]:
-                    logging.root.removeHandler(handler)
-                logging.basicConfig(filename=PTTcalspec2_log, level=logging.INFO)
-                # print pipeline version
-                import jwst
-                pipeline_version = "\n *** Using jwst pipeline version: "+jwst.__version__+" *** \n"
-                print(pipeline_version)
-                logging.info(pipeline_version)
-                if change_filter_opaque:
-                    logging.info(filter_opaque_msg)
-
                 if os.path.isfile(step_input_file):
+                    if change_filter_opaque:
+                        nptt_log.info(filter_opaque_msg)
+
+                    # Create the pipeline step log
+                    stp_pipelog = "calspec2_" + step + "_" + detector + ".log"
+                    core_utils.mk_stpipe_log_cfg(output_dir, stp_pipelog)
+                    print("Pipeline step screen output will be logged in file: ", stp_pipelog)
+
                     msg = " *** Step "+step+" set to True"
                     print(msg)
-                    logging.info(msg)
+                    nptt_log.info(msg)
                     stp = BarShadowStep()
 
                     # check that previous pipeline steps were run up to this point
@@ -141,9 +134,9 @@ def output_hdul(set_inandout_filenames, config):
                     end_time = repr(time.time() - start_time)   # this is in seconds
                     msg = " * calwebb_spec2 took "+end_time+" seconds to finish."
                     print(msg)
-                    logging.info(msg)
+                    nptt_log.info(msg)
                     step_completed = True
-                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    outhdr = fits.getheader(step_output_file)
 
                     # rename and move the pipeline log file
                     pipelog = "pipeline_" + detector + ".log"
@@ -157,26 +150,26 @@ def output_hdul(set_inandout_filenames, config):
 
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, barshadow_switches, run_pytests
+                    return outhdr, step_output_file, barshadow_switches, run_pytests, nptt_log
 
                 else:
                     msg = " The input file does not exist. Skipping step."
                     print(msg)
-                    logging.info(msg)
+                    nptt_log.info(msg)
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
                     pytest.skip("Skipping "+step+" because the input file does not exist.")
 
             else:
                 msg = "Skipping running pipeline step "+step
                 print(msg)
-                logging.info(msg)
+                nptt_log.info(msg)
                 end_time = core_utils.get_stp_run_time_from_screenfile(step, detector, output_directory)
                 if os.path.isfile(step_output_file):
-                    hdul = core_utils.read_hdrfits(step_output_file, info=False, show_hdr=False)
+                    outhdr = fits.getheader(step_output_file)
                     step_completed = True
                     # add the running time for this step
                     core_utils.add_completed_steps(txt_name, step, outstep_file_suffix, step_completed, end_time)
-                    return hdul, step_output_file, barshadow_switches, run_pytests
+                    return outhdr, step_output_file, barshadow_switches, run_pytests, nptt_log
                 else:
                     step_completed = False
                     # add the running time for this step
@@ -189,19 +182,22 @@ def output_hdul(set_inandout_filenames, config):
 
 # fixture to validate the barshadow correction
 @pytest.fixture(scope="module")
-def validate_barshadow(output_hdul):
-    hdu = output_hdul[0]
+def validate_barshadow(output_vars):
+    hdr = output_vars[0]
     log_msgs = None
 
     # show the figures
     show_figs = False
 
+    # get the logger instance
+    nptt_log = output_vars[-1]
+
     # Determine if data is MOS
-    if core_utils.check_MOS_true(hdu):
-        plfile = output_hdul[1].replace('_barshadow', '_pathloss')
-        bsfile = output_hdul[1]
+    if core_utils.check_MOS_true(hdr):
+        plfile = output_vars[1].replace('_barshadow', '_pathloss')
+        bsfile = output_vars[1]
         (barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots,
-         write_barshadow_files) = output_hdul[2]
+         write_barshadow_files) = output_vars[2]
         barshadow_testresult, result_msg, log_msgs = barshadow_testing.run_barshadow_tests(
             plfile, bsfile, barshadow_threshold_diff=float(barshadow_threshold_diff),
             save_final_figs=save_barshadow_final_plot, show_final_figs=show_figs,
@@ -214,51 +210,55 @@ def validate_barshadow(output_hdul):
 
     if log_msgs is not None:
         for msg in log_msgs:
-            logging.info(msg)
+            nptt_log.info(msg)
 
     if barshadow_testresult == "skip":
         print(result_msg)
-        logging.info(result_msg)
+        nptt_log.info(result_msg)
         pytest.skip(result_msg)
     else:
         print(result_msg)
-        logging.info(result_msg)
+        nptt_log.info(result_msg)
 
     return barshadow_testresult
 
 
 # Unit tests
 
-def test_s_barsha_exists(output_hdul):
+def test_s_barsha_exists(output_vars):
+    # get the logger instance
+    nptt_log = output_vars[-1]
     # want to run this pytest?
-    # output_hdul[3] = barshadow_completion_tests, barshadow_validation_tests
-    run_pytests = output_hdul[3][0]
+    # output_vars[3] = barshadow_completion_tests, barshadow_validation_tests
+    run_pytests = output_vars[3][0]
     if not run_pytests:
-        msg = "Skipping completion pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        msg = "Skipping completion pytest: option to run Pytest is set to False in NPTT_config.cfg file."
         print(msg)
-        logging.info(msg)
+        nptt_log.info(msg)
         pytest.skip(msg)
     else:
-        msg = "\n * Running completion pytest...\n"
+        msg = " * Running completion pytest..."
         print(msg)
-        logging.info(msg)
-        assert barshadow_utils.s_barsha_exists(output_hdul[0]), "The keyword S_BARSHA was not added to the header " \
+        nptt_log.info(msg)
+        assert barshadow_utils.s_barsha_exists(output_vars[0]), "The keyword S_BARSHA was not added to the header " \
                                                                 "--> Barshadow step was not completed."
 
 
-def test_validate_barshadow(output_hdul, request):
+def test_validate_barshadow(output_vars, request):
+    # get the logger instance
+    nptt_log = output_vars[-1]
     # want to run this pytest?
-    # output_hdul[3] = barshadow_completion_tests, barshadow_validation_tests
-    run_pytests = output_hdul[3][1]
+    # output_vars[3] = barshadow_completion_tests, barshadow_validation_tests
+    run_pytests = output_vars[3][1]
     if not run_pytests:
-        msg = "Skipping validation pytest: option to run Pytest is set to False in PTT_config.cfg file.\n"
+        msg = "Skipping validation pytest: option to run Pytest is set to False in NPTT_config.cfg file."
         print(msg)
-        logging.info(msg)
+        nptt_log.info(msg)
         pytest.skip(msg)
     else:
-        msg = "\n * Running validation pytest...\n"
+        msg = " * Running validation pytest..."
         print(msg)
-        logging.info(msg)
+        nptt_log.info(msg)
         assert request.getfixturevalue("validate_barshadow"), "Output value from barshadow_testing.py is " \
                                                               "greater than threshold."
 

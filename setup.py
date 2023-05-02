@@ -44,7 +44,7 @@ for entry_point in ENTRY_POINTS_PKGDIRS:
 setup(
     name=PACKAGE_NAME,
     use_scm_version=True,
-    author="Maria Pena Guerrero",
+    author="Maria Pena-Guerrero",
     description="FILL THIS IN",
     url="https://github.com/spacetelescope/{}".format(PACKAGE_NAME),
     license="BSD",
@@ -56,7 +56,7 @@ setup(
         "Topic :: Scientific/Engineering :: Astronomy",
         "Topic :: Software Development :: Testing",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     setup_requires=[
         "setuptools_scm",
     ],
