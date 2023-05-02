@@ -111,7 +111,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
             pslice = "0"+repr(indiv_slice)
         else:
             pslice = repr(indiv_slice)
-        msg = "\n Working with slice: "+pslice
+        msg = " Working with slice: "+pslice
         print(msg)
         log_msgs.append(msg)
 
@@ -137,7 +137,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                 return FINAL_TEST_RESULT, log_msgs
 
             # Open the trace in the esafile
-            msg = "Using this ESA file: \n"+str(esafile)
+            msg = "Using this ESA file: "+str(esafile)
             print(msg)
             log_msgs.append(msg)
             with fits.open(esafile) as esahdulist:
@@ -146,12 +146,12 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                 esa_slice_id = esahdulist[0].header['SLICEID']
                 # first check is esa_slice == to pipe_slice?
                 if indiv_slice == esa_slice_id:
-                    msg = "\n -> Same slice found for pipeline and ESA data: "+repr(indiv_slice)+"\n"
-                    print(msg)
+                    msg = " -> Same slice found for pipeline and ESA data: "+repr(indiv_slice)
+                    print(msg+"\n")
                     log_msgs.append(msg)
                 else:
-                    msg = "\n -> Missmatch of slices for pipeline and ESA data: "+repr(indiv_slice)+esa_slice_id+"\n"
-                    print(msg)
+                    msg = " -> Missmatch of slices for pipeline and ESA data: "+repr(indiv_slice)+esa_slice_id
+                    print(msg+"\n")
                     log_msgs.append(msg)
 
                 # Assign variables according to detector
@@ -192,9 +192,9 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                             print(msg)
                             log_msgs.append(msg)
                     except KeyError:
-                        msg1 = "\n * compare_wcs_ifu.py is exiting because there are no extensions that match " \
+                        msg1 = " * compare_wcs_ifu.py is exiting because there are no extensions that match " \
                                "detector NRS2 in the ESA file."
-                        msg2 = "   -> The WCS test is now set to skip and no plots will be generated. \n"
+                        msg2 = "   -> The WCS test is now set to skip and no plots will be generated. "
                         print(msg1)
                         print(msg2)
                         log_msgs.append(msg1)
@@ -324,7 +324,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                                                                tested_quantity)
             # converting to degrees to compare with truth, pipeline is in arcsec
             if reldiffpv2_data[-2][0] > 0.0:
-                print("\nConverting pipeline results to degrees to compare with truth file")
+                print("Converting pipeline results to degrees to compare with truth file")
                 pv2 = pv2/3600.
                 reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v2, pv2,
                                                                    tested_quantity)
@@ -339,7 +339,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                                                                tested_quantity)
             # converting to degrees to compare with truth, pipeline is in arcsec
             if reldiffpv3_data[-2][0] > 0.0:
-                print("\nConverting pipeline results to degrees to compare with truth file")
+                print("Converting pipeline results to degrees to compare with truth file")
                 pv3 = pv3/3600.
                 reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v3, pv3,
                                                                    tested_quantity)
@@ -506,8 +506,8 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                                                  save_figs=save_figs)
 
         else:
-            msg = "NO plots were made because show_figs and save_figs were both set to False. \n"
-            print(msg)
+            msg = "NO plots were made because show_figs and save_figs were both set to False. "
+            print(msg+"\n")
             log_msgs.append(msg)
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
@@ -516,22 +516,22 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         for t, tr in testdir.items():
             if tr == "FAILED":
                 FINAL_TEST_RESULT = "FAILED"
-                msg = "\n * The test of "+t+" for slice "+sl+" FAILED."
+                msg = " * The test of "+t+" for slice "+sl+" FAILED."
                 print(msg)
                 log_msgs.append(msg)
             else:
                 FINAL_TEST_RESULT = "PASSED"
-                msg = "\n * The test of "+t+" for slice "+sl+" PASSED."
+                msg = " * The test of "+t+" for slice "+sl+" PASSED."
                 print(msg)
                 log_msgs.append(msg)
 
     if FINAL_TEST_RESULT == "PASSED":
-        msg = "\n *** Final result for assign_wcs test will be reported as PASSED *** \n"
-        print(msg)
+        msg = " *** Final result for assign_wcs test will be reported as PASSED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
     else:
-        msg = "\n *** Final result for assign_wcs test will be reported as FAILED *** \n"
-        print(msg)
+        msg = " *** Final result for assign_wcs test will be reported as FAILED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
 
     return FINAL_TEST_RESULT, log_msgs
@@ -585,10 +585,6 @@ def main():
     raw_data_root_file = args.raw_data_root_file
     output_directory = args.output_directory
     debug = args.debug
-
-    # print pipeline version
-    import jwst
-    print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script
     compare_wcs(infile_name, truth_file=truth_file, esa_files_path=esa_files_path, show_figs=show_figs,

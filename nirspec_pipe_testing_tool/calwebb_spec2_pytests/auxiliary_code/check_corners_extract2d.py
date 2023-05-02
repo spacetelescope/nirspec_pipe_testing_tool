@@ -178,9 +178,9 @@ def fs_extract_2d_and_compare(infile_name, exp_type, result, large_diff_corners_
                     break
 
         if not slit_in_truth_file:
-            msg1 = "\n * Script check_corners_extract_2d.py is exiting because open slit " + pipeslit + \
+            msg1 = " * Script check_corners_extract_2d.py is exiting because open slit " + pipeslit + \
                    " is not open in truth file."
-            msg2 = "   -> The extract_2d test is now set to FAILED. \n"
+            msg2 = "   -> The extract_2d test is now set to FAILED. "
             print(msg1)
             print(msg2)
             log_msgs.append(msg1)
@@ -289,7 +289,7 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
         single_slit_mdl = True
 
     if single_slit_mdl:
-        msg = "\nWorking with BOTS single slit model "
+        msg = "Working with BOTS single slit model "
         print(msg)
         log_msgs.append(msg)
         outputs = fs_extract_2d_and_compare(infile_name, exp_type, result, large_diff_corners_dict,
@@ -299,7 +299,7 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
     else:
         for slit in img.slits:
             pipeslit = slit.name
-            msg = "\nWorking with slit: "+pipeslit
+            msg = "Working with slit: "+pipeslit
             print(msg)
             log_msgs.append(msg)
             outputs = fs_extract_2d_and_compare(infile_name, exp_type, result, large_diff_corners_dict,
@@ -320,14 +320,14 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
             FINAL_TEST_RESULT = True
 
     if FINAL_TEST_RESULT:
-        msg = "\n *** Final result for extract_2d test will be reported as PASSED *** \n"
+        msg = " *** Final result for extract_2d test will be reported as PASSED *** "
         print(msg)
         log_msgs.append(msg)
         result_msg = "All slits PASSED extract_2d test."
         print(result_msg)
         log_msgs.append(msg)
     else:
-        msg1 = '\n\n *** These slits have corners with differences larger than threshold of ' + \
+        msg1 = ' *** These slits have corners with differences larger than threshold of ' + \
                repr(extract_2d_threshold_diff)+' pixels: '
         msg2 = '   ESA corners                   Pipeline corners'
         log_msgs.append(msg1)
@@ -341,7 +341,7 @@ def find_FSwindowcorners(infile_name, truth_file=None, esa_files_path=None, extr
             log_msgs.append(msg2)
             print(msg1)
             print(msg2)
-        msg = "\n *** Final result for extract_2d test will be reported as FAILED *** \n"
+        msg = " *** Final result for extract_2d test will be reported as FAILED *** "
         print(msg)
         log_msgs.append(msg)
 
@@ -434,7 +434,7 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, truth_file=None, esa_files
     # check that shutter configuration file in header is the same as given in PTT_config file
     if msametfl != os.path.basename(msa_conf_name):
         msg = " *** WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL " \
-              "keyword in main header.\n"
+              "keyword in main header."
         print(msg)
         log_msgs.append(msg)
 
@@ -448,7 +448,7 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, truth_file=None, esa_files
     # Iterate over the slits of the pipeline processed file
     for slit in img.slits:
         pipeslit = slit.name
-        msg = "\nWorking with slitlet: "+pipeslit
+        msg = "Working with slitlet: "+pipeslit
         print(msg)
         log_msgs.append(msg)
 
@@ -483,7 +483,7 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, truth_file=None, esa_files
             if len(esafile) == 2:
                 if len(esafile[-1]) == 0:
                     esafile = esafile[0]
-            msg = "Using this ESA file: \n"+esafile
+            msg = "Using this ESA file: "+esafile
             print(msg)
             log_msgs.append(msg)
 
@@ -515,27 +515,27 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, truth_file=None, esa_files
                 print(msg)
                 log_msgs.append(msg)
                 if q == esa_quadrant:
-                    msg = "\n -> Same quadrant for pipeline and ESA data: "+str(q)
+                    msg = " -> Same quadrant for pipeline and ESA data: "+str(q)
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    msg = "\n -> Missmatch of quadrant for pipeline and ESA data: "+str(q)+esa_quadrant
+                    msg = " -> Missmatch of quadrant for pipeline and ESA data: "+str(q)+esa_quadrant
                     print(msg)
                     log_msgs.append(msg)
                 if r == esa_shutter_i:
-                    msg = "\n -> Same row for pipeline and ESA data: "+str(r)
+                    msg = " -> Same row for pipeline and ESA data: "+str(r)
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    msg = "\n -> Missmatch of row for pipeline and ESA data: "+str(r)+esa_shutter_i
+                    msg = " -> Missmatch of row for pipeline and ESA data: "+str(r)+esa_shutter_i
                     print(msg)
                     log_msgs.append(msg)
                 if c == esa_shutter_j:
-                    msg = "\n -> Same column for pipeline and ESA data: "+str(c)+"\n"
+                    msg = " -> Same column for pipeline and ESA data: "+str(c)
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    msg = "\n -> Missmatch of column for pipeline and ESA data: "+str(c)+esa_shutter_j+"\n"
+                    msg = " -> Missmatch of column for pipeline and ESA data: "+str(c)+esa_shutter_j
                     print(msg)
                     log_msgs.append(msg)
 
@@ -564,9 +564,9 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, truth_file=None, esa_files
                     break
 
             if not continue_with_wcs_test:
-                msg1 = "\n * Script check_corners_extract_2d.py is exiting because open slit " + pipeslit + \
+                msg1 = " * Script check_corners_extract_2d.py is exiting because open slit " + pipeslit + \
                        " is not open in truth file."
-                msg2 = "   -> The extract_2d test is now set to FAILED. \n"
+                msg2 = "   -> The extract_2d test is now set to FAILED. "
                 print(msg1)
                 print(msg2)
                 log_msgs.append(msg1)
@@ -595,7 +595,7 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, truth_file=None, esa_files
         print('Truth slit size    = ', truth_slit_size)
         print('Pipeline slit size = ', pnx, pny)
 
-        msg1 = "\n Corners for slitlet " + pipeslit + ":  [x0, y0, x1, y1]"
+        msg1 = " Corners for slitlet " + pipeslit + ":  [x0, y0, x1, y1]"
         msg2 = "       Truth corners: " + repr(truth_corners)
         msg3 = "    Pipeline corners: " + repr(pipeline_corners)
         print(msg1)
@@ -625,14 +625,14 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, truth_file=None, esa_files
             FINAL_TEST_RESULT = True
 
     if FINAL_TEST_RESULT:
-        msg = "\n\n *** Final result for extract_2d test will be reported as PASSED *** \n"
+        msg = " *** Final result for extract_2d test will be reported as PASSED *** "
         print(msg)
         log_msgs.append(msg)
         result_msg = "All slitlets PASSED extract_2d test."
         print(result_msg)
         log_msgs.append(msg)
     else:
-        msg1 = '\n\n *** These slitlets have corners with differences larger than threshold of ' + \
+        msg1 = ' *** These slitlets have corners with differences larger than threshold of ' + \
                repr(extract_2d_threshold_diff)+' pixels: '
         msg2 = '     Truth corners            Pipeline corners'
         log_msgs.append(msg1)
@@ -646,7 +646,7 @@ def find_MOSwindowcorners(infile_name, msa_conf_name, truth_file=None, esa_files
             log_msgs.append(msg2)
             print(msg1)
             print(msg2)
-        msg = "\n *** Final result for extract_2d test will be reported as FAILED *** \n"
+        msg = " *** Final result for extract_2d test will be reported as FAILED *** "
         print(msg)
         log_msgs.append(msg)
         result_msg = "One or more slitlets FAILED extract_2d test."

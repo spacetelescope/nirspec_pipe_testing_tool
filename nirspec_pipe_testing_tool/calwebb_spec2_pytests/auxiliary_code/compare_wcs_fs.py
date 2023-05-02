@@ -116,7 +116,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
     open_slits = img.meta.wcs.get_transform('gwa', 'slit_frame').slits
     for opslit in open_slits:
         pipeslit = opslit.name
-        msg = "\nWorking with slit: "+pipeslit
+        msg = "Working with slit: "+pipeslit
         print(msg)
         log_msgs.append(msg)
 
@@ -175,7 +175,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
             """
 
             # Open the trace in the esafile
-            msg = "Using this ESA file: \n"+esafile
+            msg = "Using this ESA file: "+esafile
             print(msg)
             log_msgs.append(msg)
             with fits.open(esafile) as esahdulist:
@@ -184,11 +184,11 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                 esa_slit_id = map_slit_names[esahdulist[0].header['SLITID']]
                 # first check is esa_slit == to pipe_slit?
                 if pipeslit == esa_slit_id:
-                    msg = "\n -> Same slit found for pipeline and ESA data: "+pipeslit+"\n"
+                    msg = " -> Same slit found for pipeline and ESA data: "+pipeslit
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    msg = "\n -> Missmatch of slits for pipeline and ESA data: "+pipeslit, esa_slit_id+"\n"
+                    msg = " -> Missmatch of slits for pipeline and ESA data: "+pipeslit, esa_slit_id
                     print(msg)
                     log_msgs.append(msg)
 
@@ -235,9 +235,9 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                             print(msg)
                             log_msgs.append(msg)
                     except KeyError:
-                        msg1 = "\n * compare_wcs_fs.py is exiting because there are no extensions that match " \
+                        msg1 = " * compare_wcs_fs.py is exiting because there are no extensions that match " \
                                "detector NRS2 in the ESA file."
-                        msg2 = "   -> The WCS test is now set to skip and no plots will be generated. \n"
+                        msg2 = "   -> The WCS test is now set to skip and no plots will be generated. "
                         print(msg1)
                         print(msg2)
                         log_msgs.append(msg1)
@@ -269,9 +269,9 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                     break
 
             if not continue_with_wcs_test:
-                msg1 = "\n * Script compare_wcs_fs.py is exiting because open slit "+pipeslit+" is not open in " \
+                msg1 = " * Script compare_wcs_fs.py is exiting because open slit "+pipeslit+" is not open in " \
                                                                                               "truth file."
-                msg2 = "   -> The WCS test is now set to FAILED and no plots will be generated. \n"
+                msg2 = "   -> The WCS test is now set to FAILED and no plots will be generated. "
                 print(msg1)
                 print(msg2)
                 log_msgs.append(msg1)
@@ -338,7 +338,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         for msg in print_stats:
             log_msgs.append(msg)
         test_result = auxfunc.does_median_pass_tes(notnan_rel_diff_pwave_stats[1], threshold_diff)
-        msg = "\n * Result of the test for "+tested_quantity+":  "+test_result+"\n"
+        msg = " * Result of the test for "+tested_quantity+":  "+test_result
         print(msg)
         log_msgs.append(msg)
         total_test_result[pipeslit] = {tested_quantity: test_result}
@@ -354,7 +354,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         for msg in print_stats:
             log_msgs.append(msg)
         test_result = auxfunc.does_median_pass_tes(notnan_rel_diff_pslity_stats[1], threshold_diff)
-        msg = "\n * Result of the test for "+tested_quantity+":  "+test_result+"\n"
+        msg = " * Result of the test for "+tested_quantity+":  "+test_result
         print(msg)
         log_msgs.append(msg)
         total_test_result[pipeslit] = {tested_quantity: test_result}
@@ -371,7 +371,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         for msg in print_stats:
             log_msgs.append(msg)
         test_result = auxfunc.does_median_pass_tes(notnan_reldiffpmsax_stats[1], threshold_diff)
-        msg = "\n * Result of the test for "+tested_quantity+":  "+test_result+"\n"
+        msg = " * Result of the test for "+tested_quantity+":  "+test_result
         print(msg)
         log_msgs.append(msg)
         total_test_result[pipeslit] = {tested_quantity : test_result}
@@ -383,7 +383,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         for msg in print_stats:
             log_msgs.append(msg)
         test_result = auxfunc.does_median_pass_tes(notnan_reldiffpmsay_stats[1], threshold_diff)
-        msg = "\n * Result of the test for "+tested_quantity+":  "+test_result+"\n"
+        msg = " * Result of the test for "+tested_quantity+":  "+test_result
         print(msg)
         log_msgs.append(msg)
         total_test_result[pipeslit] = {tested_quantity : test_result}
@@ -406,7 +406,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
             for msg in print_stats:
                 log_msgs.append(msg)
             test_result = auxfunc.does_median_pass_tes(notnan_reldiffpv2_stats[1], threshold_diff)
-            msg = "\n * Result of the test for " + tested_quantity + ":  " + test_result + "\n"
+            msg = " * Result of the test for " + tested_quantity + ":  " + test_result
             print(msg)
             log_msgs.append(msg)
             total_test_result[pipeslit] = {tested_quantity: test_result}
@@ -424,7 +424,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
             for msg in print_stats:
                 log_msgs.append(msg)
             test_result = auxfunc.does_median_pass_tes(notnan_reldiffpv3_stats[1], threshold_diff)
-            msg = "\n * Result of the test for "+tested_quantity+":  "+test_result+"\n"
+            msg = " * Result of the test for "+tested_quantity+":  "+test_result
             print(msg)
             log_msgs.append(msg)
             total_test_result[pipeslit] = {tested_quantity: test_result}
@@ -583,7 +583,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                                                  save_figs=save_figs)
 
         else:
-            msg = "NO plots were made because show_figs and save_figs were both set to False. \n"
+            msg = "NO plots were made because show_figs and save_figs were both set to False. "
             print(msg)
             log_msgs.append(msg)
 
@@ -593,19 +593,19 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         for t, tr in testdir.items():
             if tr == "FAILED":
                 FINAL_TEST_RESULT = "FAILED"
-                msg = "\n * The test of "+t+" for slit "+sl+" FAILED."
+                msg = " * The test of "+t+" for slit "+sl+" FAILED."
                 print(msg)
                 log_msgs.append(msg)
             else:
                 FINAL_TEST_RESULT = "PASSED"
-                msg = "\n * The test of "+t+" for slit "+sl+" PASSED."
+                msg = " * The test of "+t+" for slit "+sl+" PASSED."
                 print(msg)
                 log_msgs.append(msg)
 
     if FINAL_TEST_RESULT == "PASSED":
-        msg = "\n *** Final result for assign_wcs test will be reported as PASSED *** \n"
+        msg = " *** Final result for assign_wcs test will be reported as PASSED *** "
     else:
-        msg = "\n *** Final result for assign_wcs test will be reported as FAILED *** \n"
+        msg = " *** Final result for assign_wcs test will be reported as FAILED *** "
     print(msg)
     log_msgs.append(msg)
 
@@ -670,10 +670,6 @@ def main():
     raw_data_root_file = args.raw_data_root_file
     output_directory = args.output_directory
     debug = args.debug
-
-    # print pipeline version
-    import jwst
-    print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script, it will return:  result, log_msgs
     compare_wcs(infile_name, truth_file=truth_file, esa_files_path=esa_files_path, show_figs=show_figs,

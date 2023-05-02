@@ -23,7 +23,7 @@ This script tests the FS pipeline pathloss step output for a Uniform Source.
 """
 
 # HEADER
-__author__ = "T King & M Pena-Guerrero"
+__author__ = "T. King & M. Pena-Guerrero"
 __version__ = "1.5"
 
 # HISTORY
@@ -178,11 +178,12 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
     # For the moment, the pipeline is using the wrong reference file for slit 400A1, so read file that
     # re-processed with the right reference file and open corresponding data model
-    if os.path.isfile(step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")):
+    '''if os.path.isfile(step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")):
         pathloss_400a1 = step_input_filename.replace("srctype.fits", "pathloss_400A1.fits")
         pathloss_pipe_400a1 = datamodels.open(pathloss_400a1)
     if debug:
         print('got comparison datamodel!')
+    '''
 
     if os.path.isfile(step_input_filename):
         if debug:
@@ -250,6 +251,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         ra, dec, wave = wcs_obj(x, y)
         wave_sci = wave * 10**(-6)   # microns --> meters
 
+        ''' Commenting out this section as it is no longer necessary
         # adjustments for S400A1
         if slit_id == "S400A1":
             if is_point_source:
@@ -258,8 +260,8 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                 ext = 3
                 print("Got uniform source extension frome extra reference file")
             reffile2use = "jwst-nirspec-a400.plrf.fits"
-        else:
-            reffile2use = reffile
+        else: '''
+        reffile2use = reffile
 
         print("Using reference file {}".format(reffile2use))
         plcor_ref_ext = fits.getdata(reffile2use, ext)
@@ -273,6 +275,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         slitx_ref, slity_ref, wave_ref = w.all_pix2world(x1, y1, w1, 0)
 
         previous_sci = slit.data
+        ''' Commenting because this is no longer necessary
         if slit_id == 'S400A1':
             if pathloss_pipe_400a1 is not None:
                 for pipe_slit_400a1 in pathloss_pipe_400a1.slits:
@@ -283,8 +286,9 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                     else:
                         continue
         else:
-            comp_sci = pipe_slit.data
-            pipe_correction = pipe_slit.pathloss_uniform
+        '''
+        comp_sci = pipe_slit.data
+        pipe_correction = pipe_slit.pathloss_uniform
         if len(pipe_correction) == 0:
             print("Pipeline pathloss correction in datamodel is empty. Skipping testing this slit.")
             continue
@@ -470,9 +474,9 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                 else:
                     test_result = "FAILED"
 
-                msg = " *** Result of the test: "+test_result+"\n"
+                msg = " *** Result of the test: "+test_result
                 if debug:
-                    print(msg)
+                    print(msg+"\n")
                 log_msgs.append(msg)
                 total_test_result.append(test_result)
 
@@ -490,7 +494,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         # this is the file to hold the image of pipeline-calculated difference values
         compfile.writeto(compfile_name, overwrite=True)
 
-        msg = "\nFits file with calculated pathloss values of each slit saved as: "
+        msg = "Fits file with calculated pathloss values of each slit saved as: "
         print(msg)
         log_msgs.append(msg)
         print(outfile_name)
@@ -512,13 +516,13 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             FINAL_TEST_RESULT = True
 
     if FINAL_TEST_RESULT:
-        msg = "\n *** Final result for path_loss test will be reported as PASSED *** \n"
-        print(msg)
+        msg = " *** Final result for path_loss test will be reported as PASSED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
         result_msg = "All slits PASSED path_loss test."
     else:
-        msg = "\n *** Final result for path_loss test will be reported as FAILED *** \n"
-        print(msg)
+        msg = " *** Final result for path_loss test will be reported as FAILED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
         result_msg = "One or more slits FAILED path_loss test."
 
@@ -526,12 +530,12 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     pathloss_end_time = time.time() - pathtest_start_time
     if pathloss_end_time > 60.0:
         pathloss_end_time = pathloss_end_time/60.0  # in minutes
-        pathloss_tot_time = "* Script FS_UNI.py took ", repr(pathloss_end_time)+" minutes to finish."
+        pathloss_tot_time = "* Script FS_UNI.py took "+repr(pathloss_end_time)+" minutes to finish."
         if pathloss_end_time > 60.0:
             pathloss_end_time = pathloss_end_time/60.  # in hours
-            pathloss_tot_time = "* Script FS_UNI.py took ", repr(pathloss_end_time)+" hours to finish."
+            pathloss_tot_time = "* Script FS_UNI.py took "+repr(pathloss_end_time)+" hours to finish."
     else:
-        pathloss_tot_time = "* Script FS_UNI.py took ", repr(pathloss_end_time)+" seconds to finish."
+        pathloss_tot_time = "* Script FS_UNI.py took "+repr(pathloss_end_time)+" seconds to finish."
     print(pathloss_tot_time)
     log_msgs.append(pathloss_tot_time)
 

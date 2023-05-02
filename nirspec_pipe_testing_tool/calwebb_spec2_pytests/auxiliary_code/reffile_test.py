@@ -64,7 +64,7 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     log_msgs = []
 
     logstream, errstream = get_streams(logfile=logfile)
-    
+
     # Convert pipeline step to a header keyword if necessary
     if pipeline_step.upper().startswith("R_"):
         step_key = pipeline_step.upper()
@@ -73,10 +73,10 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
             step_key = "R_" + pipeline_step.upper()[:6]
         else:
             step_key = "R_" + pipeline_step.upper()
-    
+
     # Identify the context
     context = fits.getval(path_to_input_file, "CRDS_CTX")
-    
+
     # Identify the reference file
     try:
         reffile_name = fits.getval(path_to_input_file, step_key)
@@ -84,15 +84,15 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         print("Invalid pipeline step", file=errstream)
         log_msgs.append("Invalid pipeline step")
         return None
-    
+
     reffile_name = reffile_name.replace('crds://', '')
-    
+
     # Is there a reference file for this step? If not, PASS
     if reffile_name == "N/A":
         print("No reference file for step {}.".format(pipeline_step), file=errstream)
         log_msgs.append("No reference file for step {}.".format(pipeline_step))
         return ""
-    
+
     # Grab metadata from the input and reference files
     if input_file is None:
         input_file = load_input_file(path_to_input_file, logstream=logstream)
@@ -109,7 +109,7 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     except ValueError:
         import pdb
         pdb.set_trace()
-    
+
     tests = {}  # store all the tests in a single dictionary
 
     # add instrument name in the expected keyword
@@ -131,7 +131,7 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         tests['RECOMMENDATION'] = recommended_reffile == reffile_name
     else:
         msg1 = '* WARNING: Unable to find recommendation for the reference file:'
-        msg2 = '        Match criteria determined by pipeline to find reference file: ', repr(match_criteria)
+        msg2 = '        Match criteria determined by pipeline to find reference file: '+repr(match_criteria)
         msg3 = '        Recommendation dictionary = '+repr(recommended_reffile)
         log_msgs.append(msg1)
         log_msgs.append(msg2)
@@ -144,7 +144,7 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     del match_criteria['observatory']
     del match_criteria['instrument']
     del match_criteria['filekind']
-    
+
     # Useafter dates require special handling
     if "META.OBSERVATION.DATE" not in match_criteria:
         tests['USEAFTER'] = True
@@ -158,16 +158,16 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
         tests["USEAFTER"] = input_obstime >= ref_useafter
         # Note that this does NOT check whether there is a more recent
         # (but still valid) reference file that could have been selected
-    
+
     # Loop over the rest of the matching criteria
     for criterion, value in match_criteria.items():
         tests[criterion] = check_meta(input_file, criterion, value)
-    
+
     final = all([x or x is None for x in tests.values()])
-    
+
     failures = []
     failmsg = "{}: reffile value {}, input value {}"
-    
+
     # Finally, print out the results of the tests
     print("REFERENCE FILE SELECTION TEST", file=logstream)
     print("  Input file: {}".format(path_to_input_file), file=logstream)
@@ -204,7 +204,7 @@ def reffile_test(path_to_input_file, pipeline_step, logfile=None,
     # Close the output stream if necessary
     if logfile is not None:
         logstream.close()
-    
+
     return "\n".join(failures), log_msgs
 
 
@@ -212,11 +212,11 @@ def create_rfile_test(step, doc_insert):
     """
     A factory to create wrappers for testing correct reference files.
     """
-    
+
     def rfile_test_step(output_hdul):
         output_file = output_hdul[1]
         return reffile_test(output_file, step)
-    
+
     rfile_test_step.__doc__ = """
     This function determines if the reference file for the {} matches the expected one.
     Args:
@@ -225,7 +225,7 @@ def create_rfile_test(step, doc_insert):
     Returns:
         result: boolean, true if the reference file matches expected value
     """.format(doc_insert)
-    
+
     return rfile_test_step
 
 
@@ -234,24 +234,24 @@ def check_all_reffiles(path_to_input_file, logfile=None):
     A wrapper around reffile_test to test every reference file in the input
     file's header. A file path may be included to redirect output to a log.
     """
-    
+
     all_steps = list(fits.getval(path_to_input_file, "R_*"))
     
     if logfile is not None:   # erase existing log, since we'll be appending later
         with open(logfile, 'w'):
             pass
-    
+
     # Only want to load the input file once
     input_file = load_input_file(path_to_input_file)
-    
+
     failures = {}
-    
+
     for step in all_steps:
         res = reffile_test(path_to_input_file, step, logfile=logfile, 
                            input_file=input_file)
         if res:
             failures[step] = res
-        
+
     return failures
 
 
@@ -262,9 +262,9 @@ def main():
                                      ' input file(s).')
     parser.add_argument('input_file', nargs='+', help="Paths to one or more input files")
     parser.add_argument('-l', '--log', help="Path to a desired output log file")
-    
+
     args = parser.parse_args()
-    
+
     for input_file in args.input_file:
         check_all_reffiles(input_file, logfile=args.log)
 

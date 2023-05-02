@@ -2,14 +2,13 @@ import time
 import os
 import argparse
 import sys
+import shutil
 import numpy as np
 from astropy.io import fits
 from glob import glob
 from copy import deepcopy
-
 from gwcs import wcstools
 from jwst import datamodels
-
 from . import auxiliary_functions as auxfunc
 
 """
@@ -19,8 +18,8 @@ files from CRDS instead of ESA-format.
 """
 
 # HEADER
-__author__ = "M. A. Pena-Guerrero"
-__version__ = "2.8"
+__author__ = "M. Pena-Guerrero & J. Muzerolle"
+__version__ = "2.9"
 
 
 # HISTORY
@@ -37,6 +36,8 @@ __version__ = "2.8"
 # Feb 2023 - Version 2.8: Major rearrange. Fixed code to read new post-commissioning reference files in CRDS
 #                         format and added total error determination according to:
 #                         https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
+# Mar 2023 - Version 2.9: Fixed total error estimation bug to match slitlet by slitlet. Copies of the input files
+#                         were introduced to avoid bug in datamodels for pipe vr. 1.9.6 the corrupted orig files.
 
 
 def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=True,
@@ -70,38 +71,41 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     # start the timer
     flattest_start_time = time.time()
 
-    # get basic info from the input file
-    if isinstance(step_input_filename, str):
-        msg = 'step_input_filename=' + step_input_filename
+    # define the name of the needed files, if interpolated_flat is None then the input file name
+    # is a string for the path and name of the flat field step output fits file
+    if interpolated_flat is None:
+        msg = 'test_input_filename=' + step_input_filename
         print(msg)
         log_msgs.append(msg)
-        if "wavecorr" not in step_input_filename:
-            wcs_file = step_input_filename.replace("_flat_field.fits", "_wavecorr.fits")
-        else:
-            wcs_file = step_input_filename
-        model = datamodels.MultiSlitModel(wcs_file)
-
-        # paths to save plots and files
-        file_basename = os.path.basename(step_input_filename.replace(".fits", ""))
-        if output_directory is not None:
-            file_path = output_directory
-        else:
-            file_path = step_input_filename.replace(file_basename, "")
-
+        # copy the file to avoid corruption
+        pipe_flat_file = step_input_filename.replace(".fits", "_copy.fits")
+        shutil.copyfile(step_input_filename, pipe_flat_file)
+        pipe_flat_field_mdl = datamodels.open(pipe_flat_file)
+        pipe_interpolated_flat_file = pipe_flat_file.replace("flat_field", "interpolatedflat")
+        interp_flat_orig = pipe_interpolated_flat_file.replace("_copy.fits", ".fits")
+        shutil.copyfile(interp_flat_orig, pipe_interpolated_flat_file)
     else:
-        file_path = output_directory
-        model = step_input_filename
-        file_basename = ''
+        # in this case the input is the datamodel for the flat_field output and interpolated_flat is a string
+        pipe_interpolated_flat_file = interpolated_flat.replace(".fits", "_copy.fits")
+        shutil.copyfile(interpolated_flat, pipe_interpolated_flat_file)
+        pipe_flat_field_mdl = step_input_filename
+    # copy the files to avoid corruption
+    flat_field_pipe_outfile = pipe_interpolated_flat_file.replace('interpolatedflat', 'flat_field')
+    wcs_file = pipe_interpolated_flat_file.replace("interpolatedflat", "wavecorr")
+    shutil.copyfile(wcs_file.replace("_copy.fits", ".fits"), wcs_file)
+    file_basename = os.path.basename(flat_field_pipe_outfile.split(sep="interpolatedflat")[0])
+    file_path = os.path.dirname(flat_field_pipe_outfile)
 
-    # read in the on-the-fly flat image
-    if interpolated_flat is None:
-        flatfile = step_input_filename.replace("flat_field.fits", "interpolatedflat.fits")
-    else:
-        flatfile = interpolated_flat
+    # open the datamodels
+    flatfile = datamodels.open(pipe_interpolated_flat_file)
+    model = datamodels.open(wcs_file)
 
-    # get basic info from model
-    if isinstance(model, list):  # this was added for the validation notebooks to work
+    # make sure to only get the model and not a list
+    if isinstance(pipe_flat_field_mdl, list):
+        pipe_flat_field_mdl = pipe_flat_field_mdl[0]
+    if isinstance(model, list):
         model = model[0]
+    # get basic info from model
     det = model.meta.instrument.detector
     grat = model.meta.instrument.grating
     filt = model.meta.instrument.filter
@@ -118,27 +122,25 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     #    print(k, v)
     #input()
 
-    if isinstance(step_input_filename, str):
-        # print the info about the reference files used:
-        with datamodels.open(step_input_filename) as pipe_flat_field_mdl:
-            msg0 = "\n * FOR COMPARISON PURPOSES, for file " + step_input_filename
-            msg1 = "    DATE-OBS = " + str(pipe_flat_field_mdl.meta.observation.date)
-            msg2 = "    Pipeline CRDS context: " + str(pipe_flat_field_mdl.meta.ref_file.crds.context_used)
-            msg3 = "    Pipeline ref d-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.dflat.name)
-            msg4 = "    Pipeline ref s-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.sflat.name)
-            msg5 = "    Pipeline ref f-flat used:  " + str(pipe_flat_field_mdl.meta.ref_file.fflat.name) + "\n"
-            print(msg0)
-            print(msg1)
-            print(msg2)
-            print(msg3)
-            print(msg4)
-            print(msg5)
-            log_msgs.append(msg0)
-            log_msgs.append(msg1)
-            log_msgs.append(msg2)
-            log_msgs.append(msg3)
-            log_msgs.append(msg4)
-            log_msgs.append(msg5)
+    print()
+    msg0 = " * FOR COMPARISON, these are the reference files used by the pipelined"
+    msg1 = "    DATE-OBS = " + pipe_flat_field_mdl.meta.observation.date
+    msg2 = "    Pipeline CRDS context: " + pipe_flat_field_mdl.meta.ref_file.crds.context_used
+    msg3 = "    Pipeline ref d-flat used:  " + pipe_flat_field_mdl.meta.ref_file.dflat.name
+    msg4 = "    Pipeline ref s-flat used:  " + pipe_flat_field_mdl.meta.ref_file.sflat.name
+    msg5 = "    Pipeline ref f-flat used:  " + pipe_flat_field_mdl.meta.ref_file.fflat.name
+    print(msg0)
+    print(msg1)
+    print(msg2)
+    print(msg3)
+    print(msg4)
+    print(msg5)
+    log_msgs.append(msg0)
+    log_msgs.append(msg1)
+    log_msgs.append(msg2)
+    log_msgs.append(msg3)
+    log_msgs.append(msg4)
+    log_msgs.append(msg5)
 
     # Read the reference files
 
@@ -146,6 +148,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     if not os.path.isfile(dflat_path):
         result_msg = "Test skiped because the D-flat provided does not exist: {}".format(dflat_path)
         print(msg)
+        log_msgs.append(msg)
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
     dfile = dflat_path
@@ -192,12 +195,15 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         print(msg)
         log_msgs.append(msg)
         result_msg = "Test skiped because there is no flat correspondence for the filter in the data: {}".format(filt)
+        print(msg)
+        log_msgs.append(msg)
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
 
     if not os.path.isfile(sflat_path):
         result_msg = "Test skiped because the S-flat provided does not exist: {}".format(sflat_path)
         print(msg)
+        log_msgs.append(msg)
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
     sfile = sflat_path
@@ -218,6 +224,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     if not os.path.isfile(fflat_path):
         result_msg = "Test skiped because the F-flat provided does not exist: {}".format(fflat_path)
         print(msg)
+        log_msgs.append(msg)
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
     ffile = fflat_path
@@ -249,12 +256,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     # list to determine if pytest is passed or not
     total_test_result = []
 
-    # open the flatfile
-    flatfile_hdu = fits.open(flatfile)
-
     # loop over the slits
     sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1"]
-    msg = "\nNow looping through the slits. This may take a while... "
+    msg = "Now looping through the slits. This may take a while... "
     print(msg)
     log_msgs.append(msg)
     if det == "NRS2":
@@ -269,13 +273,35 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         continue_flat_field_test = False
         if exp_type == "NRS_BRIGHTOBJ":
             slit = model
+            input_sci, input_err = slit.data, slit.err
+            input_var_psn, input_var_rnse = slit.var_poisson, slit.var_rnoise
+            pipe_flout_slt = pipe_flat_field_mdl
+            pipeflat_slt = flatfile
             continue_flat_field_test = True
         else:
             for slit_in_MultiSlitModel in model.slits:
                 if slit_in_MultiSlitModel.name == slit_id:
                     slit = slit_in_MultiSlitModel
+                    input_sci, input_err = slit.data, slit.err
+                    input_var_psn, input_var_rnse = slit.var_poisson, slit.var_rnoise
+                    # get the same slit in the pipeline flat field output
+                    # model and the interpoladed model
+                    pipe_flout_slt = auxfunc.find_slit(slit_id, pipe_flat_field_mdl)
+                    pipeflat_slt = auxfunc.find_slit(slit_id, flatfile)
+                    if pipe_flout_slt is None or pipeflat_slt is None:
+                        result_msg = "Test skiped because could not get the slit model for either the flat_field output or the interpolated flat for slit  {}".format(slit_id)
+                        print(msg)
+                        log_msgs.append(msg)
+                        median_diff = "skip"
+                        return median_diff, result_msg, log_msgs
+                    # go ahead with test
                     continue_flat_field_test = True
                     break
+        flout_slt_sci = pipe_flout_slt.data
+        flout_slt_err = pipe_flout_slt.err
+        pipeflat = pipeflat_slt.data
+        pipeflat_err = pipeflat_slt.err
+        pipeflat_dq = pipeflat_slt.dq
 
         if not continue_flat_field_test:
             continue
@@ -284,20 +310,17 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             sfv_wav, sfv_dat = auxfunc.get_slit_wavdat(sffastvar, slit_id)
             ffv_wav, ffv_dat = auxfunc.get_slit_wavdat(fffastvar, slit_id)
             if sfv_wav is None or ffv_wav is None:
-                print('\n *** OH NO! Slit name {} is NOT found in the given table. Exiting test.'. format(slit_id))
+                print(' *** OH NO! Slit name {} is NOT found in the given table. Exiting test.'. format(slit_id))
                 result_msg = "Test skiped because {} not found in reference file table".format(slit_id)
+                log_msgs.append(msg)
                 print(msg)
                 median_diff = "skip"
                 return median_diff, result_msg, log_msgs
 
-            # set occurrence of the SCI extension, i.e. for second occurrence of SCI then ext=2
-            ext = si + 1
-
-            msg = "\n-> Working with slit: " + slit_id
+            msg = "-> Working with slit: " + slit_id
             print(msg)
             log_msgs.append(msg)
             print("exp_type = ", exp_type)
-            print("SCI ext = ", ext)
             print("Source type = ", slit.source_type)
 
             # get the wavelength
@@ -322,10 +345,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             flat_err = np.zeros([nw2, nw1])
             delflaterr = np.zeros([nw2, nw1])
 
-            # read the pipeline-calculated flat image, using the corresponding SCI occurrence number
-            pipeflat = flatfile_hdu["SCI", ext].data
-            pipeflat_err = flatfile_hdu["ERR", ext].data
-
             # make sure the two arrays are the same shape
             if np.shape(flatcor) != np.shape(pipeflat):
                 msg1 = 'WARNING -> Something went wrong, arrays are not the same shape:'
@@ -338,7 +357,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 log_msgs.append(msg1)
                 log_msgs.append(msg2)
                 log_msgs.append(msg3)
-                msg = " *** Result of the test: " + test_result + "\n"
+                msg = " *** Result of the test: " + test_result
                 print(msg)
                 log_msgs.append(msg)
                 test_result = "FAILED"
@@ -516,7 +535,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                                 print('dff_err, dfs_err, sff_err, sfs_err, fff_err, ffs_err :')
                                 print(dff_err, dfs_err, sff_err, sfs_err, fff_err, ffs_err)
                                 # check the dq flags from the interpolated flat
-                                pipeflat_dq = flatfile_hdu["DQ", ext].data
                                 print('interpolated dq_flag = ', pipeflat_dq[k, j])
                                 print('slit dq_flag = ', slit.dq[k, j])
                                 print()
@@ -588,14 +606,14 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     else:
                         test_result = "FAILED"
 
-            msg = " *** Result of the test: " + test_result + "\n"
+            msg = " *** Result of the test: " + test_result
             print(msg)
             log_msgs.append(msg)
             total_test_result.append(test_result)
 
             # make histogram
             flatcor_copy = deepcopy(flatcor)
-            flatcor_copy[np.where(flatcor_copy == 999.0)] = np.nan
+            flatcor_copy[np.where(flatcor_copy == 999.0)] = 1.0
             flat_err_copy = deepcopy(flat_err)
             flat_err_copy[np.where(flatcor == 999.0)] = np.nan
             if show_figs or save_figs:
@@ -674,8 +692,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 log_msgs.append(msg)
 
                 # this is the file to hold the image of calculated flat correctoion values
-                flatcor_copy[np.isnan(flatcor_copy)] = 1.0
-                outfile_ext = fits.ImageHDU(flatcor_copy, name=slit_id)
+                #flatcor_copy[np.isnan(flatcor_copy)] = 1.0
+                outfile_ext = fits.ImageHDU(flatcor_copy, name=slit_id+'_SCI')
                 outfile.append(outfile_ext)
                 # this is the file to hold the corresponding error extensions
                 outfile_ext = fits.ImageHDU(flat_err_copy, name=slit_id+'_ERR')
@@ -691,9 +709,22 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 print(msg)
                 log_msgs.append(msg)
 
+            # Total error calculation according to equation taken from:
+            # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
+            auxfunc.calc_flat_total_slt_err(flat_field_pipe_outfile, slit_id,
+                                            flout_slt_sci, flout_slt_err,
+                                            input_sci, input_err, input_var_psn, input_var_rnse,
+                                            pipeflat, pipeflat_err, flatcor_copy, flat_err_copy,
+                                            show_plts=show_figs, save_plts=save_figs)
+
+    # close datamodels
+    flatfile.close()
+    pipe_flat_field_mdl.close()
+    model.close()
+
     if writefile:
-        outfile_name = flatfile.replace("interpolatedflat.fits", "flat_calc.fits")
-        complfile_name = flatfile.replace("interpolatedflat.fits", "flat_comp.fits")
+        outfile_name = flat_field_pipe_outfile.replace("interpolatedflat.fits", "flat_calc.fits")
+        complfile_name = flat_field_pipe_outfile.replace("interpolatedflat.fits", "flat_comp.fits")
 
         # create the fits list to hold the calculated flat values for each slit
         outfile.writeto(outfile_name, overwrite=True)
@@ -701,7 +732,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         # this is the file to hold the image of pipeline-calculated difference values
         complfile.writeto(complfile_name, overwrite=True)
 
-        msg = "\nFits file with calculated flat values of each slit saved as: "
+        msg = "Fits file with calculated flat values of each slit saved as: "
         print(msg)
         log_msgs.append(msg)
         print(outfile_name)
@@ -723,30 +754,31 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             FINAL_TEST_RESULT = True
 
     if FINAL_TEST_RESULT:
-        msg = "\n *** Final result for flat_field test will be reported as PASSED *** \n"
+        msg = " *** Final result for flat_field test will be reported as PASSED *** "
         print(msg)
         log_msgs.append(msg)
         result_msg = "All slits PASSED flat_field test."
     else:
-        msg = "\n *** Final result for flat_field test will be reported as FAILED *** \n"
+        msg = " *** Final result for flat_field test will be reported as FAILED *** "
         print(msg)
         log_msgs.append(msg)
         result_msg = "One or more slits FAILED flat_field test."
 
-    # Total error calculation according to equation taken from:
-    # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
-    auxfunc.calc_flat_total_errs(step_input_filename, show_plts=show_figs, save_plts=save_figs)
+    # remove the copied files
+    os.remove(pipe_interpolated_flat_file)
+    os.remove(flat_field_pipe_outfile)
+    os.remove(wcs_file)
 
     # end the timer
     flattest_end_time = time.time() - flattest_start_time
     if flattest_end_time > 60.0:
         flattest_end_time = flattest_end_time / 60.0  # in minutes
-        flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time) + " minutes to finish."
+        flattest_tot_time = "* Script flattest_fs.py took " + repr(flattest_end_time) + " minutes to finish."
         if flattest_end_time > 60.0:
             flattest_end_time = flattest_end_time / 60.  # in hours
-            flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time) + " hours to finish."
+            flattest_tot_time = "* Script flattest_fs.py took " + repr(flattest_end_time) + " hours to finish."
     else:
-        flattest_tot_time = "* Script flattest_fs.py took ", repr(flattest_end_time) + " seconds to finish."
+        flattest_tot_time = "* Script flattest_fs.py took " + repr(flattest_end_time) + " seconds to finish."
     print(flattest_tot_time)
     log_msgs.append(flattest_tot_time)
 
@@ -816,11 +848,6 @@ def main():
     threshold_diff = args.threshold_diff
     output_directory = args.output_directory
     debug = args.debug
-
-    # print pipeline version
-    import jwst
-
-    print("\n  ** using pipeline version: ", jwst.__version__, "** \n")
 
     # Run the principal function of the script
     flattest(step_input_filename, dflat_path=dflat_path, sflat_path=sflat_path,

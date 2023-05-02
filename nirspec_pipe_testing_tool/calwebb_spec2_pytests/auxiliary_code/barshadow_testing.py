@@ -418,22 +418,22 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         slitlet_test_result_list.append({tested_quantity: result})
         for line in stats_print_strings:
             log_msgs.append(line)
-        msg = " * PASS/FAIL TEST: Is the median <= threshold for slit "+slit_id+"? "+result+"\n"
-        print(msg)
+        msg = " * PASS/FAIL TEST: Is the median <= threshold for slit "+slit_id+"? "+result
+        print(msg+"\n")
         log_msgs.append(msg)
 
         tested_quantity = "percentage_greater_3threshold"
         result_3xThreshold = auxfunc.does_median_pass_tes(percentages[1], 10)
         # slitlet_test_result_list.append({tested_quantity: result_3xThreshold})
-        msg = " * Result of number of points greater than 3*threshold greater than 10%: "+result_3xThreshold+"\n"
-        print(msg)
+        msg = " * Result of number of points greater than 3*threshold greater than 10%: "+result_3xThreshold
+        print(msg+"\n")
         log_msgs.append(msg)
 
         tested_quantity = "percentage_greater_5threshold"
         result_5xThreshold = auxfunc.does_median_pass_tes(percentages[2], 10)
         # slitlet_test_result_list.append({tested_quantity: result_5xThreshold})
-        msg = " * Result of number of points greater than 5*threshold greater than 10%: "+result_5xThreshold+"\n"
-        print(msg)
+        msg = " * Result of number of points greater than 5*threshold greater than 10%: "+result_5xThreshold
+        print(msg+"\n")
         log_msgs.append(msg)
 
         # Make plots of normalized corrected data
@@ -521,27 +521,27 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
             for t, tr in tdict.items():
                 if tr == "FAILED":
                     FINAL_TEST_RESULT = False
-                    msg = "\n * Test of " + t + " for slitlet " + sl + "  FAILED."
+                    msg = " * Test of " + t + " for slitlet " + sl + "  FAILED."
                     print(msg)
                     log_msgs.append(msg)
                 elif tr == "skip":
                     FINAL_TEST_RESULT = True
-                    msg = "\n * Test of "+t+" for slitlet "+sl+"  SKIPPED due to source=POINT. \n" \
+                    msg = " * Test of "+t+" for slitlet "+sl+"  SKIPPED due to source=POINT. " \
                                                                "   Reported as PASSED since behavior is as expected."
                     print(msg)
                     log_msgs.append(msg)
                 else:
                     FINAL_TEST_RESULT = True
-                    msg = "\n * Test of " + t + " for slitlet " + sl + "  PASSED."
+                    msg = " * Test of " + t + " for slitlet " + sl + "  PASSED."
                     print(msg)
                     log_msgs.append(msg)
 
     if FINAL_TEST_RESULT:
-        result_msg = "\n *** Final result for barshadow test will be reported as PASSED *** \n"
+        result_msg = " *** Final result for barshadow test will be reported as PASSED *** "
         print(result_msg)
         log_msgs.append(result_msg)
     else:
-        result_msg = "\n *** Final result for barshadow test will be reported as FAILED *** \n"
+        result_msg = " *** Final result for barshadow test will be reported as FAILED *** "
         print(result_msg)
         log_msgs.append(result_msg)
 

@@ -426,8 +426,8 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
                     else:
                         test_result = "FAILED"
 
-                    msg = " *** Result of the test: "+test_result+"\n"
-                    print(msg)
+                    msg = " *** Result of the test: "+test_result
+                    print(msg+"\n")
                     log_msgs.append(msg)
                     total_test_result.append(test_result)
 
@@ -441,7 +441,7 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
         # this is the file to hold the image of pipeline-calculated difference values
         compfile.writeto(compfile_name, overwrite=True)
 
-        msg = "\nFits file with calculated pathloss values of each slit saved as: "
+        msg = "Fits file with calculated pathloss values of each slit saved as: "
         print(msg)
         log_msgs.append(msg)
         print(outfile_name)
@@ -463,13 +463,13 @@ def pathtest(step_input_filename, reffile, comparison_filename, writefile=True, 
             FINAL_TEST_RESULT = True
 
     if FINAL_TEST_RESULT:
-        msg = "\n *** Final pathloss test result reported as PASSED *** \n"
-        print(msg)
+        msg = " *** Final pathloss test result reported as PASSED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
         result_msg = "All slits PASSED path_loss test."
     else:
-        msg = "\n *** Final pathloss test result reported as FAILED *** \n"
-        print(msg)
+        msg = " *** Final pathloss test result reported as FAILED *** "
+        print(msg+"\n")
         log_msgs.append(msg)
         result_msg = "One or more slits FAILED path_loss test."
 

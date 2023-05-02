@@ -6,12 +6,12 @@ Example usage:
 
     Terminal
         Simply type the command
-        $ nptt_run_PTT_with_multiprocess multiprocessing_PTT_config.cfg
+        $ nptt_run_nptt_with_multiprocess multiprocessing_nptt_config.cfg
 
     As a module
         # import the script
         import nirspec_pipe_testing_tool as nptt
-        nptt.utils.run_PTT_with_multiprocess.run_PTT_with_multiprocess(multiprocessing_PTT_config.cfg)
+        nptt.utils.run_nptt_with_multiprocess.run_nptt_with_multiprocess(multiprocessing_nptt_config.cfg)
 """
 
 import os
@@ -22,7 +22,7 @@ import argparse
 import time
 from glob import glob
 
-from . import run_PTT
+from . import run_tool
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero"
@@ -35,9 +35,11 @@ __version__ = "1.0"
 
 def read_multiprocess_config_file(config_path):
     """
-    This function reads the multiprocess PTT configuration file to get needed info.
-    :param config_path: str, full path and name of the NPTT multiprocessing configuration file
-    :return: cfg_info: list, read information
+    This function reads the multiprocess NPTT configuration file to get needed info.
+    Args:
+        config_path: str, full path and name of the NPTT multiprocessing configuration file
+    REturns:
+        cfg_info: list, read information
     """
 
     if not os.path.exists(config_path):
@@ -57,28 +59,33 @@ def read_multiprocess_config_file(config_path):
     return cfg_info
 
 
-def get_cfg_files2run_NPTT(common_path, data_sets):
+def get_cfg_files2run_nptt(common_path, data_sets):
     """
     Get all the configuration files that will be used as input to run NPTT
-    :param common_path: str, common part of the path
-    :param data_sets: str, all the data sets separated by a comma
-    :return: cfg_files2run_NPTT: list, configuration files to run NPTT
+    Args:
+        common_path: str, common part of the path
+        data_sets: str, all the data sets separated by a comma
+    Returns:
+        cfg_files2run_nptt: list, configuration files to run NPTT
     """
-    cfg_files2run_NPTT = []
+    cfg_files2run_nptt = []
     data_sets = data_sets.split(",")
     for ds in data_sets:
         data_dir = os.path.join(common_path, ds)
         cfg_files_in_data_dir = glob(data_dir+"/*PTT*.cfg")
         for cfg_file in cfg_files_in_data_dir:
-            cfg_files2run_NPTT.append(cfg_file)
-    return cfg_files2run_NPTT
+            cfg_files2run_nptt.append(cfg_file)
+    return cfg_files2run_nptt
 
 
-def run_PTT_with_multiprocess(multiprocessing_PTT_config_file):
+def run_nptt_with_multiprocess(multiprocessing_nptt_config_file):
     """
-    This function runs PTT and then moves the html report into the working directory specified
-    in the PTT configuration file.
-    :param multiprocessing_PTT_config_file: string, name and path of the multiprocessing configuration file to use
+    This function runs NPTT and then moves the html report into the working directory specified
+    in the NPTT configuration file.
+    Args:
+        multiprocessing_PTT_config_file: string, name and path of the multiprocessing configuration file to use
+    Returns:
+        nothing
     """
     print('Running NPTT with multiprocessing. This may take a while...')
 
@@ -86,15 +93,15 @@ def run_PTT_with_multiprocess(multiprocessing_PTT_config_file):
     start_time = time.time()
 
     # get the information from the multiprocessing configuration file
-    cfg_info = read_multiprocess_config_file(multiprocessing_PTT_config_file)
+    cfg_info = read_multiprocess_config_file(multiprocessing_nptt_config_file)
     common_path, data_sets, cal_det1_input_file_list, cores2use = cfg_info
 
     # get all the NPTT configuration files to use - i.e. the times NPTT needs to be run
-    cfg_files2run_NPTT = get_cfg_files2run_NPTT(common_path, data_sets)
+    cfg_files2run_nptt = get_cfg_files2run_nptt(common_path, data_sets)
 
     # get all the report names to use
     report_names = []
-    for ptt_cfg in cfg_files2run_NPTT:
+    for ptt_cfg in cfg_files2run_nptt:
         d = os.path.dirname(ptt_cfg)
         r = os.path.join(d, "report")
         report_names.append(r)
@@ -104,7 +111,7 @@ def run_PTT_with_multiprocess(multiprocessing_PTT_config_file):
         det1_input_file_list = []
     else:
         det1_input_file_list = cal_det1_input_file_list
-    for ptt_cfg in cfg_files2run_NPTT:
+    for ptt_cfg in cfg_files2run_nptt:
         if cal_det1_input_file_list == "all":
             if "NRS1" in ptt_cfg:
                 det = "NRS1"
@@ -125,7 +132,7 @@ def run_PTT_with_multiprocess(multiprocessing_PTT_config_file):
 
     # set the pool of cores to use for NPTT
     p = multiprocessing.Pool(cores2use)
-    p.starmap(run_PTT.run_PTT, zip(report_names, cfg_files2run_NPTT, det1_input_file_list))
+    p.starmap(run_tool.run_nptt, zip(report_names, cfg_files2run_nptt, det1_input_file_list))
     p.close()
     p.join()
 
@@ -142,7 +149,7 @@ def run_PTT_with_multiprocess(multiprocessing_PTT_config_file):
     else:
         total_time_str = repr(round(end_time, 1)) + " sec"
 
-    print(f'\n * It took {total_time_str} to process {len(cfg_files2run_NPTT)} NPTT runs with {cores2use} cores * \n')
+    print(f'\n * It took {total_time_str} to process {len(cfg_files2run_nptt)} NPTT runs with {cores2use} cores * \n')
 
 
 def main():
@@ -159,7 +166,7 @@ def main():
     config_path = args.config
 
     # Run NPTT with multiprocessing
-    run_PTT_with_multiprocess(config_path)
+    run_nptt_with_multiprocess(config_path)
 
 
 if __name__ == '__main__':

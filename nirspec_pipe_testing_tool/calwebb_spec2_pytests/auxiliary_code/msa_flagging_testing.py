@@ -432,12 +432,12 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
         print("\n * One or more traces show msa_flagging match < ", repr(msa_flagging_threshold))
         print("   See results above per trace. \n")
     if FINAL_TEST_RESULT:
-        result_msg = "\n *** Final result for msa_flagging test will be reported as PASSED *** \n"
-        print(result_msg)
+        result_msg = " *** Final result for msa_flagging test will be reported as PASSED *** "
+        print(result_msg+"\n")
         log_msgs.append(result_msg)
     else:
-        result_msg = "\n *** Final result for msa_flagging test will be reported as FAILED *** \n"
-        print(result_msg)
+        result_msg = " *** Final result for msa_flagging test will be reported as FAILED *** "
+        print(result_msg+"\n")
         log_msgs.append(result_msg)
 
     # end the timer

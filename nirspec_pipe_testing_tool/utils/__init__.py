@@ -8,10 +8,9 @@ from . import hdr_keywd_check
 from . import level2b_hdr_keywd_check
 from . import level2b_hdr_keywd_dict_map2sim
 from . import mk_multiprocessing_cfg
-from . import mk_pttconfig_file
+from . import mk_npttconfig_file
 from . import move_data2ext1
 from . import prepare_data2run
 from . import read_hdr
-from . import run_cal_detector1
-from . import run_PTT
-from . import run_PTT_with_multiprocess
+from . import run_tool
+from . import run_with_multiprocess
