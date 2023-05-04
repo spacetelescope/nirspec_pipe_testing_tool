@@ -319,8 +319,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         if show_figs:
             plt.show()
         if save_figs:
-            step_input_filepath = step_input_filename.replace(".fits", "")
-            plt_name = step_input_filepath + "_Pathloss_test_IFU_UNI_slit_" + str(slit_num) + ".png"
+            plt_name = step_input_filename.split('_flat_field')[0] + "_Pathloss_test_IFU_UNI_slit_" + str(slit_num) + ".png"
             plt.savefig(plt_name)
             print('Figure saved as: ', plt_name)
         elif not save_figs and not show_figs:

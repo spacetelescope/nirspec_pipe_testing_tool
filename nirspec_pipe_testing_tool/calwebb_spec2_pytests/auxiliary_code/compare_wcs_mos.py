@@ -87,7 +87,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         # check that shutter configuration file in header is the same as given in PTT_config file
         msametfl = fits.getval(infile_name, "MSAMETFL", 0)
         if msametfl != os.path.basename(msa_conf_name):
-            msg = "* WARNING! MSA config file name given in PTT_config file does not match the MSAMETFL " \
+            msg = "* WARNING! MSA config file name given in NPTT_config file does not match the MSAMETFL " \
                   "keyword in main header."
             print(msg+"\n")
             log_msgs.append(msg)
@@ -114,9 +114,9 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         if os.getcwd() != os.path.dirname(msa_conf_name):
             subprocess.run(["cp", msa_conf_name, "."])
     except FileNotFoundError:
-        msg1 = " * PTT is not able to locate the MSA shutter configuration file. Please make sure that the " \
+        msg1 = " * NPTT is not able to locate the MSA shutter configuration file. Please make sure that the " \
                "msa_conf_name variable in"
-        msg2 = "   the PTT_config.cfg file is pointing exactly to where the fits file exists (i.e. full " \
+        msg2 = "   the NPTT_config.cfg file is pointing exactly to where the fits file exists (i.e. full " \
                "path and name). "
         msg3 = "   -> The WCS test is now set to skip and no plots will be generated. "
         print(msg1)
@@ -194,7 +194,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
 
             # Get the ESA trace
             if raw_data_root_file is None:
-                _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
+                _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_nptt_cfg_file(infile_name)
             msg = "Using this raw data file to find the corresponding ESA file: "+raw_data_root_file
             print(msg)
             log_msgs.append(msg)

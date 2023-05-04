@@ -414,7 +414,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         fig.suptitle("FS PS Pathloss Correction Test for slit " + str(slit_id))
 
         if save_figs:
-            plt_name = step_input_filepath + "_Pathloss_test_slitlet_"+str(mode) + "_" + str(slit_id) + "_" + \
+            plt_name = step_input_filepath.split('_flat_field')[0] + "_Pathloss_test_slitlet_"+str(mode) + "_" + str(slit_id) + "_" + \
                        str(slit_val) + ".png"
             plt.savefig(plt_name)
             print('Figure saved as: ', plt_name)

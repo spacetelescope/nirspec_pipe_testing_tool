@@ -104,7 +104,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     flat_field_pipe_outfile = pipe_interpolated_flat_file.replace('interpolatedflat', 'flat_field')
     wcs_file = pipe_interpolated_flat_file.replace("interpolatedflat", "wavecorr")
     shutil.copyfile(wcs_file.replace("_copy.fits", ".fits"), wcs_file)
-    file_basename = os.path.basename(flat_field_pipe_outfile.split(sep="interpolatedflat")[0])
+    file_basename = os.path.basename(pipe_interpolated_flat_file.split(sep="interpolatedflat")[0])
     file_path = os.path.dirname(flat_field_pipe_outfile)
 
     # open the datamodels
@@ -138,7 +138,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     else:
         mode = "not MOS data"
 
-    msg0 = " * FOR COMPARISON, these are the reference files used by the pipelined"
+    msg0 = " * FOR COMPARISON, these are the reference files used by the pipeline"
     msg1 = "    DATE-OBS = " + pipe_flat_field_mdl.meta.observation.date
     msg2 = "    Pipeline CRDS context: " + pipe_flat_field_mdl.meta.ref_file.crds.context_used
     msg3 = "    Pipeline ref d-flat used:  " + pipe_flat_field_mdl.meta.ref_file.dflat.name
@@ -303,8 +303,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         complfile = fits.HDUList()
         complfile.append(hdu0)
 
-    # list to determine if pytest is passed or not
-    total_test_result = []
+    # dict to determine if pytest is passed or not
+    total_test_result = {}
 
     # get the slitlet info, needed for the F-Flat
     ext_shutter_info = "SHUTTER_INFO"  # this is extension 2 of the msa file, that has the shutter info
@@ -515,7 +515,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         ffs = np.interp(wave[k, j], ffsallwave, ffsall[:, col-1, row-1])
                         # get corresponding error estimation
                         try:
-                            ffs_err = fferr[pind[0], pind[1]]
+                            ffs_err = np.interp(wave[k, j], ffsallwave, fferr[:, col-1, row-1])
                         except IndexError:   # this means that the ERR extension is not an array
                             ffs_err = 0.0
 
@@ -712,7 +712,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                     print(msg)
                     log_msgs.append(msg)
                     # set the plot variables
-                    main_title = filt+"   "+grat+"   SLIT="+slit_id+"\n"
+                    main_title = filt+"   "+grat+"   Row&Col="+slitlet_id+"\n"
                     bins = None   # binning for the histograms, if None the function will select them automatically
                     #             lolim_x, uplim_x, lolim_y, uplim_y
                     plt_origin = None
@@ -727,9 +727,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                         print(msg)
                         log_msgs.append(msg)
                     else:
-                        t = (file_basename, "MOS_flattest_"+slitlet_id+"_histogram.png")
-                        plt_name = "_".join(t)
-                        plt_name = os.path.join(file_path, plt_name)
+                        pltnme = file_basename + "slitlet" + slit_id + "_flatdiff_histogram.png"
+                        plt_name = os.path.join(file_path, pltnme)
                         # set the range of values to be shown in the image, will affect color scale
                         vminmax = [-5*delfg_std, 5*delfg_std]
                         auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
@@ -748,23 +747,23 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         msg = " *** Result of the test: "+test_result
         print(msg)
         log_msgs.append(msg)
-        total_test_result.append(test_result)
+        total_test_result[slit_id] = test_result
 
         # create fits file to hold the calculated flat for each slit
         if writefile:
             # this is the file to hold the image of the correction values
-            outfile_ext = fits.ImageHDU(flatcor_copy, name=slitlet_id+'_SCI')
+            outfile_ext = fits.ImageHDU(flatcor_copy, name=slit_id+'_SCI')
             outfile.append(outfile_ext)
             # this is the file to hold the corresponding error extensions
-            outfile_ext = fits.ImageHDU(flat_err_copy, name=slitlet_id+'_ERR')
+            outfile_ext = fits.ImageHDU(flat_err_copy, name=slit_id+'_ERR')
             outfile.append(outfile_ext)
 
             # this is the file to hold the image of the comparison values
-            complfile_ext = fits.ImageHDU(difference_img, name=slitlet_id)
+            complfile_ext = fits.ImageHDU(difference_img, name=slit_id)
             complfile.append(complfile_ext)
 
             # the file is not yet written, indicate that this slit was appended to list to be written
-            msg = "Extension corresponding to slitlet "+slitlet_id+" appended to list to be written into calculated " \
+            msg = "Extension corresponding to slitlet "+slit_id+" appended to list to be written into calculated " \
                                                                    "and comparison fits files."
             print(msg)
             log_msgs.append(msg)
@@ -773,7 +772,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
         input_sci, input_err = slit.data, slit.err
         input_var_psn, input_var_rnse = slit.var_poisson, slit.var_rnoise
-        auxfunc.calc_flat_total_slt_err(flat_field_pipe_outfile, slit_id,
+        auxfunc.calc_flat_total_slt_err(flat_field_pipe_outfile, 'slitlet'+slit_id,
                                         flout_slt_sci, flout_slt_err,
                                         input_sci, input_err, input_var_psn, input_var_rnse,
                                         pipeflat, pipeflat_err, flatcor_copy, flat_err_copy,
@@ -807,8 +806,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
     # If all tests passed then pytest will be marked as PASSED, else it will be FAILED
     FINAL_TEST_RESULT = True
-    for t in total_test_result:
-        if t == "FAILED":
+    for _, r in total_test_result.items():
+        if r == "FAILED":
             FINAL_TEST_RESULT = False
             break
     if FINAL_TEST_RESULT:
@@ -820,7 +819,14 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         msg = " *** Final result for flat_field test will be reported as FAILED *** "
         print(msg)
         log_msgs.append(msg)
-        result_msg = "One or more slitlets FAILED flat_field test."
+        msg = "   Summary of slitlets and test results: "
+        print(msg)
+        log_msgs.append(msg)
+        for t, r in total_test_result.items():
+            msg = '     ' + t + ' ' + r
+            print(msg)
+            log_msgs.append(msg)
+        result_msg = "One or more slitlets FAILED flat_field test"
 
     # end the timer
     flattest_end_time = time.time() - flattest_start_time

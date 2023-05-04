@@ -6,6 +6,7 @@ from astropy import wcs
 from collections import OrderedDict
 import argparse
 import sys
+import urllib.request
 
 from jwst import datamodels
 
@@ -28,13 +29,14 @@ jupyter notebook barshadow.ipynb written by James Muzerolle in August of 2019.
 
 # HEADER
 __author__ = "M. A. Pena-Guerrero & J. Muzerolle"
-__version__ = "1.3"
+__version__ = "1.4"
 
 # HISTORY
 # Nov 2019 - Version 1.0: initial version completed
 # Sep 2020 - Version 1.1: Added option to take datamodel as barshadow output (i.e. bsfile)
 # Jan 2021 - Version 1.2: Implemented option to use datamodels instead of fits files as input
 # Apr 2021 - Version 1.3: Modified the test to not stop and exit if the source type of 1 slit is POINT
+# May 2023 - Version 1.4: Modified code to use CRDS reference files rather than ESA format
 
 
 def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_final_figs=False, show_final_figs=False,
@@ -126,6 +128,17 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
     if save_final_figs or save_intermediary_figs:
         file_path = plfile.replace(os.path.basename(plfile), "")
         file_basename = os.path.basename(plfile.replace("_pathloss.fits", ""))
+
+    # get the corresponding reference file
+    reffile = bs.meta.ref_file.barshadow.name
+    reffile = reffile.replace("crds://", "")
+    print('*** barshadow reference file name: ', reffile)
+    # download the file if necessary
+    if not os.path.isfile(reffile):
+        reffile_url = "https://jwst-crds.stsci.edu/unchecked_get/references/jwst/" + reffile
+        urllib.request.urlretrieve(reffile_url, reffile)
+        print('  Barshadow reference file retreved from CRDS!')
+    refhdul = fits.open(reffile)
 
     for plslit, bsslit in zip(pl.slits, bs.slits):
         # check that slitlet name of the data from the pathloss or extract_2d and the barshadow datamodels are the same
@@ -265,32 +278,14 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         # scale the slit_y values by 1.15 to take into account the shutter pitch
         bsslity = bsslity/1.15
 
-        # compute bar shadow corrections independently, given the wavelength and slit_y from the data model
-        # get the reference file (need the mos1x1 for this internal lamp case, where each shutter was
-        # extracted separately)
-        wit4_path = os.environ.get('WIT4_PATH')
-        if wit4_path is None:
-            print("(barshadow_testing): The environment variable WIT4_PATH is not defined. To set it, follow the "
-                  "instructions at: \n"
-                  "                     https://github.com/spacetelescope/nirspec_pipe_testing_tool")
-            exit()
-        cdp3_barshadow = "nirspec/CDP3/05_Other_Calibrations/5.3_BarShadow/referenceFilesBS-20160401"
-        path_to_ref_files = os.path.join(wit4_path, cdp3_barshadow)
-        if ref_file is None:
-            ref_file = os.path.join(path_to_ref_files, 'jwst-nirspec-mos1x1.bsrf.fits')
-            if bsslit.shutter_state == '1':
-                ref_file = os.path.join(path_to_ref_files, 'jwst-nirspec-mos1x3.bsrf.fits')
-        if debug:
-            '''    shutter_state : str ----- ``Slit.shutter_state`` attribute - a combination of
-                                    possible values: ``1`` - open shutter, ``0`` - closed shutter, ``x`` - main shutter
-            '''
-            print('slit.shutter_state = ', bsslit.shutter_state)
-        msg = 'Reference file used for barshadow calculation: '+ref_file
+        msg = 'Reference file used for barshadow calculation: '+reffile
         log_msgs.append(msg)
         print(msg)
-        hdul = fits.open(ref_file)
-        bscor_ref = hdul[1].data
-        w = wcs.WCS(hdul[1].header)
+        ref_ext = 1
+        if bsslit.shutter_state == '1':
+            ref_ext = 3
+        bscor_ref = refhdul[ref_ext].data
+        w = wcs.WCS(refhdul[ref_ext].header)
         y1, x1 = np.mgrid[:bscor_ref.shape[0], : bscor_ref.shape[1]]
         lam_ref, slity_ref = w.all_pix2world(x1, y1, 0)
 
@@ -320,10 +315,10 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
             fi = shutter_status.find('1')
         if debug:
             print('fi = ', fi)
-        nax2 = hdul[1].header['NAXIS2']
-        cv1 = hdul[1].header['CRVAL1']
-        cd1 = hdul[1].header['CDELT1']
-        cd2 = hdul[1].header['CDELT2']
+        nax2 = refhdul[ref_ext].header['NAXIS2']
+        cv1 = refhdul[ref_ext].header['CRVAL1']
+        cd1 = refhdul[ref_ext].header['CDELT1']
+        cd2 = refhdul[ref_ext].header['CDELT2']
         shutter_height = 1./cd2
         fi2 = nax2-shutter_height*(1+fi)
         if debug:
@@ -488,9 +483,6 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         # store tests results in the total dictionary
         total_test_result[slit_id] = slitlet_test_result_list
 
-        # close files
-        hdul.close()
-
         # create fits file to hold the calculated correction for each slitlet
         if write_barshadow_files:
             # this is the file to hold the image of the correction values
@@ -509,6 +501,9 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
 
     if debug:
         print('total_test_result = ', total_test_result)
+
+    # close reference file
+    refhdul.close()
 
     # close datamodels
     bs.close()
@@ -549,14 +544,14 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
     barshadow_test_end_time = time.time() - barshadow_test_start_time
     if barshadow_test_end_time >= 60.0:
         barshadow_test_end_time = barshadow_test_end_time/60.0  # in minutes
-        barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time) + \
+        barshadow_test_tot_time = "* Barshadow validation test took " + repr(barshadow_test_end_time) + \
                                   " minutes to finish."
         if barshadow_test_end_time >= 60.0:
             barshadow_test_end_time = barshadow_test_end_time/60.  # in hours
-            barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time) + \
+            barshadow_test_tot_time = "* Barshadow validation test took " + repr(barshadow_test_end_time) + \
                                       " hours to finish."
     else:
-        barshadow_test_tot_time = "* Barshadow validation test took ", repr(barshadow_test_end_time) + \
+        barshadow_test_tot_time = "* Barshadow validation test took " + repr(barshadow_test_end_time) + \
                                   " seconds to finish."
     print(barshadow_test_tot_time)
     log_msgs.append(barshadow_test_tot_time)

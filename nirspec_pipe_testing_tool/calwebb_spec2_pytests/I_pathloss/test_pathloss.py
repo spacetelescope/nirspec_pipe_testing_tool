@@ -93,7 +93,7 @@ def output_vars(set_inandout_filenames, config):
     initial_input_file = config.get("calwebb_spec2_input_file", "input_file")
     initial_input_file = os.path.join(output_directory, initial_input_file)
     if os.path.isfile(initial_input_file):
-        inhdr = fits.getheader(step_input_file)
+        inhdr = fits.getheader(initial_input_file)
         detector = inhdr["DETECTOR"]
     else:
         msg = "Skipping "+step+" because the initial input file given in NPTT_config.cfg does not exist."

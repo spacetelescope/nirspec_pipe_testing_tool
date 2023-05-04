@@ -146,7 +146,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     flat_field_pipe_outfile = pipe_interpolated_flat_file.replace('interpolatedflat', 'flat_field')
     wcs_file = pipe_interpolated_flat_file.replace("interpolatedflat", "assign_wcs")
     shutil.copyfile(wcs_file.replace("_copy.fits", ".fits"), wcs_file)
-    file_basename = os.path.basename(flat_field_pipe_outfile.split(sep="interpolatedflat")[0])
+    file_basename = os.path.basename(pipe_interpolated_flat_file.split(sep="interpolatedflat")[0])
     file_path = os.path.dirname(flat_field_pipe_outfile)
 
     # open the datamodels
@@ -569,9 +569,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 print(msg)
                 log_msgs.append(msg)
                 # create histogram
-                t = (file_basename, det, pslice, "IFUflatcomp_histogram")
+                pltnme = file_basename + "slice" + pslice + "_flatdiff_histogram.png"
                 title = filt+"   "+grat+"   SLICE="+pslice+"\n"
-                plot_name = "".join((file_path, ("_".join(t))+".png"))
+                plt_name = os.path.join(file_path, pltnme)
                 bins = None   # binning for the histograms, if None the function will select them automatically
                 title = title+"Residuals"
                 info_img = [title, "x (pixels)", "y (pixels)"]
@@ -582,7 +582,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     print(msg)
                     log_msgs.append(msg)
                 else:
-                    plt_name = os.path.join(file_path, plot_name)
                     difference_img = pipeflat - calc_flat
                     plt_origin = None
                     limits = [px0-2, px0+nx, py0-2, py0+ny]
@@ -643,14 +642,14 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     if mk_all_slices_plt:
         if show_figs or save_figs:
             # create histogram
-            t = (file_basename, det, "all_slices_IFU_flatcomp_histogram")
-            title = ("_".join(t))
+            pltnme = file_basename + "all_slices_IFU_flatdiff_histogram.png"
+            title = filt+"   "+grat+"   all slices\n"
+            plot_name = os.path.join(file_path, pltnme)
             # calculate median of medians and std_dev of medians
             all_delfg_median_arr = np.array(all_delfg_median)
             mean_of_delfg_mean = np.mean(all_delfg_mean_arr)
             median_of_delfg_median = np.median(all_delfg_median_arr)
             medians_std = np.std(median_of_delfg_median)
-            plot_name = "".join((file_path, title, ".png"))
             mk_hist(title, all_delfg_median_arr, mean_of_delfg_mean, median_of_delfg_median,
                     medians_std, save_figs, show_figs, plot_name=plot_name)
         elif not save_figs and not show_figs:
