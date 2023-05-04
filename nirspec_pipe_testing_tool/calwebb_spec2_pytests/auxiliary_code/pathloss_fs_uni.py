@@ -370,7 +370,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
         if show_figs:
             plt.show()
         if save_figs:
-            plt_name = step_input_filepath + "_Pathloss_test_slit_" + str(slit_id) + "_FS_extended.png"
+            plt_name = step_input_filepath.split('_flat_field')[0] + "_Pathloss_test_slit_" + str(slit_id) + "_FS_extended.png"
             plt.savefig(plt_name)
             print('Figure saved as: ', plt_name)
         elif not save_figs and not show_figs:
@@ -421,7 +421,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
 
         # Show and/or save figures
         if save_figs:
-            plt_name = step_input_filename.replace(".fits", "") + "_Pathlosstest_slitlet_" + slit_id + ".png"
+            plt_name = step_input_filename.split('_flat_field')[0] + "_Pathloss_test_slitlet_" + slit_id + ".png"
             plt.savefig(plt_name)
             print('Figure saved as: ', plt_name)
         if show_figs:

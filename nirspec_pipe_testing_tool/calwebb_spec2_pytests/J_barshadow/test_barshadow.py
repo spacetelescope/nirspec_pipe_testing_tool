@@ -196,6 +196,8 @@ def validate_barshadow(output_vars):
     if core_utils.check_MOS_true(hdr):
         plfile = output_vars[1].replace('_barshadow', '_pathloss')
         bsfile = output_vars[1]
+        print('plfile = ', plfile)
+        print('bsfile = ', bsfile)
         (barshadow_threshold_diff, save_barshadow_final_plot, save_barshadow_intermediary_plots,
          write_barshadow_files) = output_vars[2]
         barshadow_testresult, result_msg, log_msgs = barshadow_testing.run_barshadow_tests(

@@ -444,14 +444,14 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
     msa_flagging_test_end_time = time.time() - msa_flagging_test_start_time
     if msa_flagging_test_end_time >= 60.0:
         msa_flagging_test_end_time = msa_flagging_test_end_time/60.0  # in minutes
-        msa_flagging_test_tot_time = "* MSA flagging validation test took ", repr(msa_flagging_test_end_time) + \
+        msa_flagging_test_tot_time = "* MSA flagging validation test took " + repr(msa_flagging_test_end_time) + \
                                      " minutes to finish."
         if msa_flagging_test_end_time >= 60.0:
             msa_flagging_test_end_time = msa_flagging_test_end_time/60.  # in hours
-            msa_flagging_test_tot_time = "* MSA flagging validation test took ", repr(msa_flagging_test_end_time) + \
+            msa_flagging_test_tot_time = "* MSA flagging validation test took " + repr(msa_flagging_test_end_time) + \
                                          " hours to finish."
     else:
-        msa_flagging_test_tot_time = "* MSA flagging validation test took ", repr(msa_flagging_test_end_time) + \
+        msa_flagging_test_tot_time = "* MSA flagging validation test took " + repr(msa_flagging_test_end_time) + \
                                   " seconds to finish."
     print(msa_flagging_test_tot_time)
     log_msgs.append(msa_flagging_test_tot_time)

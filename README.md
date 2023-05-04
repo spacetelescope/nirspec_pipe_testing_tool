@@ -5,7 +5,7 @@ STScI staff, and on the institute's servers. If you do not have active STScI cre
 you will not be able to run NPTT.  
 
 
-## Latest NPTT working version is tag 3.0.0 
+## Latest NPTT working version is tag 3.0.1 
 
 
 ## What is a Pytest
@@ -278,7 +278,7 @@ to run the SCSB script that converts raw data into uncal type files. You can
 choose to either keep this subdirectory, or tell the script to remove it after 
 the operation is done. In the terminal type:
 ```bash
-nptt_prepare_data2run fits_file.fits MODE -u
+nptt_prepare_data2run fits_file.fits MODE -rm
 ```
 where the MODE is expected to be one of: FS, MOS, IFU, BOTS, dark, image, 
 confirm, taconfirm, wata, msata, focus, mimf, or MOS_sim (use this last one 
@@ -286,8 +286,8 @@ only for MOS simulations, simulations for other modes should use the
 corresponding mode). This command will update the uncal keyword header without 
 creating a new file, and will also keep the subdirectory. To remove it, simply 
 add ```-rm``` at the end. To save the keyword changes in a new fits file 
-(instead of updating), remove the ```-u```. The new uncal fits file is now 
-ready for pipeline ingest.
+(instead of updating), add the flag the ```-nf```. The new uncal fits file 
+is now ready for pipeline ingest.
 
 This module can also be called from a script in the following way:
 ```bash

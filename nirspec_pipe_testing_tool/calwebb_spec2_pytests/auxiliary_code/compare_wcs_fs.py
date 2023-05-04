@@ -126,7 +126,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
 
             # Get the ESA trace
             if raw_data_root_file is None:
-                _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_PTT_cfg_file(infile_name)
+                _, raw_data_root_file = auxfunc.get_modeused_and_rawdatrt_nptt_cfg_file(infile_name)
             specifics = [pipeslit]
 
             # check if ESA data is not in the regular directory tree, these files are exceptions

@@ -439,19 +439,18 @@ def run_nptt(report_name=None, config_path=None, uncal_file=None, verbose=False)
                 nptt_log.info(change_filter_opaque_msg)
 
             # get the shutter configuration file for MOS data only
-            msa_shutter_conf = "No shutter configuration file will be used."
             if 'MSA' in exp_type:
                 # check if the configuration shutter file name is in the header of the fits file and if not add it
                 msametfl = hdr['MSAMETFL']
                 if os.path.basename(msa_shutter_conf) != msametfl:
                     msametfl = os.path.basename(msa_shutter_conf)
-                    fits.setval(step_input_file, "MSAMETFL", 0, value=msametfl)
+                    fits.setval(input_file, "MSAMETFL", 0, value=msametfl)
 
             # Check if data is IFU that the Image Model keyword is correct
             if mode_used.lower() == "ifu":
                 datamdl = hdr["DATAMODL"]
                 if datamdl != "IFUImageModel":
-                    fits.setval(step_input_file, "DATAMODL", 0, value="IFUImageModel")
+                    fits.setval(input_file, "DATAMODL", 0, value="IFUImageModel")
                     print("DATAMODL keyword changed to IFUImageModel.")
 
             # create the map to record what steps did run (replace previous file)

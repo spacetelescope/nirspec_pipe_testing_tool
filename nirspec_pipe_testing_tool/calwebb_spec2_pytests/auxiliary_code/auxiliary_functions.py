@@ -557,14 +557,14 @@ def do_idl_rebin(a, *args):
     return eval(''.join(evList))
 
 
-def get_modeused_and_rawdatrt_PTT_cfg_file(infile_name):
+def get_modeused_and_rawdatrt_nptt_cfg_file(infile_name):
     # get script directory and config name
     out_dir = os.path.dirname(infile_name)
-    PPT_cfg_file = os.path.join(out_dir, "PTT_config.cfg")
-    if not os.path.isfile(PPT_cfg_file):
+    nptt_cfg_file = os.path.join(out_dir, "NPTT_config.cfg")
+    if not os.path.isfile(nptt_cfg_file):
         detector = fits.getval(infile_name, "DETECTOR")
-        PPT_cfg_file = PPT_cfg_file.replace(".cfg", "_" + detector + ".cfg")
-    with open(PPT_cfg_file, "r") as cfg:
+        nptt_cfg_file = nptt_cfg_file.replace(".cfg", "_" + detector + ".cfg")
+    with open(nptt_cfg_file, "r") as cfg:
         for i, line in enumerate(cfg.readlines()):
             if "#" not in line:
                 if "mode_used" in line:
@@ -763,7 +763,7 @@ def get_esafile(esa_files_path, rawdatroot, mode, specifics, nid=None, debug=Fal
                         print("            Obtained: ", root_filename.split('.')[0])
                         break
                 except KeyError:
-                    print("* WARNING: PTT is unable to confirm the raw file name used matches the esa file root name.")
+                    print("* WARNING: NPTT is unable to confirm the raw file name used matches the esa file root name.")
             else:
                 esafile = []
                 for esabase in esafile_basename:
