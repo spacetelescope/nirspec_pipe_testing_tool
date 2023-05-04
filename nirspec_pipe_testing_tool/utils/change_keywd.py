@@ -89,7 +89,7 @@ def chkeywd(fits_file, keyword, value, ext_number):
         new_value = new_keywd(extension_number, value)
 
     # now change the the value
-    fits.setval(fits_file, keyword, extension_number, value=new_value)
+    fits.setval(fits_file, keyword, extension_number, value=new_value.upper())
 
     print('\n * Script  change_keywd.py  finished * \n')
 

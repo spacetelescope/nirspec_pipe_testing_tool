@@ -650,8 +650,8 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     else:
                         vminmax = None
                     auxfunc.plt_two_2Dimgandhist(difference_img, delfg, info_img, info_hist, plt_name=plt_name,
-                                                 vminmax=vminmax,
-                                                 plt_origin=plt_origin, show_figs=show_figs, save_figs=save_figs)
+                                                 vminmax=vminmax, plt_origin=plt_origin,
+                                                 show_figs=show_figs, save_figs=save_figs)
 
                 # now make the plot for the errors comparison
                 main_title = "ERRORS Comparison for " + filt + "   " + grat + "   SLIT=" + slit_id + "\n"
@@ -665,10 +665,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     log_msgs.append(msg)
                 else:
                     if output_directory is not None:
-                        t = (file_basename, "FS_flattest_error_" + slit_id + "_histogram.png")
+                        t = (file_basename, "FS_" + slit_id + "_flatdiff_err_histogram.png")
                         plt_name = os.path.join(file_path, "_".join(t))
                     else:
-                        plt_name = os.path.join(os.getcwd(), "FS_flattest_error_" + det + "_" + slit_id + "_histogram.png")
+                        plt_name = os.path.join(os.getcwd(), "FS_" + det + "_" + slit_id + "_flatdiff_err_histogram.png")
                         print("No output_directory was provided. Figures will be saved in current working directory:")
                         print(plt_name + "\n")
                     difference_img = pipeflat_err - flat_err_copy

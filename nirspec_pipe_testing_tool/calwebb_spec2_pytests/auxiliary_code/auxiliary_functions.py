@@ -1061,8 +1061,8 @@ def MyFormatter(x, lim):
     return "%0.1E" % Decimal(x)
 
 
-def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt_origin=None, limits=None, vminmax=None,
-                         show_figs=False, save_figs=False):
+def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt_origin=None,
+                         limits=None, vminmax=None, show_figs=False, save_figs=False):
     """
     This function creates and shows/saves one figure with the 2D plot for the given array and the
     corresponding histogram.
