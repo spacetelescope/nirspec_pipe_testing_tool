@@ -17,8 +17,8 @@ This script contains the auxiliary functions that the wcs FS, MOS, and IFU WCS s
 """
 
 # HEADER
-__author__ = "M. A. Pena-Guerrero"
-__version__ = "2.4"
+__author__ = "M. Pena-Guerrero"
+__version__ = "2.5"
 
 
 # HISTORY
@@ -29,6 +29,7 @@ __version__ = "2.4"
 # Sep 2019 - Version 2.2: Modified function to identify science extensions to work with build 7.3
 # Feb 2023 - Version 2.3: Added function to calculate total errors after flat field step
 # Mar 2023 - Version 2.4: Fixed total error estimation bug to match slitlet by slitlet
+# May 2023 - Version 2.5: Fixed deprecation warning for matplotlib subplots in flat histogram
 
 
 def find_nearest(arr, value):
@@ -1086,44 +1087,39 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
     if save_figs:
         matplotlib.use("Agg")
 
-    # set up generals
-    font = {'weight': 'normal',
-            'size': 16}
+    font = {'weight' : 'normal',
+            'size'   : 16}
     matplotlib.rc('font', **font)
-    plt.figure(1, figsize=(12, 10))
-    plt.subplots_adjust(hspace=0.4)
     alpha = 0.2
     fontsize = 15
+    fig, axs = plt.subplots(2, 1, figsize=(12, 10))
+    fig.suptitle('Pipeline_flat - Validation_flat')
 
     # Top figure - 2D plot
-    ax = plt.subplot(211)
     if vminmax is None:
         vminmax = [None, None]
     if plt_origin is None:
-        im = ax.imshow(img, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
+        im = axs[0].imshow(img, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
     else:
         lolim_x, uplim_x, lolim_y, uplim_y = plt_origin
-        im = ax.imshow(img, aspect="auto", origin='lower', extent=[lolim_x, uplim_x, lolim_y, uplim_y], vmin=vminmax[0],
+        im = axs[0].imshow(img, aspect="auto", origin='lower', extent=[lolim_x, uplim_x, lolim_y, uplim_y], vmin=vminmax[0],
                        vmax=vminmax[1])
-    plt.tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
-    plt.minorticks_on()
-    plt.colorbar(im, ax=ax)
+    axs[0].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+    axs[0].minorticks_on()
+    plt.colorbar(im, ax=axs[0])
     title, label_x, label_y = info_img
-    plt.title(title)
-    plt.xlabel(label_x)
-    plt.ylabel(label_y)
+    axs[0].set_title(title)
+    axs[0].set(xlabel=label_x, ylabel=label_y)
     if limits is not None:
-        ax.set_xlim(limits[0], limits[1])
-        ax.set_ylim(limits[2], limits[3])
+        axs[0].set_xlim(limits[0], limits[1])
+        axs[0].set_ylim(limits[2], limits[3])
 
     # Bottom figure - histogram
-    ax = plt.subplot(212)
     xlabel, ylabel, bins, stats = info_hist
     x_mean, x_median, x_stddev = stats
     str_x_stddev = "stddev = {:0.3e}".format(x_stddev)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    ax.text(0.73, 0.67, str_x_stddev, transform=ax.transAxes, fontsize=fontsize)
+    axs[1].set(xlabel=label_x, ylabel=label_y)
+    axs[1].text(0.73, 0.67, str_x_stddev, transform=axs[1].transAxes, fontsize=fontsize)
     if bins is None:
         try:
             xmin = x_median - x_stddev * 5
@@ -1133,15 +1129,17 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
         except:
             ValueError
             bins = 15
-    n, bins, patches = ax.hist(hist_data, bins=bins, histtype='bar', ec='k', facecolor="red", alpha=alpha)
-    ax.xaxis.set_major_locator(MaxNLocator(8))
+    n, bins, patches = axs[1].hist(hist_data, bins=bins, histtype='bar', ec='k',
+                                      facecolor="red", alpha=alpha)
+    axs[1].xaxis.set_major_locator(MaxNLocator(8))
     majorFormatter = FuncFormatter(MyFormatter)
-    ax.xaxis.set_major_formatter(majorFormatter)
+    axs[1].xaxis.set_major_formatter(majorFormatter)
     # add vertical line at mean and median
-    plt.axvline(x_mean, label="mean = %0.3e" % (x_mean), color="g")
-    plt.axvline(x_median, label="median = %0.3e" % (x_median), linestyle="-.", color="b")
-    plt.legend()
-    plt.minorticks_on()
+    axs[1].axvline(x_mean, label="mean = %0.3e" % (x_mean), color="g")
+    axs[1].axvline(x_median, label="median = %0.3e" % (x_median), linestyle="-.", color="b")
+    axs[1].legend()
+    axs[1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
+    axs[1].minorticks_on()
 
     # Show and/or save figures
     if save_figs:
@@ -1150,6 +1148,7 @@ def plt_two_2Dimgandhist(img, hist_data, info_img, info_hist, plt_name=None, plt
         else:
             print(" * The figure was given no name. Please set the plt_name variable in the call to the function")
             print("   named plt_two_2Dimgs. FIGURE WILL NOT BE SAVED.")
+
     if show_figs:
         plt.show()
 

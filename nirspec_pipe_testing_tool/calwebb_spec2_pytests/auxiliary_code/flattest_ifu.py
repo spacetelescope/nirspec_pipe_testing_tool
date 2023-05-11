@@ -27,7 +27,7 @@ files from CRDS instead of ESA-format.
 
 # HEADER
 __author__ = "M. Pena-Guerrero & J. Muzerolle"
-__version__ = "2.9"
+__version__ = "2.10"
 
 # HISTORY
 # Nov 2017 - Version 1.0: initial version completed
@@ -44,6 +44,8 @@ __version__ = "2.9"
 #                         https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
 # Mar 2023 - Version 2.9: Fixed total error estimation bug to match slitlet by slitlet. Copies of the input files
 #                         were introduced to avoid bug in datamodels for pipe vr. 1.9.6 the corrupted orig files.
+# May 2023 - Version 2.10: Fixed bug of copying file to avoid corruption and removed requirement of both DQ flags to
+#                          be ok for flat correction calculation
 
 
 def mk_hist(title, delfg, delfg_mean, delfg_median, delfg_std, save_figs, show_figs, plot_name):
@@ -139,7 +141,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         shutil.copyfile(interp_flat_orig, pipe_interpolated_flat_file)
     else:
         # in this case the input is the datamodel for the flat_field output and interpolated_flat is a string
-        pipe_interpolated_flat_file = interpolated_flat
+        pipe_interpolated_flat_file = interpolated_flat.replace(".fits", "_copy.fits")
         shutil.copyfile(interpolated_flat, pipe_interpolated_flat_file)
         pipe_flat_field_mdl = step_input_filename
     # copy the files to avoid corruption
@@ -405,11 +407,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     dff_err = 0.0
 
                     # interpolate over D-flat cube and the corresponding error
-                    dfs, dfs_err, dflat_dqflags_ok = 1.0, 0.0, False
+                    dfs, dfs_err = 1.0, 0.0
                     if dfimdq[pind[0], pind[1]] == 0:
                         dfs = np.interp(jwav, dfwave, dfim[:, pind[0], pind[1]])
                         dfs_err = dfimerr[pind[0], pind[1]]
-                        dflat_dqflags_ok = True
 
                     # integrate over S-flat fast vector
                     sff = 1.0
@@ -424,11 +425,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     sff_err = 0.0
 
                     # get s-flat pixel-dependent correction and the corresponding error
-                    sfs, sfs_err, sflat_dqflags_ok = 1.0, 0.0, False
+                    sfs, sfs_err = 1.0, 0.0
                     if sfimdq[pind[0], pind[1]] == 0:
                         sfs = sfim[pind[0], pind[1]]
                         sfs_err = sfimerr[pind[0], pind[1]]
-                        sflat_dqflags_ok = True
 
                     # No component of the f-flat slow component for IFU
                     ffs, ffs_err = 1.0, 0.0
@@ -446,14 +446,13 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     fff_err = 0.0
 
                     flatcor[j] = 1.0
-                    if dflat_dqflags_ok and sflat_dqflags_ok:
-                        flatcor[j] = dff * dfs * sff * sfs * fff * ffs
-                        # if there is a NaN (i.e. the pipeline is using this pixel but we are not), set this to 1.0
-                        # to match what the pipeline is doing. The value would be NaN if one or more of the 3 flat
-                        # components do not give a valid result because the wavelength is out of range. This is only
-                        # an issue for IFU since extract_2d is skipped.
-                        if np.isnan(flatcor[j]) or flatcor[j] <= 0.0 or pipeflat[pind[0], pind[1]] == 1:
-                            flatcor[j] = 1.0
+                    flatcor[j] = dff * dfs * sff * sfs * fff * ffs
+                    # if there is a NaN (i.e. the pipeline is using this pixel but we are not), set this to 1.0
+                    # to match what the pipeline is doing. The value would be NaN if one or more of the 3 flat
+                    # components do not give a valid result because the wavelength is out of range. This is only
+                    # an issue for IFU since extract_2d is skipped.
+                    if np.isnan(flatcor[j]) or flatcor[j] <= 0.0 or pipeflat[pind[0], pind[1]] == 1:
+                        flatcor[j] = 1.0
                     sffarr[j] = sff
 
                     # calculate the total error propagation

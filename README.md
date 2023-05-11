@@ -5,7 +5,7 @@ STScI staff, and on the institute's servers. If you do not have active STScI cre
 you will not be able to run NPTT.  
 
 
-## Latest NPTT working version is tag 3.0.1 
+## Latest NPTT working version is tag 3.0.2 
 
 
 ## What is a Pytest
@@ -163,11 +163,14 @@ conda env remove -n name_of_your_old_environment
 - Option A. For non-developers and without NPTT source code. For the 
 **latest stable tag** type: 
 ```bash
-pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@3.0.0
+pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@tag
 ```
-where the numbers at the end represent the latest stable version (or tag) of NPTT 
-(flight versions after commissioning are tags 2.0.0 and up); for the most recent 
-code, in the terminal type:
+where "tag" at the end represents the latest stable version of NPTT (flight 
+versions after commissioning are tags 2.0.0 and up). To see what is the latest
+tag please go at the top of this file and look for the section named "Latest 
+NPTT working version". 
+
+For development versions and/or the most recent code, in the terminal type:
 ```bash
 pip install git+https://github.com/spacetelescope/nirspec_pipe_testing_tool@master
 ```

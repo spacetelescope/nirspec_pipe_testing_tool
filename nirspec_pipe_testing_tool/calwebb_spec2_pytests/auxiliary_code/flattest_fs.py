@@ -19,7 +19,7 @@ files from CRDS instead of ESA-format.
 
 # HEADER
 __author__ = "M. Pena-Guerrero & J. Muzerolle"
-__version__ = "2.9"
+__version__ = "2.10"
 
 
 # HISTORY
@@ -38,6 +38,8 @@ __version__ = "2.9"
 #                         https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
 # Mar 2023 - Version 2.9: Fixed total error estimation bug to match slitlet by slitlet. Copies of the input files
 #                         were introduced to avoid bug in datamodels for pipe vr. 1.9.6 the corrupted orig files.
+# May 2023 - Version 2.10: Fixed bug for S200B1 and preventing crash and removed requirement of both DQ flags to
+#                          be ok for flat correction calculation
 
 
 def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=True,
@@ -257,12 +259,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     total_test_result = []
 
     # loop over the slits
-    sltname_list = ["S200A1", "S200A2", "S400A1", "S1600A1"]
+    sltname_list = ["S200A1", "S200A2", "S200B1", "S400A1", "S1600A1"]
     msg = "Now looping through the slits. This may take a while... "
     print(msg)
     log_msgs.append(msg)
-    if det == "NRS2":
-        sltname_list.append("S200B1")
 
     # but check if data is BOTS
     if exp_type == "NRS_BRIGHTOBJ":
@@ -279,6 +279,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             pipeflat_slt = flatfile
             continue_flat_field_test = True
         else:
+            pipe_flout_slt = None
             for slit_in_MultiSlitModel in model.slits:
                 if slit_in_MultiSlitModel.name == slit_id:
                     slit = slit_in_MultiSlitModel
@@ -297,6 +298,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     # go ahead with test
                     continue_flat_field_test = True
                     break
+            if pipe_flout_slt is None:
+                print('-> Slit ', slit_id, ' not found in MultiSlitModel \n')
+                continue
         flout_slt_sci = pipe_flout_slt.data
         flout_slt_err = pipe_flout_slt.err
         pipeflat = pipeflat_slt.data
@@ -390,7 +394,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                         # define temporary variables and set wavelength range to operate in
                         dff, dfs, sff, sfs, fff, ffs = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
                         dff_err, dfs_err, sff_err, sfs_err, fff_err, ffs_err = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-                        dflat_dqflags_ok, sflat_dqflags_ok = True, True
                         if (wave[k, j] >= 0.6) and (wave[k, j] <= 5.3):
                             # integrate over D-flat fast vector
                             dfrqe_wav = dfrqe["wavelength"][0]
@@ -427,7 +430,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                                 # print("d-flat: DQ flag 1 = DO NOT USE forcing -> dfs=1.0   or  ",
                                 # "DQ flag 4 = NO_FLAT_FIELD, also forcing -> dfs=1.0")
                                 dfs, dfs_err = 1.0, 0.0
-                                dflat_dqflags_ok = False
 
                             # integrate over S-flat fast vector
                             iw = np.where((sfv_wav >= wave[k, j] - delw / 2.0) & (sfv_wav <= wave[k, j] + delw / 2.0))
@@ -447,8 +449,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                                     sfs_err = np.interp(wave[k, j], dfwave[ibr], sfimerr[:, pind[0], pind[1]][ibr])
                                 except IndexError:   # meaning that the ERR extension does not have the same size array
                                     sfs_err = sfimerr[pind[0], pind[1]]
-                            else:
-                                sflat_dqflags_ok = False
 
                             # integrate over F-flat fast vector
                             iw = np.where((ffv_wav >= wave[k, j] - delw / 2.0) & (ffv_wav <= wave[k, j] + delw / 2.0))
@@ -465,8 +465,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
                         # add correction
                         flatcor[k, j] = 1.0
-                        if sflat_dqflags_ok and dflat_dqflags_ok:
-                            flatcor[k, j] = dff * dfs * sff * sfs * fff * ffs
+                        flatcor[k, j] = dff * dfs * sff * sfs * fff * ffs
                         if np.isnan(flatcor[k, j]) or flatcor[k, j] <= 0.0 or pipeflat[k, j] == 1:
                             flatcor[k, j] = 1.0
 
