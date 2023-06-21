@@ -360,7 +360,7 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
         # get the WCS object for this particular slit
         wcs_slice = nirspec.nrs_wcs_set_input(awcs_fo, name)
         # get the bounding box for the 2D subwindow, round to nearest integer, and convert to integer
-        bbox = np.rint(wcs_slice.bounding_box)
+        bbox = np.ceil(wcs_slice.bounding_box)
         bboxint = bbox.astype(int)
         print("bounding box rounded to next integer: ", bboxint)
         i1 = bboxint[0, 0]
@@ -526,4 +526,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
