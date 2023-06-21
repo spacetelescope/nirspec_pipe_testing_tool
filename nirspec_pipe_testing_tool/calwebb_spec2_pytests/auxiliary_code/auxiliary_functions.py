@@ -1034,7 +1034,7 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, absolu
     return DATAMODEL_diff, DATAMODEL_diff[notnan], notnan_reldiffarr_stats, stats_print_strings
 
 
-def does_median_pass_tes(arr_median, threshold_diff):
+def does_median_pass_test(arr_median, threshold_diff):
     """
     This function determines if the given median is less than or equal to the given threshold
     Args:

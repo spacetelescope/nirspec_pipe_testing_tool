@@ -409,7 +409,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats, print_stats_strings = rel_diff_pwave_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(notnan_rel_diff_pwave_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_test(notnan_rel_diff_pwave_stats[1], threshold_diff)
         msg = 'Result for test of ' + tested_quantity + ': ' + result
         print(msg)
         log_msgs.append(msg)
@@ -425,7 +425,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats, print_stats_strings = rel_diff_pslity_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(notnan_rel_diff_pslity_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_test(notnan_rel_diff_pslity_stats[1], threshold_diff)
         msg = 'Result for test of ' + tested_quantity + ': ' + result
         print(msg)
         log_msgs.append(msg)
@@ -442,7 +442,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats, print_stats_strings = reldiffpmsax_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(notnan_reldiffpmsax_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_test(notnan_reldiffpmsax_stats[1], threshold_diff)
         msg = 'Result for test of ' + tested_quantity + ': ' + result
         print(msg)
         log_msgs.append(msg)
@@ -454,7 +454,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats, print_stats_strings = reldiffpmsay_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(notnan_reldiffpmsay_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_test(notnan_reldiffpmsay_stats[1], threshold_diff)
         msg = 'Result for test of ' + tested_quantity + ': ' + result
         print(msg)
         log_msgs.append(msg)
@@ -477,7 +477,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
             reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats, print_stats_strings = reldiffpv2_data
             for msg in print_stats_strings:
                 log_msgs.append(msg)
-            result = auxfunc.does_median_pass_tes(notnan_reldiffpv2_stats[1], threshold_diff)
+            result = auxfunc.does_median_pass_test(notnan_reldiffpv2_stats[1], threshold_diff)
             msg = 'Result for test of '+tested_quantity+': '+result
             print(msg)
             log_msgs.append(msg)
@@ -494,7 +494,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
             reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats, print_stats_strings = reldiffpv3_data
             for msg in print_stats_strings:
                 log_msgs.append(msg)
-            result = auxfunc.does_median_pass_tes(notnan_reldiffpv3_stats[1], threshold_diff)
+            result = auxfunc.does_median_pass_test(notnan_reldiffpv3_stats[1], threshold_diff)
             msg = 'Result for test of '+tested_quantity+': '+result
             print(msg)
             log_msgs.append(msg)
@@ -784,4 +784,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-

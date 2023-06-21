@@ -409,7 +409,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         stats = auxfunc.print_stats(reldiff[notnan], tested_quantity, barshadow_threshold_diff, absolute=False,
                                     return_percentages=True)
         _, stats_print_strings, percentages = stats
-        result = auxfunc.does_median_pass_tes(arr_median, barshadow_threshold_diff)
+        result = auxfunc.does_median_pass_test(arr_median, barshadow_threshold_diff)
         slitlet_test_result_list.append({tested_quantity: result})
         for line in stats_print_strings:
             log_msgs.append(line)
@@ -418,14 +418,14 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         log_msgs.append(msg)
 
         tested_quantity = "percentage_greater_3threshold"
-        result_3xThreshold = auxfunc.does_median_pass_tes(percentages[1], 10)
+        result_3xThreshold = auxfunc.does_median_pass_test(percentages[1], 10)
         # slitlet_test_result_list.append({tested_quantity: result_3xThreshold})
         msg = " * Result of number of points greater than 3*threshold greater than 10%: "+result_3xThreshold
         print(msg+"\n")
         log_msgs.append(msg)
 
         tested_quantity = "percentage_greater_5threshold"
-        result_5xThreshold = auxfunc.does_median_pass_tes(percentages[2], 10)
+        result_5xThreshold = auxfunc.does_median_pass_test(percentages[2], 10)
         # slitlet_test_result_list.append({tested_quantity: result_5xThreshold})
         msg = " * Result of number of points greater than 5*threshold greater than 10%: "+result_5xThreshold
         print(msg+"\n")
@@ -634,8 +634,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
-
-
-
-
