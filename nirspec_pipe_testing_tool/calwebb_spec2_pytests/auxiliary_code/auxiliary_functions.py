@@ -947,6 +947,7 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
     arrX_mean, arrX_median, arrX_stdev = np.mean(arrX), np.median(arrX), np.std(arrX)
     print("\n", type_of_calculations, xname, " :   mean = %0.3e" % (arrX_mean), "   median = %0.3e" % (arrX_median),
           "   stdev = %0.3e" % (arrX_stdev))
+    npt_str = f"    Total points = {arrX.size}"
     rel_max = np.max(arrX)
     rel_min = np.min(arrX)
     percentage_results = compute_percentage(arrX, threshold_diff)
@@ -957,6 +958,7 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
     threshold1 = "                            ->  1xtheshold = " + str(int(round(percentage_results[0], 0))) + "%"
     threshold3 = "                            ->  3xtheshold = " + str(int(round(percentage_results[1], 0))) + "%"
     threshold5 = "                            ->  5xtheshold = " + str(int(round(percentage_results[2], 0))) + "%"
+    print(npt_str)
     print(max_str)
     print(min_str)
     print(pix_percentage_greater_than_min)
@@ -1007,8 +1009,11 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, absolu
     # get rid of nans and restrict according to slit-y
     in_slit = np.logical_and(edy < .5, edy > -.5)
     arr[~in_slit] = np.nan  # Set lam values outside the slit to NaN
-    nanind = np.isnan(arr)  # get all the nan indexes
+
+    nanind = np.isnan(arr) | np.isnan(esa_arr)  # get all the nan indexes
+    nanind |= (esa_arr == 0)  # also any places where the esa array is zero
     notnan = ~nanind  # get all the not-nan indexes
+
     arr[nanind] = np.nan  # set all nan indexes to have a value of nan
     # Set the values to NaN in the ESA lambda extension
     esa_arr[nanind] = np.nan

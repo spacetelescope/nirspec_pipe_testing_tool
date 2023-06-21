@@ -217,7 +217,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         log_msgs.append(msg)
                         continue
 
-                if det == "NRS2":
+                else:
                     try:
                         truth_flux = fits.getdata(esafile, "DATA2")
                         truth_wave = fits.getdata(esafile, "LAMBDA2")
@@ -284,6 +284,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
             truth_x, truth_y = wcstools.grid_from_bounding_box(slit_wcs.bounding_box, step=(1, 1), center=True)
             truth_ra, truth_dec, truth_wave = slit_wcs(truth_x, truth_y)  # wave is in microns
             truth_wave *= 10 ** -6    # (lam *= 10**-6 to convert to microns)
+
             # get the truths to compare to
             truth_det2slit = slit_wcs.get_transform('detector', 'slit_frame')
             truth_slitx, truth_slity, _ = truth_det2slit(truth_x, truth_y)
@@ -302,7 +303,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         # In different observing modes the WCS may have different coordinate frames. To see available frames
         # uncomment line below.
         available_frames = wcs_slit.available_frames
-        print("Avalable frames: ", available_frames)
+        print("Available frames: ", available_frames)
 
         if debug:
             # To get specific pixel values use following syntax:
@@ -455,8 +456,9 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
                     else:
                         plt_name = os.path.join(os.getcwd(), pipeslit+"_"+det+specific_plt_name)
-                        print("No output_directory was provided. Figures will be saved in current working directory:")
-                        print(plt_name + "\n")
+                        if save_figs:
+                            print("No output_directory was provided. Figures will be saved in current working directory:")
+                            print(plt_name + "\n")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img,
                                              info_hist, plt_name=plt_name, plt_origin=plt_origin,
                                              show_figs=show_figs, save_figs=save_figs)
@@ -479,8 +481,9 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
                     else:
                         plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        if save_figs:
+                            print("No output_directory was provided. Figures will NOT be saved.")
+                            save_figs = False
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -503,8 +506,9 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
                     else:
                         plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        if save_figs:
+                            print("No output_directory was provided. Figures will NOT be saved.")
+                            save_figs = False
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -527,8 +531,10 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
                     else:
                         plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        if save_figs:
+                            print("No output_directory was provided. Figures will NOT be saved.")
+                            save_figs = False
+
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -552,8 +558,10 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                             plt_name = os.path.join(output_directory, pipeslit + "_" + det + specific_plt_name)
                         else:
                             plt_name = None
-                            save_figs = False
-                            print("No output_directory was provided. Figures will NOT be saved.")
+                            if save_figs:
+                                print("No output_directory was provided. Figures will NOT be saved.")
+                                save_figs = False
+
                     auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, notnan_reldiffpv2_stats, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                                  save_figs=save_figs)
@@ -576,8 +584,10 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                             plt_name = os.path.join(output_directory, pipeslit + "_" + det + specific_plt_name)
                         else:
                             plt_name = None
-                            save_figs = False
-                            print("No output_directory was provided. Figures will NOT be saved.")
+                            if save_figs:
+                                print("No output_directory was provided. Figures will NOT be saved.")
+                                save_figs = False
+
                     auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, notnan_reldiffpv3, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                                  save_figs=save_figs)
