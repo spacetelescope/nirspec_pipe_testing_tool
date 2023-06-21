@@ -357,19 +357,23 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
         print("\nWorking with slit/slice: ", name)
         if "IFU" not in msaflag.meta.exposure.type.upper():
             print("Slit min and max in y direction: ", slit.ymin, slit.ymax)
+
         # get the WCS object for this particular slit
         wcs_slice = nirspec.nrs_wcs_set_input(awcs_fo, name)
+
         # get the bounding box for the 2D subwindow, round to nearest integer, and convert to integer
         bbox = np.ceil(wcs_slice.bounding_box)
         bboxint = bbox.astype(int)
-        print("bounding box rounded to next integer: ", bboxint)
+        print("Bounding box rounded up to next integer: ", bboxint)
         i1 = bboxint[0, 0]
         i2 = bboxint[0, 1]
         i3 = bboxint[1, 0]
         i4 = bboxint[1, 1]
+
         # make array of pixel locations within bounding box
         x, y = np.mgrid[i1:i2, i3:i4]
         index_1d = np.ravel_multi_index([[y], [x]], (2048, 2048))
+
         # get the slity WCS parameter to find which pixels are located in the actual spectrum
         det2slit = wcs_slice.get_transform('detector', 'slit_frame')
         slitx, slity, _ = det2slit(x, y)
@@ -395,21 +399,25 @@ def run_msa_flagging_testing(input_file, msa_flagging_threshold=99.5, rate_obj=N
         # extract & display the F/O 2d subwindows from the msa_flagging sci image
         fig = plt.figure(figsize=(19, 19))
         subwin = msaflag.data[i3:i4, i1:i2].copy()
-        # set all pixels outside of the nominal shutter length to 0, inside to 1
+
+        # set all pixels outside the nominal shutter length to 0, inside to 1
         subwin[np.isnan(slity.T)] = 0
         subwin[~np.isnan(slity.T)] = 1
+
         # find the pixels flagged by the msaflagopen step; set them to 1 and everything else to 0 for ease of display
         subwin_dq = msaflag.dq[i3:i4, i1:i2].copy()
         mask = np.zeros(subwin_dq.shape, dtype=bool)
         mask[np.where(subwin_dq & 536870912)] = True
         subwin_dq[mask] = 1
         subwin_dq[~mask] = 0
+
         # plot the F/O traces
         vmax = np.max(msaflag.data[i3:i4, i1:i2])
         norm = ImageNormalize(msaflag.data[i3:i4, i1:i2], vmin=0., vmax=vmax, stretch=AsinhStretch())
         plt.imshow(msaflag.data[i3:i4, i1:i2], norm=norm, aspect=10.0, origin='lower', cmap='viridis',
                    label='MSA flagging data')
         plt.imshow(subwin, aspect=20.0, origin='lower', cmap='Reds', alpha=0.3, label='Calculated F/O')
+
         # overplot the flagged pixels in translucent grayscale
         plt.imshow(subwin_dq, aspect=20.0, origin='lower', cmap='gray', alpha=0.3, label='Pipeline F/O')
         if save_figs:
