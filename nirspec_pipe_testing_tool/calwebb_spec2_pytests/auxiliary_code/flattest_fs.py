@@ -125,7 +125,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     #input()
 
     print()
-    msg0 = " * FOR COMPARISON, these are the reference files used by the pipelined"
+    msg0 = " * FOR COMPARISON, these are the reference files used by the pipeline"
     msg1 = "    DATE-OBS = " + pipe_flat_field_mdl.meta.observation.date
     msg2 = "    Pipeline CRDS context: " + pipe_flat_field_mdl.meta.ref_file.crds.context_used
     msg3 = "    Pipeline ref d-flat used:  " + pipe_flat_field_mdl.meta.ref_file.dflat.name
@@ -148,7 +148,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
     # D-Flat
     if not os.path.isfile(dflat_path):
-        result_msg = "Test skiped because the D-flat provided does not exist: {}".format(dflat_path)
+        result_msg = "Test skipped because the D-flat provided does not exist: {}".format(dflat_path)
         print(msg)
         log_msgs.append(msg)
         median_diff = "skip"
@@ -196,14 +196,14 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
         msg = "No filter correspondence. Exiting the program."
         print(msg)
         log_msgs.append(msg)
-        result_msg = "Test skiped because there is no flat correspondence for the filter in the data: {}".format(filt)
+        result_msg = "Test skipped because there is no flat correspondence for the filter in the data: {}".format(filt)
         print(msg)
         log_msgs.append(msg)
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
 
     if not os.path.isfile(sflat_path):
-        result_msg = "Test skiped because the S-flat provided does not exist: {}".format(sflat_path)
+        result_msg = "Test skipped because the S-flat provided does not exist: {}".format(sflat_path)
         print(msg)
         log_msgs.append(msg)
         median_diff = "skip"
@@ -224,7 +224,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
     # F-Flat
     if not os.path.isfile(fflat_path):
-        result_msg = "Test skiped because the F-flat provided does not exist: {}".format(fflat_path)
+        result_msg = "Test skipped because the F-flat provided does not exist: {}".format(fflat_path)
         print(msg)
         log_msgs.append(msg)
         median_diff = "skip"
@@ -290,7 +290,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     pipe_flout_slt = auxfunc.find_slit(slit_id, pipe_flat_field_mdl)
                     pipeflat_slt = auxfunc.find_slit(slit_id, flatfile)
                     if pipe_flout_slt is None or pipeflat_slt is None:
-                        result_msg = "Test skiped because could not get the slit model for either the flat_field output or the interpolated flat for slit  {}".format(slit_id)
+                        result_msg = "Test skipped because could not get the slit model for either the flat_field output or the interpolated flat for slit  {}".format(slit_id)
                         print(msg)
                         log_msgs.append(msg)
                         median_diff = "skip"
@@ -315,7 +315,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             ffv_wav, ffv_dat = auxfunc.get_slit_wavdat(fffastvar, slit_id)
             if sfv_wav is None or ffv_wav is None:
                 print(' *** OH NO! Slit name {} is NOT found in the given table. Exiting test.'. format(slit_id))
-                result_msg = "Test skiped because {} not found in reference file table".format(slit_id)
+                result_msg = "Test skipped because {} not found in reference file table".format(slit_id)
                 log_msgs.append(msg)
                 print(msg)
                 median_diff = "skip"
@@ -375,7 +375,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             for j in range(nw1):  # in x
                 for k in range(nw2):  # in y
                     if np.isfinite(wave[k, j]):  # skip if wavelength is NaN
-                        # get the full-frame pixel indeces for D- and S-flat image components
+                        # get the full-frame pixel indices for D- and S-flat image components
                         pind = [k + py0, j + px0]
 
                         # get the pixel bandwidth
@@ -414,7 +414,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                             ibr = [iloc]
                             if iloc != len(dfwave) - 1:
                                 ibr.append(iloc + 1)
-                            # get the values in the z-array at indeces ibr, and x=pind[1] and y=pind[0]
+                            # get the values in the z-array at indices ibr, and x=pind[1] and y=pind[0]
                             zz = dfim[:, pind[0], pind[1]][ibr]
                             # now determine the length of the array with only the finite numbers
                             zzwherenonan = np.where(np.isfinite(zz))
@@ -518,7 +518,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                         delflaterr[k, j] = pipeflat_err[k, j] - flat_err[k, j]
 
                         if debug:
-                            # Uncomment to print where the differeces are too big, and see where we differ with the pipeline
+                            # Uncomment to print where the differences are too big, and see where we differ with the pipeline
                             if abs(delf[k, j]) >= 1.0 or abs(delflaterr[k, j]) >= 1.0:
                                 print("wave[k, j] = ", wave[k, j])
                                 print("dfs, dff = ", dfs, dff)
@@ -856,4 +856,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-

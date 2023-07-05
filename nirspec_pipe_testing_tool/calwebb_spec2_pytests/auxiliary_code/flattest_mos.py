@@ -160,7 +160,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
     # get the reference files
     # D-Flat
     if not os.path.isfile(dflat_path):
-        result_msg = "Test skiped because the D-flat provided does not exist: {}".format(dflat_path)
+        result_msg = "Test skipped because the D-flat provided does not exist: {}".format(dflat_path)
         print(msg)
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
@@ -201,14 +201,14 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         print(msg)
         log_msgs.append(msg)
         # This is the key argument for the assert pytest function
-        result_msg = "Test skiped because there is no flat correspondence for the filter in the data: {}".format(filt)
+        result_msg = "Test skipped because there is no flat correspondence for the filter in the data: {}".format(filt)
         print(msg)
         log_msgs.append(msg)
         median_diff = "skip"
         return median_diff, result_msg, log_msgs
 
     if not os.path.isfile(sflat_path):
-        result_msg = "Test skiped because the S-flat provided does not exist: {}".format(sflat_path)
+        result_msg = "Test skipped because the S-flat provided does not exist: {}".format(sflat_path)
         print(msg)
         log_msgs.append(msg)
         median_diff = "skip"
@@ -242,7 +242,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
     # F-Flat
     if not os.path.isfile(fflat_path):
-        result_msg = "Test skiped because the F-flat provided does not exist: {}".format(fflat_path)
+        result_msg = "Test skipped because the F-flat provided does not exist: {}".format(fflat_path)
         print(msg)
         log_msgs.append(msg)
         median_diff = "skip"
@@ -322,7 +322,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         pipe_flout_slt = auxfunc.find_slit(slit_id, pipe_flat_field_mdl)
         pipeflat_slt = auxfunc.find_slit(slit_id, flatfile)
         if pipe_flout_slt is None or pipeflat_slt is None:
-            result_msg = "Test skiped because could not get the slit model for either the flat_field output or the interpolated flat for slit  {}".format(slit_id)
+            result_msg = "Test skipped because could not get the slit model for either the flat_field output or the interpolated flat for slit  {}".format(slit_id)
             print(msg)
             log_msgs.append(msg)
             median_diff = "skip"
