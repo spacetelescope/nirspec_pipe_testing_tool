@@ -173,7 +173,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
     if debug:
         print('D-flat: np.shape(SCI_array) =', np.shape(dfim))
         print('        np.shape(DQ_array) =', np.shape(dfimdq))
-    # get the wavelength values
+    # get the wavelength values from SCI header keywords
     dfwave = np.array([])
     for i in range(naxis3):
         t = ("PFLAT", str(i + 1))
@@ -286,7 +286,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     input_sci, input_err = slit.data, slit.err
                     input_var_psn, input_var_rnse = slit.var_poisson, slit.var_rnoise
                     # get the same slit in the pipeline flat field output
-                    # model and the interpoladed model
+                    # model and the interpolated model
                     pipe_flout_slt = auxfunc.find_slit(slit_id, pipe_flat_field_mdl)
                     pipeflat_slt = auxfunc.find_slit(slit_id, flatfile)
                     if pipe_flout_slt is None or pipeflat_slt is None:
@@ -343,11 +343,11 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
             nw1, nw2 = n_p[1], n_p[0]  # remember that x=nw1 and y=nw2 are reversed  in Python
 
             # Define the arrays to hold calculations, cor=correction calculation,
-            # err=uncdertanties, del=pipeline-calculation  -> 999.0 to know what values to ignore
-            delf = np.zeros([nw2, nw1]) + 999.0
-            flatcor = np.zeros([nw2, nw1]) + 999.0
-            flat_err = np.zeros([nw2, nw1])
-            delflaterr = np.zeros([nw2, nw1])
+            # err=uncertainties, del=pipeline-calculation  -> NaN to know what values to ignore
+            delf = np.full(n_p, np.nan)
+            flatcor = np.full(n_p, np.nan)
+            flat_err = np.zeros(n_p)
+            delflaterr = np.zeros(n_p)
 
             # make sure the two arrays are the same shape
             if np.shape(flatcor) != np.shape(pipeflat):
@@ -445,10 +445,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                             if sfimdq[pind[0], pind[1]] == 0:
                                 sfs = sfim[pind[0], pind[1]]
                                 # get corresponding error, this gives the total error of this component
-                                try:
-                                    sfs_err = np.interp(wave[k, j], dfwave[ibr], sfimerr[:, pind[0], pind[1]][ibr])
-                                except IndexError:   # meaning that the ERR extension does not have the same size array
-                                    sfs_err = sfimerr[pind[0], pind[1]]
+                                sfs_err = sfimerr[pind[0], pind[1]]
 
                             # integrate over F-flat fast vector
                             iw = np.where((ffv_wav >= wave[k, j] - delw / 2.0) & (ffv_wav <= wave[k, j] + delw / 2.0))
@@ -458,7 +455,9 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                                 fff = int_tab / (last_ffv_wav - first_ffv_wav)
                             else:
                                 fff = auxfunc.interp_close_pts(wave[k, j], ffv_wav, ffv_dat, debug)
+
                             # the corresponding error is 0.0 because we currently have no information on this
+                            # TODO: update when the f-flat file contains errors
 
                             # No component of the f-flat slow component for FS
                             ffs, ffs_err = 1.0, 0.0
@@ -507,10 +506,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                         if np.isnan(ffs_err2):
                             ffs_err2 = 0.0
                         error_sq_sum = dff_err2 + dfs_err2 + sff_err2 + sfs_err2 + fff_err2 + ffs_err2
-                        if error_sq_sum != 0.0:
-                            flat_err[k, j] = np.sqrt(error_sq_sum) * flatcor[k, j]
-                        else:
-                            flat_err[k, j] = 0.0
+                        flat_err[k, j] = np.sqrt(error_sq_sum) * flatcor[k, j]
 
                         # Difference between pipeline and calculated values
                         delf[k, j] = pipeflat[k, j] - flatcor[k, j]
@@ -541,30 +537,23 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
                         # Remove all pixels with values=1 (outside slit boundaries) for statistics
                         if pipeflat[k, j] == 1:
-                            delf[k, j] = 999.0
-                            delflaterr[k, j] = 999.0
-
-            if debug:
-                no_999 = delf[np.where(delf != 999.0)]
-                print("np.shape(no_999) = ", np.shape(no_999))
-                alldelf = delf.flatten()
-                print("median of the whole array: ", np.median(alldelf))
-                print("median, stdev in delf: ", np.median(no_999), np.std(no_999))
-                neg_vals = no_999[np.where(no_999 < 0.0)]
-                print("neg_vals = ", np.shape(neg_vals))
-                print("np.shape(delf) = ", np.shape(delf))
-                print()
+                            delf[k, j] = np.nan
+                            delflaterr[k, j] = np.nan
+                            flatcor[k, j] = np.nan
+                            flat_err[k, j] = np.nan
 
             # only keep points in slit
-            delfg = delf[np.where(delf != 999.0)]
-            delflaterr = delflaterr[np.where(delf != 999.0)]
+            delfg = delf[np.isfinite(delf)]
+            delflaterr = delflaterr[np.isfinite(delf)]
+
             # attempt remove outliers, for better statistics, only use points where pipe-calc <= 1.0
             outliers_idx = np.where(np.absolute(delfg) <= 1.0)
+
             # if the remaining points are more than half the original number, remove outliers
             if len(outliers_idx) >= len(delfg)/2.0:
                 delfg = delfg[outliers_idx]
                 # do the same with the error differences array
-                outliers_idx = np.where(np.absolute(delflaterr) <= 1.0)
+                outliers_idx = np.where((np.absolute(delflaterr) <= 1.0))
                 delflaterr = delflaterr[outliers_idx]
             if debug:
                 print('delf = ', np.shape(delf),  delf)
@@ -612,9 +601,10 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
 
             # make histogram
             flatcor_copy = deepcopy(flatcor)
-            flatcor_copy[np.where(flatcor_copy == 999.0)] = 1.0
+            flatcor_copy[~np.isfinite(flatcor)] = 1.0
             flat_err_copy = deepcopy(flat_err)
-            flat_err_copy[np.where(flatcor == 999.0)] = np.nan
+            flat_err_copy[~np.isfinite(flatcor)] = np.nan
+
             if show_figs or save_figs:
                 # set plot variables
                 main_title = filt + "   " + grat + "   SLIT=" + slit_id + "\n"
@@ -641,7 +631,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                     difference_img = (pipeflat - flatcor_copy)  # /flatcor
                     if debug:
                         print('np.shape(pipeflat), pipeflat: ', np.shape(pipeflat), pipeflat[np.where(pipeflat != 1.0)])
-                        print('np.shape(flatcor), flatcor: ', np.shape(flatcor), flatcor[np.where(flatcor != 999.0)])
+                        print('np.shape(flatcor), flatcor: ', np.shape(flatcor), flatcor[np.isfinite(flatcor)])
                         print('np.shape(difference_img), difference_img: ', np.shape(difference_img), ~np.isnan(difference_img))
                     # set the range of values to be shown in the image, will affect color scale
                     if delfg_std <= 0.0:
@@ -659,7 +649,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                 xlabel, ylabel = "flat_err$_{pipe}$ - flat_err$_{calc}$", "N"
                 info_hist = [xlabel, ylabel, bins, err_stats]
                 if delflaterr.size != 0 and delflaterr[1] is np.nan:
-                    msg = "Unable to create plot of pipeline - calulated flat error values."
+                    msg = "Unable to create plot of pipeline - calculated flat error values."
                     print(msg)
                     log_msgs.append(msg)
                 else:
