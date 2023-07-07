@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import os
 from scipy import integrate
@@ -142,6 +144,14 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
     # Total error calculation according to equation taken from:
     # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
     print('\n Calculating total errors for slit ', slt_nme)
+
+    # match nans for all arrays
+    nan_idx = (np.isnan(pipeflat) | np.isnan(calcflat)
+               | np.isnan(pipeflat_err) | np.isnan(calcflat_err))
+    pipeflat[nan_idx] = np.nan
+    calcflat[nan_idx] = np.nan
+    pipeflat_err[nan_idx] = np.nan
+    calcflat_err[nan_idx] = np.nan
 
     # Calculate flat correction of SCI data and ignore all nan and inf values
     pipe_corr_sci = input_sci / pipeflat
@@ -930,6 +940,8 @@ def compute_percentage(values, threshold):
     """
     values = values[~np.isnan(values)]
     n_total = values.size
+    if n_total == 0:
+        return [np.nan, np.nan, np.nan]
 
     thresh = [threshold, 3 * threshold, 5 * threshold]
     res = []
@@ -953,6 +965,7 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
         x_stats: list, all quantities calculated for arrX
         stats_print_strings: list, contains all print statements
     """
+    warnings.filterwarnings('ignore', category=RuntimeWarning)
     if absolute:
         type_of_calculations = "  Absolute"
         type_of_percentages = "absolute differences"
@@ -972,9 +985,9 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
     min_str = "    Minimum " + type_of_calculations + xname + " = %0.3e" % rel_min
     pix_percentage_greater_than_min = "    Percentage of pixels where median of " + type_of_percentages + \
                                       " is greater than: "
-    threshold1 = "                            ->  1xtheshold = " + str(int(round(percentage_results[0], 0))) + "%"
-    threshold3 = "                            ->  3xtheshold = " + str(int(round(percentage_results[1], 0))) + "%"
-    threshold5 = "                            ->  5xtheshold = " + str(int(round(percentage_results[2], 0))) + "%"
+    threshold1 = f"                            ->  1xtheshold = {percentage_results[0]:.0f}%"
+    threshold3 = f"                            ->  3xtheshold = {percentage_results[1]:.0f}%"
+    threshold5 = f"                            ->  5xtheshold = {percentage_results[2]:.0f}%"
     print(npt_str)
     print(max_str)
     print(min_str)
@@ -988,19 +1001,17 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
     stats_print_strings.append(threshold1)
     stats_print_strings.append(threshold3)
     stats_print_strings.append(threshold5)
-    if int(round(percentage_results[1], 0)) > 10:
+    if percentage_results[1] > 10:
         msg = ' *** WARNING: More than 10% of pixels have a median value greater than 3xthreshold!'
         #print(msg)
         stats_print_strings.append(msg)
-    if int(round(percentage_results[2], 0)) > 10:
+    if percentage_results[2] > 10:
         msg = ' *** WARNING: More than 10% of pixels have a median value greater than 5xthreshold!'
         #print(msg)
         stats_print_strings.append(msg)
     x_stats = [arrX_mean, arrX_median, arrX_stdev]
     if return_percentages:
-        percentages = [int(round(percentage_results[0], 0)), int(round(percentage_results[1], 0)),
-                       int(round(percentage_results[2], 0))]
-        return x_stats, stats_print_strings, percentages
+        return x_stats, stats_print_strings, percentage_results
     else:
         return x_stats, stats_print_strings
 
