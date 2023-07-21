@@ -694,7 +694,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, writefile=
                                             pipeflat.copy(), pipeflat_err.copy(),
                                             flatcor.copy(), flat_err.copy(),
                                             show_plts=show_figs, save_plts=save_figs)
-        break
 
     # close datamodels
     flatfile.close()

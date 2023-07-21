@@ -967,22 +967,25 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
     """
     warnings.filterwarnings('ignore', category=RuntimeWarning)
     if absolute:
-        type_of_calculations = "  Absolute"
+        type_of_calculations = " Absolute "
         type_of_percentages = "absolute differences"
     else:
-        type_of_calculations = "  Relative"
+        type_of_calculations = " Relative "
         type_of_percentages = "relative differences"
     # calculate statistics
     stats_print_strings = []
     arrX_mean, arrX_median, arrX_stdev = np.nanmean(arrX), np.nanmedian(arrX), np.nanstd(arrX)
-    print("\n", type_of_calculations, xname, " :   mean = %0.3e" % (arrX_mean), "   median = %0.3e" % (arrX_median),
+    print("\n", type_of_calculations + xname,
+          " :   mean = %0.3e" % (arrX_mean),
+          "   median = %0.3e" % (arrX_median),
           "   stdev = %0.3e" % (arrX_stdev))
     npt_str = f"    Total points = {arrX.size}"
     rel_max = np.nanmax(arrX)
     rel_min = np.nanmin(arrX)
     percentage_results = compute_percentage(arrX, threshold_diff)
-    max_str = "    Maximum " + type_of_calculations + xname + " = %0.3e" % rel_max
-    min_str = "    Minimum " + type_of_calculations + xname + " = %0.3e" % rel_min
+    max_str = "    Maximum" + type_of_calculations + xname + " = %0.3e" % rel_max
+    min_str = "    Minimum" + type_of_calculations + xname + " = %0.3e" % rel_min
+    thr_str = f"    Threshold: {threshold_diff}"
     pix_percentage_greater_than_min = "    Percentage of pixels where median of " + type_of_percentages + \
                                       " is greater than: "
     threshold1 = f"                            ->  1xtheshold = {percentage_results[0]:.0f}%"
@@ -991,6 +994,7 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
     print(npt_str)
     print(max_str)
     print(min_str)
+    print(thr_str)
     print(pix_percentage_greater_than_min)
     print(threshold1)
     print(threshold3)
