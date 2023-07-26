@@ -628,7 +628,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
                         # Remove all pixels with values=1 or 0 (outside slit boundaries)
                         # or non-zero DQ for statistics
-                        if (pipeflat[k, j] == 1) or (pipeflat[k, j] == 0) or (pipeflat_dq[k, j] != 0):
+                        if (pipeflat[k, j] == 1) or (pipeflat[k, j] == 0): #or (pipeflat_dq[k, j] != 0):
                             delf[k, j] = np.nan
                             delflaterr[k, j] = np.nan
                             flatcor[k, j] = np.nan
@@ -639,6 +639,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         outliers = (np.absolute(delf / flatcor) > 1.0)
         if np.sum(outliers) <= delf.size / 2.0:
             # the remaining points more than half the original number, remove outliers
+            flatcor[outliers] = np.nan
             delf[outliers] = np.nan
 
         # same with the error differences
