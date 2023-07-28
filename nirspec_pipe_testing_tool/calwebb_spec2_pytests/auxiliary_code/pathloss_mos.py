@@ -86,7 +86,7 @@ def pointsourcetest(previous_sci, wave_sci, slit_x, slit_y, wave_ref, slitx_ref,
         print('wave_sci.size=', wave_sci.size, '  wave_ref.size=', wave_ref.size)
 
     ref_xy = np.column_stack((slitx_ref.reshape(slitx_ref.size),
-                              slity_ref.reshape(slitx_ref.size)))
+                              slity_ref.reshape(slity_ref.size)))
 
     if debug:
         print('   Extending reference pathloss correction array - looping through wavelength total of ',
@@ -169,6 +169,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             return result, result_msg, log_msgs
     else:
         pl = step_input_filename
+        step_input_filename = pl.meta.filename
 
     # get comparison data
     if isinstance(comparison_filename, str):
@@ -248,7 +249,7 @@ def pathtest(step_input_filename, reffile, comparison_filename,
             log_msgs.append(msg)
             print(msg)
         else:
-            msg = "   ERROR: Missmatch of slitlet names in input file and in pathloss " \
+            msg = "   ERROR: Mismatch of slitlet names in input file and in pathloss " \
                   "output file. Exiting script and skipping test."
             result = 'skip'
             log_msgs.append(msg)
@@ -263,14 +264,14 @@ def pathtest(step_input_filename, reffile, comparison_filename,
                 elif nshutters == 1:
                     shutter_key = "MOS1x1"
                 ext = ps_uni_ext_list[0][shutter_key]
-                print("   Retrieved point source extension")
-            if is_point_source is False:
+                print(f"   Retrieved point source extension {ext}")
+            else:
                 if nshutters == 1:
                     shutter_key = "MOS1x1"
                 elif nshutters == 3:
                     shutter_key = "MOS1x3"
                 ext = ps_uni_ext_list[1][shutter_key]
-                print("   Retrieved extended/uniform source extension {}".format(ext))
+                print(f"   Retrieved extended/uniform source extension {ext}")
         except KeyError:
             print("   Unable to retrieve extension. Using ext 3, but may be 7")
             ext = 3
@@ -470,8 +471,8 @@ def pathtest(step_input_filename, reffile, comparison_filename,
     pathloss_pipe.close()
 
     if writefile:
-        outfile_name = step_input_filename.replace("srctype", det+"_calcuated_pathloss")
-        compfile_name = step_input_filename.replace("srctype", det+"_comparison_pathloss")
+        outfile_name = step_input_filename.replace("flatfieldstep", "calcuated_pathloss")
+        compfile_name = step_input_filename.replace("flatfieldstep", "comparison_pathloss")
 
         # create the fits list to hold the calculated pathloss values for each slit
         outfile.writeto(outfile_name, overwrite=True)
@@ -591,4 +592,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
