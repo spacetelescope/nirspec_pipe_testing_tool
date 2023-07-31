@@ -3,11 +3,13 @@ import os
 import re
 import subprocess
 import sys
+import warnings
+from glob import glob
+
 import numpy as np
 from datetime import datetime
 from astropy.io import fits
 from collections import OrderedDict
-from glob import glob
 
 # import the sample header keyword dictionary of level 2b
 from .dict_info import level2b_hdr_keywd_dict_sample as lev2bdict
@@ -53,6 +55,10 @@ __version__ = "1.7"
 
 # Paths
 wit4_path = os.environ.get('WIT4_PATH')
+if wit4_path is None:
+    warnings.warn("The environment variable WIT4_PATH is not defined. "
+                  "Tilt files will not be available.", stacklevel=2)
+    wit4_path = '.'
 nirspec_cdp3 = "nirspec/CDP3/03_Instrument_model/3.1_Files/NIRS_FM2_05_CV3_FIT1/Description"
 path_to_tilt_files = os.path.join(wit4_path, nirspec_cdp3)
 
@@ -990,4 +996,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-

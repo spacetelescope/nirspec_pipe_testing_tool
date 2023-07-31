@@ -409,7 +409,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats, print_stats_strings = rel_diff_pwave_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(notnan_rel_diff_pwave_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_test(notnan_rel_diff_pwave_stats[1], threshold_diff)
         msg = 'Result for test of ' + tested_quantity + ': ' + result
         print(msg)
         log_msgs.append(msg)
@@ -425,7 +425,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats, print_stats_strings = rel_diff_pslity_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(notnan_rel_diff_pslity_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_test(notnan_rel_diff_pslity_stats[1], threshold_diff)
         msg = 'Result for test of ' + tested_quantity + ': ' + result
         print(msg)
         log_msgs.append(msg)
@@ -442,7 +442,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats, print_stats_strings = reldiffpmsax_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(notnan_reldiffpmsax_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_test(notnan_reldiffpmsax_stats[1], threshold_diff)
         msg = 'Result for test of ' + tested_quantity + ': ' + result
         print(msg)
         log_msgs.append(msg)
@@ -454,7 +454,7 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
         reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats, print_stats_strings = reldiffpmsay_data
         for msg in print_stats_strings:
             log_msgs.append(msg)
-        result = auxfunc.does_median_pass_tes(notnan_reldiffpmsay_stats[1], threshold_diff)
+        result = auxfunc.does_median_pass_test(notnan_reldiffpmsay_stats[1], threshold_diff)
         msg = 'Result for test of ' + tested_quantity + ': ' + result
         print(msg)
         log_msgs.append(msg)
@@ -468,16 +468,11 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
             tested_quantity = "V2 difference"
             reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v2, pv2,
                                                                tested_quantity)
-            # converting to degrees to compare with truth, pipeline is in arcsec
-            if reldiffpv2_data[-2][0] > 0.0:
-                print("\nConverting pipeline results to degrees to compare with truth file")
-                pv2 = pv2/3600.
-                reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v2, pv2,
-                                                                   tested_quantity)
+
             reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats, print_stats_strings = reldiffpv2_data
             for msg in print_stats_strings:
                 log_msgs.append(msg)
-            result = auxfunc.does_median_pass_tes(notnan_reldiffpv2_stats[1], threshold_diff)
+            result = auxfunc.does_median_pass_test(notnan_reldiffpv2_stats[1], threshold_diff)
             msg = 'Result for test of '+tested_quantity+': '+result
             print(msg)
             log_msgs.append(msg)
@@ -485,16 +480,10 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
             tested_quantity = "V3 difference"
             reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v3, pv3,
                                                                tested_quantity)
-            # converting to degrees to compare with truth, pipeline is in arcsec
-            if reldiffpv3_data[-2][0] > 0.0:
-                print("\nConverting pipeline results to degrees to compare with ESA")
-                pv3 = pv3/3600.
-                reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v3, pv3,
-                                                                   tested_quantity)
             reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats, print_stats_strings = reldiffpv3_data
             for msg in print_stats_strings:
                 log_msgs.append(msg)
-            result = auxfunc.does_median_pass_tes(notnan_reldiffpv3_stats[1], threshold_diff)
+            result = auxfunc.does_median_pass_test(notnan_reldiffpv3_stats[1], threshold_diff)
             msg = 'Result for test of '+tested_quantity+': '+result
             print(msg)
             log_msgs.append(msg)
@@ -528,8 +517,9 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                         plt_name = os.path.join(output_directory, slitlet_name+"_"+det+specific_plt_name)
                     else:
                         plt_name = os.path.join(os.getcwd(), slitlet_name+"_"+det+specific_plt_name)
-                        print("No output_directory was provided. Figures will be saved in current working directory:")
-                        print(plt_name + "\n")
+                        if save_figs:
+                            print("No output_directory was provided. Figures will be saved in current working directory:")
+                            print(plt_name + "\n")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -552,8 +542,9 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                         plt_name = os.path.join(output_directory, slitlet_name+"_"+det+specific_plt_name)
                     else:
                         plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        if save_figs:
+                            save_figs = False
+                            print("No output_directory was provided. Figures will NOT be saved.")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -576,8 +567,9 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                         plt_name = os.path.join(output_directory, slitlet_name+"_"+det+specific_plt_name)
                     else:
                         plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        if save_figs:
+                            save_figs = False
+                            print("No output_directory was provided. Figures will NOT be saved.")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -600,8 +592,9 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                         plt_name = os.path.join(output_directory, slitlet_name+"_"+det+specific_plt_name)
                     else:
                         plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        if save_figs:
+                            save_figs = False
+                            print("No output_directory was provided. Figures will NOT be saved.")
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -627,8 +620,9 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                             plt_name = os.path.join(output_directory, slitlet_name + "_" + det + specific_plt_name)
                         else:
                             plt_name = None
-                            save_figs = False
-                            print("No output_directory was provided. Figures will NOT be saved.")
+                            if save_figs:
+                                save_figs = False
+                                print("No output_directory was provided. Figures will NOT be saved.")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, hist_data, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                                  save_figs=save_figs)
@@ -653,8 +647,9 @@ def compare_wcs(infile_name, msa_conf_name, truth_file=None, esa_files_path=None
                             plt_name = os.path.join(output_directory, slitlet_name + "_" + det + specific_plt_name)
                         else:
                             plt_name = None
-                            save_figs = False
-                            print("No output_directory was provided. Figures will NOT be saved.")
+                            if save_figs:
+                                save_figs = False
+                                print("No output_directory was provided. Figures will NOT be saved.")
                     auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, hist_data, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                                  save_figs=save_figs)
@@ -784,4 +779,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-

@@ -469,7 +469,7 @@ def add_completed_steps(True_steps_suffix_map, step, outstep_file_suffix, step_c
         True_steps_suffix_map: string, full path of where the text file will be written into
         step: string, pipeline step just ran
         outstep_file_suffix: string, suffix added right before .fits to the input file
-        step_completed: boolean, True if the step was completed and False if it was skiped
+        step_completed: boolean, True if the step was completed and False if it was skipped
         end_time: string, time it took for the step to run (in seconds)
 
     Returns:

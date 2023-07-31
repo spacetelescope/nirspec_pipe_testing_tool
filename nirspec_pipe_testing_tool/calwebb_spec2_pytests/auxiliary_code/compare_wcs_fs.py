@@ -217,7 +217,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         log_msgs.append(msg)
                         continue
 
-                if det == "NRS2":
+                else:
                     try:
                         truth_flux = fits.getdata(esafile, "DATA2")
                         truth_wave = fits.getdata(esafile, "LAMBDA2")
@@ -284,6 +284,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
             truth_x, truth_y = wcstools.grid_from_bounding_box(slit_wcs.bounding_box, step=(1, 1), center=True)
             truth_ra, truth_dec, truth_wave = slit_wcs(truth_x, truth_y)  # wave is in microns
             truth_wave *= 10 ** -6    # (lam *= 10**-6 to convert to microns)
+
             # get the truths to compare to
             truth_det2slit = slit_wcs.get_transform('detector', 'slit_frame')
             truth_slitx, truth_slity, _ = truth_det2slit(truth_x, truth_y)
@@ -302,7 +303,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         # In different observing modes the WCS may have different coordinate frames. To see available frames
         # uncomment line below.
         available_frames = wcs_slit.available_frames
-        print("Avalable frames: ", available_frames)
+        print("Available frames: ", available_frames)
 
         if debug:
             # To get specific pixel values use following syntax:
@@ -337,7 +338,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         rel_diff_pwave_img, notnan_rel_diff_pwave, notnan_rel_diff_pwave_stats, print_stats = rel_diff_pwave_data
         for msg in print_stats:
             log_msgs.append(msg)
-        test_result = auxfunc.does_median_pass_tes(notnan_rel_diff_pwave_stats[1], threshold_diff)
+        test_result = auxfunc.does_median_pass_test(notnan_rel_diff_pwave_stats[1], threshold_diff)
         msg = " * Result of the test for "+tested_quantity+":  "+test_result
         print(msg)
         log_msgs.append(msg)
@@ -353,7 +354,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         rel_diff_pslity_img, notnan_rel_diff_pslity, notnan_rel_diff_pslity_stats, print_stats = rel_diff_pslity_data
         for msg in print_stats:
             log_msgs.append(msg)
-        test_result = auxfunc.does_median_pass_tes(notnan_rel_diff_pslity_stats[1], threshold_diff)
+        test_result = auxfunc.does_median_pass_test(notnan_rel_diff_pslity_stats[1], threshold_diff)
         msg = " * Result of the test for "+tested_quantity+":  "+test_result
         print(msg)
         log_msgs.append(msg)
@@ -370,7 +371,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         reldiffpmsax_img, notnan_reldiffpmsax, notnan_reldiffpmsax_stats, print_stats = reldiffpmsax_data
         for msg in print_stats:
             log_msgs.append(msg)
-        test_result = auxfunc.does_median_pass_tes(notnan_reldiffpmsax_stats[1], threshold_diff)
+        test_result = auxfunc.does_median_pass_test(notnan_reldiffpmsax_stats[1], threshold_diff)
         msg = " * Result of the test for "+tested_quantity+":  "+test_result
         print(msg)
         log_msgs.append(msg)
@@ -382,7 +383,7 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
         reldiffpmsay_img, notnan_reldiffpmsay, notnan_reldiffpmsay_stats, print_stats = reldiffpmsay_data
         for msg in print_stats:
             log_msgs.append(msg)
-        test_result = auxfunc.does_median_pass_tes(notnan_reldiffpmsay_stats[1], threshold_diff)
+        test_result = auxfunc.does_median_pass_test(notnan_reldiffpmsay_stats[1], threshold_diff)
         msg = " * Result of the test for "+tested_quantity+":  "+test_result
         print(msg)
         log_msgs.append(msg)
@@ -396,16 +397,10 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
             tested_quantity = "V2 difference"
             reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v2, pv2,
                                                                tested_quantity)
-            # converting to degrees to compare with truth, pipeline is in arcsec
-            if reldiffpv2_data[-2][0] > 0.0:
-                print("\nConverting pipeline results to degrees to compare with truth file")
-                pv2 = pv2/3600.
-                reldiffpv2_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v2, pv2,
-                                                                   tested_quantity)
             reldiffpv2_img, notnan_reldiffpv2, notnan_reldiffpv2_stats, print_stats = reldiffpv2_data
             for msg in print_stats:
                 log_msgs.append(msg)
-            test_result = auxfunc.does_median_pass_tes(notnan_reldiffpv2_stats[1], threshold_diff)
+            test_result = auxfunc.does_median_pass_test(notnan_reldiffpv2_stats[1], threshold_diff)
             msg = " * Result of the test for " + tested_quantity + ":  " + test_result
             print(msg)
             log_msgs.append(msg)
@@ -414,16 +409,10 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
             tested_quantity = "V3 difference"
             reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v3, pv3,
                                                                tested_quantity)
-            # converting to degrees to compare with truth, pipeline is in arcsec
-            if reldiffpv3_data[-2][0] > 0.0:
-                print("\nConverting pipeline results to degrees to compare with truth file")
-                pv3 = pv3/3600.
-                reldiffpv3_data = auxfunc.get_reldiffarr_and_stats(threshold_diff, truth_slity, truth_v3, pv3,
-                                                                   tested_quantity)
             reldiffpv3_img, notnan_reldiffpv3, notnan_reldiffpv3_stats, print_stats = reldiffpv3_data
             for msg in print_stats:
                 log_msgs.append(msg)
-            test_result = auxfunc.does_median_pass_tes(notnan_reldiffpv3_stats[1], threshold_diff)
+            test_result = auxfunc.does_median_pass_test(notnan_reldiffpv3_stats[1], threshold_diff)
             msg = " * Result of the test for "+tested_quantity+":  "+test_result
             print(msg)
             log_msgs.append(msg)
@@ -455,8 +444,9 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
                     else:
                         plt_name = os.path.join(os.getcwd(), pipeslit+"_"+det+specific_plt_name)
-                        print("No output_directory was provided. Figures will be saved in current working directory:")
-                        print(plt_name + "\n")
+                        if save_figs:
+                            print("No output_directory was provided. Figures will be saved in current working directory:")
+                            print(plt_name + "\n")
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pwave_img, notnan_rel_diff_pwave, info_img,
                                              info_hist, plt_name=plt_name, plt_origin=plt_origin,
                                              show_figs=show_figs, save_figs=save_figs)
@@ -479,8 +469,9 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
                     else:
                         plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        if save_figs:
+                            print("No output_directory was provided. Figures will NOT be saved.")
+                            save_figs = False
                 auxfunc.plt_two_2Dimgandhist(rel_diff_pslity_img, notnan_rel_diff_pslity, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -503,8 +494,9 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
                     else:
                         plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        if save_figs:
+                            print("No output_directory was provided. Figures will NOT be saved.")
+                            save_figs = False
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsax_img, notnan_reldiffpmsax, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -527,8 +519,10 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                         plt_name = os.path.join(output_directory, pipeslit+"_"+det+specific_plt_name)
                     else:
                         plt_name = None
-                        save_figs = False
-                        print("No output_directory was provided. Figures will NOT be saved.")
+                        if save_figs:
+                            print("No output_directory was provided. Figures will NOT be saved.")
+                            save_figs = False
+
                 auxfunc.plt_two_2Dimgandhist(reldiffpmsay_img, notnan_reldiffpmsay, info_img, info_hist,
                                              plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                              save_figs=save_figs)
@@ -552,8 +546,10 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                             plt_name = os.path.join(output_directory, pipeslit + "_" + det + specific_plt_name)
                         else:
                             plt_name = None
-                            save_figs = False
-                            print("No output_directory was provided. Figures will NOT be saved.")
+                            if save_figs:
+                                print("No output_directory was provided. Figures will NOT be saved.")
+                                save_figs = False
+
                     auxfunc.plt_two_2Dimgandhist(reldiffpv2_img, notnan_reldiffpv2_stats, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                                  save_figs=save_figs)
@@ -576,8 +572,10 @@ def compare_wcs(infile_name, truth_file=None, esa_files_path=None, show_figs=Tru
                             plt_name = os.path.join(output_directory, pipeslit + "_" + det + specific_plt_name)
                         else:
                             plt_name = None
-                            save_figs = False
-                            print("No output_directory was provided. Figures will NOT be saved.")
+                            if save_figs:
+                                print("No output_directory was provided. Figures will NOT be saved.")
+                                save_figs = False
+
                     auxfunc.plt_two_2Dimgandhist(reldiffpv3_img, notnan_reldiffpv3, info_img, info_hist,
                                                  plt_name=plt_name, plt_origin=plt_origin, show_figs=show_figs,
                                                  save_figs=save_figs)
@@ -679,5 +677,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
-

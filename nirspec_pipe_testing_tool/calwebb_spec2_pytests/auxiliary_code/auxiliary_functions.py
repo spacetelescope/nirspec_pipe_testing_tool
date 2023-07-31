@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import os
 from scipy import integrate
@@ -143,6 +145,14 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
     # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
     print('\n Calculating total errors for slit ', slt_nme)
 
+    # match nans for all arrays
+    nan_idx = (np.isnan(pipeflat) | np.isnan(calcflat)
+               | np.isnan(pipeflat_err) | np.isnan(calcflat_err))
+    pipeflat[nan_idx] = np.nan
+    calcflat[nan_idx] = np.nan
+    pipeflat_err[nan_idx] = np.nan
+    calcflat_err[nan_idx] = np.nan
+
     # Calculate flat correction of SCI data and ignore all nan and inf values
     pipe_corr_sci = input_sci / pipeflat
     pipe_corr = pipe_corr_sci[((np.isfinite(pipe_corr_sci)) & (pipe_corr_sci != 0.0))]
@@ -150,15 +160,16 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
     calc_corr = calc_corr_sci[((np.isfinite(calc_corr_sci)) & (calc_corr_sci != 0.0))]
     diff_corr_sci = pipe_corr_sci - calc_corr_sci
     diff_corr_sci_good_idx = np.where(diff_corr_sci <= 1.0)
-    mean_pipe, mean_calc = np.mean(pipe_corr), np.mean(calc_corr)
-    median_pipe, median_calc = np.median(pipe_corr), np.median(calc_corr)
+    mean_pipe, mean_calc = np.nanmean(pipe_corr), np.nanmean(calc_corr)
+    median_pipe, median_calc = np.nanmedian(pipe_corr), np.nanmedian(calc_corr)
     diff_percent = '0%'
     if np.isfinite(1.0 - mean_calc/mean_pipe):
         diff_percent = repr(int(abs(1.0 - mean_calc/mean_pipe) * 100.0))+'%'
     print('\n * Mean difference of flat corrected SCI values: ',
-          np.mean(diff_corr_sci[diff_corr_sci_good_idx]), ' -> ', diff_percent)
+          np.nanmean(diff_corr_sci[diff_corr_sci_good_idx]), ' -> ', diff_percent)
     print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
-    print('       final pipeline calculated SCI mean = ', np.mean(flout_slt_sci))
+    print('       median_pipe, median_calc = ', median_pipe, median_calc)
+    print('       final pipeline calculated SCI mean = ', np.nanmean(flout_slt_sci))
 
     # Calculate flat correction of VAR_POISSON data and ignore all nan and inf values
     pipe_corr_var_poisson_sci = input_var_psn / pipeflat**2
@@ -167,14 +178,15 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
     calc_corr_vpsn = calc_corr_var_poisson_sci[((np.isfinite(calc_corr_var_poisson_sci)) & (calc_corr_var_poisson_sci != 0.0))]
     diff_var_poisson_sci = pipe_corr_var_poisson_sci - calc_corr_var_poisson_sci
     diff_var_poisson_sci_good_idx = np.where(diff_var_poisson_sci <= 1.0)
-    mean_pipe, mean_calc = np.mean(pipe_corr_vpsn), np.mean(calc_corr_vpsn)
-    median_pipe, median_calc = np.median(pipe_corr_vpsn), np.median(calc_corr_vpsn)
+    mean_pipe, mean_calc = np.nanmean(pipe_corr_vpsn), np.nanmean(calc_corr_vpsn)
+    median_pipe, median_calc = np.nanmedian(pipe_corr_vpsn), np.nanmedian(calc_corr_vpsn)
     diff_percent = '0%'
     if np.isfinite(1.0 - mean_calc/mean_pipe):
         diff_percent = repr(int(abs(1.0 - mean_calc/mean_pipe) * 100.0))+'%'
     print('\n * Mean difference of flat corrected VAR_POISSON values: ',
-          np.mean(diff_var_poisson_sci[diff_var_poisson_sci_good_idx]),  ' -> ', diff_percent)
+          np.nanmean(diff_var_poisson_sci[diff_var_poisson_sci_good_idx]),  ' -> ', diff_percent)
     print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
+    print('       median_pipe, median_calc = ', median_pipe, median_calc)
 
     # Calculate flat correction of VAR_RNOISE data and ignore all nan and inf values
     pipe_corr_var_rnoise_sci = input_var_rnse / pipeflat**2
@@ -183,80 +195,95 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
     calc_corr_vrnse = calc_corr_var_rnoise_sci[((np.isfinite(calc_corr_var_rnoise_sci)) & (calc_corr_var_rnoise_sci != 0.0))]
     diff_var_rnoise_sci = pipe_corr_var_rnoise_sci - calc_corr_var_rnoise_sci
     diff_var_rnoise_sci_good_idx = np.where(diff_var_rnoise_sci <= 1.0)
-    mean_pipe, mean_calc = np.mean(pipe_corr_vrnse), np.mean(calc_corr_vrnse)
-    median_pipe, median_calc = np.median(pipe_corr_vrnse), np.median(calc_corr_vrnse)
+    mean_pipe, mean_calc = np.nanmean(pipe_corr_vrnse), np.nanmean(calc_corr_vrnse)
+    median_pipe, median_calc = np.nanmedian(pipe_corr_vrnse), np.nanmedian(calc_corr_vrnse)
     diff_percent = '0%'
     if np.isfinite(1.0 - mean_calc/mean_pipe):
         diff_percent = repr(int(abs(1.0 - mean_calc/mean_pipe) * 100.0))+'%'
     print('\n * Mean difference of flat corrected VAR_RNOISE values: ',
-          np.mean(diff_var_rnoise_sci[diff_var_rnoise_sci_good_idx]),  ' -> ', diff_percent)
+          np.nanmean(diff_var_rnoise_sci[diff_var_rnoise_sci_good_idx]),  ' -> ', diff_percent)
     print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
     print('       median_pipe, median_calc = ', median_pipe, median_calc)
 
     # Calculate flat correction of VAR_FLAT data and data and ignore all nan and inf values
-    pipe_corr_var_flat_sci = input_sci**2 / pipeflat**2 * pipeflat_err**2
+    pipe_corr_var_flat_sci = input_sci**2 * pipeflat_err**2 / pipeflat**4
     pipe_corr_vflat = pipe_corr_var_flat_sci[((np.isfinite(pipe_corr_var_flat_sci)) & (pipe_corr_var_flat_sci != 0.0))]
-    calc_corr_var_flat_sci = input_sci**2 / calcflat**2 * calcflat_err**2
+
+    calc_corr_var_flat_sci = input_sci**2 * calcflat_err**2 / calcflat**4
     calc_corr_vflat = calc_corr_var_flat_sci[((np.isfinite(calc_corr_var_flat_sci)) & (calc_corr_var_flat_sci != 0.0))]
+
     diff_var_flat_sci = pipe_corr_var_flat_sci - calc_corr_var_flat_sci
     diff_var_flat_sci = diff_var_flat_sci[(np.isfinite(diff_var_flat_sci) & (diff_var_flat_sci <= 1.0))]
-    mean_pipe, mean_calc = np.mean(pipe_corr_vflat), np.mean(calc_corr_vflat)
-    median_pipe, median_calc = np.median(pipe_corr_vflat), np.median(calc_corr_vflat)
+    mean_pipe, mean_calc = np.nanmean(pipe_corr_vflat), np.nanmean(calc_corr_vflat)
+    median_pipe, median_calc = np.nanmedian(pipe_corr_vflat), np.nanmedian(calc_corr_vflat)
     diff_percent = 0
     if np.isfinite(1.0 - mean_calc/mean_pipe):
         diff_percent = int(abs(1.0 - mean_calc/mean_pipe) * 100.0)
     print('\n * Mean difference of flat corrected VAR_FLAT values: ',
-          np.mean(diff_var_flat_sci), ' -> ', repr(diff_percent)+'%')
+          np.nanmean(diff_var_flat_sci), ' -> ', repr(diff_percent)+'%')
     print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
     print('       median_pipe, median_calc = ', median_pipe, median_calc)
-    if diff_percent >= 50:
+
+    # TODO: resolve this, either by updating the pipeline to propagate fast
+    #   errors separately from slow errors or by fixing the test to assume
+    #   the 2D error image contains the total error on the flat
+    check_errors = True
+    if check_errors and diff_percent >= 50:
+        print(' *** NOTE *** : this difference is likely due to an unresolved difference '
+              'in the error propagation methods for fast flat components in '
+              'the pipeline.')
+    elif diff_percent >= 50:
         print('   Maybe an issue of outliers, check median values and other stats: ')
-        print('       np.mean(input_sci**2/pipeflat**2), np.mean(input_sci**2/calcflat**2)')
+        print('       np.nanmean(input_sci**2/pipeflat**2), np.nanmean(input_sci**2/calcflat**2)')
         kk1 = input_sci**2/pipeflat**2
         kk1 = kk1[~np.isnan(kk1)]
         kk2 = input_sci**2/calcflat**2
         kk2 = kk2[~np.isnan(kk2)]
-        print('       ', np.mean(kk1), np.mean(kk2))
-        print('       np.median(input_sci**2/pipeflat**2), np.median(input_sci**2/calcflat**2)')
-        print('       ', np.median(kk1), np.median(kk2))
+        print('       ', np.nanmean(kk1), np.nanmean(kk2))
+        print('       np.nanmedian(input_sci**2/pipeflat**2), np.nanmedian(input_sci**2/calcflat**2)')
+        print('       ', np.nanmedian(kk1), np.nanmedian(kk2))
         print('     Means and medians where arrays are not 0.0: ')
-        print('       np.mean(pipeflat_err**2), np.mean(calcflat_err**2), difference')
+        print('       np.nanmean(pipeflat_err**2), np.nanmean(calcflat_err**2), difference')
         kk1 = pipeflat_err[pipeflat_err!=0.0]**2
         kk1 = kk1[~np.isnan(kk1)]
         kk2 = calcflat_err[calcflat_err!=0.0]**2
         kk2 = kk2[~np.isnan(kk2)]
-        print('       ', np.mean(kk1), np.mean(kk2), np.mean(kk1)-np.mean(kk2))
-        print('       np.median(pipeflat_err**2), np.median(calcflat_err**2), difference')
-        print('       ', np.median(kk1), np.median(kk2), np.median(kk1)-np.median(kk2))
+        print('       ', np.nanmean(kk1), np.nanmean(kk2), np.nanmean(kk1)-np.nanmean(kk2))
+        print('       np.nanmedian(pipeflat_err**2), np.nanmedian(calcflat_err**2), difference')
+        print('       ', np.nanmedian(kk1), np.nanmedian(kk2), np.nanmedian(kk1)-np.nanmedian(kk2))
 
     # Total error calculation
     pipe_err_sci = np.sqrt(pipe_corr_var_poisson_sci + pipe_corr_var_rnoise_sci + pipe_corr_var_flat_sci)
     calc_err_sci = np.sqrt(calc_corr_var_poisson_sci + calc_corr_var_rnoise_sci + calc_corr_var_flat_sci)
     diff_tot_err = pipe_err_sci - calc_err_sci
     diff_tot_err_good_idx = np.where(diff_tot_err <= 1.0)
-    mean_pipe, mean_calc = np.mean(pipe_err_sci), np.mean(calc_err_sci)
-    median_pipe, median_calc = np.median(pipe_err_sci), np.median(calc_err_sci)
+    mean_pipe, mean_calc = np.nanmean(pipe_err_sci), np.nanmean(calc_err_sci)
+    median_pipe, median_calc = np.nanmedian(pipe_err_sci), np.nanmedian(calc_err_sci)
     diff_percent = 0
     if np.isfinite(1.0 - mean_calc/mean_pipe):
         diff_percent = int(abs(1.0 - mean_calc/mean_pipe) * 100.0)
     print('\n * Mean difference of total error calculation: ',
-          np.mean(diff_tot_err[diff_tot_err_good_idx]),  ' -> ', repr(diff_percent)+'%')
+          np.nanmean(diff_tot_err[diff_tot_err_good_idx]),  ' -> ', repr(diff_percent)+'%')
     print('       median_pipe, median_calc = ', median_pipe, median_calc)
     print('       mean_pipe, mean_calc = ', mean_pipe, mean_calc)
     no_nan_err = flout_slt_err[~np.isnan(flout_slt_err)]
-    print('       final pipeline calculated ERR mean = ', np.mean(no_nan_err))
-    if diff_percent >= 50:
+    print('       final pipeline calculated ERR mean = ', np.nanmean(no_nan_err))
+    if check_errors and diff_percent >= 50:
+        print(' *** NOTE *** : this difference is likely due to an unresolved difference '
+              'in the error propagation methods for fast flat components in '
+              'the pipeline.')
+    elif diff_percent >= 50:
         print('   Maybe an issue of outliers, check median values and other stats where not 1.0: ')
-        print('       np.mean(pipeflat), np.mean(calcflat), difference')
+        print('       np.nanmean(pipeflat), np.nanmean(calcflat), difference')
         kk1 = pipeflat[pipeflat!=1.0]
         kk1 = kk1[~np.isnan(kk1)]
         kk2 = calcflat[calcflat!=1.0]
         kk2 = kk2[~np.isnan(kk2)]
         if np.size(kk2) == 0:
             print('       Oh no! All values for calcflat are either 1.0 or NaN')
-        print('       ', np.mean(kk1), np.mean(kk2), np.mean(kk1)-np.mean(kk2))
-        print('       np.median(pipeflat), np.median(calcflat), difference')
-        print('       ', np.median(kk1), np.median(kk2), np.median(kk1)-np.median(kk2))
+        print('       ', np.nanmean(kk1), np.nanmean(kk2), np.nanmean(kk1)-np.nanmean(kk2))
+        print('       np.nanmedian(pipeflat), np.nanmedian(calcflat), difference')
+        print('       ', np.nanmedian(kk1), np.nanmedian(kk2), np.nanmedian(kk1)-np.nanmedian(kk2))
 
     if show_plts or save_plts:
         font = {'weight' : 'normal',
@@ -266,7 +293,7 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
         # pipe flat and histogram
         fig, axs = plt.subplots(3, 2, figsize=(14, 8))
         fig.suptitle(slt_nme +'_flats_comparison')
-        str_x_stddev = "stddev = {:0.3e}".format(np.std(pipeflat))
+        str_x_stddev = "stddev = {:0.3e}".format(np.nanstd(pipeflat))
         stddev_x, stddev_y = 0.75, 0.62
         vminmax = get_vminmax(pipeflat)
         im = axs[0, 0].imshow(pipeflat, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
@@ -283,7 +310,7 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
         axs[0, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
         axs[0, 1].minorticks_on()
         # validation flat and histogram
-        str_x_stddev = "stddev = {:0.3e}".format(np.std(calcflat))
+        str_x_stddev = "stddev = {:0.3e}".format(np.nanstd(calcflat))
         vminmax = get_vminmax(calcflat)
         im = axs[1, 0].imshow(calcflat, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
         plt.colorbar(im, ax=axs[1, 0])
@@ -300,8 +327,8 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
         axs[1, 1].minorticks_on()
         # difference image and its histogram
         flat_diff = pipeflat - calcflat
-        str_x_stddev = "stddev = {:0.3e}".format(np.std(flat_diff))
-        mean_diff, median_diff = np.mean(flat_diff), np.median(flat_diff)
+        str_x_stddev = "stddev = {:0.3e}".format(np.nanstd(flat_diff))
+        mean_diff, median_diff = np.nanmean(flat_diff), np.nanmedian(flat_diff)
         vminmax = get_vminmax(flat_diff)
         im = axs[2, 0].imshow(flat_diff, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
         plt.colorbar(im, ax=axs[2, 0])
@@ -338,8 +365,8 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
         #stddev_x, stddev_y = 0.08, 0.58
         stddev_x, stddev_y = 0.75, 0.58
         # sci uncorrected data
-        str_x_stddev = "stddev = {:0.3e}".format(np.std(flout_slt_sci))
-        mean, median = np.mean(flout_slt_sci), np.median(flout_slt_sci)
+        str_x_stddev = "stddev = {:0.3e}".format(np.nanstd(flout_slt_sci))
+        mean, median = np.nanmean(flout_slt_sci), np.nanmedian(flout_slt_sci)
         vminmax = get_vminmax(flout_slt_sci)
         im = axs[0, 0].imshow(flout_slt_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
         plt.colorbar(im, ax=axs[0, 0])
@@ -355,8 +382,8 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
         axs[0, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
         axs[0, 1].minorticks_on()
         # pipeline sci corrected data
-        str_x_stddev = "stddev = {:0.3e}".format(np.std(pipe_corr_sci))
-        mean, median = np.mean(pipe_corr_sci), np.median(pipe_corr_sci)
+        str_x_stddev = "stddev = {:0.3e}".format(np.nanstd(pipe_corr_sci))
+        mean, median = np.nanmean(pipe_corr_sci), np.nanmedian(pipe_corr_sci)
         vminmax = get_vminmax(pipe_corr_sci)
         #pipe_corr_sci[np.where(pipe_corr_sci == 0.0)] = np.nan
         im = axs[1, 0].imshow(pipe_corr_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
@@ -373,8 +400,8 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
         axs[1, 1].tick_params(axis='both', which='both', bottom=True, top=True, right=True, direction='in', labelbottom=True)
         axs[1, 1].minorticks_on()
         # validation sci corrected data
-        str_x_stddev = "stddev = {:0.3e}".format(np.std(calc_corr_sci))
-        mean, median = np.mean(calc_corr_sci), np.median(calc_corr_sci)
+        str_x_stddev = "stddev = {:0.3e}".format(np.nanstd(calc_corr_sci))
+        mean, median = np.nanmean(calc_corr_sci), np.nanmedian(calc_corr_sci)
         vminmax = get_vminmax(calc_corr_sci)
         im = axs[2, 0].imshow(calc_corr_sci, aspect="auto", origin='lower', vmin=vminmax[0], vmax=vminmax[1])
         plt.colorbar(im, ax=axs[2, 0])
@@ -399,8 +426,8 @@ def calc_flat_total_slt_err(flat_field_outfile, slt_nme, flout_slt_sci, flout_sl
         axs[3, 1].hist(diff_corr_sci.flatten(), histtype='bar', ec='k', facecolor="red", alpha=alpha)
         axs[3, 1].text(stddev_x, stddev_y, str_x_stddev, transform=axs[3, 1].transAxes)
         diff_corr_sci = diff_corr_sci[((np.isfinite(diff_corr_sci)) & (diff_corr_sci != 0.0))]
-        str_x_stddev = "stddev = {:0.3e}".format(np.std(diff_corr_sci))
-        mean, median = np.mean(diff_corr_sci), np.median(diff_corr_sci)
+        str_x_stddev = "stddev = {:0.3e}".format(np.nanstd(diff_corr_sci))
+        mean, median = np.nanmean(diff_corr_sci), np.nanmedian(diff_corr_sci)
         axs[3, 1].axvline(mean, label="mean = %0.3e" % (mean), color="g")
         axs[3, 1].axvline(median, label="median = %0.3e" % (median), linestyle="-.", color="b")
         axs[3, 1].set_title('Histogram SCI_corr difference = Pipeline - Validation')
@@ -913,6 +940,8 @@ def compute_percentage(values, threshold):
     """
     values = values[~np.isnan(values)]
     n_total = values.size
+    if n_total == 0:
+        return [np.nan, np.nan, np.nan]
 
     thresh = [threshold, 3 * threshold, 5 * threshold]
     res = []
@@ -936,29 +965,36 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
         x_stats: list, all quantities calculated for arrX
         stats_print_strings: list, contains all print statements
     """
+    warnings.filterwarnings('ignore', category=RuntimeWarning)
     if absolute:
-        type_of_calculations = "  Absolute"
+        type_of_calculations = " Absolute "
         type_of_percentages = "absolute differences"
     else:
-        type_of_calculations = "  Relative"
+        type_of_calculations = " Relative "
         type_of_percentages = "relative differences"
     # calculate statistics
     stats_print_strings = []
-    arrX_mean, arrX_median, arrX_stdev = np.mean(arrX), np.median(arrX), np.std(arrX)
-    print("\n", type_of_calculations, xname, " :   mean = %0.3e" % (arrX_mean), "   median = %0.3e" % (arrX_median),
+    arrX_mean, arrX_median, arrX_stdev = np.nanmean(arrX), np.nanmedian(arrX), np.nanstd(arrX)
+    print("\n", type_of_calculations + xname,
+          " :   mean = %0.3e" % (arrX_mean),
+          "   median = %0.3e" % (arrX_median),
           "   stdev = %0.3e" % (arrX_stdev))
-    rel_max = np.max(arrX)
-    rel_min = np.min(arrX)
+    npt_str = f"    Total points = {arrX.size}"
+    rel_max = np.nanmax(arrX)
+    rel_min = np.nanmin(arrX)
     percentage_results = compute_percentage(arrX, threshold_diff)
-    max_str = "    Maximum " + type_of_calculations + xname + " = %0.3e" % rel_max
-    min_str = "    Minimum " + type_of_calculations + xname + " = %0.3e" % rel_min
+    max_str = "    Maximum" + type_of_calculations + xname + " = %0.3e" % rel_max
+    min_str = "    Minimum" + type_of_calculations + xname + " = %0.3e" % rel_min
+    thr_str = f"    Threshold: {threshold_diff}"
     pix_percentage_greater_than_min = "    Percentage of pixels where median of " + type_of_percentages + \
                                       " is greater than: "
-    threshold1 = "                            ->  1xtheshold = " + str(int(round(percentage_results[0], 0))) + "%"
-    threshold3 = "                            ->  3xtheshold = " + str(int(round(percentage_results[1], 0))) + "%"
-    threshold5 = "                            ->  5xtheshold = " + str(int(round(percentage_results[2], 0))) + "%"
+    threshold1 = f"                            ->  1xtheshold = {percentage_results[0]:.0f}%"
+    threshold3 = f"                            ->  3xtheshold = {percentage_results[1]:.0f}%"
+    threshold5 = f"                            ->  5xtheshold = {percentage_results[2]:.0f}%"
+    print(npt_str)
     print(max_str)
     print(min_str)
+    print(thr_str)
     print(pix_percentage_greater_than_min)
     print(threshold1)
     print(threshold3)
@@ -969,19 +1005,17 @@ def print_stats(arrX, xname, threshold_diff, absolute=False, return_percentages=
     stats_print_strings.append(threshold1)
     stats_print_strings.append(threshold3)
     stats_print_strings.append(threshold5)
-    if int(round(percentage_results[1], 0)) > 10:
+    if percentage_results[1] > 10:
         msg = ' *** WARNING: More than 10% of pixels have a median value greater than 3xthreshold!'
         #print(msg)
         stats_print_strings.append(msg)
-    if int(round(percentage_results[2], 0)) > 10:
+    if percentage_results[2] > 10:
         msg = ' *** WARNING: More than 10% of pixels have a median value greater than 5xthreshold!'
         #print(msg)
         stats_print_strings.append(msg)
     x_stats = [arrX_mean, arrX_median, arrX_stdev]
     if return_percentages:
-        percentages = [int(round(percentage_results[0], 0)), int(round(percentage_results[1], 0)),
-                       int(round(percentage_results[2], 0))]
-        return x_stats, stats_print_strings, percentages
+        return x_stats, stats_print_strings, percentage_results
     else:
         return x_stats, stats_print_strings
 
@@ -1007,8 +1041,11 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, absolu
     # get rid of nans and restrict according to slit-y
     in_slit = np.logical_and(edy < .5, edy > -.5)
     arr[~in_slit] = np.nan  # Set lam values outside the slit to NaN
-    nanind = np.isnan(arr)  # get all the nan indexes
+
+    nanind = np.isnan(arr) | np.isnan(esa_arr)  # get all the nan indexes
+    nanind |= (esa_arr == 0)  # also any places where the esa array is zero
     notnan = ~nanind  # get all the not-nan indexes
+
     arr[nanind] = np.nan  # set all nan indexes to have a value of nan
     # Set the values to NaN in the ESA lambda extension
     esa_arr[nanind] = np.nan
@@ -1034,7 +1071,7 @@ def get_reldiffarr_and_stats(threshold_diff, edy, esa_arr, arr, arr_name, absolu
     return DATAMODEL_diff, DATAMODEL_diff[notnan], notnan_reldiffarr_stats, stats_print_strings
 
 
-def does_median_pass_tes(arr_median, threshold_diff):
+def does_median_pass_test(arr_median, threshold_diff):
     """
     This function determines if the given median is less than or equal to the given threshold
     Args:

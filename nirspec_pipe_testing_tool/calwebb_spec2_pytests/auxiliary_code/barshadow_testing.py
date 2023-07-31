@@ -229,14 +229,16 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         ax2.set_ylabel('y (pixels)')
         if debug:
             print('ax2 std_dev/mean = ', np.nanstd(plprof2[x2])/np.nanmean(plprof2[x2]))
-        
+
+        # ax1.plot(x1, bsprof1[x1])
         ax3.plot(x1, bsprof1[x1])
         ax3.set_title('Barshadow array slice 1')
         ax3.set_xlabel('x (pixels)')
         ax3.set_ylabel('y (pixels)')
         if debug:
             print('ax3 std_dev/mean = ', np.nanstd(bsprof1)/np.nanmean(bsprof1[x1]))
-        
+
+        # ax2.plot(x2, bsprof2[x2])
         ax4.plot(x2, bsprof2[x2])
         if debug:
             print('ax4 std_dev/mean = ', np.nanstd(bsprof2)/np.nanmean(bsprof2[x2]))
@@ -298,8 +300,12 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         indxs = ~np.isnan(bswave_ex)
         bsslity_ex = bsslity.reshape(bsslity.size)
         xyints = np.column_stack((bswave_ex[indxs], bsslity_ex[indxs]))
-        bscor = np.empty(bswave_ex.size)
-        bscor[:] = np.nan
+        bscor = np.full(bswave_ex.size, np.nan)
+
+        # Note: the pipeline does some extra work here to center the correction
+        # in the slit, with reference to the fiducial center. This is why there
+        # is an offset in the correction along the bottom of the cutout.
+
         bscor[indxs] = griddata(pixels_ref, bscor_ref, xyints, method='linear')
         bscor = bscor.reshape(bswave.shape[0], bswave.shape[1])
         if debug:
@@ -327,10 +333,12 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         wcol = (bswave-cv1)/cd1
         if debug:
             print('np.shape(yrow)=', np.shape(yrow))
-            point3 = [10, np.shape(yrow)[1]-50]
-            print(yrow[point3[0], point3[1]], wcol[point3[0], point3[1]])
+            print(yrow)
+            print('np.shape(wcol)=', np.shape(wcol))
+            print(wcol)
 
         fig = plt.figure(figsize=(12, 10))
+
         # Top figure
         plt.subplot(211)
         plt.imshow(bscor, vmin=0., vmax=1., aspect=10.0, origin='lower', cmap='viridis')
@@ -355,16 +363,12 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
             plt.show()
         plt.close()
 
-        if debug:
-            print('bscor_pipe[point3[0], point3[1]],bswave[point3[0], point3[1]],bsslity[point3[0], point3[1]],'
-                  'bscor[point3[0], point3[1]]: ', bscor_pipe[point3[0], point3[1]], bswave[point3[0], point3[1]],
-                  bsslity[point3[0], point3[1]], bscor[point3[0], point3[1]])
-
         print('Creating final barshadow test plot...')
         reldiff = (bscor_pipe-bscor)/bscor
         if debug:
             print('np.nanmean(reldiff),np.nanstd(reldiff) : ', np.nanmean(reldiff), np.nanstd(reldiff))
         fig = plt.figure(figsize=(12, 10))
+
         # Top figure - 2D plot
         plt.subplot(211)
         plt.imshow(reldiff, vmin=-0.01, vmax=0.01, aspect=10.0, origin='lower', cmap='viridis')
@@ -372,11 +376,13 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         plt.title('Relative differences')
         plt.xlabel('x (pixels)')
         plt.ylabel('y (pixels)')
+
         # Bottom figure - histogram
         ax = plt.subplot(212)
         plt.hist(reldiff[~np.isnan(reldiff)], bins=100, range=(-0.1, 0.1))
         plt.xlabel('(Pipeline_correction - Calculated_correction) / Calculated_correction')
         plt.ylabel('N')
+
         # add vertical line at mean and median
         nanind = np.isnan(reldiff)  # get all the nan indexes
         notnan = ~nanind  # get all the not-nan indexes
@@ -409,7 +415,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         stats = auxfunc.print_stats(reldiff[notnan], tested_quantity, barshadow_threshold_diff, absolute=False,
                                     return_percentages=True)
         _, stats_print_strings, percentages = stats
-        result = auxfunc.does_median_pass_tes(arr_median, barshadow_threshold_diff)
+        result = auxfunc.does_median_pass_test(arr_median, barshadow_threshold_diff)
         slitlet_test_result_list.append({tested_quantity: result})
         for line in stats_print_strings:
             log_msgs.append(line)
@@ -418,16 +424,21 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         log_msgs.append(msg)
 
         tested_quantity = "percentage_greater_3threshold"
-        result_3xThreshold = auxfunc.does_median_pass_tes(percentages[1], 10)
+        result_3xThreshold = auxfunc.does_median_pass_test(percentages[1], 10)
         # slitlet_test_result_list.append({tested_quantity: result_3xThreshold})
         msg = " * Result of number of points greater than 3*threshold greater than 10%: "+result_3xThreshold
+
+        # this message is non-critical: we don't expect correction to distribute
+        # normally. Replace failure message with warning.
+        msg = msg.replace('FAILED', 'WARNING')
         print(msg+"\n")
         log_msgs.append(msg)
 
         tested_quantity = "percentage_greater_5threshold"
-        result_5xThreshold = auxfunc.does_median_pass_tes(percentages[2], 10)
+        result_5xThreshold = auxfunc.does_median_pass_test(percentages[2], 10)
         # slitlet_test_result_list.append({tested_quantity: result_5xThreshold})
         msg = " * Result of number of points greater than 5*threshold greater than 10%: "+result_5xThreshold
+        msg = msg.replace('FAILED', 'WARNING')
         print(msg+"\n")
         log_msgs.append(msg)
 
@@ -439,6 +450,7 @@ def run_barshadow_tests(plfile, bsfile, barshadow_threshold_diff=0.0025, save_fi
         plt.title('Normalized data before barshadow step with correction applied')
         plt.xlabel('Sci_data_before_barshadow / barshadow_calculated_correction')
         plt.ylabel('Normalized data')
+
         # Show and/or save figures
         if save_intermediary_figs:
             t = (file_basename, "Barshadowtest_CorrectedData_slitlet" + slit_id + ".png")
@@ -634,8 +646,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
-
-
-
-
