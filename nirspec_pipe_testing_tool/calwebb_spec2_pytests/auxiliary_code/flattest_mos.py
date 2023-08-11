@@ -401,7 +401,6 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         msg = "Now looping through the pixels, this will take a while ... "
         print(msg)
         log_msgs.append(msg)
-        wave_shape = np.shape(wave)
         for j in range(nw1):   # in x
             for k in range(nw2):   # in y
                 if np.isfinite(wave[k, j]):   # skip if wavelength is NaN
@@ -617,7 +616,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                             print(msg)
                             log_msgs.append(msg)
                             plt.close()
-                            result_msg = "Unable to calculate statistics. Test set be SKIP."
+                            result_msg = "Unable to calculate statistics. Test set to SKIP."
                             median_diff = "skip"
                             return median_diff, result_msg, log_msgs
 
@@ -634,8 +633,7 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
                             flatcor[k, j] = np.nan
                             flat_err[k, j] = np.nan
 
-
-        # attempt remove outliers, for better statistics, only use points where pipe-calc <= 1.0
+        # attempt to remove outliers, for better statistics, only use points where pipe-calc <= 1.0
         outliers = (np.absolute(delf / flatcor) > 1.0)
         if np.sum(outliers) <= delf.size / 2.0:
             # the remaining points more than half the original number, remove outliers
@@ -651,11 +649,12 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
         test_result = "FAILED"
         if np.all(np.isnan(delf)):
             msg1 = " * Unable to calculate statistics because difference array has all values as NaN."
-            msg2 = "   Test will be set to FAILED and NO plots will be made."
+            msg2 = "   This slit will be SKIPPED and NO plots will be made."
             print(msg1)
             print(msg2)
             log_msgs.append(msg1)
             log_msgs.append(msg2)
+            test_result = "SKIPPED"
         else:
             msg = "Calculating statistics... "
             print(msg)
@@ -744,14 +743,15 @@ def flattest(step_input_filename, dflat_path, sflat_path, fflat_path, msa_shutte
 
         # Total error calculation according to equation taken from:
         # https://jwst-pipeline.readthedocs.io/en/latest/jwst/flatfield/main.html
-        input_sci, input_err = slit.data, slit.err
-        input_var_psn, input_var_rnse = slit.var_poisson, slit.var_rnoise
-        auxfunc.calc_flat_total_slt_err(flat_field_pipe_outfile, 'slitlet'+slit_id,
-                                        flout_slt_sci, flout_slt_err,
-                                        input_sci, input_err, input_var_psn, input_var_rnse,
-                                        pipeflat.copy(), pipeflat_err.copy(),
-                                        flatcor.copy(), flat_err.copy(),
-                                        show_plts=show_figs, save_plts=save_figs)
+        if not np.all(np.isnan(delf)):
+            input_sci, input_err = slit.data, slit.err
+            input_var_psn, input_var_rnse = slit.var_poisson, slit.var_rnoise
+            auxfunc.calc_flat_total_slt_err(flat_field_pipe_outfile, 'slitlet'+slit_id,
+                                            flout_slt_sci, flout_slt_err,
+                                            input_sci, input_err, input_var_psn, input_var_rnse,
+                                            pipeflat.copy(), pipeflat_err.copy(),
+                                            flatcor.copy(), flat_err.copy(),
+                                            show_plts=show_figs, save_plts=save_figs)
     # close datamodels
     model.close()
     flatfile.close()
